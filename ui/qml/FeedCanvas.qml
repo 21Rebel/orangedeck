@@ -65,6 +65,92 @@ Item {
     property real hoverX: 0
     property real hoverY: 0
     property real blockPulse: 0
+
+    // --- Sicht: Zoom und Verschiebung ------------------------------------
+    // Die Kacheln sind 4 px gross; ohne Vergroesserung laesst sich eine
+    // einzelne Transaktion kaum treffen. Der Zoom ist bewusst eine reine
+    // *Sicht*-Angelegenheit: das Raster und die Packung bleiben unveraendert,
+    // nur gezeichnet wird verschoben und skaliert. Deshalb sitzt er als
+    // ctx.setTransform in den Leinwaenden und als transform auf den
+    // Rechteck-Ebenen -- beides zeichnet dadurch scharf neu, statt ein
+    // fertiges Bild zu vergroessern.
+    property real zoom: 1
+    property real viewX: 0
+    property real viewY: 0
+    readonly property real minZoom: 1
+    readonly property real maxZoom: 24
+    readonly property bool zoomed: zoom > 1.0001
+
+    function viewApply(ctx) {
+        ctx.setTransform(zoom, 0, 0, zoom, viewX, viewY);
+    }
+
+    function toSceneX(px) {
+        return (px - viewX) / zoom;
+    }
+
+    function toSceneY(py) {
+        return (py - viewY) / zoom;
+    }
+
+    // Nie ueber den Rand hinaus: bei Zoom 1 sitzt die Sicht wieder genau auf
+    // dem Bild.
+    function clampView() {
+        if (zoom <= minZoom + 0.0001) {
+            zoom = minZoom;
+            viewX = 0;
+            viewY = 0;
+            return;
+        }
+        viewX = Math.min(0, Math.max(width - width * zoom, viewX));
+        viewY = Math.min(0, Math.max(height - height * zoom, viewY));
+    }
+
+    // Vergroessern um einen festen Punkt herum: was unter dem Zeiger liegt,
+    // bleibt unter dem Zeiger.
+    function setZoomAt(px, py, z) {
+        var z1 = Math.max(minZoom, Math.min(maxZoom, z));
+        if (Math.abs(z1 - zoom) < 0.0001)
+            return;
+        var sx = toSceneX(px);
+        var sy = toSceneY(py);
+        zoom = z1;
+        viewX = px - sx * z1;
+        viewY = py - sy * z1;
+        clampView();
+        repaintView();
+    }
+
+    function zoomAt(px, py, factor) {
+        setZoomAt(px, py, zoom * factor);
+    }
+
+    function panBy(dx, dy) {
+        if (!zoomed)
+            return;
+        viewX += dx;
+        viewY += dy;
+        clampView();
+        repaintView();
+    }
+
+    function resetView() {
+        zoom = minZoom;
+        viewX = 0;
+        viewY = 0;
+        repaintView();
+    }
+
+    function repaintView() {
+        poolCanvas.requestPaint();
+        blockCanvas.requestPaint();
+        if (blockPhase !== "idle")
+            blockAnim.requestPaint();
+        flyLayer.refresh();
+    }
+
+    onWidthChanged: clampView()
+    onHeightChanged: clampView()
     property var mining: []             // Kacheln auf dem Weg in den Block
     property string blockPhase: "idle"  // idle | ice | fly
     property real blockClock: 0
@@ -224,6 +310,7 @@ Item {
 
     // Welche Kachel liegt unter dem Mauszeiger? Ueber die Rasterzelle, damit es
     // nicht ueber tausende Kacheln laufen muss.
+    // px/py sind bereits Szenenkoordinaten (siehe toSceneX/toSceneY).
     function txAt(px, py) {
         if (!layout || gridSize < 1)
             return null;
@@ -671,6 +758,7 @@ Item {
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
+            root.viewApply(ctx);
             // Waehrend die geminten Transaktionen unterwegs sind, ist das
             // Blockfeld leer -- der Block entsteht erst, wenn sie ankommen.
             if (!root.blockRevealed || squares.length === 0 || root.poolTop < 24)
@@ -730,7 +818,10 @@ Item {
         propagateComposedEvents: true
 
         onPositionChanged: mouse => {
-            var e = root.txAt(mouse.x, mouse.y);
+            // Der Tooltip sitzt am Fenster, die Trefferpruefung in der Szene.
+            var sx = root.toSceneX(mouse.x);
+            var sy = root.toSceneY(mouse.y);
+            var e = root.txAt(sx, sy);
             root.hoverX = mouse.x;
             root.hoverY = mouse.y;
             if (e && e.tx) {
@@ -742,12 +833,12 @@ Item {
                     "w": sd,
                     "h": sd
                 };
-            } else if (mouse.y < root.pileTopY) {
+            } else if (sy < root.pileTopY) {
                 // oberhalb der Halde: vielleicht das Blockfeld
-                var bt = blockCanvas.blockTxAt(mouse.x, mouse.y);
+                var bt = blockCanvas.blockTxAt(sx, sy);
                 if (bt) {
                     root.hoveredTx = bt;
-                    root.hoverRect = blockCanvas.hoverRectAt(mouse.x, mouse.y);
+                    root.hoverRect = blockCanvas.hoverRectAt(sx, sy);
                 }
             }
             // Zwischen zwei Kacheln liegt eine Luecke von ein paar Pixeln.
@@ -759,6 +850,67 @@ Item {
             root.hoveredTx = null;
             root.hoverRect = null;
         }
+    }
+
+    // ----------------------------------------------- Zoom und Verschieben
+    // Drei Wege auf dieselbe Sicht: Rad, Zusammenziehen (Touchpad und
+    // Bildschirm) und Ziehen. Die MouseArea darueber nimmt keine Tasten an
+    // (`acceptedButtons: Qt.NoButton`), deshalb kommen sich beide nicht in die
+    // Quere.
+    WheelHandler {
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+
+        onWheel: event => {
+            // 1,0016 pro Rasterschritt: ein ueblicher Radschritt (120) ergibt
+            // rund 21 % -- fein genug zum Anpeilen, schnell genug zum Erreichen.
+            root.zoomAt(event.x, event.y, Math.pow(1.0016, event.angleDelta.y));
+            event.accepted = true;
+        }
+    }
+
+    PinchHandler {
+        id: pinchView
+
+        target: null
+        property real startZoom: 1
+
+        onActiveChanged: {
+            if (active)
+                startZoom = root.zoom;
+        }
+        onActiveScaleChanged: {
+            if (active)
+                root.setZoomAt(centroid.position.x, centroid.position.y,
+                               startZoom * activeScale);
+        }
+    }
+
+    DragHandler {
+        id: panView
+
+        target: null
+        // Ohne Vergroesserung gibt es nichts zu verschieben -- dann bleibt das
+        // Ziehen aus, damit es sich nicht wie ein haengendes Fenster anfuehlt.
+        enabled: root.zoomed
+        property real lastX: 0
+        property real lastY: 0
+
+        onActiveChanged: {
+            lastX = centroid.position.x;
+            lastY = centroid.position.y;
+        }
+        onCentroidChanged: {
+            if (!active)
+                return;
+            root.panBy(centroid.position.x - lastX, centroid.position.y - lastY);
+            lastX = centroid.position.x;
+            lastY = centroid.position.y;
+        }
+    }
+
+    // Doppeltippen bzw. Doppelklick stellt die Sicht wieder her.
+    TapHandler {
+        onDoubleTapped: root.resetView()
     }
 
     // Beim Blockfund fliegen bis zu dreitausend Kacheln gleichzeitig. Das
@@ -774,6 +926,7 @@ Item {
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
+            root.viewApply(ctx);
             if (root.blockPhase === "idle" || !root.mining || root.mining.length === 0)
                 return;
 
@@ -815,6 +968,11 @@ Item {
     Rectangle {
         id: hoverMark
 
+        // Liegt in Szenenkoordinaten, wird also wie die Leinwaende transformiert.
+        transform: [
+            Scale { xScale: root.zoom; yScale: root.zoom },
+            Translate { x: root.viewX; y: root.viewY }
+        ]
         visible: opacity > 0.01
         color: Palette.hoverColor()
         opacity: root.hoverRect ? 1 : 0
@@ -840,10 +998,14 @@ Item {
 
         onPaint: {
             var ctx = getContext("2d");
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             // Nur den Haldenbereich loeschen statt der ganzen Leinwand -- im
             // Vollbild sind das vier Millionen Bildpunkte weniger pro Bild.
-            var clearTop = Math.max(0, root.poolTop - 8);
+            // Bei Zoom greift die Sparmassnahme nicht mehr: die Halde kann dann
+            // ueberall stehen, also die ganze Flaeche raeumen.
+            var clearTop = root.zoomed ? 0 : Math.max(0, root.poolTop - 8);
             ctx.clearRect(0, clearTop, root.width, root.height - clearTop);
+            root.viewApply(ctx);
             // Beim Laden und Entladen (z. B. Dashboard-Tab) kann gezeichnet
             // werden, bevor der Zustand steht
             if (!root.layout || !root.poolTx)
@@ -927,6 +1089,11 @@ Item {
         id: flyLayer
 
         anchors.fill: parent
+        // Rechtecke sind vektoriell -- sie bleiben beim Skalieren scharf.
+        transform: [
+            Scale { xScale: root.zoom; yScale: root.zoom },
+            Translate { x: root.viewX; y: root.viewY }
+        ]
 
         readonly property int capacity: 320
 

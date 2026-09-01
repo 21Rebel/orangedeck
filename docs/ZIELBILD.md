@@ -340,3 +340,83 @@ Zwei Fallen, die dabei Zeit gekostet haben:
 
 **Offen fuer Schritt 3:** die Flatpak-Verpackung. `flatpak` ist vorhanden,
 **`flatpak-builder` fehlt** und muesste installiert werden.
+
+
+## Nachtrag 01.09.2026: Zoom zum Anpeilen einzelner Transaktionen
+
+Eine Kachel ist 4 px gross -- ohne Vergroesserung laesst sich eine einzelne
+Transaktion kaum treffen. Eingebaut in `FeedCanvas.qml`, mit drei Wegen auf
+dieselbe Sicht:
+
+    Mausrad                 zoomAt() um den Zeiger herum
+    Zusammenziehen          PinchHandler -- Touchpad und Bildschirm
+    Ziehen                  DragHandler, nur wenn vergroessert
+    Doppelklick/-tippen     zurueck auf Ausgangssicht
+
+**Der Zoom ist reine Sicht, keine Umrechnung des Rasters.** Packung und
+Kachelraster bleiben unangetastet; nur das Zeichnen wird verschoben und
+skaliert. Umgesetzt als `ctx.setTransform(z, 0, 0, z, tx, ty)` in den drei
+Leinwaenden und als `transform` auf den Rechteck-Ebenen (`flyLayer`,
+`hoverMark`). Beides zeichnet dadurch **scharf neu**, statt ein fertiges Bild
+zu vergroessern -- haette man stattdessen das Canvas-Element selbst skaliert,
+waere die Kachelgrafik verwaschen.
+
+Die Trefferpruefung rechnet ueber `toSceneX`/`toSceneY` zurueck, der Tooltip
+bleibt am Fenster. Beim Zoom wird die Halde ganzflaechig geraeumt statt nur im
+Haldenbereich -- die Sparmassnahme aus dem Normalbetrieb greift dort nicht mehr.
+
+**Nachgerechnet** (Sichtlogik nachgebildet, 20.000 zufaellige Bedienschritte):
+der Punkt unter dem Zeiger bleibt auf 1,1e-13 px genau stehen, und die Sicht
+verlaesst kein einziges Mal das Bild. Bereich 1x bis 24x -- die 4-px-Kachel
+erscheint bei 8x als 32 px, bei 24x als 96 px.
+
+## Desktop-Widget und Leiste auf beliebigen Systemen — geplant 01.09.2026
+
+Heute gibt es Leistenpille und Desktop-Widget nur als DMS-Plugin. Auf einem
+beliebigen Linux-Desktop gibt es dafuer **keinen gemeinsamen Mechanismus** --
+das ist der unangenehme Teil der Portierung. Der Weg fuehrt ueber drei Stufen,
+absteigend nach Aufwand und aufsteigend nach Reichweite:
+
+### Stufe 1 — Layer-Shell (Wayland)
+
+`wlr-layer-shell` ist das Protokoll fuer genau diesen Zweck: Fenster, die der
+Compositor als Leiste oder Hintergrundelement behandelt statt als gewoehnliches
+Fenster.
+
+- **Desktop-Widget** = Fenster auf der Hintergrundebene, ohne Eingabefokus
+- **Leiste** = Fenster auf der oberen Ebene, mit reserviertem Rand
+
+Fuer Qt gibt es das fertig als **`layer-shell-qt`** (KDE). Am 01.09.2026
+geprueft: in den Paketquellen vorhanden (6.7.4), **hier noch nicht
+installiert**. Traegt auf allen wlroots-artigen Compositoren -- Hyprland, Sway,
+niri (hier im Einsatz), river -- und auf KDE Plasma.
+
+**Ausnahme GNOME:** Mutter unterstuetzt Layer-Shell nicht. Dort ginge nur eine
+GNOME-Shell-Erweiterung, also ein eigener JavaScript-Stapel neben allem
+anderen. Bewusst zurueckgestellt.
+
+### Stufe 2 — X11
+
+Auf X11 leisten dasselbe die Fenstertypen `_NET_WM_WINDOW_TYPE_DESKTOP`
+(Widget) und `_NET_WM_WINDOW_TYPE_DOCK` (Leiste). Deckt XFCE, X11-KDE, i3 und
+aehnliche ab.
+
+### Stufe 3 — vorhandene Leisten fuettern (billigste Reichweite)
+
+Der weitaus guenstigste Weg, und er kommt fast geschenkt: **der Daemon gibt
+seinen Zustand in dem Format aus, das die verbreiteten Leisten ohnehin lesen.**
+Kein Fenster, kein Protokoll, kein Compositor-Sonderfall.
+
+    btcfeed --waybar      JSON fuer das custom-Modul von Waybar
+    btcfeed --polybar     Zeile fuer Polybar / i3blocks
+    btcfeed --genmon      XML fuer das XFCE-Genmon-Modul
+
+Damit hat jeder, der Waybar, Polybar, i3blocks oder XFCE benutzt, die Anzeige
+in der Leiste -- ohne dass wir eine einzige Leiste selbst bauen. **Waybar ist
+auf diesem Rechner bereits installiert**, laesst sich also sofort gegenpruefen.
+
+### Reihenfolge
+
+Stufe 3 zuerst: wenige Zeilen im Daemon, sofort nachpruefbar, groesste
+Reichweite. Danach Stufe 1 mit `layer-shell-qt` fuer das eigene Widget und die
+eigene Leiste. Stufe 2 nur, falls X11-Systeme tatsaechlich gebraucht werden.
