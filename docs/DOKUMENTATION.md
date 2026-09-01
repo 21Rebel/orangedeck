@@ -860,13 +860,36 @@ Zwei Irrwege dahin, beide lehrreich:
 2. *Baender im Strang auf volle Hoehe hochskalieren.* Dann ist die Mitte so
    hoch wie die Raender -- und alles bleibt ein Rechteck.
 
-Richtig ist der dritte Weg: `hMid = hEdge`, und der lueckenlose Stapel sitzt
-mittig. `waistTarget` (0,72) gibt die gewuenschte Form vor, daraus wird der
-Lueckenanteil abgeleitet -- nicht umgekehrt. So ist die Taille bei drei wie bei
-dreihundert Baendern gleich. Bei **einem** Band gibt es keine Luecke und damit
-keine Taille; da ist auch nichts zusammenzufuehren.
+Richtig ist: **ein Band hat ueberall dieselbe Dicke.** Der Massstab ist fuer
+beide Seiten derselbe -- `waistTarget` (0,72) mal der nutzbaren Hoehe ergibt den
+Strang, daraus der Massstab. Am Rand kommen nur die Luecken dazu, die den Rest
+auffuellen. Bei **einem** Band gibt es keine Luecke und damit keine Taille; da
+ist auch nichts zusammenzufuehren.
 
-**Ein Pfeil** an jedem Ausgang zeigt die Richtung (`arrowLen`).
+### Die Mitte muss exakt treffen
+
+Zwei Fehler, die dort einen sichtbaren Versatz erzeugten:
+
+1. **Massstab je Seite getrennt.** Ergab bei 1 Eingang und 3 Ausgaengen links
+   18..182 px, rechts 41..159 px -- **23 px Versatz** und eine Stufe in der
+   Mitte. Beide Seiten tragen denselben Gesamtbetrag (die Gebuehr zaehlt als
+   Ausgang) und brauchen deshalb denselben Massstab.
+2. **Die Mindestdicke treibt die Summen auseinander.** Bei 400 Eingaengen
+   kommen 61 Baender zu je gut zwei Bildpunkten zusammen und sprengen den
+   Strang, waehrend die Gegenseite mit einem Ausgang weit darunter bleibt --
+   wieder 22 px. `fit()` bringt daher beide Seiten zum Schluss auf denselben
+   Strang.
+
+Nachgerechnet ueber 1/1, 1/2, 3/2, 30/1, 400/1 und 60/60: **Versatz 0,00 px**.
+
+### Rand, Anschluesse, Pfeil
+
+Oben und unten bleibt Platz (`padY`), damit der Fluss frei liegt statt am
+Bildrand zu kleben. An beiden Enden ein gerades Anschlussstueck (`connector`),
+dazwischen die Kurve. **Kein Rechteck in der Mitte** -- Ein- und Ausgaenge
+treffen sich in einem Punkt; eine gezeichnete Strangflaeche erzeugte dort sonst
+eine harte senkrechte Kante. Jeder Ausgang endet in einer Pfeilspitze
+(`arrowLen`).
 
 **Die Gebuehr ist ein Ausgang wie jeder andere**, nur in eigener Farbe und an
 erster Stelle (im Original `voutWithFee.unshift({ type: 'fee', value: tx.fee })`).

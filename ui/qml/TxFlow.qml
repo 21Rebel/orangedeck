@@ -53,6 +53,12 @@ Item {
     property real edgeGap: Math.max(2, labelSize * 0.3)
     // Pfeilspitze am rechten Ende, damit die Richtung erkennbar ist
     property real arrowLen: Math.max(8, Math.min(width * 0.035, labelSize * 1.6))
+    // Oben und unten bleibt Platz -- der Fluss soll frei liegen, nicht am
+    // Bildrand kleben.
+    property real padY: Math.max(4, height * 0.09)
+    // Gerades Anschlussstueck an beiden Enden, bevor die Kurve beginnt
+    property real connector: Math.max(6, Math.min(width * 0.05, labelSize * 2))
+    readonly property real innerH: Math.max(8, height - 2 * padY)
 
     property var hovered: null
 
@@ -89,17 +95,18 @@ Item {
     // Ein Band behaelt seine Hoehe; nur die Luecken unterscheiden Rand und
     // Strang. `edgeY` ist die Lage am Rand (mit Luecken), `midY` die im Strang
     // (ohne). Beide Stapel werden am Ende auf die Hoehe normiert.
+    // **Ein Band hat ueberall dieselbe Dicke.** Der Massstab ist fuer beide
+    // Seiten derselbe: `waistStack`, die Hoehe des lueckenlosen Strangs. Am
+    // Rand kommen nur die Luecken dazu, die den Rest bis `innerH` fuellen --
+    // daher aussen breit und in der Mitte schmal, ohne dass irgendetwas
+    // gestaucht wird.
+    //
+    // Weil beide Seiten denselben Gesamtbetrag haben (die Gebuehr zaehlt als
+    // Ausgang), ergibt sich derselbe Strang -- Ein- und Ausgaenge treffen sich
+    // dadurch in der Mitte genau. Eigene Massstaebe je Seite hatten hier einen
+    // Versatz von rund 23 Bildpunkten erzeugt.
     function build(list, valueOf, scale) {
         var n = Math.min(list.length, root.maxBands);
-        var nBands = n + (list.length > n ? 1 : 0);
-        var nGaps = Math.max(0, nBands - 1);
-        // Der Lueckenanteil ergibt sich aus der gewuenschten Taille
-        var gap = nGaps > 0
-            ? Math.max(root.edgeGap * 0.5,
-                       root.height * (1 - root.waistTarget) / nGaps)
-            : 0;
-        // Nie so viel, dass fuer die Baender zu wenig bleibt
-        gap = Math.min(gap, root.height * 0.55 / Math.max(1, nGaps));
         var out = [];
         var i;
 
@@ -117,35 +124,51 @@ Item {
             add(rest, list.length - n, -1);
         }
 
-        // Am Rand teilen sich die Baender die Hoehe **abzueglich der Luecken**
         var sum = 0;
         for (i = 0; i < out.length; i++)
             sum += out[i].h;
-        var gapsTotal = gap * Math.max(0, out.length - 1);
-        var avail = Math.max(4, root.height - gapsTotal);
-        var f = sum > 0 ? avail / sum : 1;
-
-        // Im Strang behaelt jedes Band **dieselbe** Dicke -- es faellt nur die
-        // Luecke weg. Der Stapel wird dadurch von selbst um genau die Summe der
-        // Luecken schmaler und sitzt mittig. Genau das ergibt die Form: aussen
-        // breit, in der Mitte schmal. Wuerde man hier hochskalieren, damit die
-        // Mitte auch die volle Hoehe fuellt, bliebe alles rechteckig.
-        var stack = 0;
-        for (i = 0; i < out.length; i++) {
-            out[i].hEdge = out[i].h * f;
-            out[i].hMid = out[i].hEdge;
-            stack += out[i].hEdge;
+        // Sicherheitsnetz: die Mindestdicke darf den Strang nicht sprengen
+        if (sum > root.innerH) {
+            var f = root.innerH / sum;
+            for (i = 0; i < out.length; i++)
+                out[i].h *= f;
+            sum = root.innerH;
         }
-        var top = (root.height - stack) / 2;
 
-        var ey = 0, my = top;
-        for (i = 0; i < out.length; i++) {
-            out[i].edgeY = ey;
-            out[i].midY = my;
-            ey += out[i].hEdge + gap;
-            my += out[i].hMid;
-        }
+        out.sum = sum;
         return out;
+    }
+
+    // Beide Seiten auf **denselben** Strang bringen und die Lagen rechnen.
+    // Noetig, weil die Mindestdicke die Summen auseinandertreibt: bei 400
+    // Eingaengen kommen 61 Baender zu je mindestens gut zwei Bildpunkten
+    // zusammen und sprengen den Strang, waehrend die Gegenseite mit einem
+    // Ausgang weit darunter bleibt. Ohne Angleich klaffte die Mitte um rund
+    // 22 Bildpunkte auseinander.
+    function fit(bands, target) {
+        if (!bands.length)
+            return bands;
+        var i, sum = bands.sum || 0;
+        if (sum > 0 && Math.abs(sum - target) > 0.01) {
+            var f = target / sum;
+            for (i = 0; i < bands.length; i++)
+                bands[i].h *= f;
+            sum = target;
+        }
+        var nGaps = Math.max(0, bands.length - 1);
+        var gap = nGaps > 0 ? Math.max(0, (root.innerH - sum) / nGaps) : 0;
+        var top = root.padY + (root.innerH - sum) / 2;
+        var ey = nGaps > 0 ? root.padY : top;
+        var my = top;
+        for (i = 0; i < bands.length; i++) {
+            bands[i].hEdge = bands[i].h;
+            bands[i].hMid = bands[i].h;
+            bands[i].edgeY = ey;
+            bands[i].midY = my;
+            ey += bands[i].h + gap;
+            my += bands[i].h;
+        }
+        return bands;
     }
 
     function rebuild() {
@@ -155,17 +178,21 @@ Item {
             canvas.requestPaint();
             return;
         }
-        var scale = height / totalIn;
-        bandsIn = build(vin || [], function (e) {
+        // Der Strang ist `waistTarget` der nutzbaren Hoehe -- daraus der Massstab
+        var scale = (innerH * waistTarget) / totalIn;
+        var bi = build(vin || [], function (e) {
             return (e.prevout && e.prevout.value) || 0;
         }, scale);
         var bo = build(voutWithFee, function (e) {
             return e.value || 0;
         }, scale);
+        // Beide Seiten tragen denselben Gesamtbetrag -- also denselben Strang
+        var target = Math.min(innerH, Math.max(bi.sum || 0, bo.sum || 0));
+        bandsIn = fit(bi, target);
         // Die Gebuehr steht vorn und bekommt ihre eigene Farbe
         if (fee > 0 && bo.length)
             bo[0].fee = true;
-        bandsOut = bo;
+        bandsOut = fit(bo, target);
         canvas.requestPaint();
     }
 
@@ -174,16 +201,12 @@ Item {
 
         anchors.fill: parent
 
-        function band(ctx, x0, y0a, y0b, x1, y1a, y1b) {
-            var c1 = x0 + (x1 - x0) * 0.5;
-            var c2 = x1 - (x1 - x0) * 0.5;
-            ctx.beginPath();
-            ctx.moveTo(x0, y0a);
-            ctx.bezierCurveTo(c1, y0a, c2, y1a, x1, y1a);
-            ctx.lineTo(x1, y1b);
-            ctx.bezierCurveTo(c2, y1b, c1, y0b, x0, y0b);
-            ctx.closePath();
-            ctx.fill();
+        // Waagerecht ansetzende S-Kurve -- die Baender laufen an beiden Enden
+        // flach aus, dazwischen der Schwung.
+        function curve(ctx, x0, y0, x1, y1) {
+            ctx.bezierCurveTo(x0 + (x1 - x0) * 0.5, y0,
+                              x1 - (x1 - x0) * 0.5, y1,
+                              x1, y1);
         }
 
         onPaint: {
@@ -192,60 +215,68 @@ Item {
             if (!root.bandsIn.length)
                 return;
 
-            var w = width, h = height;
-            var midL = w * 0.42, midR = w * 0.58;
-            var i, b, lit;
+            var w = width;
+            // Gerade Anschluesse aussen, dazwischen die Kurve. Ein- und
+            // Ausgaenge treffen sich in **einem** Punkt in der Mitte -- kein
+            // Rechteck dazwischen, sonst entsteht dort eine harte Kante.
+            var xL = root.connector;
+            var xC = w * 0.5;
+            var xR = w - root.connector - root.arrowLen;
+            var i, b, lit, g;
 
+            // --- Eingaenge -------------------------------------------------
             for (i = 0; i < root.bandsIn.length; i++) {
                 b = root.bandsIn[i];
                 lit = root.hovered && root.hovered.side === "in" && root.hovered.index === b.i;
-                var g = ctx.createLinearGradient(0, 0, midL, 0);
-                g.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 1 : 0.8));
-                g.addColorStop(1, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 0.95 : 0.62));
+                g = ctx.createLinearGradient(0, 0, xC, 0);
+                g.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 1 : 0.85));
+                g.addColorStop(1, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 1 : 0.62));
                 ctx.fillStyle = g;
-                canvas.band(ctx, 0, b.edgeY, b.edgeY + b.hEdge, midL, b.midY, b.midY + b.hMid);
-            }
 
-            // Der Strang ist genau so hoch wie der lueckenlose Stapel
-            var sTop = root.bandsIn.length ? root.bandsIn[0].midY : 0;
-            var sBot = root.bandsIn.length
-                ? root.bandsIn[root.bandsIn.length - 1].midY + root.bandsIn[root.bandsIn.length - 1].hMid
-                : h;
-            var trunk = ctx.createLinearGradient(midL, 0, midR, 0);
-            trunk.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, 0.62));
-            trunk.addColorStop(1, Qt.rgba(root.outColor.r, root.outColor.g, root.outColor.b, 0.62));
-            ctx.fillStyle = trunk;
-            ctx.fillRect(midL, sTop, midR - midL, sBot - sTop);
-
-            for (i = 0; i < root.bandsOut.length; i++) {
-                b = root.bandsOut[i];
-                lit = root.hovered && root.hovered.side === "out" && root.hovered.index === b.i;
-                var col = b.fee ? root.feeColor : root.outColor;
-                var g2 = ctx.createLinearGradient(midR, 0, w, 0);
-                g2.addColorStop(0, Qt.rgba(col.r, col.g, col.b, b.fee ? 0.5 : (lit ? 0.95 : 0.62)));
-                g2.addColorStop(1, Qt.rgba(col.r, col.g, col.b, lit ? 1 : (b.fee ? 0.85 : 0.82)));
-                ctx.fillStyle = g2;
-                // Bis kurz vor den Rand, dann die Spitze
-                var ax = w - root.arrowLen;
-                canvas.band(ctx, midR, b.midY, b.midY + b.hMid, ax, b.edgeY, b.edgeY + b.hEdge);
-                var over = Math.min(b.hEdge * 0.35, root.arrowLen * 0.35);
                 ctx.beginPath();
-                ctx.moveTo(ax, b.edgeY - over);
-                ctx.lineTo(w, b.edgeY + b.hEdge / 2);
-                ctx.lineTo(ax, b.edgeY + b.hEdge + over);
+                ctx.moveTo(0, b.edgeY);
+                ctx.lineTo(xL, b.edgeY);
+                canvas.curve(ctx, xL, b.edgeY, xC, b.midY);
+                ctx.lineTo(xC, b.midY + b.hMid);
+                canvas.curve(ctx, xC, b.midY + b.hMid, xL, b.edgeY + b.hEdge);
+                ctx.lineTo(0, b.edgeY + b.hEdge);
                 ctx.closePath();
                 ctx.fill();
             }
 
-            // Die Gebuehr beschriften, wenn Platz ist
+            // --- Ausgaenge -------------------------------------------------
+            for (i = 0; i < root.bandsOut.length; i++) {
+                b = root.bandsOut[i];
+                lit = root.hovered && root.hovered.side === "out" && root.hovered.index === b.i;
+                var col = b.fee ? root.feeColor : root.outColor;
+                g = ctx.createLinearGradient(xC, 0, w, 0);
+                g.addColorStop(0, Qt.rgba(col.r, col.g, col.b, b.fee ? 0.55 : 0.62));
+                g.addColorStop(1, Qt.rgba(col.r, col.g, col.b, lit ? 1 : (b.fee ? 0.85 : 0.9)));
+                ctx.fillStyle = g;
+
+                var over = Math.min(b.hEdge * 0.4, root.arrowLen * 0.45);
+                ctx.beginPath();
+                ctx.moveTo(xC, b.midY);
+                canvas.curve(ctx, xC, b.midY, xR, b.edgeY);
+                // Pfeilspitze
+                ctx.lineTo(xR, b.edgeY - over);
+                ctx.lineTo(w, b.edgeY + b.hEdge / 2);
+                ctx.lineTo(xR, b.edgeY + b.hEdge + over);
+                ctx.lineTo(xR, b.edgeY + b.hEdge);
+                canvas.curve(ctx, xR, b.edgeY + b.hEdge, xC, b.midY + b.hMid);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Die Gebuehr beschriften, wenn sie da ist
             if (root.fee > 0 && root.bandsOut.length) {
                 var fb = root.bandsOut[0];
                 ctx.font = root.labelSize + "px sans-serif";
                 ctx.fillStyle = root.dimColor;
                 ctx.textAlign = "right";
-                var ty = fb.edgeY + fb.hEdge / 2 + root.labelSize * 0.35;
-                if (fb.hEdge < root.labelSize * 1.4)
-                    ty = fb.edgeY - root.labelSize * 0.35;
+                var ty = fb.edgeY - root.labelSize * 0.45;
+                if (ty < root.labelSize)
+                    ty = fb.edgeY + fb.hEdge + root.labelSize;
                 ctx.fillText("Gebühr " + root.fee + " sat", w - root.labelSize * 0.4, ty);
             }
         }
