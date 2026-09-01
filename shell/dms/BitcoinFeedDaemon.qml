@@ -8,13 +8,17 @@ import qs.Modules.Plugins
 PluginComponent {
     id: root
 
-    property string feedCommand: Quickshell.env("HOME") + "/.local/bin/btcfeed"
+    // Den **Dienst** anstossen, nicht einen eigenen Prozess starten: sonst gibt
+    // es zwei Verwalter fuer einen Daemon. Der Rueckfall auf das Programm
+    // greift, wenn die Unit nicht eingerichtet ist (tools/install-links.sh).
+    property var feedCommand: ["sh", "-c",
+        "systemctl --user start btcfeed.service 2>/dev/null || exec \"$HOME/.local/bin/btcfeed\""]
     property string statePath: (Quickshell.env("XDG_RUNTIME_DIR") || (Quickshell.env("HOME") + "/.local/state")) + "/btcfeed/state.json"
 
     Process {
         id: feedProc
 
-        command: [root.feedCommand]
+        command: root.feedCommand
         running: false
 
         stderr: StdioCollector {

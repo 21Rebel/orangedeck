@@ -505,3 +505,40 @@ bei Rasterweite 6:
     leere Flaeche weit weg             raeumt
 
 `onExited` bleibt als zweite Absicherung bestehen.
+
+
+## Der Daemon als Benutzerdienst -- zwei Fallen dabei
+
+`packaging/systemd/btcfeed.service`, eingerichtet von `tools/install-links.sh`.
+Vorher lief btcfeed als loser Prozess: er starb mit der Sitzung, und nach einem
+Absturz belebte ihn nur zufaellig der Waechter im DMS-Plugin.
+
+**(1) `ProtectSystem=strict` macht auch `$XDG_RUNTIME_DIR` schreibgeschuetzt.**
+btcfeed scheiterte schon an seiner Sperrdatei:
+
+    OSError: [Errno 30] Read-only file system: '/run/user/1000/btcfeed/btcfeed.lock'
+
+Richtig ist `RuntimeDirectory=btcfeed` -- systemd legt genau das Verzeichnis an,
+das btcfeed ohnehin benutzt, und macht es beschreibbar.
+`RuntimeDirectoryPreserve=restart` erhaelt es ueber einen Neustart hinweg, damit
+`block.json` (rund 460 kB) nicht jedes Mal neu geholt wird.
+
+**(2) `Restart=always` plus ein zweiter Verwalter ergibt eine Endlosschleife.**
+btcfeed beendet sich **mit 0**, wenn schon eine Instanz die Sperre haelt
+("btcfeed laeuft bereits"). Der Waechter im DMS-Plugin hatte parallel eine
+eigene Instanz gestartet; der Dienst startete, fand die Sperre, beendete sich
+sauber -- und systemd startete ihn wieder. 16 Runden in einer Minute.
+
+Behoben an beiden Enden:
+- `Restart=on-failure` statt `always`
+- **Die Waechter starten jetzt den Dienst statt eines eigenen Prozesses.**
+  `BitcoinFeedDaemon.qml` und `btcfeed-window` rufen
+  `systemctl --user start btcfeed.service` und fallen nur dann auf das Programm
+  zurueck, wenn die Unit nicht eingerichtet ist.
+
+Gegengeprueft: nach einem `kill -9` auf den Hauptprozess kam der Dienst
+selbstaendig zurueck (eine Instanz, ein Neustart, Daten sofort wieder da).
+
+**Nebenbei:** `systemctl show -p MainPID --value` liefert waehrend eines
+Neustarts `0`. Ein `kill -9 0` trifft dann die **ganze Prozessgruppe** --
+also immer auf Plausibilitaet pruefen, bevor man die Zahl an `kill` gibt.

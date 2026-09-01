@@ -1,0 +1,55 @@
+# btcfeed als Benutzerdienst. Vorher lief er als loser Prozess: er starb mit
+# der Sitzung, und nach einem Absturz belebte ihn nur zufaellig der Waechter
+# im DMS-Plugin wieder.
+#
+# Einrichten uebernimmt tools/install-links.sh.
+
+[Unit]
+Description=btcfeed -- Live-Ansicht des Bitcoin-Mempools
+Documentation=file:%h/Schreibtisch/btcfeed/README.md
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/btcfeed
+# **Nicht** `always`. btcfeed beendet sich mit 0, wenn schon eine Instanz die
+# Sperre haelt ("btcfeed laeuft bereits") -- mit `always` wuerde systemd das
+# endlos wiederholen. Genau so am 01.09.2026 in eine Schleife von 16 Neustarts
+# gelaufen, weil der Waechter im DMS-Plugin parallel eine eigene Instanz
+# gestartet hatte.
+Restart=on-failure
+RestartSec=3
+# Der Dienst haelt seinen Zustand im tmpfs und ueberlebt einen Neustart nicht --
+# das ist Absicht, er baut ihn in Sekunden wieder auf.
+
+# --- Absicherung ------------------------------------------------------------
+# Der Dienst liest nur oeffentliche Daten und bietet sie auf 127.0.0.1 an. Er
+# braucht vom System praktisch nichts, also bekommt er auch nichts. Passt zum
+# Grundsatz in ZIELBILD.md: keine Angriffsflaeche.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+# ProtectSystem=strict macht das ganze Dateisystem schreibgeschuetzt -- auch
+# $XDG_RUNTIME_DIR. Ohne die naechsten beiden Zeilen scheitert btcfeed schon an
+# seiner Sperrdatei ("Read-only file system: /run/user/1000/btcfeed.lock").
+# RuntimeDirectory legt genau das Verzeichnis an, das btcfeed ohnehin benutzt,
+# und macht es beschreibbar; 'restart' erhaelt es ueber einen Neustart hinweg,
+# damit block.json nicht jedes Mal neu geholt werden muss.
+RuntimeDirectory=btcfeed
+RuntimeDirectoryPreserve=restart
+# Faellt XDG_RUNTIME_DIR ganz aus, weicht btcfeed hierhin aus
+ReadWritePaths=%h/.local/state
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=default.target

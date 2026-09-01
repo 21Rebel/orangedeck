@@ -33,9 +33,12 @@ def main():
         subprocess.run(["niri", "msg", "action", "focus-window", "--id", str(wid)])
         return 0
 
-    # Feed sicherstellen (beendet sich sofort wieder, falls schon einer laeuft)
+    # Feed sicherstellen -- ueber den Dienst, damit es nur einen Verwalter gibt.
+    # Ist die Unit nicht eingerichtet, faellt es auf das Programm zurueck.
+    started = subprocess.run(["systemctl", "--user", "start", "btcfeed.service"],
+                             capture_output=True).returncode == 0
     feed = os.path.expanduser("~/.local/bin/btcfeed")
-    if os.path.exists(feed):
+    if not started and os.path.exists(feed):
         subprocess.Popen([feed], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          start_new_session=True)
 

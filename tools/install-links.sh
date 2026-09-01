@@ -49,4 +49,13 @@ for f in $QMLFILES; do
   link "$HOME/.local/share/btcfeed/qml/$f" "$Q/$f"
 done
 
+# --- Benutzerdienst ---------------------------------------------------------
+# Ohne ihn laeuft btcfeed als loser Prozess und stirbt mit der Sitzung.
+UNIT="$HOME/.config/systemd/user/btcfeed.service"
+mkdir -p "$(dirname "$UNIT")"
+[ -L "$UNIT" ] && rm -f "$UNIT"
+ln -sf "$R/packaging/systemd/btcfeed.service" "$UNIT"
+systemctl --user daemon-reload
+systemctl --user enable btcfeed.service >/dev/null 2>&1 && echo "Dienst btcfeed eingerichtet"
+
 echo "Verlinkt gegen $R"
