@@ -37,6 +37,13 @@ Item {
     // Unterhalb dieser Schwelle wird ueberhoeht gezeichnet; der Tooltip nennt
     // dann den genauen Betrag und sagt es dazu.
     readonly property real minBand: Math.max(2, labelSize * 0.25)
+    // In der Mitte laeuft alles auf eine **Taille** zusammen -- daher die
+    // geschwungene Form. Waere der Strang so hoch wie die Raender, blieben die
+    // Baender waagerecht und das Bild wirkte wie ein Balken.
+    property real waistFrac: 0.62
+    // Abstand zwischen zwei Baendern am Rand. In der Taille sind sie
+    // lueckenlos, dort bilden sie den geschlossenen Strang.
+    property real edgeGap: Math.max(2, labelSize * 0.35)
     // Die Gebuehr zweigt durchgehend mit dieser Dicke ab -- Ansatz wie Ende.
     readonly property real feeThickness: Math.max(fee * (mainH / Math.max(1, totalIn)), minBand)
     // Was nach dem Abzweig fuer die Ausgaenge bleibt
@@ -73,42 +80,44 @@ Item {
     function build(list, valueOf, total, scale, fitInto) {
         var out = [];
         var n = Math.min(list.length, root.maxBands);
+        // Am Rand mit Abstand, in der Taille lueckenlos
         var gap = list.length > 1
-            ? Math.min(root.height * 0.02, root.height * 0.25 / Math.max(1, n)) : 0;
-        var edgeY = 0, midY = 0;
-        for (var i = 0; i < n; i++) {
-            var v = valueOf(list[i]) || 0;
+            ? Math.min(root.edgeGap, fitInto * 0.3 / Math.max(1, n)) : 0;
+        var waistH = fitInto * root.waistFrac;
+        var waistTop = (fitInto - waistH) / 2;
+        var edgeY = 0, midY = waistTop;
+
+        function push(v, more) {
             var h = Math.max(root.minBand, v * scale);
-            out.push({ "i": i, "v": v, "edgeY": edgeY, "midY": midY, "h": h,
-                       "hEdge": Math.max(1, h - gap) });
+            var wh = h * root.waistFrac;
+            out.push({ "i": more ? -1 : out.length, "v": v,
+                       "edgeY": edgeY, "hEdge": Math.max(1, h - gap),
+                       "midY": midY, "h": wh, "more": more || 0 });
             edgeY += h;
-            midY += h;
+            midY += wh;
         }
+
+        for (var i = 0; i < n; i++)
+            push(valueOf(list[i]) || 0, 0);
         if (list.length > n) {
             var rest = 0;
             for (var k = n; k < list.length; k++)
                 rest += valueOf(list[k]) || 0;
-            var rh = Math.max(root.minBand, rest * scale);
-            out.push({ "i": -1, "v": rest, "edgeY": edgeY, "midY": midY, "h": rh,
-                       "hEdge": Math.max(1, rh - gap), "more": list.length - n });
-            edgeY += rh;
+            push(rest, list.length - n);
         }
 
-        // Die Mindesthoehe von einem Bildpunkt summiert sich: bei sehr vielen
-        // Eingaengen laeuft der Stapel sonst unten aus dem Bild. Nachgemessen
-        // waren es bei 120 Eingaengen auf 220 px gut zwei Pixel. Deshalb zum
-        // Schluss einmal auf die verfuegbare Hoehe normieren.
         // Die Mindestdicke summiert sich -- zum Schluss auf den verfuegbaren
         // Platz normieren, sonst laeuft der Stapel unten heraus.
         if (edgeY > fitInto && edgeY > 0) {
             var f = fitInto / edgeY;
-            var y = 0;
+            var y = 0, my = waistTop;
             for (var m = 0; m < out.length; m++) {
-                out[m].h *= f;
                 out[m].hEdge = Math.max(0.5, out[m].hEdge * f);
+                out[m].h *= f;
                 out[m].edgeY = y;
-                out[m].midY = y;
-                y += out[m].h;
+                out[m].midY = my;
+                y += (out[m].hEdge + gap);
+                my += out[m].h;
             }
         }
         return out;
@@ -172,13 +181,14 @@ Item {
                 canvas.band(ctx, 0, b.edgeY, b.edgeY + b.hEdge, midL, b.midY, b.midY + b.h);
             }
 
-            // Der Strang in der Mitte
-            ctx.fillStyle = Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, 0.6);
+            // Der Strang in der Mitte -- nur so hoch wie die Taille
+            var waistH = h * root.waistFrac;
+            var waistTop = (h - waistH) / 2;
             var trunk = ctx.createLinearGradient(midL, 0, midR, 0);
             trunk.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, 0.6));
             trunk.addColorStop(1, Qt.rgba(root.outColor.r, root.outColor.g, root.outColor.b, 0.6));
             ctx.fillStyle = trunk;
-            ctx.fillRect(midL, 0, midR - midL, h);
+            ctx.fillRect(midL, waistTop, midR - midL, waistH);
 
             // Ausgaenge: aus der Mitte an den rechten Rand
             for (var j = 0; j < root.bandsOut.length; j++) {
@@ -199,7 +209,8 @@ Item {
             if (root.fee > 0) {
                 var lit3 = root.hovered && root.hovered.side === "fee";
                 var endT = root.feeThickness;     // durchgehend gleich dick
-                var top = h - endT;               // setzt unter den Ausgaengen an
+                // Setzt am unteren Rand der Taille an, nicht am Bildrand
+                var top = waistTop + waistH - endT * root.waistFrac;
                 var endY = height - root.feeLane * 0.45;   // Ziel im Streifen
                 var c1 = midR + (w - midR) * 0.45;
                 var c2 = w - (w - midR) * 0.35;

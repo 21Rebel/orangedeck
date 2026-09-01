@@ -845,6 +845,13 @@ Ein Zurueck-Knopf fuehrt den Weg wieder heraus (`trail`).
 Eingaenge links, Ausgaenge rechts, die Hoehe jedes Bandes im Verhaeltnis zum
 Betrag; in der Mitte laufen alle zu einem Strang zusammen.
 
+**Die Taille macht die Form.** Der Strang in der Mitte ist nur `waistFrac`
+(62 %) so hoch wie die Raender. Ohne sie blieben die Baender waagerecht und das
+Bild waere ein Balken -- erst durch das Zusammenlaufen kruemmen sie sich, wie
+bei mempool.space. Am Rand haben die Baender ausserdem Abstand voneinander
+(`edgeGap`), in der Taille sind sie lueckenlos und bilden den geschlossenen
+Strang.
+
 **Das Zusammenlaufen ist keine Vereinfachung, sondern die Wahrheit:** welcher
 Eingang welchen Ausgang bezahlt, laesst sich in Bitcoin **nicht** sagen. Ein
 Sankey-Diagramm mit Einzelverbindungen waere eine Erfindung. mempool.space
