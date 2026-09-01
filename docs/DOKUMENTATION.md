@@ -1035,3 +1035,47 @@ Dazu mehr Rand (`padY` von 9 auf 11 %) und ein Deckel bei 34 statt 26
 Einheiten. Wird der Inhalt dadurch laenger als das Fenster, rollt der Explorer
 -- er hat wie die Miner-Ansicht einen schmalen Balken rechts, der nur
 erscheint, solange es etwas zu rollen gibt.
+
+
+## Farben nicht im RGB-Raum mischen
+
+Blau (H 216°) und Orange (H 33°) liegen **177° auseinander** -- praktisch
+gegenueber. Ihre RGB-Mitte faellt dadurch auf **28 % Saettigung** und wirkt
+grau; der Verlauf sah in der Mitte aus wie ausgewaschen.
+
+Ueber den Farbkreis gemischt bleibt die Saettigung erhalten. Aufwaerts fuehrt
+der Weg ueber **Magenta (H 305°)**, abwaerts ueber Gruen (H 125°). Magenta
+passt zum Orange und entspricht dem, was das Original tut, das von Violett nach
+Blau laeuft. `mixHue()` interpoliert deshalb in HSV entlang des gewaehlten
+Bogens (`hueUp`), `flowColor(t)` liefert die Farbe an der Stelle t; die
+Verlaeufe bekommen fuenf Stufen statt zwei.
+
+## Die Naht in der Mitte
+
+Ein- und Ausgaenge stossen bei `w/2` aneinander. Durch die Kantenglaettung
+blieb dort ein feiner Strich stehen, und das Bild sah nach **zwei Formen** aus
+statt nach einem Fluss. Beide Seiten ueberlappen jetzt um einen dreiviertel
+Bildpunkt (`seam`).
+
+## Wie viele Faeden gezeigt werden
+
+`maxStrands = 24` im Original meint nur, wie viele **vollstaendig** auf den
+Schirm passen sollen -- gezeichnet werden bis zu `lineLimit = 250`. Mit 24 als
+harter Grenze fehlten hier sichtbar Eingaenge.
+
+Jetzt bis zu 250, begrenzt durch die Hoehe (`bandLimit`), und die Mindestdicke
+ist von 2,0 auf 1,2 Bildpunkte gesenkt. Der Deckel der Zeichenflaeche liegt bei
+48 statt 34 Einheiten:
+
+    Eingaenge   Flaeche   gezeigte Baender   frueher
+        60       624 px         60             24
+       120       624 px        120             24
+       250       624 px        250             24
+       400       624 px        250             24
+
+## Kopieren
+
+QtQuick hat keine eigene Schnittstelle zur Zwischenablage. Der uebliche Weg ist
+ein unsichtbares `TextEdit`, dessen Inhalt man auswaehlt und kopieren laesst.
+TxID, Blockhash und Adresse sind anklickbar; daneben steht "kopieren" und fuer
+anderthalb Sekunden "kopiert".

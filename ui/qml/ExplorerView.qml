@@ -35,6 +35,34 @@ Item {
     property bool busy: false
     property var trail: []            // Weg dorthin, fuer den Zurueck-Knopf
 
+    // In die Zwischenablage. QtQuick hat dafuer keine eigene Schnittstelle --
+    // der uebliche Weg ist ein unsichtbares Textfeld, das man auswaehlt und
+    // kopieren laesst.
+    TextEdit {
+        id: clipboard
+
+        visible: false
+    }
+
+    property string copied: ""
+
+    function copyText(t) {
+        if (!t)
+            return;
+        clipboard.text = String(t);
+        clipboard.selectAll();
+        clipboard.copy();
+        root.copied = String(t);
+        copiedTimer.restart();
+    }
+
+    Timer {
+        id: copiedTimer
+
+        interval: 1400
+        onTriggered: root.copied = ""
+    }
+
     function grp(n) {
         if (n === undefined || n === null)
             return "–";
@@ -353,13 +381,38 @@ Item {
                 font.pixelSize: root.scaleUnit * 0.62
             }
 
-            Text {
-                width: flick.width
-                elide: Text.ElideMiddle
-                text: root.result.txid
-                color: root.accentColor
-                font.pixelSize: root.scaleUnit * 0.8
-                font.family: "monospace"
+            Row {
+                spacing: root.uiFont * 0.5
+
+                Text {
+                    id: txidLabel
+
+                    width: Math.min(flick.width - root.uiFont * 6, implicitWidth)
+                    elide: Text.ElideMiddle
+                    text: root.result.txid
+                    color: root.accentColor
+                    font.pixelSize: root.scaleUnit * 0.8
+                    font.family: "monospace"
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.copyText(root.result.txid)
+                    }
+                }
+
+                Text {
+                    anchors.verticalCenter: txidLabel.verticalCenter
+                    text: root.copied === root.result.txid ? "kopiert" : "kopieren"
+                    color: root.copied === root.result.txid ? root.goodColor : root.dimColor
+                    font.pixelSize: root.uiFont * 0.8
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.copyText(root.result.txid)
+                    }
+                }
             }
 
             Row {
@@ -424,7 +477,7 @@ Item {
                 readonly property int bandCount: Math.max((root.result.vin || []).length,
                                                           (root.result.vout || []).length
                                                           + ((root.result.fee || 0) > 0 ? 1 : 0))
-                height: Math.max(root.scaleUnit * 9, Math.min(root.scaleUnit * 34,
+                height: Math.max(root.scaleUnit * 9, Math.min(root.scaleUnit * 48,
                         root.scaleUnit * 1.5 * bandCount + root.scaleUnit * 5))
                 vin: root.result.vin || []
                 vout: root.result.vout || []
@@ -644,13 +697,38 @@ Item {
                 font.bold: true
             }
 
-            Text {
-                width: flick.width
-                elide: Text.ElideMiddle
-                text: root.result.id
-                color: root.dimColor
-                font.pixelSize: root.scaleUnit * 0.62
-                font.family: "monospace"
+            Row {
+                spacing: root.uiFont * 0.5
+
+                Text {
+                    id: hashLabel
+
+                    width: Math.min(flick.width - root.uiFont * 6, implicitWidth)
+                    elide: Text.ElideMiddle
+                    text: root.result.id
+                    color: root.dimColor
+                    font.pixelSize: root.scaleUnit * 0.62
+                    font.family: "monospace"
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.copyText(root.result.id)
+                    }
+                }
+
+                Text {
+                    anchors.verticalCenter: hashLabel.verticalCenter
+                    text: root.copied === root.result.id ? "kopiert" : "kopieren"
+                    color: root.copied === root.result.id ? root.goodColor : root.dimColor
+                    font.pixelSize: root.uiFont * 0.8
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.copyText(root.result.id)
+                    }
+                }
             }
 
             Row {
@@ -764,13 +842,38 @@ Item {
                 font.pixelSize: root.scaleUnit * 0.62
             }
 
-            Text {
-                width: flick.width
-                elide: Text.ElideMiddle
-                text: root.result.address
-                color: root.accentColor
-                font.pixelSize: root.scaleUnit * 0.8
-                font.family: "monospace"
+            Row {
+                spacing: root.uiFont * 0.5
+
+                Text {
+                    id: addrLabel
+
+                    width: Math.min(flick.width - root.uiFont * 6, implicitWidth)
+                    elide: Text.ElideMiddle
+                    text: root.result.address
+                    color: root.accentColor
+                    font.pixelSize: root.scaleUnit * 0.8
+                    font.family: "monospace"
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.copyText(root.result.address)
+                    }
+                }
+
+                Text {
+                    anchors.verticalCenter: addrLabel.verticalCenter
+                    text: root.copied === root.result.address ? "kopiert" : "kopieren"
+                    color: root.copied === root.result.address ? root.goodColor : root.dimColor
+                    font.pixelSize: root.uiFont * 0.8
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.copyText(root.result.address)
+                    }
+                }
             }
 
             Row {

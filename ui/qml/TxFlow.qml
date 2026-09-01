@@ -41,9 +41,13 @@ Item {
     // keep fully on-screen") und begrenzt zusaetzlich auf `lineLimit = 250`.
     // Hier zusaetzlich an die Hoehe gekoppelt: unter etwa sieben Bildpunkten je
     // Band bleibt fuer die Luecken nichts mehr uebrig.
-    property int maxBands: 24
-    readonly property int bandLimit: Math.max(4, Math.min(maxBands, Math.floor(innerH / 7)))
-    property real minBand: Math.max(2, labelSize * 0.22)
+    // Das Original zeichnet bis zu `lineLimit = 250` Faeden; `maxStrands = 24`
+    // meint nur, wie viele **vollstaendig** auf den Schirm passen sollen. Mit
+    // 24 als harter Grenze fehlten hier sichtbar Eingaenge.
+    property int maxBands: 250
+    readonly property int bandLimit: Math.max(4, Math.min(maxBands,
+                                     Math.floor(innerH / Math.max(1.6, minBand + 0.6))))
+    property real minBand: Math.max(1.2, labelSize * 0.16)
     // Abstand zwischen zwei Baendern **am Rand**. Im Strang sind sie
     // lueckenlos -- daher wirkt er geschlossen, ohne dass ein Band schrumpft.
     // Wie schmal der Strang gegenueber den Raendern wird. **Nicht** durch
@@ -97,13 +101,32 @@ Item {
     // Gerades Anschlussstueck an beiden Enden, bevor die Kurve beginnt
     property real connector: Math.max(6, Math.min(width * 0.05, labelSize * 2))
     readonly property real innerH: Math.max(8, height - 2 * padY)
-    // Der Farbwechsel sass frueher in der Strangflaeche. Die gibt es nicht
-    // mehr, also tragen ihn die Baender: die Eingaenge laufen zur Mitte hin in
-    // diesen Ton, die Ausgaenge setzen dort an. So bleibt der Verlauf
-    // durchgehend, ohne harte Kante in der Mitte.
-    readonly property color midColor: Qt.rgba((inColor.r + outColor.r) / 2,
-                                              (inColor.g + outColor.g) / 2,
-                                              (inColor.b + outColor.b) / 2, 1)
+    // **Nicht im RGB-Raum mischen.** Blau (H 216°) und Orange (H 33°) liegen
+    // 177° auseinander, also fast gegenueber -- ihre RGB-Mitte faellt auf 28 %
+    // Saettigung und wirkt grau. Nachgerechnet am 01.09.2026.
+    //
+    // Ueber den Farbkreis gemischt bleibt die Saettigung erhalten. Aufwaerts
+    // fuehrt der Weg ueber Magenta (H 305°), abwaerts ueber Gruen (H 125°).
+    // Magenta passt zum Orange und entspricht dem, was das Original tut, das
+    // von Violett nach Blau laeuft.
+    property bool hueUp: true
+
+    function mixHue(a, b, t) {
+        var ha = a.hsvHue < 0 ? 0 : a.hsvHue * 360;
+        var hb = b.hsvHue < 0 ? 0 : b.hsvHue * 360;
+        var d = root.hueUp ? ((hb - ha) + 360) % 360 : -(((ha - hb) + 360) % 360);
+        var h = ((ha + d * t) % 360 + 360) % 360;
+        var sa = a.hsvSaturation, sb = b.hsvSaturation;
+        var va = a.hsvValue, vb = b.hsvValue;
+        return Qt.hsva(h / 360, sa + (sb - sa) * t, va + (vb - va) * t, 1);
+    }
+
+    // Farbe an der Stelle t (0 = ganz links, 1 = ganz rechts)
+    function flowColor(t) {
+        return mixHue(root.inColor, root.outColor, Math.max(0, Math.min(1, t)));
+    }
+
+    readonly property color midColor: flowColor(0.5)
 
     property var hovered: null
 
@@ -266,6 +289,11 @@ Item {
             // Rechteck dazwischen, sonst entsteht dort eine harte Kante.
             var xL = root.connector;
             var xC = w * 0.5;
+            // Die beiden Seiten stossen in der Mitte aneinander. Ohne
+            // Ueberlappung bleibt dort durch die Kantenglaettung ein feiner
+            // Strich stehen, und das Bild sieht nach zwei Formen aus statt nach
+            // einem Fluss. Ein halber Bildpunkt auf jeder Seite genuegt.
+            var seam = 0.75;
             var xR = w - root.connector - root.arrowLen;
             var i, b, lit, g;
 
@@ -274,17 +302,18 @@ Item {
                 b = root.bandsIn[i];
                 lit = root.hovered && root.hovered.side === "in" && root.hovered.index === b.i;
                 g = ctx.createLinearGradient(0, 0, xC, 0);
-                g.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 1 : 0.9));
-                g.addColorStop(0.55, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 1 : 0.8));
-                g.addColorStop(1, Qt.rgba(root.midColor.r, root.midColor.g, root.midColor.b, lit ? 1 : 0.8));
+                for (var k = 0; k <= 4; k++) {
+                    var ck = root.flowColor(k / 8);   // linke Haelfte: t von 0 bis 0,5
+                    g.addColorStop(k / 4, Qt.rgba(ck.r, ck.g, ck.b, lit ? 1 : 0.85));
+                }
                 ctx.fillStyle = g;
 
                 ctx.beginPath();
                 ctx.moveTo(0, b.edgeY);
                 ctx.lineTo(xL, b.edgeY);
-                canvas.curve(ctx, xL, b.edgeY, xC, b.midY);
-                ctx.lineTo(xC, b.midY + b.hMid);
-                canvas.curve(ctx, xC, b.midY + b.hMid, xL, b.edgeY + b.hEdge);
+                canvas.curve(ctx, xL, b.edgeY, xC + seam, b.midY);
+                ctx.lineTo(xC + seam, b.midY + b.hMid);
+                canvas.curve(ctx, xC + seam, b.midY + b.hMid, xL, b.edgeY + b.hEdge);
                 ctx.lineTo(0, b.edgeY + b.hEdge);
                 ctx.closePath();
                 ctx.fill();
@@ -297,12 +326,14 @@ Item {
                 var col = b.fee ? root.feeColor : root.outColor;
                 g = ctx.createLinearGradient(xC, 0, w, 0);
                 if (b.fee) {
-                    g.addColorStop(0, Qt.rgba(root.midColor.r, root.midColor.g, root.midColor.b, 0.7));
+                    // Die Gebuehr laeuft aus der Mitte in ihren eigenen Ton
+                    g.addColorStop(0, Qt.rgba(root.midColor.r, root.midColor.g, root.midColor.b, 0.75));
                     g.addColorStop(1, Qt.rgba(col.r, col.g, col.b, lit ? 1 : 0.85));
                 } else {
-                    g.addColorStop(0, Qt.rgba(root.midColor.r, root.midColor.g, root.midColor.b, lit ? 1 : 0.8));
-                    g.addColorStop(0.45, Qt.rgba(col.r, col.g, col.b, lit ? 1 : 0.82));
-                    g.addColorStop(1, Qt.rgba(col.r, col.g, col.b, lit ? 1 : 0.95));
+                    for (var q = 0; q <= 4; q++) {
+                        var cq = root.flowColor(0.5 + q / 8);   // rechte Haelfte
+                        g.addColorStop(q / 4, Qt.rgba(cq.r, cq.g, cq.b, lit ? 1 : 0.88));
+                    }
                 }
                 ctx.fillStyle = g;
 
@@ -312,15 +343,15 @@ Item {
                 var tip = root.tipFor(b.hEdge);
                 var xT = w - tip;
                 ctx.beginPath();
-                ctx.moveTo(xC, b.midY);
-                canvas.curve(ctx, xC, b.midY, xR, b.edgeY);
+                ctx.moveTo(xC - seam, b.midY);
+                canvas.curve(ctx, xC - seam, b.midY, xR, b.edgeY);
                 ctx.lineTo(xT, b.edgeY);
                 // Die Spitze laeuft **innerhalb** der Bandbreite zusammen --
                 // ein Ueberstand an den Ecken sieht nach Fehler aus.
                 ctx.lineTo(w, b.edgeY + b.hEdge / 2);
                 ctx.lineTo(xT, b.edgeY + b.hEdge);
                 ctx.lineTo(xR, b.edgeY + b.hEdge);
-                canvas.curve(ctx, xR, b.edgeY + b.hEdge, xC, b.midY + b.hMid);
+                canvas.curve(ctx, xR, b.edgeY + b.hEdge, xC - seam, b.midY + b.hMid);
                 ctx.closePath();
                 ctx.fill();
             }
