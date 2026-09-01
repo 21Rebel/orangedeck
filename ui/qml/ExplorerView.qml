@@ -374,9 +374,15 @@ Item {
 
             TxFlow {
                 width: flick.width
-                height: Math.max(root.scaleUnit * 5, Math.min(root.scaleUnit * 11,
-                        root.scaleUnit * 0.5 * Math.max((root.result.vin || []).length,
-                                                        (root.result.vout || []).length) + root.scaleUnit * 3))
+                // Die Rundung lebt vom Verhaeltnis senkrecht zu waagerecht.
+                // Das Original zeichnet 1200 x 600; hier ist die Flaeche viel
+                // flacher, deshalb bekommt sie mit jedem Band mehr Hoehe und
+                // reicht weiter hinauf als frueher.
+                // Die Flaeche waechst mit der Zahl der Baender, der Strang
+                // bleibt gleich dick -- so ziehen sich die Luecken auf.
+                height: Math.max(root.scaleUnit * 7, Math.min(root.scaleUnit * 26,
+                        root.scaleUnit * 1.3 * Math.max((root.result.vin || []).length,
+                                                        (root.result.vout || []).length) + root.scaleUnit * 4))
                 vin: root.result.vin || []
                 vout: root.result.vout || []
                 fee: root.result.fee || 0

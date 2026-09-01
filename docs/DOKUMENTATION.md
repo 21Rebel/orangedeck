@@ -861,10 +861,44 @@ Zwei Irrwege dahin, beide lehrreich:
    hoch wie die Raender -- und alles bleibt ein Rechteck.
 
 Richtig ist: **ein Band hat ueberall dieselbe Dicke.** Der Massstab ist fuer
-beide Seiten derselbe -- `waistTarget` (0,72) mal der nutzbaren Hoehe ergibt den
-Strang, daraus der Massstab. Am Rand kommen nur die Luecken dazu, die den Rest
+beide Seiten derselbe. Am Rand kommen nur die Luecken dazu, die den Rest
 auffuellen. Bei **einem** Band gibt es keine Luecke und damit keine Taille; da
 ist auch nichts zusammenzufuehren.
+
+### Der Strang ist ein fester Wert, keine Quote
+
+Der wichtigste Kniff aus dem Original, und der schwerste zu sehen. Dort steht:
+
+    combinedWeight = min(maxCombinedWeight /* 100 */, floor((txWidth - 2*midWidth) / 6))
+    innerTop       = height / 2 - combinedWeight / 2
+    spacing        = max(4, (height - visibleWeight) / gaps)
+    maxStrands     = 24   // "number of inputs/outputs to keep fully on-screen"
+
+`combinedWeight` ist eine **Pixelzahl**, die unabhaengig von der Bandzahl
+gleich bleibt -- die Zeichenflaeche waechst stattdessen mit der Zahl der
+Baender. Dadurch bleibt der Strang immer gleich dick, waehrend sich die Luecken
+am Rand immer weiter aufziehen: satt und ruhig bei einem Eingang, weit
+aufgefaechert bei zwanzig.
+
+Eine feste **Quote** kann das nicht. Bei ihr ist das Verhaeltnis von Luecke zu
+Band immer `(1 - q) / q`, egal wie viele Baender es sind -- die Rundung waere
+bei zwei wie bei zwanzig dieselbe. Genau daran hing der erste Versuch mit
+`waistTarget`.
+
+Mit festem Strang (`trunkPx`) und mitwachsender Flaeche, nachgerechnet:
+
+    Baender   Flaeche   Strang   Band     Luecke   Verhaeltnis
+       1        91 px    40 px   40,3 px    --         --
+       2        91 px    40 px   20,2 px   34,3 px    1,7
+       5       137 px    40 px    8,1 px   17,9 px    2,2
+      10       221 px    40 px    4,0 px   15,7 px    3,9
+      24       338 px    48 px    2,0 px   10,0 px    5,0
+
+Das Original kommt bei 24 Baendern auf 5,2 -- dieselbe Groessenordnung.
+
+`bandLimit` begrenzt zusaetzlich auf 24 Baender (im Original `maxStrands`),
+gekoppelt an die Hoehe: unter etwa sieben Bildpunkten je Band bleibt fuer die
+Luecken nichts mehr uebrig.
 
 ### Die Mitte muss exakt treffen
 

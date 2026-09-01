@@ -36,20 +36,46 @@ Item {
     property color textColor: "#f2eef8"
     property color dimColor: "#9a94a6"
     property real labelSize: 10
-    // Mehr Baender bringen nichts -- der Rest wird zusammengefasst. Das
-    // Original erlaubt 250, hier ist deutlich weniger Platz.
-    property int maxBands: 60
+    // Wie viele Baender einzeln gezeigt werden; der Rest wird zusammengefasst.
+    // Das Original nennt das `maxStrands = 24` ("number of inputs/outputs to
+    // keep fully on-screen") und begrenzt zusaetzlich auf `lineLimit = 250`.
+    // Hier zusaetzlich an die Hoehe gekoppelt: unter etwa sieben Bildpunkten je
+    // Band bleibt fuer die Luecken nichts mehr uebrig.
+    property int maxBands: 24
+    readonly property int bandLimit: Math.max(4, Math.min(maxBands, Math.floor(innerH / 7)))
     property real minBand: Math.max(2, labelSize * 0.22)
     // Abstand zwischen zwei Baendern **am Rand**. Im Strang sind sie
     // lueckenlos -- daher wirkt er geschlossen, ohne dass ein Band schrumpft.
-    // Wie schmal der Strang gegenueber den Raendern werden soll. **Nicht** als
-    // Verjuengung der Baender -- die behalten ihre Dicke. Stattdessen wird der
-    // Lueckenanteil am Rand daraus abgeleitet: was dort zwischen den Baendern
-    // frei bleibt, faellt im Strang weg, und genau darum wird er schmaler.
+    // Wie schmal der Strang gegenueber den Raendern wird. **Nicht** durch
+    // Verjuengung -- die Baender behalten ihre Dicke. Der Lueckenanteil am Rand
+    // wird daraus abgeleitet: was dort zwischen den Baendern frei bleibt, faellt
+    // im Strang weg, und genau darum ist er schmaler.
     //
-    // Bei einem einzigen Band gibt es keine Luecke und damit auch keine
-    // Taille -- da ist auch nichts zusammenzufuehren.
-    property real waistTarget: 0.72
+    // Der Wert kommt aus dem Original (mempool.space, tx-bowtie-graph, am
+    // 01.09.2026 gelesen):
+    //
+    //   combinedWeight = min(maxCombinedWeight /* 100 */, floor((txWidth - 2*midWidth)/6))
+    //   innerTop       = height/2 - combinedWeight/2
+    //   spacing        = max(4, (height - visibleWeight) / gaps)
+    //
+    // Bei ihrer Vorgabe 1200 x 600 sind das 100 von 600 Bildpunkten -- alle
+    // Baender zusammen belegen **ein Sechstel** der Hoehe, die Luecken den
+    // ganzen Rest. Genau daher die duennen Faeden und die weite Rundung. Hier
+    // etwas grosszuegiger, weil die Flaeche viel flacher ist als ihre.
+    //
+    // Bei einem einzigen Band gibt es keine Luecke und damit keine Taille --
+    // da ist auch nichts zusammenzufuehren.
+    // **Ein fester Wert, keine Quote.** Im Original ist `combinedWeight` eine
+    // Pixelzahl (100), die unabhaengig von der Bandzahl gleich bleibt; die
+    // Zeichenflaeche waechst stattdessen mit der Zahl der Baender. Dadurch
+    // bleibt der Strang immer gleich dick, waehrend sich die Luecken am Rand
+    // immer weiter aufziehen -- daher die weite Rundung bei vielen Eingaengen
+    // und das satte Band bei einem einzigen.
+    //
+    // Eine feste Quote kann das nicht: bei ihr waere das Verhaeltnis von
+    // Luecke zu Band immer dasselbe, egal wie viele es sind.
+    property real trunkPx: labelSize * 5
+    readonly property real trunkH: Math.max(minBand, Math.min(innerH * 0.62, trunkPx))
     // Wie stark die Baender schwingen. 0,5 ergibt eine brave Sinusform, hoehere
     // Werte lassen sie flacher ansetzen und in der Mitte steiler laufen.
     property real swing: 0.78
@@ -116,7 +142,7 @@ Item {
     // dadurch in der Mitte genau. Eigene Massstaebe je Seite hatten hier einen
     // Versatz von rund 23 Bildpunkten erzeugt.
     function build(list, valueOf, scale) {
-        var n = Math.min(list.length, root.maxBands);
+        var n = Math.min(list.length, root.bandLimit);
         var out = [];
         var i;
 
@@ -166,6 +192,7 @@ Item {
             sum = target;
         }
         var nGaps = Math.max(0, bands.length - 1);
+        // Wie im Original: `spacing = max(4, (height - visibleWeight) / gaps)`
         var gap = nGaps > 0 ? Math.max(0, (root.innerH - sum) / nGaps) : 0;
         var top = root.padY + (root.innerH - sum) / 2;
         var ey = nGaps > 0 ? root.padY : top;
@@ -188,8 +215,8 @@ Item {
             canvas.requestPaint();
             return;
         }
-        // Der Strang ist `waistTarget` der nutzbaren Hoehe -- daraus der Massstab
-        var scale = (innerH * waistTarget) / totalIn;
+        // Der Strang hat eine feste Dicke -- daraus der Massstab
+        var scale = trunkH / totalIn;
         var bi = build(vin || [], function (e) {
             return (e.prevout && e.prevout.value) || 0;
         }, scale);
