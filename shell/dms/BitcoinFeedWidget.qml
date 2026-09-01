@@ -40,7 +40,11 @@ PluginComponent {
     FeedState {
         id: feedState
 
-        pollMs: 500
+        // Die Pille zeigt nur Text -- Blockhoehe und Mempool-Zahl. Die aendern
+        // sich im Sekundentakt kaum, und die Pille ist **immer** sichtbar:
+        // was sie kostet, kostet sie den ganzen Tag. Zwei Abfragen pro Sekunde
+        // waren dafuer vierfach zu viel.
+        pollMs: 2000
     }
 
     property string colorMode: pluginService ? pluginService.loadPluginData("bitcoinFeed", "colorMode", "age") : "age"

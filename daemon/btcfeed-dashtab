@@ -42,6 +42,16 @@ Item {
 
     implicitHeight: 410
 
+    // **`Item.visible` genuegt hier nicht.** Wird das Popout-Fenster
+    // geschlossen, bleibt `visible` an den Elementen darin wahr -- die
+    // Sichtbarkeit eines Fensters ist keine Eigenschaft der Elementkette. Der
+    // Tab hielt sich dadurch fuer sichtbar und rechnete weiter: gemessen
+    // 7,4 % CPU bei geschlossenem Dashboard gegen 13,9 % bei offenem.
+    //
+    // `Window.window.visible` half auch nicht. Der Popout kennt seinen Zustand
+    // aber selbst und setzt diesen Wert von aussen (siehe `patch_popout`).
+    property bool live: true
+
     readonly property string pid: "bitcoinFeed"
     readonly property string desktopInstance: "bitcoinFeed-1"
 
@@ -76,7 +86,8 @@ Item {
     FeedState {
         id: feedState
 
-        active: root.visible
+        // Sieht niemand hin, wird auch nichts geholt
+        active: root.live
     }
 
     // Umschalten mit der Maus -- dasselbe Bauteil wie im eigenen Fenster
@@ -100,7 +111,7 @@ Item {
     }
 
     ClockView {
-        visible: root.view === 1
+        visible: root.live && root.view === 1
         anchors.fill: parent
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
@@ -113,7 +124,7 @@ Item {
     ExplorerView {
         id: explorer
 
-        visible: root.view === 3
+        visible: root.live && root.view === 3
         anchors.fill: parent
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
@@ -126,7 +137,7 @@ Item {
     MinerView {
         id: minerView
 
-        visible: root.view === 2
+        visible: root.live && root.view === 2
         anchors.fill: parent
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
@@ -140,7 +151,7 @@ Item {
     }
 
     FeedPanel {
-        visible: root.view === 0
+        visible: root.live && root.view === 0
         anchors.fill: parent
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
@@ -358,6 +369,16 @@ def patch_popout(text):
                         visible: active
                         sourceComponent: Component {
                             BitcoinTab {}
+                        }
+                        // `Item.visible` bleibt wahr, wenn das Popout-Fenster
+                        // schliesst -- die Sichtbarkeit eines Fensters ist
+                        // keine Eigenschaft der Elementkette. Der Popout weiss
+                        // es aber selbst, also wird es durchgereicht.
+                        onLoaded: {
+                            if (item)
+                                item.live = Qt.binding(function () {
+                                    return root.dashVisible;
+                                });
                         }
                     }
 

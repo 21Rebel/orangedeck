@@ -62,6 +62,15 @@ Mechanik und Stolperfallen in `DOKUMENTATION.md`.
    direkt portierbar, und `/api/tx/:txid` samt `/outspends` deckt den ganzen
    Pfad ohne Node ab. Einzelheiten in `ZIELBILD.md`.
 
+### Offen fuer morgen
+
+- Der **geplante Block** laesst sich laufend mitfuehren (Aenderungen ueber den
+  WebSocket, 7,8 kB/s, bedarfsabhaengig). Die Kachelgrafik dafuer steht; offen
+  ist die **lebendige Darstellung auf der Startseite**, die sich mit dem
+  Zulauf veraendert.
+- **Mempool-Goggles**: dieselben Kacheln nach Transaktionsart einfaerben
+  (`txtype.js` ist fertig).
+
 ### Kleinigkeiten, notiert
 
 - Dashboard-Tab: echte Einzelquadrate braeuchten `implicitHeight` von 410 auf

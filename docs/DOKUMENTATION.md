@@ -1488,3 +1488,40 @@ Grundlage ist die **gemessene** durchschnittliche Blockzeit aus der
 Schwierigkeitsanpassung (`timeAvg`), nicht die nominellen zehn Minuten. Gerade
 sind das 9,9 Minuten, also 10 / 20 / 30 / 39 Minuten fuer die ersten vier
 Bloecke. Ueber der Kachel steht die Schaetzung mit.
+
+
+## Der Feed rechnete weiter, obwohl niemand hinsah
+
+Am Abend des 01.09.2026 gemeldet: der Luefter dreht hoch, obwohl nur der
+Browser offen ist. Nachgemessen an der DMS-Shell:
+
+    Dashboard offen         13,9 % CPU
+    Dashboard geschlossen     7,4 % CPU   <- die Haelfte lief weiter
+
+**Die Ursache ist eine QML-Falle: `Item.visible` wird nicht falsch, wenn das
+Fenster verschwindet.** Die Sichtbarkeit eines Fensters ist keine Eigenschaft
+der Elementkette. Der Dashboard-Tab hielt sich deshalb fuer sichtbar, holte
+weiter Daten und liess seine Leinwand mit dreissig Bildern je Sekunde laufen.
+
+`active: root.visible` war also wirkungslos. `Window.window.visible` half
+ebenfalls nicht -- in einem Quickshell-Popout bleibt auch das wahr.
+
+**Der Popout kennt seinen Zustand selbst** (`dashVisible`). Der Patch reicht ihn
+jetzt an den Tab durch:
+
+    onLoaded: item.live = Qt.binding(function () { return root.dashVisible })
+
+Der Tab haengt daran seine Datenbeschaffung **und** die Sichtbarkeit seiner
+Ansichten -- letzteres haelt auch die Zeitgeber von `FeedCanvas` an, die an
+`root.visible` haengen.
+
+Dazu die Leistenpille: sie zeigt nur Text und fragte trotzdem zweimal je
+Sekunde. Sie ist **immer** sichtbar -- was sie kostet, kostet sie den ganzen
+Tag. Jetzt alle zwei Sekunden.
+
+    Dashboard offen          ~8,0 % CPU
+    Dashboard geschlossen     0,0 % CPU
+
+**Merksatz:** in QML sagt `visible` nichts darueber, ob jemand wirklich
+hinsieht. Wer Zeitgeber oder Leinwaende daran haengt, muss die Sichtbarkeit des
+Fensters getrennt beschaffen.

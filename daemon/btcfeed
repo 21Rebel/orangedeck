@@ -672,6 +672,13 @@ def lookup(kind, arg):
 # --------------------------------------------------------------------------
 # Loopback-Schnittstelle
 # --------------------------------------------------------------------------
+# Zaehlt die Abfragen je Pfad. Damit laesst sich nachpruefen, ob eine
+# Oberflaeche wirklich aufhoert zu fragen, wenn niemand hinsieht -- offene
+# Verbindungen taugen dafuer nicht, die bleiben durch Keep-Alive bestehen.
+_hits = {}
+_hits_lock = threading.Lock()
+
+
 class _Handler(BaseHTTPRequestHandler):
     """Nur lesend, nur GET, nur die drei Pfade. Kein Zustand wird entgegen-
     genommen -- der Dienst nimmt grundsaetzlich nichts an."""
@@ -690,6 +697,9 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+        with _hits_lock:
+            key = path.split("/")[1] if "/" in path[1:] else path.lstrip("/")
+            _hits[key] = _hits.get(key, 0) + 1
         try:
             if path == "/state":
                 self._send(json.dumps(self.feed.snapshot(), separators=(",", ":")))
@@ -716,6 +726,7 @@ class _Handler(BaseHTTPRequestHandler):
                     # Nachvollziehbar machen, ob gerade mitgehoert wird
                     "tracking": self.feed.tracked,
                     "trackFor": max(0, round(self.feed.track_until - time.time(), 1)),
+                    "hits": dict(_hits),
                 }))
             else:
                 self._send('{"error":"unbekannter Pfad"}', 404)
