@@ -329,7 +329,14 @@ def build():
     # Tab-Inhalt und die geteilten Bausteine daneben legen
     with open(os.path.join(dash, "BitcoinTab.qml"), "w") as f:
         f.write(BITCOIN_TAB)
-    for name in ("FeedState.qml", "FeedCanvas.qml", "FeedPanel.qml", "mondrian.js", "colors.js"):
+    # Bewusst aus dem Verzeichnis gelesen statt aufgezaehlt: eine fest
+    # verdrahtete Liste vergisst man beim naechsten neuen Baustein, und dann
+    # laesst sich FeedPanel hier nicht mehr laden -- der Bitcoin-Tab scheitert
+    # und mit ihm das ganze Dashboard. Genau so am 01.09.2026 passiert, als
+    # FrostedPanel.qml dazukam.
+    for name in sorted(os.listdir(QML)):
+        if not (name.endswith(".qml") or name.endswith(".js")):
+            continue
         link = os.path.join(dash, name)
         if os.path.islink(link):
             os.unlink(link)

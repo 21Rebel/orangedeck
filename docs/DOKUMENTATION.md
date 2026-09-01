@@ -386,3 +386,34 @@ macht bereits lesbar. Kleiner Schoenheitsfehler: `clip` ist in QML immer
 rechteckig, an den abgerundeten Ecken erscheint deshalb weichgezeichneter
 Inhalt ohne Einfaerbung. Bei 6 px Radius kaum sichtbar; sauber loesen liesse
 sich das ueber `maskEnabled` am MultiEffect.
+
+
+## Stolperfalle: eine neue QML-Datei muss an **vier** Orten ankommen
+
+Die geteilten Bausteine liegen einmal unter `ui/qml/`, werden aber an vier
+Stellen gebraucht:
+
+    ~/.local/share/btcfeed/qml/                          (der eine echte Ort)
+    ~/.config/DankMaterialShell/plugins/BitcoinFeed/     (Plugin)
+    ~/.config/quickshell/BitcoinFeedApp/                 (eigenes Fenster)
+    ~/.config/quickshell/dms-custom/Modules/DankDash/    (Dashboard-Tab)
+    app/CMakeLists.txt                                   (eigenstaendige App)
+
+Am 01.09.2026 kam `FrostedPanel.qml` dazu und landete ueberall ausser im
+DankDash-Verzeichnis -- dessen Liste steht in `daemon/btcfeed-dashtab`, nicht in
+`tools/install-links.sh`. Folge: `FeedPanel` liess sich dort nicht mehr laden
+("FrostedPanel is not a type"), der Bitcoin-Tab scheiterte, und **das ganze
+Dashboard liess sich nicht mehr oeffnen**. Im Journal stand der Grund
+sauber drin -- die laufende Instanz meldete aber nichts mehr, weil der Fehler
+beim Laden des Tabs auftrat, nicht im Betrieb.
+
+**Behoben, indem beide Skripte die Liste nicht mehr fuehren**: `install-links.sh`
+und `btcfeed-dashtab` lesen jetzt aus `ui/qml/`, was dort liegt. Einzig
+`app/CMakeLists.txt` braucht den Eintrag weiterhin von Hand -- CMake muss die
+Dateien zur Bauzeit kennen.
+
+Nach einer neuen Datei also:
+
+    tools/install-links.sh          # verteilt alles
+    python3 daemon/btcfeed-dashtab  # baut die Ueberlagerung neu
+    systemctl --user restart dms

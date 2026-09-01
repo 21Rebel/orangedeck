@@ -5,6 +5,10 @@
 set -euo pipefail
 R="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Aus dem Verzeichnis gelesen, nicht aufgezaehlt -- siehe Kommentar in
+# daemon/btcfeed-dashtab: eine fest verdrahtete Liste vergisst man.
+QMLFILES="$(cd "$R/ui/qml" && command ls -1 *.qml *.js 2>/dev/null)"
+
 link() {  # link <ziel-im-repo> <ort-im-system>
   local src="$1" dst="$2"
   [ -e "$src" ] || { echo "fehlt im Repo: $src" >&2; return 1; }
@@ -15,7 +19,7 @@ link() {  # link <ziel-im-repo> <ort-im-system>
 }
 
 # QML-Grafik: der eine Ort, auf den Plugin und Quickshell-App zeigen
-for f in FeedCanvas.qml FeedPanel.qml FeedState.qml FrostedPanel.qml mondrian.js colors.js; do
+for f in $QMLFILES; do
   link "$R/ui/qml/$f" "$HOME/.local/share/btcfeed/qml/$f"
 done
 
@@ -34,14 +38,14 @@ for f in DOKUMENTATION.md STAND.md ZIELBILD.md; do
   link "$R/docs/$f" "$P/$f"
 done
 # die QML-Dateien des Plugins zeigen weiter auf ~/.local/share/btcfeed/qml
-for f in FeedCanvas.qml FeedPanel.qml FeedState.qml FrostedPanel.qml mondrian.js colors.js; do
+for f in $QMLFILES; do
   link "$HOME/.local/share/btcfeed/qml/$f" "$P/$f"
 done
 
 # Eigenes Quickshell-Fenster
 Q="$HOME/.config/quickshell/BitcoinFeedApp"
 link "$R/shell/quickshell/shell.qml" "$Q/shell.qml"
-for f in FeedCanvas.qml FeedPanel.qml FeedState.qml FrostedPanel.qml mondrian.js colors.js; do
+for f in $QMLFILES; do
   link "$HOME/.local/share/btcfeed/qml/$f" "$Q/$f"
 done
 
