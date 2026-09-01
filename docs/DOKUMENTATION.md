@@ -1228,3 +1228,36 @@ die Daten drueben schon stehen).
 Datenquelle ist `/lookup/blocks/recent` im Daemon -- `/api/v1/blocks` liefert
 fuenfzehn Bloecke samt `extras` (Pool, Belohnung, mittlere Gebuehr). Mit einer
 Hoehe statt `recent` kommen die fuenfzehn davor.
+
+
+## Die Blockansicht im Explorer
+
+Dieselbe Kachelgrafik wie im Feed, nur fuer einen **beliebigen** Block
+(`BlockTiles.qml`). Sie benutzt dieselben Bausteine -- `mondrian.js` fuer die
+Packung, `colors.js` fuer die Farben -- damit beide Ansichten wirklich gleich
+aussehen und nicht nur aehnlich. Auch die Geometrieregeln gelten dort: ganze
+Rasterweite ab zwei Bildpunkten je Zelle, darunter gebrochen mit
+Kantenglaettung.
+
+Ein Klick auf eine Kachel oeffnet die Transaktion.
+
+### Aufbereitung an einer Stelle
+
+`write_block_summary()` im Daemon war auf den zuletzt gefundenen Block
+zugeschnitten. Herausgeloest ist daraus `summarize_block(bid, base)`: sie holt
+`/v1/block/<hash>/summary` und dampft jede Transaktion auf **zwei Ziffern** ein
+(Kantenlaenge 1-5, Gebuehrenklasse 0-9). Ein voller Block wird so von rund
+700 kB auf etwa 8 kB Kacheldaten; mit den Angaben fuer den Tooltip sind es rund
+390 kB, die aber nur ueber die Loopback-Schnittstelle gehen.
+
+Der Feed schreibt das Ergebnis nach `block.json`, der Explorer holt es ueber
+`/lookup/blocktiles/<hash>` -- **dieselbe Funktion, zwei Abnehmer.** Bestaetigte
+Bloecke aendern sich nicht mehr, ihre Kacheldaten liegen deshalb eine Stunde im
+Zwischenspeicher statt der ueblichen 45 Sekunden.
+
+### Was der Block hergibt
+
+Ueber `/v1/block/<hash>` (Abfrage `blockinfo`) kommen neben den Kopfdaten:
+Mining-Pool, Belohnung, Gebuehren gesamt, mittlere Rate und Gebuehrenspanne,
+UTXO-Aenderung, SegWit-Anteil, mittlere Transaktionsgroesse, Coinbase-Angaben.
+Alles davon steht jetzt in der Ansicht.

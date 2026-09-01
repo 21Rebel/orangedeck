@@ -29,6 +29,7 @@ set(SHARED_QML
     ../ui/qml/TxFlow.qml
     ../ui/qml/CopyButton.qml
     ../ui/qml/BlockChain.qml
+    ../ui/qml/BlockTiles.qml
     ../ui/qml/search.js
     ../ui/qml/mondrian.js
     ../ui/qml/colors.js

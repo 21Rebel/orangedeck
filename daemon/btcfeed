@@ -303,18 +303,18 @@ class WebSocket:
             pass
 
 
-def write_block_summary(tip):
-    """Holt die Transaktionsliste des Blocks und legt die Kacheldaten ab.
+def summarize_block(bid, base=None):
+    """Holt die Transaktionsliste eines Blocks und bereitet die Kacheldaten auf.
 
     Aus jeder Transaktion werden nur zwei Ziffern gespeichert: Kantenlaenge
     (1-5) und Gebuehrenklasse (0-9). Ein voller Block sind damit rund 8 kB
-    statt 700 kB. Die Reihenfolge bleibt die des Blocks."""
-    bid = tip.get("id")
-    if not bid:
-        return
+    statt 700 kB. Die Reihenfolge bleibt die des Blocks.
+
+    Dieselbe Aufbereitung dient dem laufenden Feed **und** dem Explorer -- die
+    Kachelgrafik ist in beiden Faellen dieselbe."""
     txs = http_json("/v1/block/%s/summary" % bid, timeout=40)
     if not isinstance(txs, list) or not txs:
-        return
+        return None
 
     step = max(1, len(txs) // MAX_TILES + (1 if len(txs) % MAX_TILES else 0))
     tiles = []
@@ -338,7 +338,7 @@ def write_block_summary(tip):
             round(float(t.get("rate") or 0), 3),
         ])
 
-    data = dict(tip)
+    data = dict(base or {})
     data.update({
         "totalValue": total_value,
         "sumFees": total_fee,
@@ -347,6 +347,17 @@ def write_block_summary(tip):
         "tiles": "".join(tiles),
         "txs": details,
     })
+    return data
+
+
+def write_block_summary(tip):
+    """Legt die Kacheldaten des zuletzt gefundenen Blocks fuer den Feed ab."""
+    bid = tip.get("id")
+    if not bid:
+        return
+    data = summarize_block(bid, tip)
+    if not data:
+        return
     tmp = BLOCK_FILE + ".tmp"
     with open(tmp, "w") as f:
         json.dump(data, f, separators=(",", ":"))
@@ -535,6 +546,11 @@ LOOKUP_ROUTES = (
     # Die letzten Bloecke fuer die Kettenansicht. "recent" ist ein fester
     # Platzhalter -- der Pfad nimmt keinen Wert entgegen.
     ("blocks", re.compile(r"^(recent|[0-9]{1,9})$"), "/v1/blocks"),
+    # Der Block mit allem Drum und Dran: Pool, Belohnung, Gebuehrenspanne,
+    # UTXO-Aenderung, SegWit-Anteil, Coinbase.
+    ("blockinfo", re.compile(r"^[0-9a-f]{64}$"), "/v1/block/%s"),
+    # Kacheldaten -- **nicht** weitergereicht, sondern hier aufbereitet
+    ("blocktiles", re.compile(r"^[0-9a-f]{64}$"), None),
 )
 
 
@@ -551,6 +567,24 @@ def lookup(kind, arg):
             hit = _lookup_cache.get(key)
             if hit and now < hit[0]:
                 return hit[1], None
+
+        # Kacheldaten werden aufbereitet, nicht durchgereicht: 700 kB
+        # Transaktionsliste werden zu rund 8 kB.
+        if kind == "blocktiles":
+            try:
+                data = summarize_block(arg)
+            except Exception as e:
+                return None, (str(e), 502)
+            if not data:
+                return None, ("keine Transaktionsliste", 502)
+            body = json.dumps(data, separators=(",", ":"))
+            with _lookup_lock:
+                if len(_lookup_cache) > LOOKUP_MAX:
+                    _lookup_cache.clear()
+                # Bestaetigte Bloecke aendern sich nicht mehr
+                _lookup_cache[key] = (now + 3600, body)
+            return body, None
+
         try:
             # `blocks` kennt zwei Formen: ohne Wert die neuesten, mit Hoehe
             # die fuenfzehn davor.

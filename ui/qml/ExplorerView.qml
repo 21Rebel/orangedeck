@@ -31,6 +31,8 @@ Item {
     // die Kindelemente liegen. Sie zu ueberschreiben bringt den Baum durcheinander.
     property var result: null         // Antwort der Hauptabfrage
     property var extra: null          // outspends bzw. Adresstransaktionen
+    property var tiles: null          // Kacheldaten des Blocks
+    property bool tilesBusy: false
     property string status: ""        // Meldung statt Ergebnis
     property bool busy: false
     property var trail: []            // Weg dorthin, fuer den Zurueck-Knopf
@@ -112,6 +114,7 @@ Item {
         root.busy = true;
         root.status = "";
         root.extra = null;
+        root.tiles = null;
 
         if (kind === "blockheight") {
             // Zuerst die Hoehe in einen Hash aufloesen -- die Antwort ist
@@ -127,7 +130,9 @@ Item {
             return;
         }
 
-        var route = kind === "tx" ? "tx" : (kind === "blockhash" ? "block" : "address");
+        // Fuer Bloecke die ausfuehrliche Form: sie bringt Pool, Belohnung,
+        // Gebuehrenspanne, UTXO-Aenderung und SegWit-Anteil mit.
+        var route = kind === "tx" ? "tx" : (kind === "blockhash" ? "blockinfo" : "address");
         root.currentArg = arg;
         root.feed.lookup(route, arg, function (d, err) {
             root.busy = false;
@@ -147,6 +152,16 @@ Item {
                 root.feed.lookup("addresstxs", arg, function (o) {
                     root.extra = o;
                 });
+            else if (root.kind === "block") {
+                // Die Kacheldaten kommen getrennt -- sie sind gross und der
+                // Daemon bereitet sie erst auf.
+                root.tiles = null;
+                root.tilesBusy = true;
+                root.feed.lookup("blocktiles", arg, function (t) {
+                    root.tilesBusy = false;
+                    root.tiles = t;
+                });
+            }
         });
     }
 
@@ -787,12 +802,17 @@ Item {
             Row {
                 spacing: root.scaleUnit * 1.2
 
+                readonly property var ex: root.result.extras || ({})
+
                 Repeater {
                     model: [
                         { "k": "Zeit", "v": root.ago(root.result.timestamp) },
                         { "k": "Transaktionen", "v": root.grp(root.result.tx_count) },
                         { "k": "Größe", "v": root.grp(Math.round(root.result.size / 1024)) + " kB" },
-                        { "k": "Gewicht", "v": root.grp(Math.round(root.result.weight / 1000)) + " kWU" }
+                        { "k": "Gewicht", "v": root.grp(Math.round(root.result.weight / 1000)) + " kWU" },
+                        { "k": "Mining-Pool", "v": ((root.result.extras || {}).pool || {}).name || "–" },
+                        { "k": "Belohnung", "v": (root.result.extras || {}).reward
+                            ? root.btc((root.result.extras || {}).reward) : "–" }
                     ]
 
                     Column {
@@ -814,6 +834,79 @@ Item {
                             font.pixelSize: root.scaleUnit * 0.75
                         }
                     }
+                }
+            }
+
+            // Weitere Angaben aus dem Block
+            Grid {
+                columns: 2
+                columnSpacing: root.scaleUnit * 2
+                rowSpacing: root.scaleUnit * 0.2
+
+                Repeater {
+                    model: {
+                        var e = root.result.extras || {};
+                        return [
+                            { "k": "Gebühren gesamt", "v": e.totalFees ? root.btc(e.totalFees) : "–" },
+                            { "k": "Schwierigkeit", "v": root.result.difficulty
+                                ? (root.result.difficulty / 1e12).toFixed(2).replace(".", ",") + " T" : "–" },
+                            { "k": "mittlere Rate", "v": e.medianFee !== undefined
+                                ? e.medianFee.toFixed(2).replace(".", ",") + " sat/vB" : "–" },
+                            { "k": "Version", "v": root.result.version !== undefined
+                                ? "0x" + Number(root.result.version).toString(16) : "–" },
+                            { "k": "Gebührenspanne", "v": (e.feeRange && e.feeRange.length)
+                                ? Math.round(e.feeRange[0]) + " – " + Math.round(e.feeRange[e.feeRange.length - 1]) + " sat/vB" : "–" },
+                            { "k": "Nonce", "v": root.grp(root.result.nonce) },
+                            { "k": "UTXO-Änderung", "v": e.utxoSetChange !== undefined
+                                ? (e.utxoSetChange >= 0 ? "+" : "") + root.grp(e.utxoSetChange) : "–" },
+                            { "k": "SegWit", "v": (e.segwitTotalTxs && root.result.tx_count)
+                                ? Math.round(100 * e.segwitTotalTxs / root.result.tx_count) + " %" : "–" },
+                            { "k": "Ø Transaktion", "v": e.avgTxSize !== undefined
+                                ? Math.round(e.avgTxSize) + " Byte" : "–" },
+                            { "k": "Merkle-Wurzel", "v": root.result.merkle_root
+                                ? root.shortId(root.result.merkle_root, 8) : "–" }
+                        ];
+                    }
+
+                    Row {
+                        id: bRow
+
+                        required property var modelData
+
+                        spacing: root.scaleUnit * 0.6
+
+                        Text {
+                            width: root.scaleUnit * 7
+                            text: bRow.modelData.k
+                            color: root.dimColor
+                            font.pixelSize: root.uiFont * 0.9
+                        }
+
+                        Text {
+                            text: bRow.modelData.v
+                            color: root.textColor
+                            font.pixelSize: root.uiFont * 0.9
+                        }
+                    }
+                }
+            }
+
+            // Die Kachelgrafik des Blocks -- dieselbe Optik wie im Feed
+            Text {
+                text: root.tilesBusy ? "Kacheln werden geholt …" : "Transaktionen im Block"
+                color: root.dimColor
+                font.pixelSize: root.uiFont * 0.9
+            }
+
+            BlockTiles {
+                width: flick.width
+                height: Math.min(flick.width, root.scaleUnit * 34)
+                visible: root.tiles !== null
+                block: root.tiles
+                dimColor: root.dimColor
+                labelSize: root.uiFont * 0.85
+                onTxPicked: function (txid) {
+                    root.go("tx", txid);
                 }
             }
 
