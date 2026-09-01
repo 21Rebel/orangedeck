@@ -51,7 +51,7 @@ Was ein Client-Fork von den fuenf gewuenschten Funktionen brachte:
 Eine von fuenf, und ausgerechnet die, die im Kern aus HTTP-Abfragen und
 Listenansichten besteht statt aus Grafik. Dagegen stehen: ein Browser-Motor auf
 dem Desktop, Elixir und Svelte als zusaetzliche Werkzeugketten, Upstream seit
-Juni 2024 still, und dauerhaft zwei Codebasen mit zwei Datenwegen, weil die
+Juni 2022 still, und dauerhaft zwei Codebasen mit zwei Datenwegen, weil die
 Shell-Integration in jedem Fall QML bleiben muss.
 
 **Stattdessen als Datenquelle geforkt bzw. betrieben:**

@@ -6,7 +6,7 @@ stehengeblieben sind.
 
 ## Offene Punkte, in der Reihenfolge, in der sie anzugehen sind
 
-### 1. Rueckschritt: die Transaktionen fallen nicht mehr sichtbar herunter
+### 1. Rueckschritt: die Transaktionen fallen nicht mehr sichtbar herunter — BEHOBEN 01.09.2026
 
 **Nachgemessen, Ursache eingekreist.** Ein Zaehler ueber zwoelf Sekunden:
 
@@ -28,17 +28,38 @@ der Halde liegen, bekommen die neu hereinfallenden **kein Rechteck mehr** und
 sind waehrend des Fallens unsichtbar. Das passt genau zur Beobachtung: anfangs
 fiel es, spaeter nicht mehr.
 
-**Wo nachsehen:**
-- `FeedCanvas.qml`, Timer mit `interval: 200` -> setzt `poolDirty` zurueck und
-  ruft `poolCanvas.requestPaint()`
-- `poolCanvas.onPaint`: der fruehe Ausstieg (`if (!root.layout || !root.poolTx)
-  return;`) und die Zeile `e.pending = false;`
-- Gegenprobe: einen Zaehler in `onPaint` hochzaehlen und mitloggen
+**Ursache und Behebung (01.09.2026).** In `step()` stand:
 
-**Wie es hereinkam:** durch das Zusammenspiel zweier Aenderungen von heute --
-die Umstellung von "ueber alle Kacheln laufen" auf "nur ueber `flying` laufen"
-(Rechenlast 16 % -> 10 %) und die Korrektur gegen das Wegblinken gelandeter
-Kacheln ("bleib in `flying`, bis die Halde gezeichnet ist").
+    if (e.fly >= 1) { e.pending = true; settled = true; }
+
+Das setzt `pending` bei jedem Bild neu, solange die Kachel gelandet ist — also
+dauerhaft. `step()` laeuft 30-mal pro Sekunde, `poolCanvas.onPaint` hoechstens
+5-mal. Jedes `e.pending = false` aus dem Anstrich wurde im naechsten Bild sofort
+ueberschrieben. Die Kachel verliess `flying` nie.
+
+`poolCanvas` war unschuldig — es zeichnete die ganze Zeit korrekt.
+
+Richtig ist der **Uebergang** statt des Zustands:
+
+    var wasFlying = e.fly < 1;
+    e.fly = span > 0 ? Math.min(1, e.fly + (e.vy * dt) / span) : 1;
+    if (e.fly >= 1 && wasFlying) { e.pending = true; settled = true; }
+
+Gefahrlos, weil Kacheln nur mit `fly < 1` in `flying` aufgenommen werden
+(`addTx`), und ausreichend, weil `poolDirty` ein Riegel ist, der bis zum
+Anstrich haelt.
+
+**Nachgestellt und gegengeprueft** (Schleife mit 30 Bildern/s und
+200-ms-Anstrich, Zulauf 5/s):
+
+    nach  12 s   ALT: flying   60 / pool   60      NEU: flying 7 / pool   60
+    nach  60 s   ALT: flying  300 / pool  300      NEU: flying 7 / pool  300
+    nach 300 s   ALT: flying 1500 / pool 1500      NEU: flying 8 / pool 1500
+                      davon 1180 nie gezeichnet         0 nie gezeichnet
+
+Die alte Fassung trifft die am 31.08. gemessenen `flying 59 / poolTx 59` exakt.
+Ab `capacity: 320` in `flyLayer` bekommen neue Kacheln kein Rechteck mehr —
+daher "anfangs fiel es, spaeter nicht mehr".
 
 ### 2. Karomuster kommt auch von nicht-quadratischen Kacheln
 
@@ -110,7 +131,7 @@ davon werden. Nur beim grossen eigenen Fenster ueberschneiden sich die beiden.
 
 Was ein Fork kostet: ein Browser-Motor auf dem Desktop (Electron/Tauri,
 150-300 MB statt ~10 % CPU nativ), dazu Elixir und Svelte als Werkzeugketten,
-und Upstream ist seit Juni 2024 still -- man pflegt ihn also selbst. Neue
+und Upstream ist seit Juni 2022 still -- man pflegt ihn also selbst. Neue
 Funktionen entstuenden in Svelte statt QML, die DMS-Anbindung liefe daneben
 weiter: zwei Codebasen, zwei Datenwege.
 
@@ -163,7 +184,7 @@ Vorher zu klaeren:
 ## Bitfeed selbst: gibt es das auch zum Selbstbetreiben?
 
 Ja. `github.com/bitfeed-project/bitfeed` ist nicht nur die Website, sondern das
-vollstaendige Projekt (MIT, 121 Sterne, letzter Push Juni 2024, nicht
+vollstaendige Projekt (MIT, 121 Sterne, letzter Push Juni 2022, nicht
 archiviert):
 
 - **client/** -- die Oberflaeche (Svelte + WebGL), das ist die Seite

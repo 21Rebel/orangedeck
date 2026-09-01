@@ -427,8 +427,15 @@ Item {
             e.vy += g * dt;
             var ty = targetY(e.sq);
             var span = ty - e.fromY;
+            // Der Uebergang zaehlt, nicht der Zustand: 'pending' darf nur in
+            // dem einen Bild gesetzt werden, in dem die Kachel landet. Wird es
+            // stattdessen bei jedem 'fly >= 1' gesetzt, ueberschreibt step()
+            // (30/s) sofort wieder, was poolCanvas.onPaint (5/s) zurueckgesetzt
+            // hat -- die Kachel verlaesst 'flying' nie, die Liste waechst auf
+            // die ganze Halde und ab 'capacity' fallen neue unsichtbar.
+            var wasFlying = e.fly < 1;
             e.fly = span > 0 ? Math.min(1, e.fly + (e.vy * dt) / span) : 1;
-            if (e.fly >= 1) {
+            if (e.fly >= 1 && wasFlying) {
                 e.pending = true;
                 settled = true;
             }
