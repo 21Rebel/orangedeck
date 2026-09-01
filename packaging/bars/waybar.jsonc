@@ -1,0 +1,14 @@
+// Ausschnitt fuer ~/.config/waybar/config.jsonc
+//
+// In "modules-right" (oder -left/-center) den Namen "custom/btcfeed"
+// aufnehmen, dann diesen Block danebenstellen.
+{
+  "custom/btcfeed": {
+    "exec": "~/.local/bin/btcfeed --waybar",
+    "return-type": "json",
+    "interval": 10,
+    "tooltip": true,
+    // Klick oeffnet das eigene Fenster
+    "on-click": "~/.local/bin/btcfeed-window"
+  }
+}

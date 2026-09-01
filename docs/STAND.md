@@ -28,12 +28,12 @@ Mechanik und Stolperfallen in `DOKUMENTATION.md`.
 
 ### Offen, in sinnvoller Reihenfolge
 
-1. **Daemon als systemd-Unit.** Er laeuft derzeit als loser Prozess
-   (`systemctl --user is-active btcfeed` meldet `inactive`) und stirbt mit der
-   Sitzung. Klein, behebt eine echte Schwaeche.
-2. **Vorhandene Leisten fuettern**: `btcfeed --waybar`, `--polybar`,
-   `--genmon`. Billigste Reichweite fuer "Leiste auf beliebigen Systemen",
-   **Waybar ist auf diesem Rechner installiert**, also sofort pruefbar.
+1. ~~Daemon als systemd-Unit~~ -- **erledigt 01.09.2026.** Abgesichert,
+   `Restart=on-failure`, Absturztest bestanden. Die Waechter in DMS und
+   `btcfeed-window` starten jetzt den Dienst statt eigener Prozesse.
+2. ~~Vorhandene Leisten fuettern~~ -- **erledigt 01.09.2026.**
+   `--waybar`, `--polybar`, `--genmon`; Vorlagen in `packaging/bars/`,
+   gegen echtes Waybar geprueft.
 3. **Flatpak.** `flatpak` ist da, **`flatpak-builder` fehlt** und muesste
    installiert werden. Erst damit ist "laeuft auf jedem Linux-Desktop" auch
    verteilbar.
@@ -43,6 +43,8 @@ Mechanik und Stolperfallen in `DOKUMENTATION.md`.
 5. **Layer-Shell** (`layer-shell-qt`, in den Paketquellen) fuer eigenes
    Desktop-Widget und eigene Leiste auf Wayland.
 6. **Android-APK.** SDK und NDK fehlen; der frickeligste Teil.
+   **>>> Vor diesem Schritt dem Nutzer Bescheid geben <<<** -- er haengt dann
+   sein Handy an den Rechner, um darauf zu testen (abgesprochen am 01.09.2026).
 7. **ExplorerView und WatchView.** Groesster Brocken, haengt an nichts mehr
    ausser Arbeit.
 

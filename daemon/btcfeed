@@ -9,6 +9,13 @@ Faellt automatisch auf REST-Polling zurueck, wenn der WebSocket streikt.
   btcfeed --once     Einmal Zustand holen und beenden (zum Testen)
   btcfeed --print    Zustand ausgeben statt ihn zu schreiben
 
+Fuer vorhandene Leisten, jeweils einmalig und ohne eigenen Feed -- sie fragen
+den laufenden Dienst ab:
+
+  btcfeed --waybar   JSON fuer das custom-Modul von Waybar
+  btcfeed --polybar  eine Zeile fuer Polybar, i3blocks, yambar
+  btcfeed --genmon   XML fuer das Genmon-Modul von XFCE
+
 Zusaetzlich zu state.json bietet der Daemon die Daten unter
 http://127.0.0.1:21021/state, /block und /health an -- nur lesend und nur
 lokal. BTCFEED_ADDR und BTCFEED_PORT aendern das, siehe Kommentar dort.
@@ -444,6 +451,83 @@ def serve_local(feed):
 
 
 # --------------------------------------------------------------------------
+# Ausgabe fuer vorhandene Leisten
+# --------------------------------------------------------------------------
+# Diese Betriebsarten holen den Zustand **vom laufenden Dienst** statt einen
+# eigenen Feed aufzumachen. Sonst haette jede Leistenabfrage ihre eigene
+# WebSocket-Verbindung -- und es gaebe wieder zwei Verwalter fuer einen Daemon.
+def local_state(timeout=2.0):
+    host = "127.0.0.1" if SERVE_ADDR in ("0.0.0.0", "::", "") else SERVE_ADDR
+    url = "http://%s:%d/state" % (host, SERVE_PORT)
+    with urllib.request.urlopen(url, timeout=timeout) as r:
+        return json.loads(r.read().decode())
+
+
+def grp(n):
+    """965055 -> 965.055"""
+    try:
+        return "{:,}".format(int(n)).replace(",", ".")
+    except Exception:
+        return str(n)
+
+
+def bar_fields():
+    """Liefert (Text, Tooltip, Klasse). Die Klasse taugt zum Einfaerben in
+    der Leiste: 'offline', wenn der Dienst nicht antwortet oder der Zustand
+    alt ist."""
+    try:
+        d = local_state()
+    except Exception:
+        return ("\u20bf --", "btcfeed läuft nicht.\n"
+                "Starten mit:  systemctl --user start btcfeed", "offline")
+
+    tip = d.get("tip") or {}
+    fees = d.get("fees") or {}
+    mp = d.get("mempool") or {}
+    price = d.get("price") or {}
+    stale = (time.time() - (d.get("ts") or 0)) > 30
+
+    fast = fees.get("fastest") or 0
+    height = tip.get("height")
+    text = "\u20bf %s \u00b7 %s sat/vB" % (grp(height) if height else "--",
+                                             ("%.1f" % fast).replace(".", ","))
+
+    lines = []
+    if height:
+        lines.append("Block %s" % grp(height))
+    if mp.get("count"):
+        lines.append("Mempool: %s unbestätigt" % grp(mp["count"]))
+    if fees:
+        def sat(v):
+            return ("%.2f" % v).replace(".", ",") if isinstance(v, (int, float)) else "-"
+        lines.append("Gebühren: %s / %s / %s sat/vB (schnell/30 min/1 h)" % (
+            sat(fees.get("fastest")), sat(fees.get("halfHour")), sat(fees.get("hour"))))
+    for cur in ("eur", "usd"):
+        if price.get(cur):
+            lines.append("Kurs: %s %s" % (grp(round(price[cur])), cur.upper()))
+            break
+    if d.get("error"):
+        lines.append(d["error"])
+
+    cls = "offline" if (stale or d.get("source") == "offline") else "online"
+    return (text, "\n".join(lines) or "keine Angaben", cls)
+
+
+def emit_bar(kind):
+    text, tooltip, cls = bar_fields()
+    if kind == "waybar":
+        print(json.dumps({"text": text, "tooltip": tooltip, "class": cls},
+                         ensure_ascii=False))
+    elif kind == "polybar":
+        print(text)
+    elif kind == "genmon":
+        def esc(t):
+            return (t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+        print("<txt>%s</txt><tool>%s</tool>" % (esc(text), esc(tooltip)))
+    return 0
+
+
+# --------------------------------------------------------------------------
 # Betriebsarten
 # --------------------------------------------------------------------------
 def handle(feed, msg):
@@ -549,6 +633,11 @@ def acquire_lock():
 
 def main():
     args = set(sys.argv[1:])
+
+    for kind in ("waybar", "polybar", "genmon"):
+        if "--" + kind in args:
+            return emit_bar(kind)
+
     feed = Feed()
 
     if "--once" in args or "--print" in args:
