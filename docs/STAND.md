@@ -1,5 +1,66 @@
-# Stand und offene Punkte — 31.08.2026, 18:15
-# Ergaenzt 01.09.2026: Punkte 4 und 5 sind entschieden, siehe `ZIELBILD.md`
+# Stand und offene Punkte
+
+## Stand 01.09.2026, Abend
+
+Das Projekt ist an diesem Tag von einem DMS-Plugin zu einer portablen
+Anwendung geworden. 15 Commits. Ausgearbeitetes Ziel in `ZIELBILD.md`,
+Mechanik und Stolperfallen in `DOKUMENTATION.md`.
+
+### Erledigt
+
+- **Repo `~/Schreibtisch/btcfeed`** ist die Quelle der Wahrheit;
+  `tools/install-links.sh` verteilt alles. **bitfeed als `git subtree`** unter
+  `upstream/bitfeed/`, Historie erhalten.
+- **Fallanimation repariert** (STAND-Punkt 1) und **Karomuster behoben**
+  (Punkt 2, drei Ursachen).
+- **Die Grafik ist quickshell-frei.** `FeedState.qml` importiert nur `QtQuick`;
+  Daten kommen ueber die Loopback-Schnittstelle des Daemons
+  (`127.0.0.1:21021`, nur lesend, nur GET).
+- **Eigenstaendige Qt-Anwendung** in `app/`, laeuft auf jedem Linux-Desktop,
+  bindet dieselben Dateien ein (app_id `dev.21rebel.btcfeed-app`, ~3 % CPU).
+- **Zoom** ueber Rad, Zusammenziehen und Ziehen, ganzzahliger Massstab.
+- **Untergrund** hinter den Textangaben (`FrostedPanel.qml`), Blur auf 5 Hz
+  gedrosselt (12,5 % statt 14,4 %; ohne Blur 9,6 %).
+- **Grundsaetze festgelegt**: Watch-only ueber xpub, keine signierfaehige
+  Bibliothek, keine Telemetrie, Bindung auf 127.0.0.1. Siehe `ZIELBILD.md`.
+- **Kein eigener Node** -- entschieden am 01.09. Explorer und
+  Adressbeobachtung gehen trotzdem, gegen die oeffentliche API.
+
+### Offen, in sinnvoller Reihenfolge
+
+1. **Daemon als systemd-Unit.** Er laeuft derzeit als loser Prozess
+   (`systemctl --user is-active btcfeed` meldet `inactive`) und stirbt mit der
+   Sitzung. Klein, behebt eine echte Schwaeche.
+2. **Vorhandene Leisten fuettern**: `btcfeed --waybar`, `--polybar`,
+   `--genmon`. Billigste Reichweite fuer "Leiste auf beliebigen Systemen",
+   **Waybar ist auf diesem Rechner installiert**, also sofort pruefbar.
+3. **Flatpak.** `flatpak` ist da, **`flatpak-builder` fehlt** und muesste
+   installiert werden. Erst damit ist "laeuft auf jedem Linux-Desktop" auch
+   verteilbar.
+4. **ClockView (BlockClock) und MinerView (Bitaxe).** Beide klein, beide ohne
+   Node machbar, beide sofort sichtbarer Mehrwert. Vorlage fuer die BlockClock
+   ist der unveroeffentlichte Commit `display-mode` im Fork.
+5. **Layer-Shell** (`layer-shell-qt`, in den Paketquellen) fuer eigenes
+   Desktop-Widget und eigene Leiste auf Wayland.
+6. **Android-APK.** SDK und NDK fehlen; der frickeligste Teil.
+7. **ExplorerView und WatchView.** Groesster Brocken, haengt an nichts mehr
+   ausser Arbeit.
+
+### Kleinigkeiten, notiert
+
+- Dashboard-Tab: echte Einzelquadrate braeuchten `implicitHeight` von 410 auf
+  rund 545 (`daemon/btcfeed-dashtab`). Derzeit geglaettete Textur, weil bei
+  156 px Blockseite und 105 Rasterzellen kein Platz fuer Kachel plus Luecke ist.
+- `FrostedPanel`: an den abgerundeten Ecken erscheint weichgezeichneter Inhalt
+  ohne Einfaerbung (QML beschneidet nur rechteckig). Sauber ueber `maskEnabled`.
+- Eine neue geteilte QML-Datei braucht ausser `install-links.sh` und
+  `btcfeed-dashtab` (beide lesen jetzt das Verzeichnis) noch den Eintrag in
+  `app/CMakeLists.txt` von Hand.
+
+---
+
+# Aeltere Notizen (31.08.2026, 18:15)
+
 
 Aufbau, Formeln und Stolperfallen stehen in `DOKUMENTATION.md`. Hier nur, wo wir
 stehengeblieben sind.
