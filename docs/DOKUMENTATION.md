@@ -297,3 +297,24 @@ btcfeed --print                     # Zustand einmalig per REST holen und zeigen
 dms ipc call bitcoinFeed status     # was das Plugin gerade liest
 dms ipc call bitcoinFeed restart    # Feed neu starten
 ```
+
+
+## Stolperfalle: QML liest keine lokalen Dateien per XMLHttpRequest
+
+Qt sperrt das hinter `QML_XHR_ALLOW_FILE_READ=1`. Ohne die Variable bleibt der
+Aufruf auf **readyState 1** stehen — kein Fehler, keine Meldung, er kommt
+einfach nie bei DONE an. Am 01.09.2026 mit Qt 6.11.2 nachgemessen; mit gesetzter
+Variable erreicht derselbe Aufruf readyState 4.
+
+Deshalb liest `FeedState.qml` seinen Zustand nicht aus `state.json`, sondern
+ueber die Loopback-Schnittstelle des Daemons (`http://127.0.0.1:21021/state`).
+Ueber HTTP gibt es den Sonderfall nicht, und dieselbe Datei laeuft damit
+unveraendert unter Android.
+
+Nebenbei zwei Fallen beim Nachmessen selbst:
+- `/usr/bin/qml` ist hier **Qt 5.15**. Versionslose Importe sind Qt-6-Syntax,
+  deshalb meldet es nur "Did not load any objects". Der Qt6-Laeufer liegt unter
+  `/usr/lib/qt6/bin/qml`.
+- Dessen `console.log`/`console.warn` erreicht die Konsole in dieser Umgebung
+  nicht. Ergebnisse lassen sich zuverlaessig ueber `Qt.exit(<code>)` heraus-
+  tragen.

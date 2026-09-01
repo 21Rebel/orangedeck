@@ -1,8 +1,22 @@
-// Liest den von ~/.local/bin/btcfeed geschriebenen Zustand und meldet
-// neue Transaktionen sowie gefundene Bloecke als Signale weiter.
+// Liest den von btcfeed gelieferten Zustand und meldet neue Transaktionen
+// sowie gefundene Bloecke als Signale weiter.
+//
+// Bewusst nur `import QtQuick`: diese Datei laeuft damit unveraendert in der
+// DankMaterialShell, in der eigenstaendigen Qt-Anwendung und unter Android.
+// Sie kannte frueher Quickshell (env, FileView, Process) -- alle drei sind
+// ersetzt:
+//
+//   Quickshell.env  ->  entfaellt, der Ort steckt in `endpoint`
+//   FileView        ->  XMLHttpRequest gegen die Loopback-Schnittstelle.
+//                       Lesen von file:// scheidet aus: Qt sperrt das hinter
+//                       QML_XHR_ALLOW_FILE_READ=1, ohne die Variable bleibt
+//                       der Aufruf auf readyState 1 stehen (01.09.2026
+//                       nachgemessen). Ueber HTTP gibt es diesen Sonderfall
+//                       nicht -- auf keinem Desktop und auch nicht auf Android.
+//   Process         ->  gehoert nicht hierher. Den Daemon starten in der
+//                       Shell BitcoinFeedDaemon.qml und beim eigenen Fenster
+//                       btcfeed-window; beide taten das ohnehin schon.
 import QtQuick
-import Quickshell
-import Quickshell.Io
 
 Item {
     id: root
@@ -10,12 +24,11 @@ Item {
     visible: false
 
     property bool active: true
-    // Gleiche Wahl wie btcfeed: tmpfs, sonst ~/.local/state
-    readonly property string stateDir: (Quickshell.env("XDG_RUNTIME_DIR") || (Quickshell.env("HOME") + "/.local/state")) + "/btcfeed"
-    property string statePath: stateDir + "/state.json"
+    // Standard ist die Loopback-Schnittstelle des lokalen Daemons. Fuer ein
+    // Tablet zeigt das stattdessen auf den Rechner im eigenen Netz -- eine
+    // bewusste Einstellung, kein Standardverhalten.
+    property string endpoint: "http://127.0.0.1:21021"
     property int pollMs: 400
-    property bool autostart: true
-    property string feedCommand: Quickshell.env("HOME") + "/.local/bin/btcfeed"
 
     // Ausgelesener Zustand
     property var snap: ({})
@@ -39,6 +52,36 @@ Item {
 
     signal transactionsArrived(var txs)
     signal blockMined(var tip)
+
+    // -- Abholen ----------------------------------------------------------
+    // Eine Abfrage nach der anderen: bei 400 ms Takt und einem haengenden
+    // Netzweg wuerden sich sonst Anfragen stapeln.
+    property bool __statePending: false
+    property bool __blockPending: false
+
+    function __get(path, pendingKey, onOk, onFail) {
+        if (root[pendingKey])
+            return;
+        root[pendingKey] = true;
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () {
+            if (x.readyState !== XMLHttpRequest.DONE)
+                return;
+            root[pendingKey] = false;
+            if (x.status === 200 && x.responseText)
+                onOk(x.responseText);
+            else if (onFail)
+                onFail();
+        };
+        try {
+            x.open("GET", root.endpoint + path);
+            x.send();
+        } catch (e) {
+            root[pendingKey] = false;
+            if (onFail)
+                onFail();
+        }
+    }
 
     function __parse(txt) {
         if (!txt)
@@ -82,20 +125,14 @@ Item {
         }
     }
 
-    FileView {
-        id: blockFile
-
-        path: root.active ? root.stateDir + "/block.json" : ""
-        blockLoading: false
-        printErrors: false
-
-        onLoaded: {
-            try {
-                var b = JSON.parse(text());
-                if (b && b.height)
-                    root.block = b;
-            } catch (e) {}
-        }
+    Timer {
+        interval: root.pollMs
+        repeat: true
+        running: root.active
+        triggeredOnStart: true
+        onTriggered: root.__get("/state", "__statePending", root.__parse, function () {
+            root.online = false;
+        })
     }
 
     // Der Daemon holt die Blockdaten nach dem Blockfund im Hintergrund nach,
@@ -106,48 +143,15 @@ Item {
         running: root.active
         triggeredOnStart: true
         onTriggered: {
-            if (!root.block.height || root.block.height !== root.tipHeight)
-                blockFile.reload();
-        }
-    }
-
-    FileView {
-        id: stateFile
-
-        path: root.active ? root.statePath : ""
-        blockLoading: false
-        watchChanges: true
-        printErrors: false
-
-        onLoaded: root.__parse(text())
-        onLoadFailed: root.online = false
-    }
-
-    Timer {
-        interval: root.pollMs
-        repeat: true
-        running: root.active
-        onTriggered: stateFile.reload()
-    }
-
-    // Startet den Feed, falls niemand ihn schreibt. Die Sperre in btcfeed
-    // sorgt dafuer, dass hoechstens eine Instanz laeuft.
-    Process {
-        id: feedProc
-        command: [root.feedCommand]
-        running: false
-    }
-
-    Timer {
-        id: watchdog
-        interval: 6000
-        repeat: true
-        running: root.active && root.autostart
-        triggeredOnStart: true
-        onTriggered: {
-            var stale = (Date.now() / 1000 - root.stateTs) > 15;
-            if (stale && !feedProc.running)
-                feedProc.running = true;
+            if (root.block.height && root.block.height === root.tipHeight)
+                return;
+            root.__get("/block", "__blockPending", function (txt) {
+                try {
+                    var b = JSON.parse(txt);
+                    if (b && b.height)
+                        root.block = b;
+                } catch (e) {}
+            });
         }
     }
 }

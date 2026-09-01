@@ -8,6 +8,10 @@ Faellt automatisch auf REST-Polling zurueck, wenn der WebSocket streikt.
   btcfeed            Daemon (Standard, nur eine Instanz gleichzeitig)
   btcfeed --once     Einmal Zustand holen und beenden (zum Testen)
   btcfeed --print    Zustand ausgeben statt ihn zu schreiben
+
+Zusaetzlich zu state.json bietet der Daemon die Daten unter
+http://127.0.0.1:21021/state, /block und /health an -- nur lesend und nur
+lokal. BTCFEED_ADDR und BTCFEED_PORT aendern das, siehe Kommentar dort.
 """
 import base64
 import fcntl
@@ -22,6 +26,7 @@ import sys
 import threading
 import time
 import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 HOST = "mempool.space"
@@ -42,6 +47,21 @@ MAX_TILES = 8000          # Obergrenze an Kacheln pro Block
 # Gebuehrenklassen fuer die Kachelfarben. Der Index landet als Ziffer in
 # block.json, die Ansicht rechnet ihn ueber dieselbe Tabelle zurueck.
 FEE_BUCKETS = [0.5, 1, 2, 3, 5, 8, 15, 30, 80]
+
+# Loopback-Schnittstelle fuer die Oberflaechen.
+#
+# Warum ueberhaupt ein Port, wo doch state.json existiert: Qt sperrt lesenden
+# Dateizugriff per XMLHttpRequest hinter QML_XHR_ALLOW_FILE_READ=1 (am
+# 01.09.2026 nachgemessen -- ohne die Variable bleibt der Aufruf auf
+# readyState 1 stehen). Ueber HTTP geht es ohne Sonderfall, auf jedem Desktop
+# und unter Android gleichermassen. Die Dateien werden weiter geschrieben.
+#
+# **Standard ist 127.0.0.1.** Die Daten bleiben auf dem Geraet des Benutzers;
+# nichts wird nach aussen angeboten, solange BTCFEED_ADDR nicht ausdruecklich
+# geaendert wird. Fuer ein Tablet im eigenen Netz ist das eine bewusste
+# Entscheidung, kein Standardverhalten.
+SERVE_ADDR = os.environ.get("BTCFEED_ADDR", "127.0.0.1")
+SERVE_PORT = int(os.environ.get("BTCFEED_PORT", "21021"))
 
 
 def fee_bucket(rate):
@@ -360,6 +380,70 @@ class Feed:
 
 
 # --------------------------------------------------------------------------
+# Loopback-Schnittstelle
+# --------------------------------------------------------------------------
+class _Handler(BaseHTTPRequestHandler):
+    """Nur lesend, nur GET, nur die drei Pfade. Kein Zustand wird entgegen-
+    genommen -- der Dienst nimmt grundsaetzlich nichts an."""
+
+    protocol_version = "HTTP/1.1"
+    feed = None
+
+    def _send(self, body, status=200, ctype="application/json"):
+        raw = body if isinstance(body, bytes) else body.encode()
+        self.send_response(status)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(raw)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(raw)
+
+    def do_GET(self):
+        path = urlparse(self.path).path
+        try:
+            if path == "/state":
+                self._send(json.dumps(self.feed.snapshot(), separators=(",", ":")))
+            elif path == "/block":
+                try:
+                    with open(BLOCK_FILE, "rb") as f:
+                        self._send(f.read())
+                except FileNotFoundError:
+                    self._send("{}")
+            elif path == "/health":
+                self._send(json.dumps({"ok": True, "source": self.feed.source}))
+            else:
+                self._send('{"error":"unbekannter Pfad"}', 404)
+        except BrokenPipeError:
+            pass
+        except Exception as e:
+            try:
+                self._send(json.dumps({"error": str(e)}), 500)
+            except Exception:
+                pass
+
+    def log_message(self, *a):
+        pass   # sonst eine Zeile je Abfrage, mehrmals pro Sekunde
+
+
+def serve_local(feed):
+    """Startet die Loopback-Schnittstelle. Scheitert sie, laeuft der Feed
+    trotzdem weiter -- die Dateien werden ja nach wie vor geschrieben."""
+    handler = type("Handler", (_Handler,), {"feed": feed})
+    try:
+        srv = ThreadingHTTPServer((SERVE_ADDR, SERVE_PORT), handler)
+    except OSError as e:
+        sys.stderr.write("Loopback-Schnittstelle nicht gestartet (%s:%s): %s\n"
+                         % (SERVE_ADDR, SERVE_PORT, e))
+        return None
+    srv.daemon_threads = True
+    if SERVE_ADDR not in ("127.0.0.1", "::1", "localhost"):
+        sys.stderr.write("WARNUNG: btcfeed ist auf %s erreichbar, nicht nur lokal.\n"
+                         % SERVE_ADDR)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv
+
+
+# --------------------------------------------------------------------------
 # Betriebsarten
 # --------------------------------------------------------------------------
 def handle(feed, msg):
@@ -477,6 +561,8 @@ def main():
     if lock is None:
         print("btcfeed laeuft bereits -- diese Instanz beendet sich.", file=sys.stderr)
         return 0
+
+    serve_local(feed)
 
     backoff = 2
     rest_deadline = 0.0

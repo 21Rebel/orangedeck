@@ -145,6 +145,22 @@ Daraus folgt, verbindlich fuer jede spaetere Funktion:
 signieren kann.** Damit ist der schlimmste denkbare Fehlerfall eine falsche
 Zahl auf dem Bildschirm.
 
+### Die Daten bleiben beim Benutzer — festgelegt 01.09.2026
+
+Ausdrueckliche Vorgabe: **wir wollen die Daten gar nicht haben.** Die Anwendung
+bietet nur die Moeglichkeit, sie anzusehen; liegen bleiben sie auf dem Geraet.
+Daraus folgt hart:
+
+- **Kein Server von uns.** Keine Telemetrie, keine Nutzungszahlen, keine
+  Absturzberichte, kein Konto, keine Registrierung.
+- **Die Loopback-Schnittstelle bindet auf `127.0.0.1`** (`SERVE_ADDR` in
+  `daemon/btcfeed`). Ein Tablet im eigenen Netz erreicht sie erst, wenn der
+  Benutzer die Adresse ausdruecklich aendert — der Daemon schreibt dann eine
+  Warnung. Nach aussen angeboten wird nichts von selbst.
+- **Der Dienst nimmt nichts entgegen.** Nur `GET`, nur drei Pfade, kein
+  Schreibweg.
+- Einstellungen, xpub und Verlauf liegen in der lokalen Konfiguration.
+
 ### Der Preis ist Privatsphaere, nicht Sicherheit
 
 Watch-only schuetzt die Guthaben vollstaendig. Was bleibt, ist ein
@@ -218,9 +234,10 @@ Die ersten sechs Schritte brauchen **keinen Bitcoin-Node**.
 
     0. STAND.md Punkt 1 beheben (der pending-Reset). Sonst portiert man den
        Fehler mit. Klein.
-    1. FeedState.qml entkoppeln. DER Schluesselschritt -- danach ist die
-       gesamte Grafik plattformunabhaengig.
-    2. btcfeedd: WebSocket-Ausgabe, Quell-Adapter, systemd-Unit.
+    1. [ERLEDIGT 01.09.2026] FeedState.qml entkoppeln. DER Schluesselschritt --
+       danach ist die gesamte Grafik plattformunabhaengig.
+    2. btcfeedd: Quell-Adapter, systemd-Unit. (Die Netzschnittstelle steht
+       bereits: Loopback-HTTP, siehe unten.)
     3. Eigenstaendige Qt-App + Flatpak. Damit ist "beliebiger Linux-Desktop"
        erreicht.
     4. DMS-Plugin auf die geteilten Komponenten umstellen.
@@ -258,3 +275,35 @@ WatchView und keine Adresssuche im Explorer.
 (MIT, mononaut); `LICENSE` beilegen. Kommt die mempool-Instanz oder bitfeeds
 Server dazu, aendert das nichts — beide sind ebenfalls quelloffen und mit dem
 Vorhaben vertraeglich. Details in STAND.md Punkt 6.
+
+
+## Nachtrag 01.09.2026: Schritt 1 ist erledigt
+
+`ui/qml/FeedState.qml` ist neu geschrieben und importiert nur noch `QtQuick`.
+**Damit haengt keine einzige Zeile der Grafik mehr an Quickshell.** Die drei
+alten Bindungen sind so ersetzt:
+
+| vorher | jetzt |
+|---|---|
+| `Quickshell.env` | entfaellt — der Ort steckt in `endpoint` |
+| `FileView` | `XMLHttpRequest` gegen die Loopback-Schnittstelle |
+| `Process` | entfaellt — Shell und `btcfeed-window` starten den Daemon ohnehin |
+
+**Warum HTTP und nicht `file://`:** Qt sperrt lesenden Dateizugriff per
+XMLHttpRequest hinter der Umgebungsvariablen `QML_XHR_ALLOW_FILE_READ=1`. Am
+01.09.2026 nachgemessen (Qt 6.11.2, `qml -platform offscreen`): ohne die
+Variable bleibt der Aufruf auf **readyState 1** stehen und erreicht DONE nie;
+mit ihr laeuft er durch. Ueber HTTP entfaellt der Sonderfall vollstaendig — auf
+jedem Desktop und unter Android gleichermassen, ohne dass jemand eine
+Umgebungsvariable setzen muesste. `state.json` und `block.json` werden weiter
+geschrieben, es bricht also nichts weg.
+
+Der Daemon bietet dafuer an (nur lesend, nur `GET`, gebunden auf 127.0.0.1):
+
+    /state    der Zustand, wie er auch in state.json steht
+    /block    Kacheldaten des zuletzt gefundenen Blocks
+    /health   Lebenszeichen
+
+**Gegengeprueft:** nach dem Neustart haelt der DMS-Prozess zwei stehende
+Verbindungen auf `127.0.0.1:21021` — die Schleifen fuer Zustand (400 ms) und
+Block (3 s). Keine QML-Fehler, Plugin geladen, Daten live (`source ws`).
