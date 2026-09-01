@@ -656,3 +656,45 @@ Solange kein Miner erreichbar war, gegen nachgebaute Antworten (HTTP und TCP):
 Danach die ganze Kette: nachgestelltes Geraet -> Daemon -> Loopback -> FeedState
 -> MinerView, mit zwei Geraeten zugleich und richtiger Summe (96,17 TH/s).
 **Gegen echte Geraete steht die Probe noch aus.**
+
+
+## Miner: Verlauf, Bestenliste, Rechenwerke
+
+Die Weboberflaeche des Geraets bleibt der Ort fuer **Einstellungen** -- hier
+wird nur angezeigt. Ein Knopf oben rechts oeffnet sie
+(`Qt.openUrlExternally`).
+
+### Der Verlauf wird selbst mitgeschrieben
+
+AxeOS hat zwar `/api/system/statistics`, aber die Aufzeichnung haengt an
+`statsFrequency`; am Testgeraet stand die auf **0**, die Antwort war leer. Die
+Kurve der Weboberflaeche baut sich der Browser selbst zusammen. Und die
+cgminer-Schnittstelle kennt gar keinen Verlauf.
+
+Deshalb schreibt der **Daemon** mit: 180 Punkte im Fuenfsekundentakt, also eine
+Viertelstunde, je Geraet (`minerHistory` im Zustand). Gerundet abgelegt --
+Hashrate in GH/s mit einer Stelle -- weil der Zustand zweieinhalbmal pro
+Sekunde geschrieben wird. Das funktioniert bei **jedem** Geraetetyp gleich und
+braucht am Geraet keine Einstellung.
+
+`MinerChart.qml` zeichnet daraus Hashrate und Temperatur uebereinander, mit
+zwei Achsen -- die Groessen haben nichts miteinander zu tun.
+
+### Bestenliste
+
+`/api/system/scoreboard` liefert die 20 hoechsten Freigaben mit `difficulty`,
+`ntime` und `nonce`. Alle 30 Sekunden geholt (sie aendert sich kaum), in der
+Ansicht die besten fuenf, jeweils mit dem Abstand zur Netzschwierigkeit als
+"1 zu N". Nur AxeOS hat so etwas; bei anderen Geraeten bleibt der Abschnitt weg.
+
+### Rechenwerke
+
+`hashrateMonitor.asics[0].domains` sind die einzelnen Hash-Domaenen -- in der
+Weboberflaeche "Hashrate Registers". Als Balken im Verhaeltnis zum staerksten
+dargestellt, damit sofort auffaellt, wenn eines abfaellt. Gemessen am Testgeraet
+schwanken sie zwischen etwa 230 und 290 GH/s.
+
+### Platz
+
+Kurve und Bestenliste erscheinen erst ab 330 bzw. 460 Bildpunkten Hoehe -- im
+Dashboard-Tab ist dafuer kein Platz, dort bleiben die Kennzahlen.

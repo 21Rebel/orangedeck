@@ -22,6 +22,7 @@ set(SHARED_QML
     ../ui/qml/FrostedPanel.qml
     ../ui/qml/ClockView.qml
     ../ui/qml/MinerView.qml
+    ../ui/qml/MinerChart.qml
     ../ui/qml/mondrian.js
     ../ui/qml/colors.js
 )

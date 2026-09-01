@@ -56,6 +56,8 @@ Item {
     // liefert alle Felder normalisiert, Hashrate immer in H/s.
     readonly property var miners: snap.miners || []
     readonly property var minerTotal: snap.minerTotal || ({})
+    // Verlauf je Geraet, vom Daemon mitgeschrieben
+    readonly property var minerHistory: snap.minerHistory || ({})
     readonly property bool minerConfigured: miners.length > 0
     readonly property bool minerOnline: (minerTotal.online || 0) > 0
 

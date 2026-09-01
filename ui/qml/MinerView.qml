@@ -33,6 +33,10 @@ Item {
         ? total.bestDiff / netDiff : 0
     // Bei genau einem Geraet ist Platz fuer die Einzelheiten
     readonly property var one: (miners.length === 1 && miners[0].online) ? miners[0] : null
+    readonly property var oneHist: (one && feed) ? (feed.minerHistory[one.id] || ({})) : ({})
+    // Platz ist knapp im Dashboard-Tab -- dort bleiben Kurve und Bestenliste weg
+    readonly property bool roomForChart: height > 330
+    readonly property bool roomForBoard: height > 460
 
     function big(n, unit) {
         if (!n)
@@ -56,6 +60,44 @@ Item {
         if (h > 0)
             return h + " Std " + m + " Min";
         return m + " Min";
+    }
+
+    // Zu den Einstellungen geht es in AxeOS -- die bleiben dort, hier wird nur
+    // angezeigt. Der Knopf oeffnet die Weboberflaeche des Geraets.
+    Rectangle {
+        id: openBtn
+
+        anchors.top: parent.top
+        anchors.right: parent.right
+        visible: root.one !== null && root.one.type === "axeos"
+        width: openLabel.width + root.scaleUnit * 0.9
+        height: openLabel.height + root.scaleUnit * 0.45
+        radius: height / 2
+        color: openArea.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.06)
+        border.width: 1
+        border.color: Qt.rgba(1, 1, 1, 0.1)
+        z: 20
+
+        Text {
+            id: openLabel
+
+            anchors.centerIn: parent
+            text: "AxeOS öffnen ↗"
+            color: root.textColor
+            font.pixelSize: root.scaleUnit * 0.58
+        }
+
+        MouseArea {
+            id: openArea
+
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                if (root.one)
+                    Qt.openUrlExternally(root.one.id);
+            }
+        }
     }
 
     // ---------------------------------------------------- kein Geraet bekannt
@@ -281,6 +323,129 @@ Item {
                     : ""
                 color: root.dimColor
                 font.pixelSize: root.scaleUnit * 0.55
+            }
+        }
+
+        // ------------------------------------------------------- Verlauf
+        MinerChart {
+            width: parent.width
+            height: root.scaleUnit * 4.2
+            visible: root.one !== null && root.roomForChart
+                     && (root.oneHist.hr || []).length > 1
+            hist: root.oneHist
+            lineColor: root.accentColor
+            dimColor: root.dimColor
+            labelSize: root.scaleUnit * 0.5
+        }
+
+        // ------------------------------------------ Rechenwerke einzeln
+        Column {
+            width: parent.width
+            spacing: root.scaleUnit * 0.15
+            visible: root.one !== null && (root.one.domains || []).length > 0
+                     && root.roomForChart
+
+            Text {
+                text: "Rechenwerke"
+                color: root.dimColor
+                font.pixelSize: root.scaleUnit * 0.55
+            }
+
+            Row {
+                width: parent.width
+                spacing: root.scaleUnit * 0.25
+
+                Repeater {
+                    model: root.one ? root.one.domains : []
+
+                    Rectangle {
+                        id: dom
+
+                        required property var modelData
+                        required property int index
+
+                        width: (root.width * 0.9 - root.scaleUnit * 0.75) / Math.max(1, (root.one.domains || []).length)
+                        height: root.scaleUnit * 0.95
+                        radius: 3
+                        color: Qt.rgba(1, 1, 1, 0.06)
+
+                        Rectangle {
+                            // Anteil am staerksten Rechenwerk -- so sieht man
+                            // sofort, wenn eines abfaellt.
+                            width: parent.width * Math.max(0.05, Math.min(1,
+                                dom.modelData / Math.max.apply(null, root.one.domains)))
+                            height: parent.height
+                            radius: parent.radius
+                            color: root.accentColor
+                            opacity: 0.75
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: Math.round(dom.modelData) + " GH/s"
+                            color: root.textColor
+                            font.pixelSize: root.scaleUnit * 0.5
+                        }
+                    }
+                }
+            }
+        }
+
+        // -------------------------------------------------- Bestenliste
+        Column {
+            width: parent.width
+            spacing: root.scaleUnit * 0.12
+            visible: root.one !== null && root.roomForBoard
+                     && (root.one.scoreboard || []).length > 0
+
+            Text {
+                text: "Beste Freigaben"
+                color: root.dimColor
+                font.pixelSize: root.scaleUnit * 0.55
+            }
+
+            Repeater {
+                model: root.one ? (root.one.scoreboard || []).slice(0, 5) : []
+
+                Row {
+                    id: sbRow
+
+                    required property var modelData
+                    required property int index
+
+                    width: parent.width
+                    spacing: root.scaleUnit * 0.5
+
+                    Text {
+                        width: root.scaleUnit * 1.2
+                        text: (sbRow.index + 1) + "."
+                        color: root.dimColor
+                        font.pixelSize: root.scaleUnit * 0.58
+                    }
+
+                    Text {
+                        width: root.scaleUnit * 4
+                        text: root.big(sbRow.modelData.diff)
+                        color: sbRow.index === 0 ? root.accentColor : root.textColor
+                        font.pixelSize: root.scaleUnit * 0.58
+                    }
+
+                    Text {
+                        text: root.netDiff > 0
+                            ? "1 zu " + root.big(root.netDiff / sbRow.modelData.diff)
+                            : ""
+                        color: root.dimColor
+                        font.pixelSize: root.scaleUnit * 0.58
+                    }
+
+                    Text {
+                        text: sbRow.modelData.time
+                            ? new Date(sbRow.modelData.time * 1000).toLocaleDateString(Qt.locale("de_DE"))
+                            : ""
+                        color: root.dimColor
+                        font.pixelSize: root.scaleUnit * 0.58
+                    }
+                }
             }
         }
 

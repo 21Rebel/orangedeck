@@ -132,6 +132,15 @@ SOURCES = load_sources()
 # aendern sich im Stunden- bis Tagestakt -- alle fuenf Minuten ist reichlich.
 SLOW_INTERVAL = 300
 MINER_INTERVAL = 5
+# Verlauf je Geraet. 180 Punkte im Fuenfsekundentakt sind eine Viertelstunde.
+#
+# Warum selbst mitschreiben, statt den des Geraets zu holen: AxeOS zeichnet nur
+# auf, wenn `statsFrequency` gesetzt ist -- am 01.09.2026 stand die am
+# Testgeraet auf 0, die Kurve der Weboberflaeche baut sich der Browser selbst
+# zusammen. Und die cgminer-Schnittstelle kennt gar keinen Verlauf. Selbst
+# mitschreiben funktioniert bei jedem Geraet gleich.
+MINER_HISTORY = 180
+SCOREBOARD_INTERVAL = 30
 
 
 def fee_bucket(rate):
@@ -342,6 +351,9 @@ class Feed:
         self.miner_total = {}     # Summe ueber alle erreichbaren Geraete
         self.slow_at = 0.0
         self.miner_at = 0.0
+        self.miner_hist = {}      # Geraete-Kennung -> Verlauf
+        self.scoreboard = {}      # Geraete-Kennung -> Bestenliste
+        self.scoreboard_at = 0.0
 
     # -- Einspeisung ------------------------------------------------------
     def add_txs(self, txs):
@@ -448,6 +460,7 @@ class Feed:
             "difficulty": self.difficulty,
             "hashrate": self.hashrate,
             "miners": self.miners,
+            "minerHistory": self.miner_hist,
             "minerTotal": self.miner_total,
         }
 
@@ -630,6 +643,9 @@ def probe_axeos(url, timeout=4):
         "uptime": d.get("uptimeSeconds"),
         "paused": d.get("miningPaused"),
         "pool": pool,
+        # Die einzelnen Rechenwerke -- in der Weboberflaeche "Hashrate Registers"
+        "domains": (((d.get("hashrateMonitor") or {}).get("asics") or [{}])[0]
+                    .get("domains") or []),
     }
 
 
@@ -683,6 +699,23 @@ def probe_cgminer(host, port=4028, timeout=3):
     }
 
 
+def probe_scoreboard(url, timeout=4):
+    """AxeOS fuehrt eine Bestenliste der hoechsten Freigaben. Andere Geraete
+    haben nichts Vergleichbares -- dort bleibt sie leer."""
+    req = urllib.request.Request(url.rstrip("/") + "/api/system/scoreboard",
+                                 headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        rows = json.loads(r.read().decode())
+    out = []
+    for e in rows[:20]:
+        out.append({
+            "diff": parse_diff(e.get("difficulty")),
+            "time": e.get("ntime"),
+            "nonce": e.get("nonce"),
+        })
+    return out
+
+
 def probe_miner(spec, timeout=4):
     """Fragt ein einzelnes Geraet ab. Nicht erreichbar ist **kein Fehler**,
     sondern ein Zustand -- die Geraete sind oft schlicht aus."""
@@ -709,6 +742,44 @@ def poll_miners(feed):
     feed.miner_at = time.time()
     found = [probe_miner(sp) for sp in specs]
     live = [m for m in found if m.get("online")]
+
+    # Verlauf fortschreiben. Die Werte werden gerundet abgelegt -- der Zustand
+    # wird zweieinhalbmal pro Sekunde geschrieben, da zaehlt jede Stelle.
+    now = time.time()
+    for m in found:
+        h = feed.miner_hist.setdefault(m["id"], {"t": [], "hr": [], "temp": [], "err": []})
+        if m.get("online"):
+            h["t"].append(round(now))
+            h["hr"].append(round((m.get("hashRate") or 0) / 1e9, 1))   # GH/s
+            h["temp"].append(round(m["temp"], 1) if m.get("temp") is not None else None)
+            h["err"].append(round(m["errorPct"], 1) if m.get("errorPct") is not None else None)
+            for k in ("t", "hr", "temp", "err"):
+                if len(h[k]) > MINER_HISTORY:
+                    del h[k][:len(h[k]) - MINER_HISTORY]
+    # Verlaeufe verschwundener Geraete nicht ewig mitschleppen
+    known = {m["id"] for m in found}
+    for gone in [k for k in feed.miner_hist if k not in known]:
+        del feed.miner_hist[gone]
+
+    # Bestenliste seltener holen, sie aendert sich kaum
+    if now - feed.scoreboard_at >= SCOREBOARD_INTERVAL:
+        feed.scoreboard_at = now
+        for m in live:
+            if m.get("type") != "axeos":
+                continue
+            try:
+                feed.scoreboard[m["id"]] = probe_scoreboard(m["id"])
+            except Exception:
+                pass
+    for m in found:
+        sb = feed.scoreboard.get(m["id"])
+        if sb:
+            m["scoreboard"] = sb
+        # Die Rechenwerke einzeln, wie in der Weboberflaeche unter
+        # "Hashrate Registers"
+        if m.get("domains"):
+            pass
+
     feed.miners = found
     feed.miner_total = {
         "count": len(found),
