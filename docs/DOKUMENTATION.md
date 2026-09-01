@@ -1131,12 +1131,27 @@ nicht in der Rechnung, sondern beim Ausrichten: zum Schluss wird die
 `midY + hMid`), nicht die gerechnete. Damit stimmt es unabhaengig davon, wie oft
 die Mindestdicke zuschlaegt.
 
-## Pfeilspitzen gleich lang
+## Pfeilspitzen gleich lang, kurz, mit Randabstand
 
-Vorher haing die Laenge an der Banddicke (`tipRatio`). Das machte die rechte
-Kante unruhig, weil jedes Band anders weit hinausragte. Jetzt fuer alle gleich
-und bewusst knapp: bei dicken Baendern ergibt das eine flache Spitze, bei
-duennen faellt sie ohnehin kaum auf.
+Drei Anlaeufe, jeder mit einem eigenen Fehler:
+
+1. **Laenge an die Banddicke gekoppelt** (`tipRatio`). Machte die rechte Kante
+   unruhig, weil jedes Band anders weit hinausragte.
+2. **Feste, aber zu lange Spitze.** Das Band wirkt dadurch vorn duenner, als es
+   ist -- die Dicke laeuft ueber die halbe Spitze aus.
+3. **Kein Randabstand.** Die Spitze klebte an der Kante der Flaeche.
+
+Jetzt: fuer alle Baender gleich lang, deutlich kuerzer (`arrowLen` von 8,9 auf
+6,4 px bei 1240 px Breite) und mit `edgeMargin` (8,1 px) vom Rand abgeruckt.
+Davor laeuft das Band ein gerades Stueck, damit seine Dicke bis zum Pfeil
+erkennbar bleibt.
+
+    Banddicke   Winkel der Spitze vorher / jetzt
+        10 px          59° /  76°
+        40 px         132° / 144°
+       120 px         163° / 168°
+
+Groesserer Winkel heisst stumpfer, also gleichmaessigere Dicke bis zum Ende.
 
 ## Duennere Faeden, mehr Luft
 

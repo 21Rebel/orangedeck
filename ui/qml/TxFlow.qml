@@ -88,11 +88,12 @@ Item {
     property real swing: 0.78
     property real edgeGap: Math.max(2, labelSize * 0.3)
     // Pfeilspitze am rechten Ende, damit die Richtung erkennbar ist.
-    // **Fuer alle Baender gleich lang** -- verschieden lange Spitzen lassen die
-    // rechte Kante unruhig wirken. Der Wert ist bewusst knapp: bei dicken
-    // Baendern ergibt das eine flache Spitze, bei duennen faellt sie ohnehin
-    // kaum auf.
-    property real arrowLen: Math.max(5, Math.min(width * 0.022, labelSize * 1.1))
+    // **Fuer alle Baender gleich lang und bewusst kurz** -- eine lange Spitze
+    // laesst das Band vorn duenner wirken, als es ist, und verschieden lange
+    // Spitzen machen die rechte Kante unruhig.
+    property real arrowLen: Math.max(4, Math.min(width * 0.014, labelSize * 0.8))
+    // Abstand des Pfeils vom rechten Rand -- ohne ihn klebt er an der Kante.
+    property real edgeMargin: Math.max(4, Math.min(width * 0.012, labelSize))
 
     function tipFor(thickness) {
         return Math.min(root.arrowLen, Math.max(2, thickness));
@@ -309,7 +310,7 @@ Item {
             // Strich stehen, und das Bild sieht nach zwei Formen aus statt nach
             // einem Fluss. Ein halber Bildpunkt auf jeder Seite genuegt.
             var seam = 0.75;
-            var xR = w - root.connector - root.arrowLen;
+            var xR = w - root.edgeMargin - root.arrowLen - root.connector;
             var i, b, lit, g;
 
             // --- Eingaenge -------------------------------------------------
@@ -357,15 +358,18 @@ Item {
                 // Alle Baender enden an derselben Stelle; nur die Spitze ist
                 // je nach Dicke unterschiedlich lang. Dazwischen ein gerades
                 // Stueck, damit die Kante ruhig laeuft.
+                // Rechts bleibt ein Rand frei; davor ein gerades Stueck, damit
+                // die Dicke am Pfeil klar erkennbar bleibt.
+                var xEnd = w - root.edgeMargin;
                 var tip = root.tipFor(b.hEdge);
-                var xT = w - tip;
+                var xT = xEnd - tip;
                 ctx.beginPath();
                 ctx.moveTo(xC - seam, b.midY);
                 canvas.curve(ctx, xC - seam, b.midY, xR, b.edgeY);
                 ctx.lineTo(xT, b.edgeY);
                 // Die Spitze laeuft **innerhalb** der Bandbreite zusammen --
                 // ein Ueberstand an den Ecken sieht nach Fehler aus.
-                ctx.lineTo(w, b.edgeY + b.hEdge / 2);
+                ctx.lineTo(xEnd, b.edgeY + b.hEdge / 2);
                 ctx.lineTo(xT, b.edgeY + b.hEdge);
                 ctx.lineTo(xR, b.edgeY + b.hEdge);
                 canvas.curve(ctx, xR, b.edgeY + b.hEdge, xC - seam, b.midY + b.hMid);
@@ -382,7 +386,7 @@ Item {
                 var ty = fb.edgeY - root.labelSize * 0.45;
                 if (ty < root.labelSize)
                     ty = fb.edgeY + fb.hEdge + root.labelSize;
-                ctx.fillText("Gebühr " + root.fee + " sat", w - root.labelSize * 0.4, ty);
+                ctx.fillText("Gebühr " + root.fee + " sat", w - root.edgeMargin, ty);
             }
         }
     }
