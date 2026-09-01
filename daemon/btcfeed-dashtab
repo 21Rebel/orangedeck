@@ -87,7 +87,7 @@ Item {
         anchors.top: parent.top
         anchors.leftMargin: Theme.spacingS
         anchors.topMargin: 2
-        labels: ["Feed", "BlockClock", "Miner"]
+        labels: ["Feed", "BlockClock", "Miner", "Explorer"]
         current: root.view
         fontSize: Theme.fontSizeSmall
         textColor: Theme.surfaceText
@@ -101,6 +101,19 @@ Item {
 
     ClockView {
         visible: root.view === 1
+        anchors.fill: parent
+        anchors.margins: Theme.spacingS
+        anchors.topMargin: tabs.height + 4
+        feed: feedState
+        textColor: Theme.surfaceText
+        dimColor: Theme.surfaceVariantText
+        accentColor: Theme.primary
+    }
+
+    ExplorerView {
+        id: explorer
+
+        visible: root.view === 3
         anchors.fill: parent
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
@@ -133,6 +146,10 @@ Item {
         anchors.topMargin: tabs.height + 4
         feed: feedState
         headerVisible: false
+        onTxActivated: function (txid) {
+            root.put("view", 3);
+            explorer.go("tx", txid);
+        }
         colorMode: root.colorMode
         sizeMode: root.sizeMode
         infoVisible: root.showInfo

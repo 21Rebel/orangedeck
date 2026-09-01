@@ -25,6 +25,8 @@ set(SHARED_QML
     ../ui/qml/MinerChart.qml
     ../ui/qml/ViewTabs.qml
     ../ui/qml/InfoPopup.qml
+    ../ui/qml/ExplorerView.qml
+    ../ui/qml/search.js
     ../ui/qml/mondrian.js
     ../ui/qml/colors.js
 )

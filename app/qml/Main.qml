@@ -58,7 +58,7 @@ Window {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         anchors.topMargin: 8
-        labels: ["Feed", "BlockClock", "Miner"]
+        labels: ["Feed", "BlockClock", "Miner", "Explorer"]
         current: win.view
         fontSize: 13
         z: 30
@@ -76,6 +76,11 @@ Window {
         anchors.topMargin: tabs.height + 14
         feed: feedState
         baseFont: 13
+        // Klick auf eine Kachel fuehrt in den Explorer
+        onTxActivated: function (txid) {
+            win.view = 3;
+            explorer.go("tx", txid);
+        }
         colorMode: win.colorMode
         sizeMode: win.sizeMode
         infoVisible: win.showInfo
@@ -84,6 +89,16 @@ Window {
 
     ClockView {
         visible: win.view === 1
+        anchors.fill: parent
+        anchors.margins: 14
+        anchors.topMargin: tabs.height + 14
+        feed: feedState
+    }
+
+    ExplorerView {
+        id: explorer
+
+        visible: win.view === 3
         anchors.fill: parent
         anchors.margins: 14
         anchors.topMargin: tabs.height + 14
@@ -135,6 +150,7 @@ Window {
             case Qt.Key_1:
             case Qt.Key_2:
             case Qt.Key_3:
+            case Qt.Key_4:
                 win.view = event.key - Qt.Key_1;
                 hint.flash();
                 break;
@@ -160,7 +176,7 @@ Window {
         anchors.bottomMargin: 16
         color: "#9a94a6"
         font.pixelSize: 11
-        text: "1 Feed · 2 BlockClock · 3 Miner   ·   c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft · F11 Vollbild"
+        text: "1 Feed · 2 BlockClock · 3 Miner · 4 Explorer   ·   c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft · F11 Vollbild"
         opacity: 0
 
         function flash() {

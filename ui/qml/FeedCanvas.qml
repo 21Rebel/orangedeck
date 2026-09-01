@@ -72,6 +72,10 @@ Item {
     property real hoverY: 0
     property real blockPulse: 0
 
+    // Eine Kachel wurde angetippt -- der Wirt entscheidet, was damit geschieht
+    // (im Fenster: ab in den Explorer).
+    signal txActivated(string txid)
+
     // --- Sicht: Zoom und Verschiebung ------------------------------------
     // Die Kacheln sind 4 px gross; ohne Vergroesserung laesst sich eine
     // einzelne Transaktion kaum treffen. Der Zoom ist bewusst eine reine
@@ -1004,8 +1008,13 @@ Item {
         }
     }
 
-    // Doppeltippen bzw. Doppelklick stellt die Sicht wieder her.
+    // Einfach tippen oeffnet die Transaktion unter dem Zeiger, doppelt
+    // tippen stellt die Sicht wieder her.
     TapHandler {
+        onSingleTapped: {
+            if (root.hoveredTx && root.hoveredTx.t)
+                root.txActivated(String(root.hoveredTx.t));
+        }
         onDoubleTapped: root.resetView()
     }
 

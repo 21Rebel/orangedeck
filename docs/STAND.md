@@ -53,7 +53,11 @@ Mechanik und Stolperfallen in `DOKUMENTATION.md`.
 6. **Android-APK.** SDK und NDK fehlen; der frickeligste Teil.
    **>>> Vor diesem Schritt dem Nutzer Bescheid geben <<<** -- er haengt dann
    sein Handy an den Rechner, um darauf zu testen (abgesprochen am 01.09.2026).
-7. **ExplorerView und WatchView.** Groesster Brocken, haengt an nichts mehr
+7. **ExplorerView** -- Etappe 1 **erledigt 01.09.2026**: Suche,
+   Transaktionsdetails mit Ein- und Ausgaengen, Blocknavigation,
+   Adressansicht, Klick auf eine Kachel im Feed. Offen: Blockhistorie mit
+   Transaktionsliste, und **WatchView** (xpub).
+   Frueherer Eintrag: **ExplorerView und WatchView.** Groesster Brocken, haengt an nichts mehr
    ausser Arbeit. Am 01.09.2026 vorbereitet: `matchQuery()` aus dem Fork ist
    direkt portierbar, und `/api/tx/:txid` samt `/outspends` deckt den ganzen
    Pfad ohne Node ab. Einzelheiten in `ZIELBILD.md`.

@@ -790,3 +790,51 @@ solange es etwas zu rollen gibt.
 Damit muessen Kurve und Bestenliste nicht mehr wegen Platzmangel wegbleiben --
 die Schwellen (`roomForChart`, `roomForBoard`) halten nur noch das ganz kleine
 Desktop-Widget frei.
+
+
+## Explorer
+
+Vierte Ansicht (`ExplorerView.qml`), Taste 4 oder der Tab. Suchen, Einzelheiten
+ansehen, dem Weg des Geldes folgen -- und ein Klick auf eine Kachel im Feed
+fuehrt direkt hierher (`FeedCanvas` meldet `txActivated`, `FeedPanel` reicht es
+weiter).
+
+### Die Datenquelle steckt an **einer** Stelle
+
+Die Oberflaeche fragt **nicht** selbst bei mempool.space an, sondern beim
+Daemon: `/lookup/<art>/<wert>`. Drei Gruende:
+
+1. Nur eine Stelle weiss, woher die Daten kommen -- der Wechsel auf einen
+   eigenen Node ist `{"host": "mempool.eigenes.netz", "scheme": "http"}` in
+   `sources.json`, und Feed, Kennzahlen und Explorer folgen alle.
+2. Das Tablet spricht ohnehin nur mit dem Daemon.
+3. Ein Zwischenspeicher (45 s, fuer Unbestaetigtes 8 s) verhindert, dass jeder
+   Klick eine Anfrage nach draussen ausloest.
+
+**Kein freier Durchgriff:** nur acht Formen werden weitergereicht (`tx`,
+`txstatus`, `outspends`, `block`, `blocktxids`, `blockheight`, `address`,
+`addresstxs`), jede gegen ein eigenes Muster geprueft. Alles andere kommt mit
+400 zurueck.
+
+### Was gezeigt wird
+
+    Transaktion   Status, Groesse, Gewicht, Gebuehr und Rate; Ein- und
+                  Ausgaenge nebeneinander. Jeder Eingang bringt Adresse und
+                  Betrag mit (`prevout`) und fuehrt per Klick zur
+                  Vorgaengertransaktion -- der Weg rueckwaerts. Jeder Ausgang
+                  zeigt, ob er schon ausgegeben wurde (`outspends`), und fuehrt
+                  entweder zur ausgebenden Transaktion oder zur Adresse.
+    Block         Hoehe, Hash, Zeit, Anzahl, Groesse; vor und zurueck.
+    Adresse       Guthaben, Anzahl, empfangen und gesendet, letzte
+                  Transaktionen.
+
+Ein Zurueck-Knopf fuehrt den Weg wieder heraus (`trail`).
+
+### Zwei Fallen
+
+- **`data` ist in QML belegt.** Es ist die Standard-Eigenschaft, in der die
+  Kindelemente liegen; eine eigene Eigenschaft dieses Namens bringt den Baum
+  durcheinander. Die Antwort heisst deshalb `result`.
+- **`parent.parent.parent.x` in Repeater-Delegaten ist bruechig.** Sobald ein
+  Element dazwischenkommt, zeigt die Kette woandershin. Die Bauteile haben
+  jetzt Namen (`txBox`, `blockBox`, `addrBox`) und werden direkt angesprochen.

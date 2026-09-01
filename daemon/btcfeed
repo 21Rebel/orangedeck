@@ -16,6 +16,10 @@ den laufenden Dienst ab:
   btcfeed --polybar  eine Zeile fuer Polybar, i3blocks, yambar
   btcfeed --genmon   XML fuer das Genmon-Modul von XFCE
 
+Die Oberflaeche fragt Einzelheiten ueber den Daemon ab, nicht selbst nach
+aussen:  /lookup/<art>/<wert>  mit art aus tx, txstatus, outspends, block,
+blocktxids, blockheight, address, addresstxs.
+
 Miner im eigenen Netz suchen (die Geraete haengen meist im WLAN und bekommen
 ihre Adresse per DHCP):
 
@@ -32,6 +36,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import socket
 import ssl
 import struct
@@ -43,9 +48,27 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
+# Wird nach dem Laden von sources.json endgueltig gesetzt -- siehe apply_host().
+# Eine eigene mempool-Instanz oder liquid.network fuehren dieselbe API-Form,
+# der Wechsel ist deshalb eine einzige Zeile in der Konfiguration.
 HOST = "mempool.space"
-WS_URL = f"wss://{HOST}/api/v1/ws"
-API = f"https://{HOST}/api"
+SCHEME = "https"
+WS_URL = ""
+API = ""
+
+
+def apply_host(host=None, scheme=None):
+    global HOST, SCHEME, WS_URL, API
+    if host:
+        HOST = host
+    if scheme:
+        SCHEME = scheme
+    ws = "wss" if SCHEME == "https" else "ws"
+    WS_URL = f"{ws}://{HOST}/api/v1/ws"
+    API = f"{SCHEME}://{HOST}/api"
+
+
+apply_host()
 # Der Zustand wird mehrmals pro Sekunde neu geschrieben und muss einen Neustart
 # nicht ueberleben -- er gehoert deshalb ins tmpfs, nicht auf die SSD.
 STATE_DIR = os.path.join(os.environ.get("XDG_RUNTIME_DIR")
@@ -127,6 +150,10 @@ def load_sources():
 
 
 SOURCES = load_sources()
+# {"host": "mempool.eigenes.netz", "scheme": "http"} schaltet alles um --
+# Feed, Kennzahlen und Explorer holen dann von dort.
+apply_host(SOURCES.get("host") or os.environ.get("BTCFEED_HOST"),
+           SOURCES.get("scheme") or os.environ.get("BTCFEED_SCHEME"))
 
 # Wie oft die langsamen Kennzahlen geholt werden. Schwierigkeit und Hashrate
 # aendern sich im Stunden- bis Tagestakt -- alle fuenf Minuten ist reichlich.
@@ -481,6 +508,64 @@ class Feed:
 
 
 # --------------------------------------------------------------------------
+# Explorer: Abfragen weiterreichen
+# --------------------------------------------------------------------------
+# Die Oberflaeche fragt **nicht** selbst bei mempool.space an, sondern hier.
+# Drei Gruende: nur eine Stelle weiss, wo die Daten herkommen (und laesst sich
+# damit auf einen eigenen Node umstellen); das Tablet spricht ohnehin nur mit
+# dem Daemon; und ein Zwischenspeicher verhindert, dass jede Mausbewegung eine
+# Anfrage nach draussen ausloest.
+LOOKUP_TTL = 45          # Sekunden -- Blocktakt ist zehn Minuten
+LOOKUP_TTL_MEMPOOL = 8   # fuer noch unbestaetigte Sachen kuerzer
+LOOKUP_MAX = 400
+
+_lookup_cache = {}
+_lookup_lock = threading.Lock()
+
+# Nur diese Formen werden weitergereicht. Kein freier Durchgriff nach aussen.
+LOOKUP_ROUTES = (
+    ("tx", re.compile(r"^[0-9a-f]{64}$"), "/tx/%s"),
+    ("txstatus", re.compile(r"^[0-9a-f]{64}$"), "/tx/%s/status"),
+    ("outspends", re.compile(r"^[0-9a-f]{64}$"), "/tx/%s/outspends"),
+    ("block", re.compile(r"^[0-9a-f]{64}$"), "/block/%s"),
+    ("blocktxids", re.compile(r"^[0-9a-f]{64}$"), "/block/%s/txids"),
+    ("blockheight", re.compile(r"^[0-9]{1,9}$"), "/block-height/%s"),
+    ("address", re.compile(r"^[a-zA-Z0-9]{20,100}$"), "/address/%s"),
+    ("addresstxs", re.compile(r"^[a-zA-Z0-9]{20,100}$"), "/address/%s/txs"),
+)
+
+
+def lookup(kind, arg):
+    """Eine Abfrage nach draussen, gepuffert. Gibt (Text, Fehler) zurueck."""
+    for name, pattern, path in LOOKUP_ROUTES:
+        if name != kind:
+            continue
+        if not pattern.match(arg or ""):
+            return None, ("unzulaessige Eingabe", 400)
+        key = (kind, arg)
+        now = time.time()
+        with _lookup_lock:
+            hit = _lookup_cache.get(key)
+            if hit and now < hit[0]:
+                return hit[1], None
+        try:
+            req = urllib.request.Request(API + (path % arg),
+                                         headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=12) as r:
+                body = r.read().decode()
+        except Exception as e:
+            return None, (str(e), 502)
+        # Unbestaetigtes aendert sich schnell, Bestaetigtes so gut wie nie
+        ttl = LOOKUP_TTL_MEMPOOL if '"confirmed":false' in body else LOOKUP_TTL
+        with _lookup_lock:
+            if len(_lookup_cache) > LOOKUP_MAX:
+                _lookup_cache.clear()
+            _lookup_cache[key] = (now + ttl, body)
+        return body, None
+    return None, ("unbekannte Abfrage", 400)
+
+
+# --------------------------------------------------------------------------
 # Loopback-Schnittstelle
 # --------------------------------------------------------------------------
 class _Handler(BaseHTTPRequestHandler):
@@ -510,6 +595,16 @@ class _Handler(BaseHTTPRequestHandler):
                         self._send(f.read())
                 except FileNotFoundError:
                     self._send("{}")
+            elif path.startswith("/lookup/"):
+                parts = path.split("/", 3)
+                if len(parts) < 4:
+                    self._send('{"error":"Abfrage unvollstaendig"}', 400)
+                else:
+                    body, err = lookup(parts[2], parts[3])
+                    if err:
+                        self._send(json.dumps({"error": err[0]}), err[1])
+                    else:
+                        self._send(body)
             elif path == "/health":
                 self._send(json.dumps({"ok": True, "source": self.feed.source}))
             else:

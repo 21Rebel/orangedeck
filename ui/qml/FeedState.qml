@@ -94,6 +94,37 @@ Item {
         }
     }
 
+    // Einzelabfrage fuer den Explorer. Geht ueber den Daemon, nicht direkt
+    // nach draussen -- er kennt die Datenquelle (mempool.space oder ein
+    // eigener Node) und puffert die Antworten.
+    function lookup(kind, arg, done) {
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () {
+            if (x.readyState !== XMLHttpRequest.DONE)
+                return;
+            if (x.status === 200) {
+                try {
+                    done(JSON.parse(x.responseText), null);
+                    return;
+                } catch (e) {
+                    done(null, "Antwort nicht lesbar");
+                    return;
+                }
+            }
+            var msg = "nicht erreichbar";
+            try {
+                msg = JSON.parse(x.responseText).error || msg;
+            } catch (e) {}
+            done(null, msg);
+        };
+        try {
+            x.open("GET", root.endpoint + "/lookup/" + kind + "/" + encodeURIComponent(arg));
+            x.send();
+        } catch (e) {
+            done(null, String(e));
+        }
+    }
+
     function __parse(txt) {
         if (!txt)
             return;

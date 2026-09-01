@@ -15,6 +15,8 @@ Item {
     property bool legendVisible: true
     // Untergrund hinter den Textangaben. Ohne ihn gehen sie im Zoom unter,
     // wenn grosse helle Kachelflaechen direkt dahinter liegen.
+    // Kachel angetippt -- wird von FeedCanvas durchgereicht
+    signal txActivated(string txid)
     property bool frostedInfo: true
     property bool frostedBlur: true
     property string colorMode: "age"
@@ -196,6 +198,8 @@ Item {
 
     FeedCanvas {
         id: canvasView
+        
+        onTxActivated: function (txid) { root.txActivated(txid); }
 
         anchors.top: header.bottom
         anchors.bottom: footer.top
