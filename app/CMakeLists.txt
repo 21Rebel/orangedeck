@@ -28,6 +28,7 @@ set(SHARED_QML
     ../ui/qml/ExplorerView.qml
     ../ui/qml/TxFlow.qml
     ../ui/qml/CopyButton.qml
+    ../ui/qml/BlockChain.qml
     ../ui/qml/search.js
     ../ui/qml/mondrian.js
     ../ui/qml/colors.js

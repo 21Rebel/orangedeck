@@ -98,6 +98,16 @@ Item {
     function tipFor(thickness) {
         return Math.min(root.arrowLen, Math.max(2, thickness));
     }
+
+    // Pfeil am **Anfang** der Eingaenge. Im Original sind das SVG-Marker mit
+    // `markerUnits="strokeWidth"`, sie wachsen also mit der Banddicke -- an
+    // duennen Faeden sieht man sie kaum, an dicken deutlich. Sie zeigen, dass
+    // sich die Kette von dort aus weiterverfolgen laesst.
+    property real headRatio: 1.1
+
+    function headFor(thickness) {
+        return Math.max(2, Math.min(connector * 0.9, thickness * root.headRatio));
+    }
     // Oben und unten bleibt Platz -- der Fluss soll frei liegen, nicht am
     // Bildrand kleben.
     property real padY: Math.max(6, height * 0.11)
@@ -328,13 +338,24 @@ Item {
                 }
                 cEdge = b.edgeY + b.hEdge / 2;
                 cMid = b.midY + b.hMid / 2;
+                var head = root.headFor(b.hEdge);
                 ctx.strokeStyle = g;
                 ctx.lineWidth = b.hEdge;
                 ctx.beginPath();
-                ctx.moveTo(0, cEdge);
+                // Der Strich beginnt hinter dem Pfeil
+                ctx.moveTo(head, cEdge);
                 ctx.lineTo(xL, cEdge);
                 canvas.curve(ctx, xL, cEdge, xC + seam, cMid);
                 ctx.stroke();
+
+                // Pfeil am Anfang: nach rechts weisend, in den Fluss hinein
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.moveTo(0, cEdge - b.hEdge / 2);
+                ctx.lineTo(head + 0.5, cEdge);
+                ctx.lineTo(0, cEdge + b.hEdge / 2);
+                ctx.closePath();
+                ctx.fill();
             }
 
             for (i = 0; i < root.bandsOut.length; i++) {

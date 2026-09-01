@@ -336,10 +336,25 @@ Item {
                 wrapMode: Text.WordWrap
                 visible: root.kind === "" && root.status.length === 0
                 text: "Gib eine Blockhöhe, einen Blockhash, eine TxID oder eine Adresse ein.\n"
-                      + "Auch txid:n für einen Ausgang und n:txid für einen Eingang.\n\n"
+                      + "Auch txid:n für einen Ausgang und n:txid für einen Eingang.\n"
                       + "Aus dem Feed heraus führt ein Klick auf eine Kachel direkt hierher."
                 color: root.dimColor
-                font.pixelSize: root.scaleUnit * 0.7
+                font.pixelSize: root.uiFont * 0.95
+            }
+
+            // Solange nichts gesucht ist, die letzten Bloecke zeigen -- so ist
+            // die Ansicht nicht leer und man kommt mit einem Klick hinein.
+            BlockChain {
+                width: parent.width
+                visible: root.kind === "" && root.status.length === 0
+                feed: root.feed
+                textColor: root.textColor
+                dimColor: root.dimColor
+                accentColor: root.accentColor
+                uiFont: root.uiFont
+                onBlockPicked: function (hash) {
+                    root.go("blockhash", hash);
+                }
             }
 
             // ------------------------------------------- Transaktion
@@ -444,6 +459,48 @@ Item {
                             text: sc.modelData.v
                             color: root.textColor
                             font.pixelSize: root.scaleUnit * 0.75
+                        }
+                    }
+                }
+            }
+
+            // ------------------------------------------------ Einzelheiten
+            Grid {
+                columns: 2
+                columnSpacing: root.scaleUnit * 2
+                rowSpacing: root.scaleUnit * 0.2
+
+                Repeater {
+                    model: [
+                        { "k": "Virtuelle Größe", "v": root.result.weight
+                            ? (root.result.weight / 4 / 1000).toFixed(2).replace(".", ",") + " kvB" : "–" },
+                        { "k": "Version", "v": String(root.result.version !== undefined ? root.result.version : "–") },
+                        { "k": "Gewicht", "v": root.result.weight
+                            ? (root.result.weight / 1000).toFixed(2).replace(".", ",") + " kWU" : "–" },
+                        { "k": "Sperrzeit", "v": String(root.result.locktime !== undefined ? root.result.locktime : "–") },
+                        { "k": "Größe", "v": root.result.size
+                            ? (root.result.size / 1000).toFixed(2).replace(".", ",") + " kB" : "–" },
+                        { "k": "Sigops", "v": String(root.result.sigops !== undefined ? root.result.sigops : "–") }
+                    ]
+
+                    Row {
+                        id: dRow
+
+                        required property var modelData
+
+                        spacing: root.scaleUnit * 0.6
+
+                        Text {
+                            width: root.scaleUnit * 7
+                            text: dRow.modelData.k
+                            color: root.dimColor
+                            font.pixelSize: root.uiFont * 0.9
+                        }
+
+                        Text {
+                            text: dRow.modelData.v
+                            color: root.textColor
+                            font.pixelSize: root.uiFont * 0.9
                         }
                     }
                 }

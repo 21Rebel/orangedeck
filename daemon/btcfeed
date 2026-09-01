@@ -532,6 +532,9 @@ LOOKUP_ROUTES = (
     ("blockheight", re.compile(r"^[0-9]{1,9}$"), "/block-height/%s"),
     ("address", re.compile(r"^[a-zA-Z0-9]{20,100}$"), "/address/%s"),
     ("addresstxs", re.compile(r"^[a-zA-Z0-9]{20,100}$"), "/address/%s/txs"),
+    # Die letzten Bloecke fuer die Kettenansicht. "recent" ist ein fester
+    # Platzhalter -- der Pfad nimmt keinen Wert entgegen.
+    ("blocks", re.compile(r"^(recent|[0-9]{1,9})$"), "/v1/blocks"),
 )
 
 
@@ -549,8 +552,11 @@ def lookup(kind, arg):
             if hit and now < hit[0]:
                 return hit[1], None
         try:
-            req = urllib.request.Request(API + (path % arg),
-                                         headers={"User-Agent": UA})
+            # `blocks` kennt zwei Formen: ohne Wert die neuesten, mit Hoehe
+            # die fuenfzehn davor.
+            full = path if kind == "blocks" and arg == "recent" else (
+                (path + "/" + arg) if kind == "blocks" else (path % arg))
+            req = urllib.request.Request(API + full, headers={"User-Agent": UA})
             with urllib.request.urlopen(req, timeout=12) as r:
                 body = r.read().decode()
         except Exception as e:

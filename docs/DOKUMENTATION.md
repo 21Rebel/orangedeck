@@ -1195,3 +1195,36 @@ kein Sonderfall mehr.
 `CopyButton.qml` zeichnet zwei versetzte Blaetter, beim Kopieren fuer kurze Zeit
 einen Haken. Gezeichnet statt gesetzt -- ein passendes Schriftzeichen gibt es
 nicht ueberall, und auf Symbolschriften ist kein Verlass.
+
+
+## Pfeile am Anfang der Eingaenge
+
+Im Original sind das SVG-Marker (`input-arrow`, `output-arrow`) mit
+`markerUnits="strokeWidth"` -- sie **wachsen mit der Banddicke**. An duennen
+Faeden sieht man sie kaum, an dicken deutlich; deshalb sah es zunaechst aus,
+als haetten nur manche Baender einen Pfeil.
+
+Hier ebenso: `headFor(thickness)` skaliert mit der Dicke (`headRatio`), gedeckelt
+durch die Breite des Anschlussstuecks. Der Strich beginnt hinter dem Pfeil,
+damit sich beide nicht ueberlagern.
+
+## Einzelheiten zur Transaktion
+
+Virtuelle Groesse (Gewicht durch vier), Gewicht, Groesse, Version, Sperrzeit
+und Sigops -- alles aus der Antwort von `/api/tx/:txid`, kein zusaetzlicher
+Abruf noetig.
+
+## Die Blockkette (`BlockChain.qml`)
+
+Die letzten fuenfzehn Bloecke als waagerecht rollbare Kette, neuester links:
+Hoehe, mittlere Gebuehrenrate, Belohnung, Anzahl der Transaktionen, Groesse,
+Alter und Mining-Pool. Ein Klick oeffnet den Block im Explorer.
+
+Sie erscheint, solange nichts gesucht ist -- so ist die Ansicht nicht leer und
+man kommt mit einem Klick hinein. Nach einem neuen Block laedt sie sich nach
+(ueber das Signal `blockMined` aus `FeedState`, mit vier Sekunden Verzug, damit
+die Daten drueben schon stehen).
+
+Datenquelle ist `/lookup/blocks/recent` im Daemon -- `/api/v1/blocks` liefert
+fuenfzehn Bloecke samt `extras` (Pool, Belohnung, mittlere Gebuehr). Mit einer
+Hoehe statt `recent` kommen die fuenfzehn davor.
