@@ -42,7 +42,17 @@ Item {
     property real minBand: Math.max(2, labelSize * 0.22)
     // Abstand zwischen zwei Baendern **am Rand**. Im Strang sind sie
     // lueckenlos -- daher wirkt er geschlossen, ohne dass ein Band schrumpft.
-    property real edgeGap: Math.max(2, labelSize * 0.4)
+    // Wie schmal der Strang gegenueber den Raendern werden soll. **Nicht** als
+    // Verjuengung der Baender -- die behalten ihre Dicke. Stattdessen wird der
+    // Lueckenanteil am Rand daraus abgeleitet: was dort zwischen den Baendern
+    // frei bleibt, faellt im Strang weg, und genau darum wird er schmaler.
+    //
+    // Bei einem einzigen Band gibt es keine Luecke und damit auch keine
+    // Taille -- da ist auch nichts zusammenzufuehren.
+    property real waistTarget: 0.72
+    property real edgeGap: Math.max(2, labelSize * 0.3)
+    // Pfeilspitze am rechten Ende, damit die Richtung erkennbar ist
+    property real arrowLen: Math.max(8, Math.min(width * 0.035, labelSize * 1.6))
 
     property var hovered: null
 
@@ -81,8 +91,15 @@ Item {
     // (ohne). Beide Stapel werden am Ende auf die Hoehe normiert.
     function build(list, valueOf, scale) {
         var n = Math.min(list.length, root.maxBands);
-        var gaps = Math.max(0, n - 1) + (list.length > n ? 1 : 0);
-        var gap = gaps > 0 ? Math.min(root.edgeGap, root.height * 0.3 / gaps) : 0;
+        var nBands = n + (list.length > n ? 1 : 0);
+        var nGaps = Math.max(0, nBands - 1);
+        // Der Lueckenanteil ergibt sich aus der gewuenschten Taille
+        var gap = nGaps > 0
+            ? Math.max(root.edgeGap * 0.5,
+                       root.height * (1 - root.waistTarget) / nGaps)
+            : 0;
+        // Nie so viel, dass fuer die Baender zu wenig bleibt
+        gap = Math.min(gap, root.height * 0.55 / Math.max(1, nGaps));
         var out = [];
         var i;
 
@@ -100,18 +117,29 @@ Item {
             add(rest, list.length - n, -1);
         }
 
-        // Am Rand teilen sich die Baender die Hoehe abzueglich der Luecken
+        // Am Rand teilen sich die Baender die Hoehe **abzueglich der Luecken**
         var sum = 0;
         for (i = 0; i < out.length; i++)
             sum += out[i].h;
-        var avail = Math.max(4, root.height - gap * Math.max(0, out.length - 1));
+        var gapsTotal = gap * Math.max(0, out.length - 1);
+        var avail = Math.max(4, root.height - gapsTotal);
         var f = sum > 0 ? avail / sum : 1;
-        var fMid = sum > 0 ? root.height / sum : 1;
 
-        var ey = 0, my = 0;
+        // Im Strang behaelt jedes Band **dieselbe** Dicke -- es faellt nur die
+        // Luecke weg. Der Stapel wird dadurch von selbst um genau die Summe der
+        // Luecken schmaler und sitzt mittig. Genau das ergibt die Form: aussen
+        // breit, in der Mitte schmal. Wuerde man hier hochskalieren, damit die
+        // Mitte auch die volle Hoehe fuellt, bliebe alles rechteckig.
+        var stack = 0;
         for (i = 0; i < out.length; i++) {
             out[i].hEdge = out[i].h * f;
-            out[i].hMid = out[i].h * fMid;
+            out[i].hMid = out[i].hEdge;
+            stack += out[i].hEdge;
+        }
+        var top = (root.height - stack) / 2;
+
+        var ey = 0, my = top;
+        for (i = 0; i < out.length; i++) {
             out[i].edgeY = ey;
             out[i].midY = my;
             ey += out[i].hEdge + gap;
@@ -178,12 +206,16 @@ Item {
                 canvas.band(ctx, 0, b.edgeY, b.edgeY + b.hEdge, midL, b.midY, b.midY + b.hMid);
             }
 
-            // Der Strang: volle Hoehe, nur der Farbverlauf
+            // Der Strang ist genau so hoch wie der lueckenlose Stapel
+            var sTop = root.bandsIn.length ? root.bandsIn[0].midY : 0;
+            var sBot = root.bandsIn.length
+                ? root.bandsIn[root.bandsIn.length - 1].midY + root.bandsIn[root.bandsIn.length - 1].hMid
+                : h;
             var trunk = ctx.createLinearGradient(midL, 0, midR, 0);
             trunk.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, 0.62));
             trunk.addColorStop(1, Qt.rgba(root.outColor.r, root.outColor.g, root.outColor.b, 0.62));
             ctx.fillStyle = trunk;
-            ctx.fillRect(midL, 0, midR - midL, h);
+            ctx.fillRect(midL, sTop, midR - midL, sBot - sTop);
 
             for (i = 0; i < root.bandsOut.length; i++) {
                 b = root.bandsOut[i];
@@ -193,7 +225,16 @@ Item {
                 g2.addColorStop(0, Qt.rgba(col.r, col.g, col.b, b.fee ? 0.5 : (lit ? 0.95 : 0.62)));
                 g2.addColorStop(1, Qt.rgba(col.r, col.g, col.b, lit ? 1 : (b.fee ? 0.85 : 0.82)));
                 ctx.fillStyle = g2;
-                canvas.band(ctx, midR, b.midY, b.midY + b.hMid, w, b.edgeY, b.edgeY + b.hEdge);
+                // Bis kurz vor den Rand, dann die Spitze
+                var ax = w - root.arrowLen;
+                canvas.band(ctx, midR, b.midY, b.midY + b.hMid, ax, b.edgeY, b.edgeY + b.hEdge);
+                var over = Math.min(b.hEdge * 0.35, root.arrowLen * 0.35);
+                ctx.beginPath();
+                ctx.moveTo(ax, b.edgeY - over);
+                ctx.lineTo(w, b.edgeY + b.hEdge / 2);
+                ctx.lineTo(ax, b.edgeY + b.hEdge + over);
+                ctx.closePath();
+                ctx.fill();
             }
 
             // Die Gebuehr beschriften, wenn Platz ist

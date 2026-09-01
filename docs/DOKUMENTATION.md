@@ -847,12 +847,26 @@ Betrag. Aufbau nach dem Vorbild von mempool.space
 (`frontend/src/app/components/tx-bowtie-graph/tx-bowtie-graph.component.ts`,
 am 01.09.2026 nachgelesen). Drei Dinge daraus uebernommen:
 
-**Keine Verjuengung.** Ein Band behaelt seine Hoehe von links nach rechts. Was
-in der Mitte schmaler wirkt, sind allein die geschlossenen Luecken: am Rand
-stehen die Baender mit Abstand (`edgeGap`), im Strang lueckenlos. Ein erster
-Versuch mit einer Taille (Strang auf 62 % der Randhoehe) sah zwar geschwungen
-aus, verjuengte aber jedes Band -- und stellte damit Betraege kleiner dar, als
-sie sind.
+**Keine Verjuengung -- die Taille entsteht aus den Luecken.** Ein Band behaelt
+seine Dicke von links nach rechts. Am Rand stehen die Baender mit Abstand, im
+Strang lueckenlos; **genau die Luecken fehlen dort, und darum ist er schmaler**.
+Aussen breit, in der Mitte schmal, rechts wieder auffaechernd -- ohne dass ein
+einziger Betrag verfaelscht wird.
+
+Zwei Irrwege dahin, beide lehrreich:
+
+1. *Taille durch Skalieren* (`waistFrac`, jedes Band im Strang auf 62 %). Sah
+   geschwungen aus, stellte aber jeden Betrag kleiner dar, als er ist.
+2. *Baender im Strang auf volle Hoehe hochskalieren.* Dann ist die Mitte so
+   hoch wie die Raender -- und alles bleibt ein Rechteck.
+
+Richtig ist der dritte Weg: `hMid = hEdge`, und der lueckenlose Stapel sitzt
+mittig. `waistTarget` (0,72) gibt die gewuenschte Form vor, daraus wird der
+Lueckenanteil abgeleitet -- nicht umgekehrt. So ist die Taille bei drei wie bei
+dreihundert Baendern gleich. Bei **einem** Band gibt es keine Luecke und damit
+keine Taille; da ist auch nichts zusammenzufuehren.
+
+**Ein Pfeil** an jedem Ausgang zeigt die Richtung (`arrowLen`).
 
 **Die Gebuehr ist ein Ausgang wie jeder andere**, nur in eigener Farbe und an
 erster Stelle (im Original `voutWithFee.unshift({ type: 'fee', value: tx.fee })`).
