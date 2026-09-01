@@ -440,3 +440,44 @@ Nach einer neuen Datei also:
     tools/install-links.sh          # verteilt alles
     python3 daemon/btcfeed-dashtab  # baut die Ueberlagerung neu
     systemctl --user restart dms
+
+
+## Stolperfalle: ohne `clip` regnet es ueber den ganzen Bildschirm
+
+Fallende Kacheln starten **oberhalb** des Bereichs -- `fromY` ist negativ
+(`-side - random * height * 0.5`). QML zeichnet Kinder ausserhalb der Grenzen
+ihres Elternitems weiter, solange niemand beschneidet.
+
+Im eigenen Fenster faellt das nicht auf, weil das Fenster selbst beschneidet.
+Im **Dashboard-Popup** dagegen regnete es am 01.09.2026 ueber den ganzen
+Bildschirm. Nirgends war `clip` gesetzt -- weder in `BitcoinTab.qml` noch in
+`FeedPanel` oder `FeedCanvas`. Jetzt steht `clip: true` auf dem Wurzel-Item von
+`FeedCanvas`; rechteckiges Beschneiden ist ein Scherentest und praktisch
+kostenlos.
+
+## Die Untergrenze der Blockdarstellung, und warum sie physisch ist
+
+Ein Block mit 105 Rasterzellen Breite braucht **mindestens 210 px**, damit jede
+Kachel ein Bildpunkt und jede Luecke ein Bildpunkt sein kann. Weniger geht
+nicht -- ganze Zahlen unter zwei lassen keinen Platz fuer beides.
+
+Der Dashboard-Tab ist 410 px hoch, und `blockSide = min(Breite * 0,72,
+Hoehe / 2,5, poolTop * 0,86)` -- die **Hoehe bindet** und ergibt rund 156 px.
+Dort sind knackige Einzelquadrate also nicht erreichbar, egal wie gerundet
+wird:
+
+    Blockseite   Zelle   Kachel   Luecke   Darstellung
+           156    1,49     0,74     0,74   gebrochen + geglaettet
+           195    1,86     0,93     0,93   gebrochen + geglaettet
+           210    2,00     1,00     1,00   ganzzahlig, hart
+           260    2,00     1,00     1,00   ganzzahlig, hart
+
+Deshalb wird unter zwei Bildpunkten je Zelle **nicht gerundet und mit
+Kantenglaettung gezeichnet** (`blockPad` liefert dort `g/4`, das Verhaeltnis des
+Originals). So entsteht eine Textur statt harter Kleckse -- genau wie im
+Original, das in WebGL ohnehin mit gebrochenen Groessen zeichnet. Ueberall
+sonst bleibt die Grafik bewusst hart.
+
+Wer im Dashboard echte Einzelquadrate will, muss dem Tab mehr Hoehe geben:
+`implicitHeight` in `BitcoinTab.qml` (Vorlage in `daemon/btcfeed-dashtab`)
+muesste von 410 auf rund 545 steigen, damit `Hoehe / 2,5` ueber 210 px kommt.

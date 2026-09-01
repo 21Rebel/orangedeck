@@ -13,6 +13,12 @@ import "colors.js" as Palette
 Item {
     id: root
 
+    // Fallende Kacheln starten oberhalb des Bereichs (`fromY` ist negativ).
+    // Ohne Beschneidung zeichnet QML sie ausserhalb weiter -- im eigenen
+    // Fenster faellt das nicht auf, weil das Fenster selbst beschneidet, im
+    // Dashboard-Popup dagegen regnete es ueber den ganzen Bildschirm.
+    clip: true
+
     property var feed: null
     property bool paused: false
     property bool showBlock: true
@@ -194,6 +200,11 @@ Item {
     property int blockPadDivisor: 8
 
     function blockPad(g) {
+        // Unter zwei Bildpunkten je Zelle gibt es keine ganzen Zahlen mehr, die
+        // Kachel und Luecke zugleich hergeben -- dann das Verhaeltnis des
+        // Originals (g/4) gebrochen, zusammen mit Kantenglaettung.
+        if (g < 2)
+            return g / 4;
         return Math.max(1, Math.round(g / Math.max(1, blockPadDivisor)));
     }
 
@@ -677,7 +688,9 @@ Item {
         id: blockCanvas
 
         anchors.fill: parent
-        antialiasing: false
+        // Nur dort glaetten, wo die Zellen kleiner als zwei Bildpunkte sind --
+        // sonst bleibt die Kachelgrafik bewusst hart.
+        antialiasing: rowsUsed > 0 && root.blockUnit(rowsUsed) < 2
         visible: root.showBlock
 
         property var squares: []
@@ -745,6 +758,21 @@ Item {
 
         // Kanten auf ganze Pixel runden, damit alle Luecken gleich breit sind
         function blockRect(q, g, bx, by, pad) {
+            // Unter zwei Bildpunkten je Zelle **nicht** runden. Gerundet gibt
+            // es dort nur noch 1-px-Zellen und 1-px-Kacheln: die Kacheln stossen
+            // aneinander und verkleben zu Kleckse. Ungerundet und mit
+            // Kantenglaettung entsteht stattdessen eine Textur -- so macht es
+            // auch das Original, das ohnehin in WebGL mit gebrochenen Groessen
+            // zeichnet.
+            if (g < 2) {
+                var side = Math.max(0.35, q.r * g - pad * 2);
+                return {
+                    "x": bx + q.x * g + pad,
+                    "y": by + q.y * g + pad,
+                    "w": side,
+                    "h": side
+                };
+            }
             var x0 = Math.round(bx + q.x * g);
             var x1 = Math.round(bx + (q.x + q.r) * g);
             var y0 = Math.round(by + q.y * g);
