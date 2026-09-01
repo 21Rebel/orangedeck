@@ -680,6 +680,15 @@ braucht am Geraet keine Einstellung.
 `MinerChart.qml` zeichnet daraus Hashrate und Temperatur uebereinander, mit
 zwei Achsen -- die Groessen haben nichts miteinander zu tun.
 
+**Die Achsenbeschriftung traegt die Farbe ihrer Kurve** (Hashrate orange links,
+Temperatur hell rechts). Grau beschriftet liess sich nicht erkennen, welche
+Linie zu welcher Achse gehoert -- eine Legende waere zusaetzlicher Platz fuer
+dieselbe Auskunft.
+
+Die Hashrate wird **ab 1025 GH/s in TH/s** angezeigt (`teraFrom`). Bewusst
+etwas ueber 1000, damit die Einheit bei einem Geraet, das um die Marke herum
+schwankt, nicht staendig hin und her springt.
+
 ### Bestenliste
 
 `/api/system/scoreboard` liefert die 20 hoechsten Freigaben mit `difficulty`,

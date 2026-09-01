@@ -16,6 +16,16 @@ Item {
     property color gridColor: Qt.rgba(1, 1, 1, 0.07)
     property color dimColor: "#9a94a6"
     property real labelSize: 9
+    // Ab hier in TH/s statt GH/s. Bewusst etwas ueber 1000, damit die Einheit
+    // nicht bei jedem Ausschlag um die Marke herum hin und her springt.
+    property real teraFrom: 1025
+
+    // Der Verlauf liegt in GH/s vor.
+    function fmtRate(gh, withUnit) {
+        if (gh >= root.teraFrom)
+            return (gh / 1000).toFixed(2).replace(".", ",") + (withUnit ? " TH/s" : "");
+        return gh.toFixed(0) + (withUnit ? " GH/s" : "");
+    }
 
     readonly property var hr: (hist && hist.hr) || []
     readonly property var temp: (hist && hist.temp) || []
@@ -82,19 +92,22 @@ Item {
             var tRange = draw(root.temp, root.tempColor, 1.2);
             var hRange = draw(s, root.lineColor, 1.8);
 
-            // Beschriftung: links Hashrate, rechts Temperatur
+            // Beschriftung **in der Farbe der jeweiligen Kurve** -- sonst ist
+            // nicht zu erkennen, welche Achse zu welcher Linie gehoert.
             ctx.font = root.labelSize + "px sans-serif";
-            ctx.fillStyle = root.dimColor;
             if (hRange) {
+                ctx.fillStyle = root.lineColor;
                 ctx.textAlign = "left";
-                ctx.fillText(hRange[1].toFixed(0) + " GH/s", padL, padT + root.labelSize);
-                ctx.fillText(hRange[0].toFixed(0), padL, padT + h);
+                ctx.fillText(root.fmtRate(hRange[1], true), padL, padT + root.labelSize);
+                ctx.fillText(root.fmtRate(hRange[0], false), padL, padT + h);
             }
             if (tRange) {
+                ctx.fillStyle = root.tempColor;
                 ctx.textAlign = "right";
                 ctx.fillText(tRange[1].toFixed(0) + " °C", padL + w, padT + root.labelSize);
                 ctx.fillText(tRange[0].toFixed(0), padL + w, padT + h);
             }
+            ctx.fillStyle = root.dimColor;
             ctx.textAlign = "center";
             ctx.fillText(Math.round(s.length * 5 / 60) + " Min", padL + w / 2, height - 2);
         }
