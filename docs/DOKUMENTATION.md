@@ -1438,33 +1438,49 @@ wird weiterhin der echte Wert, nicht der erhoehte -- sonst stuende an der Achse
 eine Zahl, die nie vorkommt. Eine Spitze endet damit bei rund 89 % der Hoehe.
 
 
-## Geplante Bloecke: was geht und was nicht
+## Geplante Bloecke: die Inhalte kommen ueber den WebSocket
 
-**Die Inhalte sind nicht abrufbar.** Am 01.09.2026 geprueft:
+**Ueber REST gibt es sie nicht** -- alle plausiblen Pfade geben 404:
 
-    /api/v1/mempool-blocks/0        404
-    /api/v1/mempool-block/0         404
-    /api/v1/fees/mempool-blocks/0   404
-    /api/v1/projected-block/0       404
+    /api/v1/mempool-blocks/0    /api/v1/mempool-block/0
+    /api/v1/fees/mempool-blocks/0    /api/v1/projected-block/0
 
-Auch ueber den WebSocket kam nichts: `{"action":"track-mempool-block","index":0}`
-lieferte in 25 Sekunden keine Transaktionsliste. Was ankommt, sind die
-Zusammenfassungen (`mempool-blocks`), dazu `rbfSummary`, `da` und
-`conversions`.
+Ueber den WebSocket schon, und der erste Versuch scheiterte an der **Form der
+Nachricht**: der Befehl geht nicht ueber `action`, sondern als eigener
+Schluessel.
 
-Eine Kachelgrafik wie bei bestaetigten Bloecken ist damit **nicht** moeglich.
+    falsch:   {"action": "track-mempool-block", "index": 0}
+    richtig:  {"track-mempool-block": 0}
 
-### Was stattdessen darin steht
+Die Antwort heisst `projected-block-transactions` und enthaelt `index`,
+`sequence` und `blockTransactions` -- die Transaktionen in Kurzform, Reihenfolge
+wie in `uncompressTx` des Originals:
 
-Beim Klick auf einen geplanten Block: mittlere Rate gross, Anzahl, Groesse,
-Gebuehren, voraussichtliche Zeit -- und der praktische Teil: **welche Gebuehr
-noetig waere, um in diesen Block zu kommen** (die untere Grenze seiner
-Gebuehrenspanne), mit einer Erklaerung, warum Miner die teuersten zuerst
-nehmen.
+    [txid, fee, vsize, value, rate, flags, time]
 
-Dazu ein Satz, der offen sagt, was nicht geht: die Aufteilung ist eine
-Vorhersage, sie aendert sich mit jeder neuen Transaktion, und der Miner
-entscheidet am Ende selbst.
+**Nach der Vollform folgen fortlaufend Aenderungen** (`delta`). Die brauchen wir
+nicht, also wird direkt wieder abbestellt (`{"track-mempool-block": -1}`) --
+sonst laeuft im Hintergrund dauerhaft ein Strom mit.
+
+Gemessen: 5940 Transaktionen, 692 kB roh, aufbereitet 572 kB. Die
+Aufbereitung ist dieselbe wie bei bestaetigten Bloecken (zwei Ziffern je
+Transaktion), damit die Kachelgrafik in beiden Faellen gleich aussieht.
+
+**Die Reihenfolge bestaetigt, wonach sortiert wird:** die teuerste Transaktion
+steht vorn (120,63 sat/vB im Beispiel). Wer mehr zahlt, draengt andere in einen
+spaeteren Block.
+
+### Wie das im Daemon zusammenspielt
+
+Der WebSocket laeuft in einem eigenen Faden, die Abfrage kommt aus dem
+HTTP-Faden. Ueber den Umweg zweier Felder bleibt das Senden dort, wo die
+Verbindung lebt:
+
+    feed.want_track   was abonniert werden soll (aus der Abfrage gesetzt)
+    feed.tracked      was tatsaechlich abonniert ist (vom WebSocket-Faden)
+
+Die Schleife vergleicht beide nach jeder Nachricht und meldet an oder ab. Die
+Abfrage setzt `want_track` und wartet bis zu 25 Sekunden auf das Ergebnis.
 
 ### Die Zeitschaetzung
 

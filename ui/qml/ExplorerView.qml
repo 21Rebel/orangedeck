@@ -193,6 +193,14 @@ Item {
         root.tiles = null;
         root.status = "";
         root.currentArg = "";
+        // Die Kacheln kommen ueber den WebSocket und brauchen ein paar
+        // Sekunden -- der Daemon holt sie auf Zuruf.
+        root.tilesBusy = true;
+        root.feed.lookup("projectedtiles", String(rank), function (t, err) {
+            root.tilesBusy = false;
+            if (!err && root.kind === "projected" && root.projRank === rank)
+                root.tiles = t;
+        });
     }
 
     function fail(msg) {
@@ -996,13 +1004,32 @@ Item {
             }
 
             Text {
+                text: root.tilesBusy
+                    ? "Transaktionen werden geholt …"
+                    : "Diese Transaktionen würden hineinpassen"
+                color: root.dimColor
+                font.pixelSize: root.uiFont * 0.9
+            }
+
+            BlockTiles {
+                width: flick.width
+                height: Math.min(flick.width, root.scaleUnit * 34)
+                visible: root.tiles !== null
+                block: root.tiles
+                dimColor: root.dimColor
+                labelSize: root.uiFont * 0.85
+                onTxPicked: function (txid) {
+                    root.go("tx", txid);
+                }
+            }
+
+            Text {
                 width: flick.width
                 wrapMode: Text.WordWrap
-                // Ehrlich sagen, was hier nicht geht
-                text: "Welche Transaktionen genau in diesem Block landen würden, "
-                      + "lässt sich nicht abrufen — dafür gibt es keine Schnittstelle. "
-                      + "Die Aufteilung ist ohnehin nur eine Vorhersage: sie ändert sich "
-                      + "mit jeder neuen Transaktion, und der Miner entscheidet am Ende selbst."
+                // Der Unterschied zu einem bestaetigten Block gehoert dazu
+                text: "Die Aufteilung ist eine Vorhersage: sie ändert sich mit jeder "
+                      + "neuen Transaktion. Wer mehr zahlt, drängt andere in einen "
+                      + "späteren Block — der Miner entscheidet am Ende selbst."
                 color: root.dimColor
                 font.pixelSize: root.uiFont * 0.85
             }

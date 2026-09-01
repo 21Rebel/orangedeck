@@ -399,6 +399,10 @@ class Feed:
         self.miner_total = {}     # Summe ueber alle erreichbaren Geraete
         self.slow_at = 0.0
         self.miner_at = 0.0
+        # Geplante Bloecke: was gerade verfolgt wird und was dabei herauskam
+        self.want_track = None      # gewuenschter Rang, oder None
+        self.tracked = None         # was tatsaechlich abonniert ist
+        self.projected_tiles = {}   # Rang -> aufbereitete Kacheldaten
         self.stats_hist = {"t": [], "count": [], "vbps": [], "inflow": []}
         self.stats_at = 0.0
         self.stats_seq = 0
@@ -540,6 +544,9 @@ LOOKUP_MAX = 400
 
 _lookup_cache = {}
 _lookup_lock = threading.Lock()
+# Der Feed wird beim Start hier eingehaengt -- die Abfrage fuer geplante
+# Bloecke braucht ihn, weil die Daten ueber den WebSocket kommen.
+_feed_ref = [None]
 
 # Nur diese Formen werden weitergereicht. Kein freier Durchgriff nach aussen.
 LOOKUP_ROUTES = (
@@ -564,6 +571,9 @@ LOOKUP_ROUTES = (
     ("mempoolblocks", re.compile(r"^now$"), "/v1/fees/mempool-blocks"),
     # Ersetzte Transaktionen (RBF)
     ("replacements", re.compile(r"^now$"), "/v1/replacements"),
+    # Kacheldaten eines **geplanten** Blocks. Kommen nicht ueber REST, sondern
+    # ueber den WebSocket -- siehe lookup().
+    ("projectedtiles", re.compile(r"^[0-7]$"), None),
 )
 
 
@@ -583,6 +593,26 @@ def lookup(kind, arg):
 
         # Kacheldaten werden aufbereitet, nicht durchgereicht: 700 kB
         # Transaktionsliste werden zu rund 8 kB.
+        if kind == "projectedtiles":
+            # Der WebSocket-Faden abonniert und legt das Ergebnis ab. Hier nur
+            # anfordern und warten -- die Vollform kommt binnen weniger
+            # Sekunden.
+            idx = int(arg)
+            feed = _feed_ref[0]
+            if feed is None:
+                return None, ("Feed laeuft nicht", 503)
+            have = feed.projected_tiles.get(idx)
+            if have and now - have.get("ts", 0) < 20:
+                return json.dumps(have, separators=(",", ":")), None
+            feed.want_track = idx
+            deadline = now + 25
+            while time.time() < deadline:
+                have = feed.projected_tiles.get(idx)
+                if have and have.get("ts", 0) >= now - 1:
+                    return json.dumps(have, separators=(",", ":")), None
+                time.sleep(0.2)
+            return None, ("keine Antwort vom Server", 504)
+
         if kind == "blocktiles":
             try:
                 data = summarize_block(arg)
@@ -1193,6 +1223,38 @@ def emit_bar(kind):
 # --------------------------------------------------------------------------
 # Betriebsarten
 # --------------------------------------------------------------------------
+def compress_projected(index, rows):
+    """Bereitet die Transaktionsliste eines geplanten Blocks auf.
+
+    Der Server schickt sie in Kurzform, Reihenfolge wie im Original
+    (`uncompressTx`): [txid, fee, vsize, value, rate, flags, time]. Aufbereitet
+    wird genau wie bei einem bestaetigten Block -- zwei Ziffern je Transaktion
+    plus die Angaben fuer den Tooltip."""
+    step = max(1, len(rows) // MAX_TILES + (1 if len(rows) % MAX_TILES else 0))
+    tiles, details = [], []
+    total_value = total_fee = 0
+    total_vsize = 0.0
+    for r in rows:
+        total_fee += int(r[1] or 0)
+        total_vsize += float(r[2] or 0)
+        total_value += int(r[3] or 0)
+    for r in rows[::step]:
+        tiles.append("%d%d" % (tile_size(r[3]), fee_bucket(r[4])))
+        details.append([r[0], round(float(r[2] or 0), 2), int(r[1] or 0),
+                        int(r[3] or 0), round(float(r[4] or 0), 3)])
+    return {
+        "index": index,
+        "count": len(rows),
+        "totalValue": total_value,
+        "sumFees": total_fee,
+        "avgFeeRate": round(total_fee / total_vsize, 3) if total_vsize else 0,
+        "tileStep": step,
+        "tiles": "".join(tiles),
+        "txs": details,
+        "ts": round(time.time(), 2),
+    }
+
+
 def handle(feed, msg):
     if "mempoolInfo" in msg:
         feed.set_mempool(msg["mempoolInfo"])
@@ -1223,6 +1285,21 @@ def handle(feed, msg):
         feed.set_tip(msg["block"], is_new=True)
 
 
+def handle_projected(feed, p):
+    """Antwort auf `track-mempool-block`. Die Vollform kommt einmal, danach
+    schickt der Server nur noch Aenderungen -- die brauchen wir nicht, also
+    wird direkt wieder abbestellt."""
+    rows = p.get("blockTransactions")
+    if not rows:
+        return False
+    idx = p.get("index")
+    try:
+        feed.projected_tiles[int(idx)] = compress_projected(idx, rows)
+    except Exception as e:
+        sys.stderr.write("geplanter Block: %s\n" % e)
+    return True
+
+
 def run_ws(feed):
     ws = WebSocket(WS_URL, origin=f"https://{HOST}")
     feed.source = "ws"
@@ -1240,7 +1317,24 @@ def run_ws(feed):
                 msg = json.loads(raw)
             except ValueError:
                 continue
-            handle(feed, msg)
+            p = msg.get("projected-block-transactions")
+            if p is not None:
+                if handle_projected(feed, p):
+                    # Vollform erhalten -- abbestellen, sonst stroemen
+                    # fortlaufend Aenderungen herein
+                    feed.want_track = None
+            else:
+                handle(feed, msg)
+
+            # Ab- und Anmelden geschieht hier, im selben Faden wie das Senden
+            if feed.want_track != feed.tracked:
+                try:
+                    ws.send(json.dumps({"track-mempool-block":
+                                        feed.want_track if feed.want_track is not None else -1}))
+                    feed.tracked = feed.want_track
+                except Exception:
+                    pass
+
             now = time.time()
             if feed.dirty and now - last_write >= WRITE_INTERVAL:
                 feed.write()
@@ -1333,6 +1427,7 @@ def main():
         print("btcfeed laeuft bereits -- diese Instanz beendet sich.", file=sys.stderr)
         return 0
 
+    _feed_ref[0] = feed
     serve_local(feed)
     threading.Thread(target=run_extras, args=(feed,), daemon=True).start()
 
