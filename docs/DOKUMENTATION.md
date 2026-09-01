@@ -882,7 +882,29 @@ Zwei Fehler, die dort einen sichtbaren Versatz erzeugten:
 
 Nachgerechnet ueber 1/1, 1/2, 3/2, 30/1, 400/1 und 60/60: **Versatz 0,00 px**.
 
-### Rand, Anschluesse, Pfeil
+### Schwung, Verlauf, Pfeilspitze
+
+**`swing`** (0,78) steuert die Kontrollpunkte der Bezierkurven: sie liegen bei
+`x0 + d` und `x1 - d` mit `d = (x1 - x0) * swing`. Ab 0,5 ueberschneiden sie
+sich, wodurch die Baender flacher ansetzen und in der Mitte steiler laufen.
+Nachgemessen an 60 px Hoehenunterschied auf 100 px Breite:
+
+    swing   Steigung in der Mitte
+     0,50           1,98x
+     0,65           2,74x
+     0,78           3,88x
+     0,90           5,33x
+
+**Der Farbuebergang** sass frueher in der Strangflaeche. Die gibt es nicht mehr,
+also tragen ihn die Baender selbst: die Eingaenge laufen zur Mitte hin in
+`midColor` (das Mittel aus beiden Farben), die Ausgaenge setzen dort an. Ohne
+das bricht die Farbe in der Mitte hart um.
+
+**Die Pfeilspitze** laeuft innerhalb der Bandbreite zusammen. Ein Ueberstand an
+den Ecken -- der erste Versuch hatte einen -- sieht nach Fehler aus, nicht nach
+Absicht.
+
+### Rand, Anschluesse
 
 Oben und unten bleibt Platz (`padY`), damit der Fluss frei liegt statt am
 Bildrand zu kleben. An beiden Enden ein gerades Anschlussstueck (`connector`),

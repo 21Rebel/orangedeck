@@ -50,6 +50,9 @@ Item {
     // Bei einem einzigen Band gibt es keine Luecke und damit auch keine
     // Taille -- da ist auch nichts zusammenzufuehren.
     property real waistTarget: 0.72
+    // Wie stark die Baender schwingen. 0,5 ergibt eine brave Sinusform, hoehere
+    // Werte lassen sie flacher ansetzen und in der Mitte steiler laufen.
+    property real swing: 0.78
     property real edgeGap: Math.max(2, labelSize * 0.3)
     // Pfeilspitze am rechten Ende, damit die Richtung erkennbar ist
     property real arrowLen: Math.max(8, Math.min(width * 0.035, labelSize * 1.6))
@@ -59,6 +62,13 @@ Item {
     // Gerades Anschlussstueck an beiden Enden, bevor die Kurve beginnt
     property real connector: Math.max(6, Math.min(width * 0.05, labelSize * 2))
     readonly property real innerH: Math.max(8, height - 2 * padY)
+    // Der Farbwechsel sass frueher in der Strangflaeche. Die gibt es nicht
+    // mehr, also tragen ihn die Baender: die Eingaenge laufen zur Mitte hin in
+    // diesen Ton, die Ausgaenge setzen dort an. So bleibt der Verlauf
+    // durchgehend, ohne harte Kante in der Mitte.
+    readonly property color midColor: Qt.rgba((inColor.r + outColor.r) / 2,
+                                              (inColor.g + outColor.g) / 2,
+                                              (inColor.b + outColor.b) / 2, 1)
 
     property var hovered: null
 
@@ -204,9 +214,8 @@ Item {
         // Waagerecht ansetzende S-Kurve -- die Baender laufen an beiden Enden
         // flach aus, dazwischen der Schwung.
         function curve(ctx, x0, y0, x1, y1) {
-            ctx.bezierCurveTo(x0 + (x1 - x0) * 0.5, y0,
-                              x1 - (x1 - x0) * 0.5, y1,
-                              x1, y1);
+            var d = (x1 - x0) * root.swing;
+            ctx.bezierCurveTo(x0 + d, y0, x1 - d, y1, x1, y1);
         }
 
         onPaint: {
@@ -229,8 +238,9 @@ Item {
                 b = root.bandsIn[i];
                 lit = root.hovered && root.hovered.side === "in" && root.hovered.index === b.i;
                 g = ctx.createLinearGradient(0, 0, xC, 0);
-                g.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 1 : 0.85));
-                g.addColorStop(1, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 1 : 0.62));
+                g.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 1 : 0.9));
+                g.addColorStop(0.55, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 1 : 0.8));
+                g.addColorStop(1, Qt.rgba(root.midColor.r, root.midColor.g, root.midColor.b, lit ? 1 : 0.8));
                 ctx.fillStyle = g;
 
                 ctx.beginPath();
@@ -250,18 +260,22 @@ Item {
                 lit = root.hovered && root.hovered.side === "out" && root.hovered.index === b.i;
                 var col = b.fee ? root.feeColor : root.outColor;
                 g = ctx.createLinearGradient(xC, 0, w, 0);
-                g.addColorStop(0, Qt.rgba(col.r, col.g, col.b, b.fee ? 0.55 : 0.62));
-                g.addColorStop(1, Qt.rgba(col.r, col.g, col.b, lit ? 1 : (b.fee ? 0.85 : 0.9)));
+                if (b.fee) {
+                    g.addColorStop(0, Qt.rgba(root.midColor.r, root.midColor.g, root.midColor.b, 0.7));
+                    g.addColorStop(1, Qt.rgba(col.r, col.g, col.b, lit ? 1 : 0.85));
+                } else {
+                    g.addColorStop(0, Qt.rgba(root.midColor.r, root.midColor.g, root.midColor.b, lit ? 1 : 0.8));
+                    g.addColorStop(0.45, Qt.rgba(col.r, col.g, col.b, lit ? 1 : 0.82));
+                    g.addColorStop(1, Qt.rgba(col.r, col.g, col.b, lit ? 1 : 0.95));
+                }
                 ctx.fillStyle = g;
 
-                var over = Math.min(b.hEdge * 0.4, root.arrowLen * 0.45);
                 ctx.beginPath();
                 ctx.moveTo(xC, b.midY);
                 canvas.curve(ctx, xC, b.midY, xR, b.edgeY);
-                // Pfeilspitze
-                ctx.lineTo(xR, b.edgeY - over);
+                // Die Spitze laeuft **innerhalb** der Bandbreite zusammen --
+                // ein Ueberstand an den Ecken sieht nach Fehler aus.
                 ctx.lineTo(w, b.edgeY + b.hEdge / 2);
-                ctx.lineTo(xR, b.edgeY + b.hEdge + over);
                 ctx.lineTo(xR, b.edgeY + b.hEdge);
                 canvas.curve(ctx, xR, b.edgeY + b.hEdge, xC, b.midY + b.hMid);
                 ctx.closePath();
