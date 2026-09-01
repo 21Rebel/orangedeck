@@ -54,7 +54,9 @@ Mechanik und Stolperfallen in `DOKUMENTATION.md`.
    **>>> Vor diesem Schritt dem Nutzer Bescheid geben <<<** -- er haengt dann
    sein Handy an den Rechner, um darauf zu testen (abgesprochen am 01.09.2026).
 7. **ExplorerView und WatchView.** Groesster Brocken, haengt an nichts mehr
-   ausser Arbeit.
+   ausser Arbeit. Am 01.09.2026 vorbereitet: `matchQuery()` aus dem Fork ist
+   direkt portierbar, und `/api/tx/:txid` samt `/outspends` deckt den ganzen
+   Pfad ohne Node ab. Einzelheiten in `ZIELBILD.md`.
 
 ### Kleinigkeiten, notiert
 

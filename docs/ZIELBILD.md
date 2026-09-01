@@ -420,3 +420,53 @@ auf diesem Rechner bereits installiert**, laesst sich also sofort gegenpruefen.
 Stufe 3 zuerst: wenige Zeilen im Daemon, sofort nachpruefbar, groesste
 Reichweite. Danach Stufe 1 mit `layer-shell-qt` fuer das eigene Widget und die
 eigene Leiste. Stufe 2 nur, falls X11-Systeme tatsaechlich gebraucht werden.
+
+
+## Was der Fork zum Explorer wirklich beitraegt — geprueft 01.09.2026
+
+Die Annahme, der Explorer stecke groesstenteils schon im Fork, stimmt zur
+Haelfte. Nachgesehen in `upstream/bitfeed/client/src`:
+
+**Brauchbar, direkt portierbar:**
+
+`utils/search.js` enthaelt `matchQuery()` -- die Erkennung, was der Benutzer
+eingegeben hat. Reine Logik ohne Abhaengigkeiten, rund 110 Zeilen, und sie
+deckt mehr Faelle ab als man von Hand bedenkt:
+
+    Blockhoehe        eine Zahl
+    Blockhash         /^0{8}[a-f0-9]{56}$/   (die fuehrenden Nullen!)
+    Transaktion       64 Hex
+    Ausgang           txid:n
+    Eingang           n:txid
+    Adresse           alles Uebrige, nach Praefix unterschieden
+
+Das ist die fummelige Stelle, und sie laesst sich eins zu eins nach QML-JS
+uebernehmen.
+
+**Nicht brauchbar:**
+
+- **Der Datenweg.** Der Client spricht **seinen eigenen Elixir-Server**
+  (`/api/tx/`, `/api/block/`, `/api/block/height/`, `/api/spends/`), nicht
+  mempool.space. Der Server braucht einen eigenen bitcoind -- den es hier
+  bewusst nicht gibt. Die Antwortformate sind andere.
+- **Die Oberflaeche.** `SearchBar.svelte` (254 Zeilen) und `SearchTab.svelte`
+  (286 Zeilen) sind Svelte. In QML muss das neu geschrieben werden.
+
+**Der Ersatz steht:** am 01.09.2026 gegen die oeffentliche API geprueft.
+
+    /api/tx/:txid              volle Ein- und Ausgaenge; jeder Eingang bringt
+                               `prevout` mit Adresse und Betrag mit -- damit
+                               laesst sich der Weg rueckwaerts verfolgen
+    /api/tx/:txid/outspends    ob und wohin jeder Ausgang ausgegeben wurde --
+                               der Weg vorwaerts. Entspricht `/api/spends/`
+                               beim bitfeed-Server.
+    /api/address/:addr[/txs]   Adressen samt Verlauf (frueher geprueft)
+
+Damit ist der **ganze Pfad** ohne eigenen Node darstellbar: Eingang ->
+Transaktion -> Ausgang -> naechste Transaktion.
+
+**Aufwandsschaetzung, ehrlich:** die Eingabeerkennung ist geschenkt und die
+Datenwege sind geklaert -- das nimmt dem Vorhaben das Ungewisse. Der Rumpf der
+Arbeit bleibt aber die Oberflaeche in QML: Suchfeld, Detailtafel mit Ein- und
+Ausgaengen, Blockhistorie, Adressansicht. Das ist mehr als BlockClock und
+Miner-Ansicht zusammen.
