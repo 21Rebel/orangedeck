@@ -16,6 +16,12 @@ den laufenden Dienst ab:
   btcfeed --polybar  eine Zeile fuer Polybar, i3blocks, yambar
   btcfeed --genmon   XML fuer das Genmon-Modul von XFCE
 
+Miner im eigenen Netz suchen (die Geraete haengen meist im WLAN und bekommen
+ihre Adresse per DHCP):
+
+  btcfeed --discover-miners           gefundene Geraete auflisten
+  btcfeed --discover-miners --write   sie in sources.json eintragen
+
 Zusaetzlich zu state.json bietet der Daemon die Daten unter
 http://127.0.0.1:21021/state, /block und /health an -- nur lesend und nur
 lokal. BTCFEED_ADDR und BTCFEED_PORT aendern das, siehe Kommentar dort.
@@ -29,6 +35,7 @@ import os
 import socket
 import ssl
 import struct
+import subprocess
 import sys
 import threading
 import time
@@ -71,13 +78,23 @@ SERVE_ADDR = os.environ.get("BTCFEED_ADDR", "127.0.0.1")
 SERVE_PORT = int(os.environ.get("BTCFEED_PORT", "21021"))
 
 # Zusaetzliche Quellen. Jede ist einzeln abschaltbar, indem man sie weglaesst.
-# Reihenfolge: Umgebungsvariable schlaegt Datei.
 #
 #   ~/.config/btcfeed/sources.json
-#   { "bitaxe": "http://192.168.100.42" }
+#   {
+#     "miners": [
+#       { "type": "axeos",   "url": "http://192.168.100.42" },
+#       { "type": "cgminer", "host": "192.168.100.50", "port": 4028 }
+#     ]
+#   }
 #
-# Spaeter schreibt die Einstellungsseite diese Datei; heute traegt man sie von
-# Hand ein. Die Datei ist bewusst getrennt von btcfeed.conf, die QSettings der
+# `"bitaxe": "http://..."` wird als Kurzform weiter gelesen.
+#
+# Die Adressen stammen ueblicherweise aus DHCP und aendern sich. Deshalb gibt
+# es `btcfeed --discover-miners`, das das eigene Netz absucht. Der Daemon sucht
+# **nicht** von selbst -- ein Suchlauf ueber das ganze Netz gehoert nicht in
+# einen Dienst, der im Hintergrund laeuft.
+#
+# Die Datei ist bewusst getrennt von btcfeed.conf, die den QSettings der
 # Anwendung gehoert.
 SOURCES_FILE = os.path.join(
     os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"),
@@ -91,9 +108,21 @@ def load_sources():
             cfg = json.load(f) or {}
     except Exception:
         pass
-    env = os.environ.get("BTCFEED_BITAXE")
-    if env:
-        cfg["bitaxe"] = env
+
+    miners = list(cfg.get("miners") or [])
+    # Kurzform und Umgebungsvariable einreihen
+    for short in (cfg.get("bitaxe"), os.environ.get("BTCFEED_MINER"),
+                  os.environ.get("BTCFEED_BITAXE")):
+        if short:
+            miners.append({"type": "axeos", "url": short})
+    # Doppelte entfernen, Reihenfolge erhalten
+    seen, out = set(), []
+    for m in miners:
+        key = (m.get("type"), m.get("url"), m.get("host"), m.get("port"))
+        if key not in seen:
+            seen.add(key)
+            out.append(m)
+    cfg["miners"] = out
     return cfg
 
 
@@ -102,7 +131,7 @@ SOURCES = load_sources()
 # Wie oft die langsamen Kennzahlen geholt werden. Schwierigkeit und Hashrate
 # aendern sich im Stunden- bis Tagestakt -- alle fuenf Minuten ist reichlich.
 SLOW_INTERVAL = 300
-BITAXE_INTERVAL = 5
+MINER_INTERVAL = 5
 
 
 def fee_bucket(rate):
@@ -309,9 +338,10 @@ class Feed:
         # Langsame Kennzahlen fuer die BlockClock, und der eigene Miner
         self.difficulty = {}
         self.hashrate = {}
-        self.miner = {}
+        self.miners = []          # je Geraet ein normalisierter Satz Felder
+        self.miner_total = {}     # Summe ueber alle erreichbaren Geraete
         self.slow_at = 0.0
-        self.bitaxe_at = 0.0
+        self.miner_at = 0.0
 
     # -- Einspeisung ------------------------------------------------------
     def add_txs(self, txs):
@@ -417,7 +447,8 @@ class Feed:
             "recent": self.recent[-RECENT_KEEP:],
             "difficulty": self.difficulty,
             "hashrate": self.hashrate,
-            "miner": self.miner,
+            "miners": self.miners,
+            "minerTotal": self.miner_total,
         }
 
     def write(self):
@@ -527,35 +558,254 @@ def poll_slow(feed):
         sys.stderr.write("Hashrate: %s\n" % e)
 
 
-def poll_bitaxe(feed):
-    """Eigener Solo-Miner. Nur aktiv, wenn in sources.json eingetragen --
-    ohne Eintrag passiert hier gar nichts."""
-    base = SOURCES.get("bitaxe")
-    if not base or time.time() - feed.bitaxe_at < BITAXE_INTERVAL:
-        return
-    feed.bitaxe_at = time.time()
+# --------------------------------------------------------------------------
+# Miner
+# --------------------------------------------------------------------------
+# Zwei Protokollfamilien decken praktisch alle ueblichen Geraete ab:
+#
+#   axeos    HTTP, /api/system/info -- Bitaxe, NerdAxe und die uebrigen
+#            ESP-Miner-Abkoemmlinge (AxeOS)
+#   cgminer  TCP 4028 mit JSON-Befehlen -- die klassische cgminer-Schnittstelle,
+#            die Antminer, Avalon, Whatsminer und viele Nachbauten sprechen
+#
+# Alle Adapter liefern denselben Satz Felder zurueck, Hashrate immer in H/s.
+# Die Ansicht muss dadurch nichts ueber das Geraet wissen.
+
+def parse_diff(v):
+    """'1.23M' -> 1230000.0. Die Geraete melden die Bestleistung als Text
+    mit Einheit."""
+    if isinstance(v, (int, float)):
+        return float(v)
+    if not v:
+        return 0.0
+    t = str(v).strip()
+    mult = {"k": 1e3, "K": 1e3, "M": 1e6, "G": 1e9, "T": 1e12, "P": 1e15, "E": 1e18}
+    f = mult.get(t[-1:], 1.0)
     try:
-        req = urllib.request.Request(base.rstrip("/") + "/api/system/info",
-                                     headers={"User-Agent": UA})
-        with urllib.request.urlopen(req, timeout=4) as r:
-            d = json.loads(r.read().decode())
-        feed.miner = {
-            "online": True,
-            "hashRate": d.get("hashRate"),
-            "bestDiff": d.get("bestDiff"),
-            "bestSessionDiff": d.get("bestSessionDiff"),
-            "temp": d.get("temp"),
-            "power": d.get("power"),
-            "shares": d.get("sharesAccepted"),
-            "rejected": d.get("sharesRejected"),
-            "uptime": d.get("uptimeSeconds"),
-            "model": d.get("ASICModel") or d.get("boardVersion"),
-        }
+        return float(t if f == 1.0 else t[:-1]) * f
+    except ValueError:
+        return 0.0
+
+
+def probe_axeos(url, timeout=4):
+    req = urllib.request.Request(url.rstrip("/") + "/api/system/info",
+                                 headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        d = json.loads(r.read().decode())
+    return {
+        "type": "axeos",
+        "id": url,
+        "name": d.get("hostname") or d.get("ASICModel") or d.get("boardVersion") or "AxeOS",
+        "model": d.get("ASICModel") or d.get("boardVersion") or "",
+        "online": True,
+        # AxeOS meldet GH/s
+        "hashRate": float(d.get("hashRate") or 0) * 1e9,
+        "bestDiff": parse_diff(d.get("bestDiff")),
+        "bestSessionDiff": parse_diff(d.get("bestSessionDiff")),
+        "temp": d.get("temp"),
+        "power": d.get("power"),
+        "shares": d.get("sharesAccepted"),
+        "rejected": d.get("sharesRejected"),
+        "uptime": d.get("uptimeSeconds"),
+    }
+
+
+def cgminer_call(host, port, command, timeout=3):
+    """Die cgminer-Schnittstelle antwortet mit JSON, haengt aber gern ein
+    Nullbyte an und liefert kein Content-Length -- also bis zum Verbindungsende
+    lesen und hinten abschneiden."""
+    with socket.create_connection((host, int(port)), timeout=timeout) as sk:
+        sk.settimeout(timeout)
+        sk.sendall(json.dumps({"command": command}).encode())
+        buf = b""
+        while True:
+            try:
+                chunk = sk.recv(4096)
+            except socket.timeout:
+                break
+            if not chunk:
+                break
+            buf += chunk
+    return json.loads(buf.rstrip(b"\x00").decode(errors="replace"))
+
+
+def probe_cgminer(host, port=4028, timeout=3):
+    d = cgminer_call(host, port, "summary", timeout)
+    row = (d.get("SUMMARY") or [{}])[0]
+
+    def num(*keys):
+        for k in keys:
+            if row.get(k) is not None:
+                try:
+                    return float(row[k])
+                except (TypeError, ValueError):
+                    pass
+        return None
+
+    mhs = num("MHS av", "MHS 5s", "MHS 1m") or 0.0
+    return {
+        "type": "cgminer",
+        "id": "%s:%s" % (host, port),
+        "name": host,
+        "model": (d.get("STATUS") or [{}])[0].get("Description") or "",
+        "online": True,
+        "hashRate": mhs * 1e6,          # cgminer meldet MH/s
+        "bestDiff": parse_diff(row.get("Best Share")),
+        "bestSessionDiff": 0.0,
+        "temp": num("Temperature"),
+        "power": None,
+        "shares": int(num("Accepted") or 0),
+        "rejected": int(num("Rejected") or 0),
+        "uptime": int(num("Elapsed") or 0),
+    }
+
+
+def probe_miner(spec, timeout=4):
+    """Fragt ein einzelnes Geraet ab. Nicht erreichbar ist **kein Fehler**,
+    sondern ein Zustand -- die Geraete sind oft schlicht aus."""
+    kind = (spec.get("type") or "axeos").lower()
+    try:
+        if kind == "cgminer":
+            return probe_cgminer(spec.get("host"), spec.get("port", 4028), timeout)
+        return probe_axeos(spec.get("url") or spec.get("host") or "", timeout)
     except Exception as e:
-        # Der Miner ist oft schlicht aus -- das ist kein Fehler, sondern ein
-        # Zustand. Die Ansicht zeigt ihn dann als "nicht erreichbar".
-        feed.miner = {"online": False, "error": str(e)}
+        return {
+            "type": kind,
+            "id": spec.get("url") or "%s:%s" % (spec.get("host"), spec.get("port", 4028)),
+            "name": spec.get("name") or spec.get("host") or spec.get("url") or "Miner",
+            "online": False,
+            "error": str(e),
+        }
+
+
+def poll_miners(feed):
+    """Alle eingetragenen Geraete. Ohne Eintrag passiert hier gar nichts."""
+    specs = SOURCES.get("miners") or []
+    if not specs or time.time() - feed.miner_at < MINER_INTERVAL:
+        return
+    feed.miner_at = time.time()
+    found = [probe_miner(sp) for sp in specs]
+    live = [m for m in found if m.get("online")]
+    feed.miners = found
+    feed.miner_total = {
+        "count": len(found),
+        "online": len(live),
+        "hashRate": sum(m.get("hashRate") or 0 for m in live),
+        "bestDiff": max([m.get("bestDiff") or 0 for m in live] or [0]),
+    }
     feed.dirty = True
+
+
+def local_networks():
+    """Die eigenen /24-Netze. Virtuelle Bruecken (libvirt, Docker) bleiben
+    draussen -- dort steht kein Miner."""
+    out = []
+    try:
+        res = subprocess.run(["ip", "-4", "-o", "addr", "show", "scope", "global"],
+                             capture_output=True, text=True, timeout=5)
+        for line in res.stdout.splitlines():
+            parts = line.split()
+            if len(parts) < 4:
+                continue
+            dev, cidr = parts[1], parts[3]
+            if dev.startswith(("virbr", "docker", "br-", "veth", "tun", "tailscale")):
+                continue
+            addr, _, bits = cidr.partition("/")
+            if bits != "24":
+                continue
+            out.append((dev, addr.rsplit(".", 1)[0]))
+    except Exception:
+        pass
+    return out
+
+
+def discover_miners(timeout=1.0, workers=64):
+    """Sucht im eigenen Netz nach Minern. Bewusst **nur** auf Zuruf: ein
+    Suchlauf ueber alle Adressen gehoert nicht in einen Hintergrunddienst.
+
+    Die Geraete haengen ueblicherweise im WLAN und bekommen ihre Adresse per
+    DHCP -- eine fest eingetragene Adresse haelt daher selten lange."""
+    import queue
+    found, q = [], queue.Queue()
+    lock = threading.Lock()
+
+    for dev, prefix in local_networks():
+        for i in range(1, 255):
+            q.put((dev, "%s.%d" % (prefix, i)))
+
+    def worker():
+        while True:
+            try:
+                dev, ip = q.get_nowait()
+            except Exception:
+                return
+            # AxeOS ueber HTTP
+            try:
+                m = probe_axeos("http://" + ip, timeout=timeout)
+                m["via"] = dev
+                with lock:
+                    found.append(m)
+                q.task_done()
+                continue
+            except Exception:
+                pass
+            # cgminer ueber TCP 4028
+            try:
+                m = probe_cgminer(ip, 4028, timeout=timeout)
+                m["via"] = dev
+                with lock:
+                    found.append(m)
+            except Exception:
+                pass
+            q.task_done()
+
+    threads = [threading.Thread(target=worker, daemon=True) for _ in range(workers)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    return found
+
+
+def cmd_discover(write=False):
+    nets = local_networks()
+    if not nets:
+        print("Kein eigenes /24-Netz gefunden.", file=sys.stderr)
+        return 1
+    print("Suche in: %s" % ", ".join("%s (%s.0/24)" % (d, p) for d, p in nets),
+          file=sys.stderr)
+    found = discover_miners()
+    if not found:
+        print("Kein Miner gefunden. Laeuft das Geraet, und haengt es im selben Netz?",
+              file=sys.stderr)
+        return 1
+    for m in found:
+        print("  %-22s %-8s %-18s %s" % (
+            m["id"], m["type"], m.get("name") or "",
+            ("%.2f TH/s" % (m["hashRate"] / 1e12)) if m.get("hashRate") else ""))
+    if write:
+        specs = []
+        for m in found:
+            if m["type"] == "axeos":
+                specs.append({"type": "axeos", "url": m["id"]})
+            else:
+                host, _, port = m["id"].partition(":")
+                specs.append({"type": "cgminer", "host": host, "port": int(port or 4028)})
+        cfg = {}
+        try:
+            with open(SOURCES_FILE) as f:
+                cfg = json.load(f) or {}
+        except Exception:
+            pass
+        cfg["miners"] = specs
+        os.makedirs(os.path.dirname(SOURCES_FILE), exist_ok=True)
+        with open(SOURCES_FILE, "w") as f:
+            json.dump(cfg, f, indent=2)
+        print("\nIn %s eingetragen. Uebernehmen mit:\n"
+              "  systemctl --user restart btcfeed" % SOURCES_FILE, file=sys.stderr)
+    else:
+        print("\nMit --write in %s eintragen." % SOURCES_FILE, file=sys.stderr)
+    return 0
 
 
 # --------------------------------------------------------------------------
@@ -701,7 +951,7 @@ def run_extras(feed):
     while True:
         try:
             poll_slow(feed)
-            poll_bitaxe(feed)
+            poll_miners(feed)
         except Exception as e:
             sys.stderr.write("Nebenquellen: %s\n" % e)
         time.sleep(1)
@@ -755,6 +1005,9 @@ def acquire_lock():
 def main():
     args = set(sys.argv[1:])
 
+    if "--discover-miners" in args:
+        return cmd_discover(write="--write" in args)
+
     for kind in ("waybar", "polybar", "genmon"):
         if "--" + kind in args:
             return emit_bar(kind)
@@ -764,7 +1017,7 @@ def main():
     if "--once" in args or "--print" in args:
         poll_rest(feed)
         poll_slow(feed)
-        poll_bitaxe(feed)
+        poll_miners(feed)
         if "--print" in args:
             print(json.dumps(feed.snapshot(), indent=2))
         return 0

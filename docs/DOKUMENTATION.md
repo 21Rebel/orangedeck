@@ -556,11 +556,13 @@ Hashrate, ein Fortschrittsbalken bis zur naechsten Schwierigkeitsanpassung, der
 Halving-Abstand und eine Hashrate-Kurve ueber einen Monat. Vorbild ist der
 unveroeffentlichte Zweig `display-mode` aus dem Fork (03.04.2023).
 
-**`MinerView.qml`** -- Hashrate des eigenen Geraets und, als eigentliche Zahl
-beim Solomining, die **beste Freigabe gegen die Netzschwierigkeit**. Angezeigt
-als "1 zu N" statt als Prozentzahl mit acht Nullen. Dazu Temperatur, Leistung,
-Freigaben, Laufzeit. Drei Zustaende: nicht eingetragen, nicht erreichbar, in
-Betrieb -- der Miner ist meistens schlicht aus, das ist kein Fehler.
+**`MinerView.qml`** -- **nicht auf ein Geraet festgelegt.** Gesamthashrate
+ueber alle erreichbaren Geraete und, als eigentliche Zahl beim Solomining, die
+**beste Freigabe gegen die Netzschwierigkeit**, angezeigt als "1 zu N" statt
+als Prozentzahl mit acht Nullen. Darunter jedes Geraet einzeln mit Zustand,
+Hashrate, Temperatur und Laufzeit. Drei Zustaende: nicht eingetragen, keines
+erreichbar, in Betrieb -- die Geraete sind meistens schlicht aus, das ist kein
+Fehler.
 
 ### Datenseite
 
@@ -588,3 +590,46 @@ Dafuer will Qt 6 die Zeile `pragma ComponentBehavior: Bound` -- und dann muss
 auch `modelData` im Delegaten ausdruecklich angefordert werden
 (`required property var modelData`, Zugriff ueber `parent.modelData`). Ohne
 beides meckert `qmllint`, und die Bindung waere tatsaechlich nicht garantiert.
+
+
+## Miner: zwei Protokollfamilien und eine Netzsuche
+
+Der Daemon spricht zwei Familien und deckt damit praktisch alle ueblichen
+Geraete ab. Beide Adapter liefern **denselben Satz Felder**, Hashrate immer in
+H/s -- die Ansicht muss nichts ueber das Geraet wissen.
+
+    axeos     HTTP, /api/system/info
+              Bitaxe, NerdAxe und die uebrigen ESP-Miner-Abkoemmlinge (AxeOS).
+              Meldet GH/s und die Bestleistung als Text ("1.23M").
+    cgminer   TCP 4028, JSON-Befehl {"command":"summary"}
+              Antminer, Avalon, Whatsminer und Nachbauten. Meldet MH/s, haengt
+              ein Nullbyte an die Antwort und schliesst ohne Content-Length --
+              also bis zum Verbindungsende lesen und hinten abschneiden.
+
+### Suchen statt eintragen
+
+Die Geraete haengen ueblicherweise im WLAN und bekommen ihre Adresse per DHCP;
+ein fest eingetragener Wert haelt selten lange. Deshalb:
+
+    btcfeed --discover-miners           auflisten
+    btcfeed --discover-miners --write   in sources.json eintragen
+
+Der Suchlauf geht ueber die eigenen /24-Netze und probiert je Adresse HTTP :80
+und TCP :4028. Virtuelle Bruecken (`virbr`, `docker`, `br-`, `veth`, `tun`,
+`tailscale`) bleiben draussen -- dort steht kein Miner.
+
+**Der Dienst sucht nicht von selbst.** Ein Durchlauf ueber alle Adressen des
+Netzes gehoert nicht in einen Hintergrunddienst; er passiert nur auf Zuruf.
+
+### Geprueft ohne Geraet
+
+Am 01.09.2026 war kein Miner erreichbar. Die Adapter sind deshalb gegen
+**nachgestellte Geraete** geprueft (realistische Antworten, HTTP und TCP):
+
+    AxeOS    1204,7 GH/s -> 1,20 TH/s, "1.23M" -> 1.230.000, Temp/Freigaben/Laufzeit
+    cgminer  95.000.000 MH/s -> 95,00 TH/s, Best Share 123.456.789
+    nicht erreichbar -> online=false, Fehler wird gemeldet
+
+Danach die ganze Kette: nachgestelltes Geraet -> Daemon -> Loopback -> FeedState
+-> MinerView, mit zwei Geraeten zugleich und richtiger Summe (96,17 TH/s).
+**Gegen echte Geraete steht die Probe noch aus.**

@@ -41,11 +41,13 @@ Mechanik und Stolperfallen in `DOKUMENTATION.md`.
    01.09.2026.** Umschalten mit 1/2/3, Auswahl wird gemerkt. Der Daemon holt
    Schwierigkeit und Hashrate nebenher; die Miner-Adresse steht in
    `~/.config/btcfeed/sources.json`.
-   **Offen dazu:** Der Bitaxe war beim Bauen nicht erreichbar (die Adresse
-   192.168.1.81 aus dem Memory ist veraltet, der Rechner haengt inzwischen in
-   192.168.100.0/24, ein Suchlauf fand nichts). Die Miner-Ansicht ist deshalb
-   nur gegen den Zustand "nicht erreichbar" geprueft, **nicht gegen echte
-   Geraetedaten** -- beim naechsten Einschalten nachholen.
+   Die Miner-Unterstuetzung ist **nicht auf Bitaxe festgelegt**: AxeOS ueber
+   HTTP und die cgminer-Schnittstelle ueber TCP 4028, mehrere Geraete
+   zugleich, plus `btcfeed --discover-miners` fuers eigene Netz (die Geraete
+   haengen im WLAN und bekommen DHCP-Adressen).
+   **Offen dazu:** geprueft ist alles nur gegen **nachgestellte** Geraete.
+   Der Nutzer richtet einen Bitaxe ein, sobald wir gegen echte Hardware testen
+   wollen -- **dafuer Bescheid geben** (abgesprochen am 01.09.2026).
 5. **Layer-Shell** (`layer-shell-qt`, in den Paketquellen) fuer eigenes
    Desktop-Widget und eigene Leiste auf Wayland.
 6. **Android-APK.** SDK und NDK fehlen; der frickeligste Teil.

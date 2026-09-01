@@ -52,8 +52,12 @@ Item {
     // Langsame Kennzahlen und der eigene Miner -- der Daemon holt sie nebenher
     readonly property var difficulty: snap.difficulty || ({})
     readonly property var hashrate: snap.hashrate || ({})
-    readonly property var miner: snap.miner || ({})
-    readonly property bool minerOnline: miner.online === true
+    // Miner: eine Liste, weil man mehr als ein Geraet haben kann. Der Daemon
+    // liefert alle Felder normalisiert, Hashrate immer in H/s.
+    readonly property var miners: snap.miners || []
+    readonly property var minerTotal: snap.minerTotal || ({})
+    readonly property bool minerConfigured: miners.length > 0
+    readonly property bool minerOnline: (minerTotal.online || 0) > 0
 
     signal transactionsArrived(var txs)
     signal blockMined(var tip)
