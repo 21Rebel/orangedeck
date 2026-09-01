@@ -346,6 +346,29 @@ Luecke, also 33 % Fuellung, waehrend die Halde daneben 4 px auf 2 px zeigt
 Damit hat der Block dieselbe Dichte wie die Halde. Der Wert ist eine
 Eigenschaft und laesst sich spaeter in die Einstellungen heben.
 
+### Und die Untergrenze dazu: ganzzahliges Raster erst ab 2 px je Zelle
+
+`blockUnit` rundet die Rasterweite ab, damit die Kacheln quadratisch bleiben.
+Bei einem **kleinen** Block kippt das ins Gegenteil: ist `blockSide / rows`
+kleiner als 2, wird `floor(g)` gleich 1 -- die Kachel fuellt die Zelle
+vollstaendig aus, die Luecke ist **null**, und der Block wird eine
+geschlossene Flaeche.
+
+Am 01.09.2026 genau so im Dashboard-Tab passiert. Mit den echten Blockdaten
+nachgerechnet (Block 965052: 5.291 Kacheln, Gewicht 10.920, also 105
+Rasterzellen Breite):
+
+    Blockseite   g roh   floor(g)   Kachel   Luecke
+           120    1,14          1        1        0   <- geschlossene Flaeche
+           160    1,52          1        1        0
+           200    1,90          1        1        0
+           210    2,00          2        1        1   <- ab hier in Ordnung
+           460    4,38          4        2        2
+
+Deshalb: **`g < 2` bleibt gebrochen.** Dann springen die gerundeten Kanten
+zwischen 1 und 2 px und ergeben wieder eine Textur. Ein Karomuster droht dort
+nicht, weil bei dieser Groesse ohnehin alle Kacheln 1 px gross sind.
+
 
 ## Stolperfalle: `transform` skaliert nicht die Lage eines Items
 

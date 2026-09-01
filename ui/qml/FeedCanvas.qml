@@ -206,7 +206,18 @@ Item {
     // Platz -- unsichtbar, und dafuer ist jede Kachel exakt quadratisch und
     // jede Luecke gleich breit.
     function blockUnit(rows) {
-        return Math.max(1, Math.floor(blockSide / Math.max(1, rows)));
+        var g = blockSide / Math.max(1, rows);
+        // **Ganzzahlig erst ab zwei Bildpunkten je Zelle.** Darunter waere
+        // floor(g) gleich 1: die Kachel fuellt die Zelle vollstaendig aus, die
+        // Luecke ist null und der Block wird eine geschlossene Flaeche. Genau
+        // das passierte am 01.09.2026 im Dashboard-Tab, wo der Block klein ist
+        // (bei 105 Rasterzellen Breite reicht floor(g) = 1 bis rund 210 px
+        // Blockseite). Mit gebrochener Weite springen die gerundeten Kanten
+        // zwischen 1 und 2 px und ergeben wieder eine Textur.
+        //
+        // Ein Karomuster droht dort nicht: bei dieser Groesse sind ohnehin
+        // alle Kacheln 1 px gross.
+        return g < 2 ? g : Math.floor(g);
     }
 
     function txSize(valueSats, vbytes) {
