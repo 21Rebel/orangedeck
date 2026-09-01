@@ -1015,3 +1015,23 @@ Schrift eine eigene Seiten- und Grundlinienlage mit; `anchors.centerIn` zentrier
 das Textfeld, nicht das sichtbare Zeichen. Der Zurueck-Pfeil ist deshalb mit
 zwei Strichen auf einer kleinen Leinwand gezeichnet -- schriftunabhaengig und
 immer dort, wo er sein soll.
+
+
+## Platz fuer grosse Flussgrafiken
+
+Die Hoehe der Flussgrafik richtet sich nach der **tatsaechlichen Zahl der
+Baender** -- auf der Ausgangsseite zaehlt die Gebuehr mit, sonst wird es dort
+zu eng. Vorher wurde nur `max(vin.length, vout.length)` gezaehlt, wodurch bei
+einem Eingang und zwei Ausgaengen (also drei Ausgangsbaendern) das unterste
+Band an der Kante klebte und die Beschriftung darunter beruehrte.
+
+    Baender   vorher   jetzt
+        1       91 px   117 px
+        3      103 px   124 px
+       10      221 px   260 px
+       24      338 px   442 px
+
+Dazu mehr Rand (`padY` von 9 auf 11 %) und ein Deckel bei 34 statt 26
+Einheiten. Wird der Inhalt dadurch laenger als das Fenster, rollt der Explorer
+-- er hat wie die Miner-Ansicht einen schmalen Balken rechts, der nur
+erscheint, solange es etwas zu rollen gibt.

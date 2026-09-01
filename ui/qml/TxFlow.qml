@@ -93,7 +93,7 @@ Item {
     }
     // Oben und unten bleibt Platz -- der Fluss soll frei liegen, nicht am
     // Bildrand kleben.
-    property real padY: Math.max(4, height * 0.09)
+    property real padY: Math.max(6, height * 0.11)
     // Gerades Anschlussstueck an beiden Enden, bevor die Kurve beginnt
     property real connector: Math.max(6, Math.min(width * 0.05, labelSize * 2))
     readonly property real innerH: Math.max(8, height - 2 * padY)

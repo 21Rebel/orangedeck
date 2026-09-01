@@ -272,6 +272,21 @@ Item {
         contentHeight: body.implicitHeight + root.scaleUnit
         boundsBehavior: Flickable.StopAtBounds
 
+        // Schmaler Balken rechts, nur solange es etwas zu rollen gibt.
+        // Grosse Flussgrafiken machen den Inhalt schnell laenger als das
+        // Fenster -- dann muss man auch sehen, dass es weitergeht.
+        Rectangle {
+            parent: flick
+            anchors.right: parent.right
+            width: Math.max(2, root.uiFont * 0.2)
+            radius: width / 2
+            color: Qt.rgba(1, 1, 1, 0.22)
+            visible: flick.contentHeight > flick.height + 1
+            y: flick.contentY + flick.height * (flick.contentY / flick.contentHeight)
+            height: flick.height * (flick.height / flick.contentHeight)
+            z: 30
+        }
+
         Column {
             id: body
 
@@ -399,13 +414,18 @@ Item {
                 width: flick.width
                 // Die Rundung lebt vom Verhaeltnis senkrecht zu waagerecht.
                 // Das Original zeichnet 1200 x 600; hier ist die Flaeche viel
-                // flacher, deshalb bekommt sie mit jedem Band mehr Hoehe und
-                // reicht weiter hinauf als frueher.
-                // Die Flaeche waechst mit der Zahl der Baender, der Strang
-                // bleibt gleich dick -- so ziehen sich die Luecken auf.
-                height: Math.max(root.scaleUnit * 7, Math.min(root.scaleUnit * 26,
-                        root.scaleUnit * 1.3 * Math.max((root.result.vin || []).length,
-                                                        (root.result.vout || []).length) + root.scaleUnit * 4))
+                // flacher, deshalb bekommt sie mit jedem Band mehr Hoehe --
+                // der Strang bleibt gleich dick, so ziehen sich die Luecken auf.
+                //
+                // Gezaehlt werden die tatsaechlichen **Baender**: auf der
+                // Ausgangsseite zaehlt die Gebuehr mit, sonst wird es dort zu
+                // eng. Der Deckel liegt hoch; wird die Flaeche laenger als das
+                // Fenster, rollt der Explorer ohnehin.
+                readonly property int bandCount: Math.max((root.result.vin || []).length,
+                                                          (root.result.vout || []).length
+                                                          + ((root.result.fee || 0) > 0 ? 1 : 0))
+                height: Math.max(root.scaleUnit * 9, Math.min(root.scaleUnit * 34,
+                        root.scaleUnit * 1.5 * bandCount + root.scaleUnit * 5))
                 vin: root.result.vin || []
                 vout: root.result.vout || []
                 fee: root.result.fee || 0
