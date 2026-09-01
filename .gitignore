@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+packaging/android/build/
+packaging/flatpak/.flatpak-builder/

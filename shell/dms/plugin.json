@@ -1,0 +1,18 @@
+{
+    "id": "bitcoinFeed",
+    "name": "Bitcoin Feed",
+    "description": "Live-Ansicht des Bitcoin-Mempools: gefundener Block in der Mitte, Mempool als Halde unten, neue Transaktionen fallen von oben hinein. Daten von mempool.space, kein eigener Node noetig.",
+    "version": "1.0.0",
+    "author": "satoshoe",
+    "type": "composite",
+    "capabilities": ["daemon", "dankbar-widget", "desktop-widget"],
+    "icon": "currency_bitcoin",
+    "components": {
+        "daemon": "./BitcoinFeedDaemon.qml",
+        "widget": "./BitcoinFeedWidget.qml",
+        "desktop": "./BitcoinFeedDesktop.qml"
+    },
+    "settings": "./BitcoinFeedSettings.qml",
+    "requires_dms": ">=1.5.0",
+    "permissions": ["settings_read", "settings_write"]
+}

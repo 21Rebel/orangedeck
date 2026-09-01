@@ -1,0 +1,381 @@
+#!/usr/bin/env python3
+"""Baut DMS einen eigenen "Bitcoin"-Tab ins Dashboard ein.
+
+DMS hat die fuenf Dashboard-Tabs fest verdrahtet und bietet dort keinen
+Plugin-Haken. Statt in /usr/share herumzuschreiben (Root noetig, beim naechsten
+Paketupdate weg) legt dieses Skript unter ~/.config/quickshell/dms-custom eine
+**Ueberlagerung** an: alles ist ein Symlink auf das Original, nur die zwei
+geaenderten Dateien sind echte Kopien. DMS wird per systemd-Drop-in von dort
+gestartet (`dms run -c <pfad>`).
+
+Damit fliessen DMS-Updates durch die Symlinks weiter. Nur wenn sich die beiden
+gepatchten Dateien selbst aendern, muss dieses Skript einmal neu laufen:
+
+  btcfeed-dashtab            einrichten oder auffrischen
+  btcfeed-dashtab --remove   rueckgaengig machen
+  btcfeed-dashtab --check    nachsehen, ob die Ueberlagerung noch passt
+"""
+import os
+import shutil
+import subprocess
+import sys
+
+SRC = "/usr/share/quickshell/dms"
+DST = os.path.expanduser("~/.config/quickshell/dms-custom")
+QML = os.path.expanduser("~/.local/share/btcfeed/qml")
+DROPIN_DIR = os.path.expanduser("~/.config/systemd/user/dms.service.d")
+DROPIN = os.path.join(DROPIN_DIR, "10-btcfeed-dashtab.conf")
+
+# Verzeichnisse, die nicht als Ganzes verlinkt werden koennen, weil darin
+# gepatchte Dateien liegen
+MIRROR = {"Modules", "Common", "Modules/DankDash"}
+
+BITCOIN_TAB = """// Bitcoin-Feed als Dashboard-Tab. Wird von btcfeed-dashtab eingehaengt.
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import qs.Common
+import qs.Widgets
+
+Item {
+    id: root
+
+    implicitHeight: 410
+
+    readonly property string pid: "bitcoinFeed"
+    readonly property string desktopInstance: "bitcoinFeed-1"
+
+    property string colorMode: SettingsData.getPluginSetting(pid, "colorMode", "age")
+    property string sizeMode: SettingsData.getPluginSetting(pid, "sizeMode", "value")
+    property bool showInfo: SettingsData.getPluginSetting(pid, "showInfo", true)
+    property bool showLegend: SettingsData.getPluginSetting(pid, "showLegend", true)
+    property bool desktopOn: {
+        const list = SettingsData.desktopWidgetInstances || [];
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === desktopInstance)
+                return list[i].enabled === true;
+        }
+        return false;
+    }
+
+    function put(key, value) {
+        SettingsData.setPluginSetting(pid, key, value);
+        root[key] = value;
+    }
+
+    function setDesktop(on) {
+        SettingsData.updateDesktopWidgetInstance(desktopInstance, {
+            "enabled": on
+        });
+        root.desktopOn = on;
+    }
+
+    FeedState {
+        id: feedState
+
+        active: root.visible
+    }
+
+    FeedPanel {
+        anchors.fill: parent
+        anchors.margins: Theme.spacingS
+        anchors.topMargin: Theme.spacingS + 18
+        feed: feedState
+        headerVisible: false
+        colorMode: root.colorMode
+        sizeMode: root.sizeMode
+        infoVisible: root.showInfo
+        legendVisible: root.showLegend
+        textColor: Theme.surfaceText
+        dimColor: Theme.surfaceVariantText
+        accentColor: Theme.primary
+        lineColor: Theme.outlineMedium
+        baseFont: Theme.fontSizeSmall + 1
+    }
+
+    Process {
+        id: openWindow
+
+        command: [Quickshell.env("HOME") + "/.local/bin/btcfeed-window"]
+        running: false
+    }
+
+    Row {
+        id: actions
+
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: 2
+        spacing: 2
+
+        DankActionButton {
+            iconName: "open_in_new"
+            buttonSize: 28
+            tooltipText: "In eigenem Fenster oeffnen"
+            onClicked: {
+                openWindow.running = false;
+                openWindow.running = true;
+            }
+        }
+
+        DankActionButton {
+            id: gear
+
+            iconName: "settings"
+            buttonSize: 28
+            tooltipText: "Einstellungen"
+            onClicked: settingsPanel.visible = !settingsPanel.visible
+        }
+    }
+
+    Rectangle {
+        id: settingsPanel
+
+        anchors.right: actions.right
+        anchors.top: actions.bottom
+        anchors.topMargin: 4
+        width: 250
+        height: settingsCol.implicitHeight + Theme.spacingM * 2
+        radius: Theme.cornerRadius
+        color: Theme.surfaceContainerHighest
+        border.width: 1
+        border.color: Theme.outlineMedium
+        visible: false
+        z: 100
+
+        Column {
+            id: settingsCol
+
+            anchors.fill: parent
+            anchors.margins: Theme.spacingM
+            spacing: Theme.spacingXS
+
+            DankToggle {
+                width: parent.width
+                text: "Desktop-Widget"
+                checked: root.desktopOn
+                onToggled: checked => root.setDesktop(checked)
+            }
+
+            DankToggle {
+                width: parent.width
+                text: "Farbe nach Alter"
+                description: "aus: nach Gebuehrenrate"
+                checked: root.colorMode === "age"
+                onToggled: checked => root.put("colorMode", checked ? "age" : "fee")
+            }
+
+            DankToggle {
+                width: parent.width
+                text: "Groesse nach Wert"
+                description: "aus: nach vBytes"
+                checked: root.sizeMode === "value"
+                onToggled: checked => root.put("sizeMode", checked ? "value" : "vbytes")
+            }
+
+            DankToggle {
+                width: parent.width
+                text: "Blockangaben"
+                checked: root.showInfo
+                onToggled: checked => root.put("showInfo", checked)
+            }
+
+            DankToggle {
+                width: parent.width
+                text: "Legende"
+                checked: root.showLegend
+                onToggled: checked => root.put("showLegend", checked)
+            }
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        z: 50
+        visible: settingsPanel.visible
+        onClicked: settingsPanel.visible = false
+    }
+}
+"""
+
+
+def fail(msg):
+    print("FEHLER: " + msg, file=sys.stderr)
+    sys.exit(1)
+
+
+def patch_settings(text):
+    old = 'readonly property var _dashTabIds: ["overview", "media", "wallpaper", "weather", "settings"]'
+    new = 'readonly property var _dashTabIds: ["overview", "media", "wallpaper", "weather", "bitcoin", "settings"]'
+    if new in text:
+        return text
+    if old not in text:
+        fail("Ankerpunkt in SettingsData.qml nicht gefunden -- DMS hat sich geaendert.\n"
+             "       Gesucht wurde: " + old)
+    return text.replace(old, new)
+
+
+def patch_ipc(text):
+    """`dms ipc call dash open bitcoin` und Tastenkuerzel sollen den Tab treffen."""
+    if 'case "bitcoin":' in text:
+        return text
+    old = """            case "weather":
+                return "weather";
+"""
+    new = """            case "weather":
+                return "weather";
+            case "bitcoin":
+                return "bitcoin";
+"""
+    if old not in text:
+        fail("Ankerpunkt in DMSShellIPC.qml nicht gefunden -- DMS hat sich geaendert.")
+    return text.replace(old, new, 1)
+
+
+def patch_popout(text):
+    if '"bitcoin"' in text:
+        return text
+
+    anchors = [
+        # 1. Tab in der Leiste
+        ('''            "settings": {
+                "icon": "settings",''',
+         '''            "bitcoin": {
+                "icon": "currency_bitcoin",
+                "text": "Bitcoin"
+            },
+            "settings": {
+                "icon": "settings",'''),
+        # 2. Hoehe der Seite
+        ('''                        if (root.currentTabId === "weather")
+                            return weatherLoader.item?.implicitHeight ?? 410;
+                        return 410;''',
+         '''                        if (root.currentTabId === "weather")
+                            return weatherLoader.item?.implicitHeight ?? 410;
+                        if (root.currentTabId === "bitcoin")
+                            return bitcoinLoader.item?.implicitHeight ?? 410;
+                        return 410;'''),
+        # 3. aktuelle Seite
+        ('''                        if (root.currentTabId === "weather")
+                            return weatherLoader.item;
+                        return null;''',
+         '''                        if (root.currentTabId === "weather")
+                            return weatherLoader.item;
+                        if (root.currentTabId === "bitcoin")
+                            return bitcoinLoader.item;
+                        return null;'''),
+        # 4. Loader fuer den Inhalt
+        ('''                    Loader {
+                        id: overviewLoader''',
+         '''                    Loader {
+                        id: bitcoinLoader
+                        anchors.fill: parent
+                        active: root.currentTabId === "bitcoin"
+                        visible: active
+                        sourceComponent: Component {
+                            BitcoinTab {}
+                        }
+                    }
+
+                    Loader {
+                        id: overviewLoader'''),
+    ]
+    for old, new in anchors:
+        if old not in text:
+            fail("Ankerpunkt in DankDashPopout.qml nicht gefunden -- DMS hat sich geaendert.\\n"
+                 "       Gesucht wurde:\\n" + old)
+        text = text.replace(old, new, 1)
+    return text
+
+
+def mirror(rel):
+    """Legt ein Verzeichnis als Symlink-Spiegel des Originals an."""
+    src = os.path.join(SRC, rel) if rel else SRC
+    dst = os.path.join(DST, rel) if rel else DST
+    os.makedirs(dst, exist_ok=True)
+    for name in sorted(os.listdir(src)):
+        sub = os.path.join(rel, name) if rel else name
+        target = os.path.join(dst, name)
+        if os.path.islink(target) or os.path.exists(target):
+            continue
+        if sub in MIRROR:
+            mirror(sub)
+        else:
+            os.symlink(os.path.join(src, name), target)
+
+
+def build():
+    if not os.path.isdir(SRC):
+        fail("DMS nicht gefunden unter " + SRC)
+    if os.path.exists(DST):
+        shutil.rmtree(DST)
+    mirror("")
+
+    # gepatchte Dateien als echte Kopien
+    dash = os.path.join(DST, "Modules", "DankDash")
+    for name, patcher, sub in (
+        ("SettingsData.qml", patch_settings, "Common"),
+        ("DankDashPopout.qml", patch_popout, os.path.join("Modules", "DankDash")),
+        ("DMSShellIPC.qml", patch_ipc, ""),
+    ):
+        path = os.path.join(DST, sub, name) if sub else os.path.join(DST, name)
+        if os.path.islink(path):
+            os.unlink(path)
+        with open(os.path.join(SRC, sub, name) if sub else os.path.join(SRC, name)) as f:
+            text = f.read()
+        with open(path, "w") as f:
+            f.write(patcher(text))
+
+    # Tab-Inhalt und die geteilten Bausteine daneben legen
+    with open(os.path.join(dash, "BitcoinTab.qml"), "w") as f:
+        f.write(BITCOIN_TAB)
+    for name in ("FeedState.qml", "FeedCanvas.qml", "FeedPanel.qml", "mondrian.js", "colors.js"):
+        link = os.path.join(dash, name)
+        if os.path.islink(link):
+            os.unlink(link)
+        os.symlink(os.path.join(QML, name), link)
+
+    # systemd-Drop-in
+    os.makedirs(DROPIN_DIR, exist_ok=True)
+    with open(DROPIN, "w") as f:
+        f.write("# Von btcfeed-dashtab angelegt: DMS aus der Ueberlagerung starten\n"
+                "[Service]\nExecStart=\n"
+                "ExecStart=/usr/bin/dms run --session -c %s\n" % DST)
+    subprocess.run(["systemctl", "--user", "daemon-reload"], check=False)
+    print("Ueberlagerung liegt in " + DST)
+    print("Neu starten mit:  systemctl --user restart dms")
+
+
+def remove():
+    if os.path.exists(DROPIN):
+        os.unlink(DROPIN)
+    if os.path.exists(DST):
+        shutil.rmtree(DST)
+    subprocess.run(["systemctl", "--user", "daemon-reload"], check=False)
+    print("Ueberlagerung entfernt. Neu starten mit:  systemctl --user restart dms")
+
+
+def check():
+    if not os.path.isdir(DST):
+        print("keine Ueberlagerung eingerichtet")
+        return 1
+    ok = True
+    for sub, name in (("Common", "SettingsData.qml"),
+                      (os.path.join("Modules", "DankDash"), "DankDashPopout.qml"),
+                      ("", "DMSShellIPC.qml")):
+        mine = os.path.join(DST, sub, name) if sub else os.path.join(DST, name)
+        orig = os.path.join(SRC, sub, name) if sub else os.path.join(SRC, name)
+        if os.path.getmtime(orig) > os.path.getmtime(mine):
+            print("veraltet: %s ist neuer als die gepatchte Kopie" % orig)
+            ok = False
+    print("Ueberlagerung aktuell" if ok else "btcfeed-dashtab erneut aufrufen")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    if "--remove" in sys.argv:
+        remove()
+    elif "--check" in sys.argv:
+        sys.exit(check())
+    else:
+        build()

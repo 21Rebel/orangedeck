@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Oeffnet die Bitcoin-Feed-Ansicht als eigenes Fenster.
+
+Laeuft das Fenster schon, wird es nur nach vorn geholt statt ein zweites zu
+oeffnen. Ohne niri wird einfach gestartet.
+"""
+import json
+import os
+import subprocess
+import sys
+
+CONFIG = os.path.expanduser("~/.config/quickshell/BitcoinFeedApp")
+TITLE = "Bitcoin Feed"
+
+
+def find_window():
+    try:
+        out = subprocess.run(["niri", "msg", "-j", "windows"], capture_output=True,
+                             text=True, timeout=5)
+        if out.returncode != 0:
+            return None
+        for w in json.loads(out.stdout):
+            if w.get("title") == TITLE and (w.get("app_id") or "").startswith("org.quickshell"):
+                return w.get("id")
+    except Exception:
+        pass
+    return None
+
+
+def main():
+    wid = find_window()
+    if wid is not None and "--new" not in sys.argv:
+        subprocess.run(["niri", "msg", "action", "focus-window", "--id", str(wid)])
+        return 0
+
+    # Feed sicherstellen (beendet sich sofort wieder, falls schon einer laeuft)
+    feed = os.path.expanduser("~/.local/bin/btcfeed")
+    if os.path.exists(feed):
+        subprocess.Popen([feed], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+
+    subprocess.Popen(["qs", "-p", CONFIG], stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

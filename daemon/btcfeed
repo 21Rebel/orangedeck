@@ -1,0 +1,515 @@
+#!/usr/bin/env python3
+"""btcfeed -- Live-Bitcoin-Mempool-Feed fuer die DMS-Ansicht.
+
+Haengt sich an den WebSocket von mempool.space und schreibt einen kompakten
+Zustand nach ~/.local/state/btcfeed/state.json. Kein eigener Node noetig.
+Faellt automatisch auf REST-Polling zurueck, wenn der WebSocket streikt.
+
+  btcfeed            Daemon (Standard, nur eine Instanz gleichzeitig)
+  btcfeed --once     Einmal Zustand holen und beenden (zum Testen)
+  btcfeed --print    Zustand ausgeben statt ihn zu schreiben
+"""
+import base64
+import fcntl
+import hashlib
+import json
+import math
+import os
+import socket
+import ssl
+import struct
+import sys
+import threading
+import time
+import urllib.request
+from urllib.parse import urlparse
+
+HOST = "mempool.space"
+WS_URL = f"wss://{HOST}/api/v1/ws"
+API = f"https://{HOST}/api"
+# Der Zustand wird mehrmals pro Sekunde neu geschrieben und muss einen Neustart
+# nicht ueberleben -- er gehoert deshalb ins tmpfs, nicht auf die SSD.
+STATE_DIR = os.path.join(os.environ.get("XDG_RUNTIME_DIR")
+                         or os.path.expanduser("~/.local/state"), "btcfeed")
+STATE_FILE = os.path.join(STATE_DIR, "state.json")
+BLOCK_FILE = os.path.join(STATE_DIR, "block.json")
+LOCK_FILE = os.path.join(STATE_DIR, "btcfeed.lock")
+
+WRITE_INTERVAL = 0.4      # Sekunden zwischen zwei Schreibvorgaengen
+RECENT_KEEP = 120         # wie viele frische TX im Zustand liegen bleiben
+MAX_TILES = 8000          # Obergrenze an Kacheln pro Block
+
+# Gebuehrenklassen fuer die Kachelfarben. Der Index landet als Ziffer in
+# block.json, die Ansicht rechnet ihn ueber dieselbe Tabelle zurueck.
+FEE_BUCKETS = [0.5, 1, 2, 3, 5, 8, 15, 30, 80]
+
+
+def fee_bucket(rate):
+    r = rate or 0
+    for i, edge in enumerate(FEE_BUCKETS):
+        if r < edge:
+            return i
+    return len(FEE_BUCKETS)
+
+
+def tile_size(value_sats):
+    """Kantenlaenge in Rastereinheiten -- identisch zu logTxSize() in bitfeed."""
+    v = max(1, int(value_sats or 1))
+    return min(5, max(1, math.ceil(math.log10(v)) - 5))
+UA = "btcfeed/1.0 (+https://mempool.space)"
+
+
+# --------------------------------------------------------------------------
+# Minimaler WebSocket-Client (RFC 6455, nur was hier gebraucht wird)
+# --------------------------------------------------------------------------
+class WSError(Exception):
+    pass
+
+
+class WebSocket:
+    def __init__(self, url, origin=None, timeout=45):
+        u = urlparse(url)
+        secure = u.scheme in ("wss", "https")
+        port = u.port or (443 if secure else 80)
+        path = (u.path or "/") + (("?" + u.query) if u.query else "")
+        self._buf = b""
+        raw = socket.create_connection((u.hostname, port), timeout=20)
+        raw.settimeout(timeout)
+        if secure:
+            self.sock = ssl.create_default_context().wrap_socket(
+                raw, server_hostname=u.hostname)
+        else:
+            self.sock = raw
+        key = base64.b64encode(os.urandom(16)).decode()
+        req = (f"GET {path} HTTP/1.1\r\nHost: {u.hostname}\r\n"
+               "Upgrade: websocket\r\nConnection: Upgrade\r\n"
+               f"Sec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n"
+               f"User-Agent: {UA}\r\n"
+               + (f"Origin: {origin}\r\n" if origin else "") + "\r\n")
+        self.sock.sendall(req.encode())
+        head = b""
+        while b"\r\n\r\n" not in head:
+            chunk = self.sock.recv(4096)
+            if not chunk:
+                raise WSError("Verbindung beim Handshake geschlossen")
+            head += chunk
+            if len(head) > 65536:
+                raise WSError("Handshake-Antwort zu gross")
+        header, _, rest = head.partition(b"\r\n\r\n")
+        status = header.split(b"\r\n", 1)[0].decode(errors="replace")
+        if "101" not in status:
+            raise WSError(f"Handshake fehlgeschlagen: {status}")
+        accept = base64.b64encode(hashlib.sha1(
+            (key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()).decode()
+        if accept.encode() not in header:
+            raise WSError("Sec-WebSocket-Accept passt nicht")
+        self._buf = rest
+
+    def _read(self, n):
+        while len(self._buf) < n:
+            chunk = self.sock.recv(65536)
+            if not chunk:
+                raise WSError("Verbindung geschlossen")
+            self._buf += chunk
+        out, self._buf = self._buf[:n], self._buf[n:]
+        return out
+
+    def _frame(self, opcode, payload=b""):
+        n = len(payload)
+        head = bytes([0x80 | opcode])
+        if n < 126:
+            head += bytes([0x80 | n])
+        elif n < 65536:
+            head += bytes([0x80 | 126]) + struct.pack(">H", n)
+        else:
+            head += bytes([0x80 | 127]) + struct.pack(">Q", n)
+        mask = os.urandom(4)
+        self.sock.sendall(head + mask
+                          + bytes(b ^ mask[i % 4] for i, b in enumerate(payload)))
+
+    def send(self, text):
+        self._frame(0x1, text.encode())
+
+    def recv(self):
+        """Naechster Textrahmen als str; Ping/Close werden intern behandelt."""
+        frags, frag_op = [], None
+        while True:
+            b0, b1 = self._read(2)
+            fin, opcode, n = b0 & 0x80, b0 & 0x0F, b1 & 0x7F
+            if n == 126:
+                n = struct.unpack(">H", self._read(2))[0]
+            elif n == 127:
+                n = struct.unpack(">Q", self._read(8))[0]
+            if b1 & 0x80:
+                mask = self._read(4)
+                data = bytes(b ^ mask[i % 4] for i, b in enumerate(self._read(n)))
+            else:
+                data = self._read(n)
+            if opcode == 0x8:
+                self._frame(0x8, data[:2])
+                raise WSError("Server hat die Verbindung geschlossen")
+            if opcode == 0x9:
+                self._frame(0xA, data)
+                continue
+            if opcode == 0xA:
+                continue
+            if opcode == 0x0:
+                frags.append(data)
+            else:
+                frags, frag_op = [data], opcode
+            if fin:
+                return b"".join(frags).decode("utf-8", "replace") if frag_op == 0x1 else None
+
+    def close(self):
+        try:
+            self._frame(0x8, struct.pack(">H", 1000))
+        except Exception:
+            pass
+        try:
+            self.sock.close()
+        except Exception:
+            pass
+
+
+def write_block_summary(tip):
+    """Holt die Transaktionsliste des Blocks und legt die Kacheldaten ab.
+
+    Aus jeder Transaktion werden nur zwei Ziffern gespeichert: Kantenlaenge
+    (1-5) und Gebuehrenklasse (0-9). Ein voller Block sind damit rund 8 kB
+    statt 700 kB. Die Reihenfolge bleibt die des Blocks."""
+    bid = tip.get("id")
+    if not bid:
+        return
+    txs = http_json("/v1/block/%s/summary" % bid, timeout=40)
+    if not isinstance(txs, list) or not txs:
+        return
+
+    step = max(1, len(txs) // MAX_TILES + (1 if len(txs) % MAX_TILES else 0))
+    tiles = []
+    total_value = 0
+    total_fee = 0
+    total_vsize = 0.0
+    for t in txs:
+        total_value += int(t.get("value") or 0)
+        total_fee += int(t.get("fee") or 0)
+        total_vsize += float(t.get("vsize") or 0)
+    # Kacheln (zwei Ziffern je Transaktion) und die Angaben fuer den Tooltip.
+    # Beide werden mit demselben Schritt abgetastet, damit die Indizes passen.
+    details = []
+    for t in txs[::step]:
+        tiles.append("%d%d" % (tile_size(t.get("value")), fee_bucket(t.get("rate"))))
+        details.append([
+            t.get("txid") or "",
+            round(float(t.get("vsize") or 0), 2),
+            int(t.get("fee") or 0),
+            int(t.get("value") or 0),
+            round(float(t.get("rate") or 0), 3),
+        ])
+
+    data = dict(tip)
+    data.update({
+        "totalValue": total_value,
+        "sumFees": total_fee,
+        "avgFeeRate": round(total_fee / total_vsize, 3) if total_vsize else 0,
+        "tileStep": step,
+        "tiles": "".join(tiles),
+        "txs": details,
+    })
+    tmp = BLOCK_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, separators=(",", ":"))
+    os.replace(tmp, BLOCK_FILE)
+
+
+def http_json(path, timeout=15):
+    req = urllib.request.Request(API + path, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode())
+
+
+# --------------------------------------------------------------------------
+# Zustand
+# --------------------------------------------------------------------------
+class Feed:
+    def __init__(self):
+        self.seq = 0
+        self.recent = []          # juengste TX, aelteste zuerst
+        self.mempool = {"count": 0, "vsize": 0, "totalFee": 0}
+        self.fees = {}
+        self.vbps = 0
+        self.next_block = {}
+        self.tip = {}
+        self.price = {}
+        self.block_event = 0      # Zeitstempel des zuletzt gesehenen Blocks
+        self.source = "start"
+        self.error = ""
+        self.dirty = True
+        self.summary_for = None
+
+    # -- Einspeisung ------------------------------------------------------
+    def add_txs(self, txs):
+        for t in txs:
+            try:
+                rate = t.get("rate")
+                vsize = float(t.get("vsize") or 0) or 1.0
+                if rate is None:
+                    rate = float(t.get("fee") or 0) / vsize
+                self.seq += 1
+                self.recent.append({
+                    "n": self.seq,
+                    "t": t.get("txid") or "",     # voll, fuer den Tooltip
+                    "v": round(vsize, 1),
+                    "r": round(float(rate), 3),
+                    "a": int(t.get("value") or 0),
+                    "f": int(t.get("fee") or 0),
+                })
+            except (TypeError, ValueError):
+                continue
+        if len(self.recent) > RECENT_KEEP:
+            self.recent = self.recent[-RECENT_KEEP:]
+        self.dirty = True
+
+    def set_mempool(self, info):
+        self.mempool = {
+            "count": int(info.get("size") or 0),
+            "vsize": int(info.get("bytes") or 0),
+            "totalFee": round(float(info.get("total_fee") or 0) * 1e8),
+        }
+        self.dirty = True
+
+    def set_next_block(self, blocks):
+        if not blocks:
+            return
+        b = blocks[0]
+        self.next_block = {
+            "nTx": int(b.get("nTx") or 0),
+            "vsize": round(float(b.get("blockVSize") or 0)),
+            "medianFee": round(float(b.get("medianFee") or 0), 2),
+            "totalFees": int(b.get("totalFees") or 0),
+            "depth": len(blocks),
+        }
+        self.dirty = True
+
+    def set_tip(self, b, is_new=False):
+        if not b:
+            return
+        height = int(b.get("height") or 0)
+        if height and height == self.tip.get("height") and not is_new:
+            return
+        ex = b.get("extras") or {}
+        pool = (ex.get("pool") or {}).get("name") or ""
+        self.tip = {
+            "height": height,
+            "id": b.get("id") or "",
+            "time": int(b.get("timestamp") or 0),
+            "nTx": int(b.get("tx_count") or 0),
+            "size": int(b.get("size") or 0),
+            "weight": int(b.get("weight") or 0),
+            "medianFee": round(float(ex.get("medianFee") or 0), 2),
+            "totalFees": int(ex.get("totalFees") or 0),
+            "reward": int(ex.get("reward") or 0),
+            "pool": pool,
+        }
+        if is_new:
+            self.block_event = time.time()
+        self.dirty = True
+        self.request_summary()
+
+    def request_summary(self):
+        """Kacheldaten des aktuellen Blocks nachladen, ohne den Socket zu blockieren."""
+        bid = self.tip.get("id")
+        if not bid or bid == self.summary_for:
+            return
+        self.summary_for = bid
+        tip = dict(self.tip)
+
+        def work():
+            try:
+                write_block_summary(tip)
+            except Exception as e:
+                sys.stderr.write("Blockzusammenfassung fehlgeschlagen: %s\n" % e)
+                if self.summary_for == tip.get("id"):
+                    self.summary_for = None
+
+        threading.Thread(target=work, daemon=True).start()
+
+    # -- Ausgabe ----------------------------------------------------------
+    def snapshot(self):
+        return {
+            "ts": round(time.time(), 2),
+            "source": self.source,
+            "error": self.error,
+            "mempool": self.mempool,
+            "fees": self.fees,
+            "vbps": self.vbps,
+            "nextBlock": self.next_block,
+            "tip": self.tip,
+            "price": self.price,
+            "blockEvent": round(self.block_event, 2),
+            "seq": self.seq,
+            "recent": self.recent[-RECENT_KEEP:],
+        }
+
+    def write(self):
+        os.makedirs(STATE_DIR, exist_ok=True)
+        tmp = STATE_FILE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(self.snapshot(), f, separators=(",", ":"))
+        os.replace(tmp, STATE_FILE)
+        self.dirty = False
+
+
+# --------------------------------------------------------------------------
+# Betriebsarten
+# --------------------------------------------------------------------------
+def handle(feed, msg):
+    if "mempoolInfo" in msg:
+        feed.set_mempool(msg["mempoolInfo"])
+    if "transactions" in msg:
+        feed.add_txs(msg["transactions"] or [])
+    if "mempool-blocks" in msg:
+        feed.set_next_block(msg["mempool-blocks"] or [])
+    if "fees" in msg:
+        f = msg["fees"] or {}
+        feed.fees = {
+            "fastest": round(float(f.get("fastestFee") or 0), 2),
+            "halfHour": round(float(f.get("halfHourFee") or 0), 2),
+            "hour": round(float(f.get("hourFee") or 0), 2),
+            "economy": round(float(f.get("economyFee") or 0), 2),
+            "minimum": round(float(f.get("minimumFee") or 0), 2),
+        }
+        feed.dirty = True
+    if "vBytesPerSecond" in msg:
+        feed.vbps = int(msg["vBytesPerSecond"] or 0)
+        feed.dirty = True
+    if "conversions" in msg:
+        c = msg["conversions"] or {}
+        feed.price = {"usd": c.get("USD"), "eur": c.get("EUR")}
+        feed.dirty = True
+    if "blocks" in msg and msg["blocks"]:
+        feed.set_tip(msg["blocks"][-1])
+    if "block" in msg and msg["block"]:
+        feed.set_tip(msg["block"], is_new=True)
+
+
+def run_ws(feed):
+    ws = WebSocket(WS_URL, origin=f"https://{HOST}")
+    feed.source = "ws"
+    feed.error = ""
+    try:
+        ws.send(json.dumps({"action": "init"}))
+        ws.send(json.dumps({"action": "want",
+                            "data": ["blocks", "stats", "mempool-blocks"]}))
+        last_write = 0.0
+        while True:
+            raw = ws.recv()
+            if raw is None:
+                continue
+            try:
+                msg = json.loads(raw)
+            except ValueError:
+                continue
+            handle(feed, msg)
+            now = time.time()
+            if feed.dirty and now - last_write >= WRITE_INTERVAL:
+                feed.write()
+                last_write = now
+    finally:
+        ws.close()
+
+
+def poll_rest(feed):
+    """Notbetrieb ohne WebSocket -- deutlich grober, aber die Ansicht lebt."""
+    feed.source = "rest"
+    try:
+        info = http_json("/mempool")
+        feed.set_mempool({"size": info.get("count"), "bytes": info.get("vsize"),
+                          "total_fee": (info.get("total_fee") or 0) / 1e8})
+    except Exception as e:
+        feed.error = f"mempool: {e}"
+    try:
+        feed.add_txs(http_json("/mempool/recent") or [])
+    except Exception:
+        pass
+    try:
+        f = http_json("/v1/fees/recommended")
+        feed.fees = {"fastest": f.get("fastestFee"), "halfHour": f.get("halfHourFee"),
+                     "hour": f.get("hourFee"), "economy": f.get("economyFee"),
+                     "minimum": f.get("minimumFee")}
+    except Exception:
+        pass
+    try:
+        blocks = http_json("/v1/blocks")
+        if blocks:
+            prev = feed.tip.get("height")
+            feed.set_tip(blocks[0], is_new=bool(prev and blocks[0].get("height") != prev))
+    except Exception:
+        pass
+    feed.write()
+
+
+def acquire_lock():
+    """Nur eine Instanz schreibt den Zustand. Liefert das offene Lock-Objekt
+    oder None, wenn schon jemand laeuft."""
+    os.makedirs(STATE_DIR, exist_ok=True)
+    fh = open(LOCK_FILE, "w")
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return None
+    fh.write(str(os.getpid()))
+    fh.flush()
+    return fh
+
+
+def main():
+    args = set(sys.argv[1:])
+    feed = Feed()
+
+    if "--once" in args or "--print" in args:
+        poll_rest(feed)
+        if "--print" in args:
+            print(json.dumps(feed.snapshot(), indent=2))
+        return 0
+
+    lock = acquire_lock()
+    if lock is None:
+        print("btcfeed laeuft bereits -- diese Instanz beendet sich.", file=sys.stderr)
+        return 0
+
+    backoff = 2
+    rest_deadline = 0.0
+    while True:
+        try:
+            run_ws(feed)
+            backoff = 2
+        except KeyboardInterrupt:
+            return 0
+        except Exception as e:
+            feed.source = "offline"
+            feed.error = f"{type(e).__name__}: {e}"
+            feed.dirty = True
+            try:
+                feed.write()
+            except Exception:
+                pass
+            # Waehrend der Wartezeit wenigstens per REST am Leben halten
+            end = time.time() + backoff
+            while time.time() < end:
+                if time.time() >= rest_deadline:
+                    try:
+                        poll_rest(feed)
+                        feed.error = f"WebSocket weg, REST-Notbetrieb: {e}"
+                    except Exception:
+                        pass
+                    rest_deadline = time.time() + 15
+                time.sleep(1)
+            backoff = min(backoff * 2, 60)
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit(0)

@@ -1,0 +1,299 @@
+# Bitcoin Feed — Live-Mempool-Ansicht (Bitfeed-Nachbau)
+
+Nachbau der Ansicht von [bitfeed.live](https://bitfeed.live): der zuletzt
+gefundene Block in der Mitte, der Mempool als Halde unten, neue Transaktionen
+fallen von oben hinein.
+
+## Aufbau
+
+| Teil | Ort | Zweck |
+|---|---|---|
+| Feed-Daemon | `~/.local/bin/btcfeed` | haengt am WebSocket von mempool.space, schreibt den Zustand |
+| Zustand | `$XDG_RUNTIME_DIR/btcfeed/state.json` | ~7 kB, alle 0,4 s neu geschrieben — **tmpfs**, nicht die SSD |
+| Sperre | `$XDG_RUNTIME_DIR/btcfeed/btcfeed.lock` | `flock`, es laeuft immer nur **eine** Instanz |
+| Grafik | `~/.local/share/btcfeed/qml/` | `FeedState`, `FeedCanvas`, `FeedPanel` — reines QtQuick |
+| Packung | `~/.local/share/btcfeed/qml/mondrian.js` | Portierung des Mondrian-Layouts aus bitfeed |
+| Farben | `~/.local/share/btcfeed/qml/colors.js` | HCL-Farbmodell aus bitfeed, nach sRGB gerechnet |
+| Blockdaten | `$XDG_RUNTIME_DIR/btcfeed/block.json` | Kacheln des letzten Blocks, ~10 kB, nur bei Blockwechsel |
+| DMS-Plugin | `~/.config/DankMaterialShell/plugins/BitcoinFeed/` | Leisten-Pille, Control-Center-Kachel, Desktop-Widget, Daemon |
+| Eigenes Fenster | `~/.config/quickshell/BitcoinFeedApp/` | eigenstaendige Quickshell-Konfiguration |
+| Fensterstarter | `~/.local/bin/btcfeed-window` | holt ein offenes Fenster nach vorn statt ein zweites zu oeffnen |
+| Dashboard-Tab | `~/.local/bin/btcfeed-dashtab` | legt die DMS-Ueberlagerung an, die den Tab einhaengt |
+
+Die drei QML-Dateien liegen **einmal** unter `~/.local/share/btcfeed/qml/` und
+sind in Plugin- und App-Verzeichnis hineinsymlinkt. Eine Aenderung wirkt damit
+ueberall.
+
+## Bedienung
+
+- **Leistenpille** (rechts neben der RAM-Anzeige): Linksklick oeffnet das
+  Popout, Rechtsklick oeffnet direkt das eigene Fenster.
+- **Popout**: das Symbol oben rechts (`open_in_new`) oeffnet die grosse Ansicht.
+- **Control-Center**: Kachel "Bitcoin", aufklappbar.
+- **Desktop-Widget**: Instanz `bitcoinFeed-1`. Verschieben/Groesse aendern im
+  Bearbeitungsmodus (Knopf unten rechts am Bildschirm).
+  Ein-/Ausschalten: `dms ipc call desktopWidget toggleEnabled bitcoinFeed-1`
+- **Eigenes Fenster**: `btcfeed-window`, oder ueber den Starter "Bitcoin Feed".
+  Tasten im Fenster: `c` Farbe (Alter/Gebuehr), `s` Groesse (Wert/vBytes),
+  `i` Blockangaben, `l` Legende. Die Auswahl steht in
+  `~/.local/state/btcfeed/view.json`.
+- **Einstellungen** der DMS-Oberflaechen: Einstellungen -> Plugins ->
+  Bitcoin Feed (Farbe, Groesse, Blockangaben, Legende, Deckkraft,
+  Kachelgroesse).
+
+## Die Mechanik, so wie im Original
+
+Alles Folgende ist aus dem Quelltext von
+[bitfeed](https://github.com/bitfeed-project/bitfeed) uebernommen (MIT, mononaut),
+nicht nachempfunden.
+
+**Kachelgroesse** (`client/src/utils/misc.js`, `logTxSize`):
+
+    Kantenlaenge = ceil(log10(Ausgabewert in sat)) - 5,  begrenzt auf 1..5
+
+Jede Rasterstufe steht also fuer den zehnfachen Wert -- genau die Legende der
+Seite: 1 = < ₿ 0,01, 2 = < ₿ 0,1, 3 = < ₿ 1, 4 = < ₿ 10, 5 = < ₿ 100.
+Im vByte-Modus stattdessen `ceil(sqrt(vbytes / 256))`.
+
+**Anordnung** (`TxMondrianPoolScene.js`, nachgebaut in `mondrian.js`): das
+Raster waechst nach oben, jede Transaktion kommt an die **erste freie Stelle von
+unten links**, an die ihr Quadrat passt. Daraus entsteht die typische Anordnung
+-- grosse Quadrate verstreut zwischen dicht gepackten kleinen.
+
+Die Buchhaltung darunter ist bewusst anders geloest als im Original. Bitfeed
+fuehrt eine Liste freier Slots `{x, y, r}`; das ist schnell, gibt beim Entfernen
+einer Kachel aber nicht die ganze Flaeche zurueck. Nachgemessen sinkt die Dichte
+dabei von 96 % auf 90 % und die Zahl der Loecher waechst unaufhaltsam. Bitfeed
+stoert das nicht, weil dort Kacheln praktisch nie entfernt werden -- diese
+Ansicht schichtet dagegen laufend um. `mondrian.js` fuehrt deshalb eine **exakte
+Belegungskarte**: eine Zelle ist belegt oder frei, mehr nicht.
+
+**Abstand und Groesse** (`TxPoolScene.resize`): `unitWidth = max(4, Breite/250)`,
+`unitPadding = max(1, Breite/1000)`. Der Abstand ist ein **fester Pixelwert**,
+kein Anteil der Kachelgroesse -- deshalb sind die Luecken ueberall gleich breit.
+Die Groesse ist hier allerdings **fest** statt an der Fensterbreite haengend:
+4 px Kachel, 1 px Abstand -- genau das Bild, das bitfeed bei rund tausend Pixeln
+Breite zeigt. Zieht man das Fenster breiter, passen mehr Spalten hinein, die
+Kacheln bleiben gleich. Ueber die Einstellung "Kachelgroesse" laesst sich das
+skalieren.
+
+**Aufteilung der Flaeche** (`TxPoolScene.resize` und `TxController.resize`):
+
+    heightLimit   = Hoehe / 4        (bei Breite <= 620: / 4,5)
+    blockAreaSize = min(Breite * 0,75, Hoehe / 2,5)
+
+Die Halde ist also auf **ein Viertel der Fensterhoehe** gedeckelt und reicht nie
+weiter ins Bild. Die gestrichelte Linie mit der Zaehlung sitzt auf ihrer
+**Oberkante** und wandert mit dem Fuellstand (im Original `mempoolScreenHeight`).
+
+**Farben** (`utils/color.js`, `models/BitcoinTx.js`), in HCL mit
+`hcl(h * 360, 78.225, l * 150)`:
+
+- *nach Alter* (Voreinstellung): frisch eingetroffen orange `#f7941d`, nach
+  60 Sekunden blau `#00f1ca`. Bestaetigte Bloecke sind durchgehend orange.
+- *nach Gebuehr*: tuerkis bis violett ueber `log2(sat/vB)` von 2 bis 128.
+  Coinbase und gebuehrenfreie Transaktionen sind orange.
+
+**Der Block in der Mitte** ist die echte Transaktionsliste des gefundenen
+Blocks von `mempool.space/api/v1/block/<hash>/summary`, mit demselben Layout
+gepackt. Gespeichert werden pro Transaktion nur zwei Ziffern (Kantenlaenge und
+Gebuehrenklasse) -- aus 700 kB Antwort werden so 8 kB in `block.json`. Die
+Reihenfolge ist die des Blocks, die Anordnung damit die echte.
+
+**Die gestrichelte Linie** markiert die Oberkante des Mempool-Bereichs; der
+Abstand zwischen ihr und der Halde ist die Luft bis zur vollen Halde.
+
+**Was bei uns anders ist als im Original:** die Halde enthaelt nur die
+Transaktionen, die seit dem Start eingetroffen sind -- die oeffentliche
+Schnittstelle liefert keinen Bestand, nur den Zulauf (etwa fuenf pro Sekunde).
+Nach dem Start dauert es deshalb rund **eine Viertelstunde**, bis die Halde
+voll ist. Danach bleibt sie es, weil unten genauso viel herausfaellt wie oben
+ankommt.
+
+Es wurde einmal versucht, die Halde mit Platzhaltern nach der echten
+Groessenverteilung vorzufuellen. Das ist wieder raus: die Platzhalter waren das
+Einzige, was **nicht** von oben hereinfiel, und sie hatten keine Angaben fuer
+den Tooltip. Ein eigener Node wuerde den echten Mempool-Inhalt liefern; ueber
+die oeffentliche API kommt er nicht.
+
+## Daten
+
+Kein eigener Node noetig — alles kommt vom oeffentlichen WebSocket
+`wss://mempool.space/api/v1/ws`. Abonniert werden nur `blocks`, `stats` und
+`mempool-blocks`; das sind rund **4 kB/s** (~14 MB pro Stunde).
+
+Bewusst **nicht** abonniert: `track-mempool`. Das liefert vollstaendige
+Transaktionsobjekte und allein ~250 kB/s.
+
+Faellt der WebSocket aus, schaltet `btcfeed` selbsttaetig auf REST-Polling um
+(gaenger, aber die Ansicht lebt weiter) und versucht den WebSocket mit
+wachsender Wartezeit erneut.
+
+## Stolperfallen, die Zeit gekostet haben
+
+1. **Leistenpille**: Die Pille darf **kein** `StyledRect` mit eigener Breite
+   sein — DMS setzt Hintergrund und Groesse selbst. Mit eigener Breite ueberlappt
+   sie die Nachbarwidgets. Richtig ist ein blosses `Row { ... }`.
+2. **Widget-ID**: In `barConfigs[].rightWidgets` heisst der Eintrag schlicht
+   `bitcoinFeed`, in `controlCenterWidgets` dagegen `plugin_bitcoinFeed`.
+   Zwei verschiedene Konventionen im selben Programm.
+3. **Dashboard-Tab braucht einen Umweg**: `Modules/DankDash/DankDashPopout.qml`
+   hat die fuenf Tabs fest verdrahtet, es gibt dort keinen Plugin-Haken. Statt
+   in `/usr/share` zu schreiben (Root noetig, beim Paketupdate weg) legt
+   `btcfeed-dashtab` unter `~/.config/quickshell/dms-custom` eine
+   **Ueberlagerung aus Symlinks** an; nur drei Dateien sind echte Kopien
+   (`SettingsData.qml`, `DankDashPopout.qml`, `DMSShellIPC.qml`). Gestartet wird
+   ueber ein systemd-Drop-in mit `dms run -c <pfad>`. DMS-Updates fliessen durch
+   die Symlinks weiter; aendern sich die drei gepatchten Dateien, einmal
+   `btcfeed-dashtab` aufrufen (`--check` sagt, ob noetig, `--remove` macht es
+   rueckgaengig).
+4. **Desktop-Widget** braucht einen Eintrag in `desktopWidgetInstances`
+   (`{id, widgetType, enabled, config}`) — die IPC-Befehle `desktopWidget enable`
+   arbeiten nur auf bereits vorhandenen Instanzen. Die Standardgroesse kommt aus
+   `defaultWidth`/`defaultHeight` am Widget selbst.
+5. **`qs -p <dir>` startet beliebig viele Instanzen** desselben Fensters. Daher
+   der Umweg ueber `btcfeed-window`.
+6. **Fuellstand**: `MondrianLayout.height()` zaehlt *angelegte* Zeilen, nicht
+   belegte. Einmal angelegte Zeilen bleiben stehen, auch wenn alles daraus
+   entfernt wurde. Fuer die Regelung der Haldenhoehe braucht es
+   `max(sq.y + sq.r)` ueber die tatsaechlich vorhandenen Kacheln.
+7. **Rechenlast**: die Halde einfach dreissigmal pro Sekunde neu zu zeichnen
+   kostete 21 % CPU. Drei Massnahmen bringen es auf ~9 %: eigene Leinwand fuer
+   den Block (aendert sich nur alle zehn Minuten), fallende Quadrate als echte
+   `Rectangle` statt auf einer Leinwand (spart das Vollbild-Loeschen), und die
+   Halde hoechstens fuenfmal pro Sekunde neu zeichnen. Kacheln werden ausserdem
+   nach Farbe gebuendelt gezeichnet, das spart tausende Zustandswechsel.
+8. **JavaScript-Dateien** muessen genau wie die QML-Dateien in *jedes*
+   Verbraucherverzeichnis symlinkt werden; `import "mondrian.js"` sucht nur
+   neben der QML-Datei.
+9. **Wo abgeraeumt wird, entscheidet ueber das ganze Bild.** Der Regler muss
+   staendig Kacheln entfernen, weil laufend neue eintreffen. Ueber 6000
+   Umschichtungen nachgemessen (`mtest3.js`-Muster: je eine Ankunft, je ein
+   Abgang):
+
+   | Auswahl der entfernten Kachel | Loecher im Inneren nach 2000 / 6000 Schritten |
+   |---|---|
+   | zufaellig | 9,9 % / **16,8 %** -- waechst weiter |
+   | die aelteste | 5,1 % / 4,2 % |
+   | die **oberste** | 1,6 % / **0,6 %** -- wird besser |
+
+   Nur von oben abraeumen laesst keine Loecher im Inneren entstehen, und die
+   Halde wird mit der Zeit sogar dichter, weil neue Kacheln die Luecken von
+   unten wieder auffuellen. Frisch Eingetroffene (juenger als 8 s) werden dabei
+   verschont, sonst verschwinden sie gleich wieder.
+10. **Fuellstandsregelung, zweimal falsch gemacht.** Erst ueber
+   `layout.height()` -- das zaehlt angelegte, nicht belegte Zeilen. Dann ueber
+   die hoechste Kachel -- das schaukelt auf: bleibt nach dem Abraeumen eine
+   einzelne Kachel oben stehen, haelt der Regler die Halde weiter fuer voll und
+   raeumt sie leer, bis nur noch ein paar schwebende Quadrate uebrig sind.
+   Richtig ist die **belegte Flaeche** (Summe der r², inkrementell mitgezaehlt)
+   geteilt durch die Rasterbreite. Beim Schrumpfen ausserdem die aeltesten
+   Kacheln entfernen, nicht die zuletzt gefallenen -- sonst verschwinden gerade
+   die frisch eingetroffenen wieder.
+11. **Regen statt Stoesse.** mempool.space schickt die neuen Transaktionen
+   einmal pro Sekunde als Paket von etwa fuenf Stueck (nachgemessen: 156 in
+   30 s, alle kommen an -- es geht nichts verloren). Fallen die gleichzeitig
+   los, sieht es aus, als wuerden welche fehlen. `drainQueue()` verteilt sie
+   deshalb ueber das Intervall.
+12. **Ein Rechteck, das seine Groesse aus einer zentrierten Spalte zieht,
+   bleibt leer.** Der Tooltip war unsichtbar, weil `Column { anchors.centerIn:
+   parent }` im Rechteck stand, waehrend das Rechteck seine Breite aus
+   `tipCol.implicitWidth` nahm. QML bricht die gegenseitige Abhaengigkeit auf
+   und liefert 0 -- ohne Fehlermeldung. Loesung: die Spalte auf feste x/y setzen
+   und ihre Groesse aus `childrenRect` nehmen.
+13. **Virtueller Mauszeiger zum Testen**: `evdev.UInput` mit `REL_X/REL_Y`
+   (`/dev/uinput` ist hier schreibbar). Wichtig: die Bildschirmaufnahme muss
+   laufen, **solange das Geraet offen ist** -- beim Schliessen verlaesst der
+   Zeiger das Fenster und der Tooltip verschwindet.
+14. **Rechenlast, zweiter Durchgang.** Im Vollbild (2536 x 1552) lagen 16 % CPU
+   an. Der teure Teil war nicht das Zeichnen, sondern dass dreissigmal pro
+   Sekunde die **ganze Halde** (4000 Kacheln) durchlaufen wurde, um die
+   Handvoll noch fallender zu finden. Mit einer eigenen Liste `flying` sind es
+   10 %. Das Loeschen nur des Haldenbereichs statt der ganzen Leinwand bringt
+   noch einmal einen Prozentpunkt.
+15. **`str.replace("", x)` schreibt `x` zwischen jedes Zeichen.** Beim Umbau
+   wurde ein Textabschnitt ueber `s[s.index(a):s.index(b)]` ausgeschnitten --
+   stand `b` im Text **vor** `a`, kam ein leerer Suchstring heraus und die
+   Datei blaehte sich von 34 kB auf 32 MB auf. Zurueckholen liess sie sich,
+   indem der eingefuegte Block wieder entfernt wurde (`replace(block, "")`) --
+   der Originaltext steckt ja unveraendert dazwischen. Bei solchen Schnitten
+   vorher pruefen, dass `index(a) < index(b)`.
+16. **Ungleiche Luecken durch gebrochene Pixelwerte.** Im Blockraster ist die
+   Rasterweite `Blockseite / Zeilen` und damit fast nie ganzzahlig. Zeichnet man
+   die Kacheln direkt darauf, faellt mal ein Pixel mehr auf die Luecke und mal
+   weniger -- ueber tausende Kacheln ergibt das ein deutliches Karomuster. Die
+   Loesung ist, nicht Position und Groesse zu runden, sondern die **Kanten**:
+   `x0 = round(bx + q.x * g)`, `x1 = round(bx + (q.x + q.r) * g)`. Weil zwei
+   benachbarte Kacheln denselben gerundeten Wert benutzen, ist die Luecke
+   ueberall exakt `2 * pad`. Der feine Punktraster-Eindruck im unteren
+   Blockdrittel bleibt -- der ist im Original genauso, weil Kachel und Abstand
+   dort beide ein Viertel der Rasterweite sind.
+17. **Nicht wegoptimieren, was die Anzeige noch braucht.** Die Umstellung, nur
+   noch ueber die Liste der fallenden Kacheln zu laufen, liess gelandete
+   Kacheln fuer ein bis zwei Bilder verschwinden: sie fielen aus der
+   Animationsebene, bevor die Halde neu gezeichnet war. Sie muessen dort
+   bleiben, bis `poolCanvas` ihr `pending` zurueckgesetzt hat.
+18. **Schreiblast**: der Zustand wird zweieinhalbmal pro Sekunde neu geschrieben.
+   Unter `~/.local/state` waeren das rund 3 GB pro Tag auf die SSD, deshalb
+   liegt er in `$XDG_RUNTIME_DIR` (tmpfs). Nur `view.json` -- die
+   Tasteneinstellungen des eigenen Fensters -- gehoert dauerhaft nach
+   `~/.local/state/btcfeed/`.
+
+## Das Foerderband
+
+Die Halde arbeitet wie im Original als Foerderband (`TxPoolScene.doScroll` +
+`clearOffscreenTxs`): die Oberkante ist auf eine feste Hoehe gepinnt, neue
+Transaktionen landen oben, und wenn es zu hoch wird, schiebt sich die unterste
+Zeile aus dem Bild. **Deshalb gibt es im Inneren keine Loecher.** Ueber 40 000
+Kacheln nachgemessen bleibt die Dichte bei 100 %.
+
+Es wird also nie mitten aus der Halde entfernt -- das war der Fehler, der die
+Halde zunehmend ausloecherte (siehe Stolperfalle 9).
+
+## Blockfund
+
+Nachgebaut aus `TxController.addBlock` und `TxBlockScene.prepareTx`:
+
+1. Ein Teil der Halde (etwa der Anteil, den ein Block am Mempool hat) leuchtet
+   **weiss** auf und verschwindet daraus. Das Weiss ist `ice()` aus
+   `TxBlockScene.js`: dieselbe Farbe, aber Helligkeit auf 1 -- ergibt `#ffffff`.
+2. Diese Kacheln pulsieren kurz (Kantenlaenge +25 %, hin und zurueck), zeitlich
+   versetzt. Das Blockfeld ist waehrenddessen **leer**.
+3. Nach drei Sekunden fliegen **alle** Transaktionen des Blocks an ihren Platz.
+   Die sichtbaren kommen aus der Halde, alle uebrigen ziehen von **unter der
+   Bildkante** herauf -- der Mempool ist groesser als die sichtbare Halde. Im
+   Original ist das `prepareTxOnScreen` fuer noch nicht gezeichnete
+   Transaktionen.
+4. Zusammengesetzt wird der Block in **Weiss**; erst wenn alles liegt, faerbt er
+   sich in einem Uebergang orange (`iceRamp()` in `colors.js`).
+
+Das sind bis zu 6000 Kacheln gleichzeitig -- zu viele fuer die Rechteck-Ebene,
+deshalb hat die Blockanimation eine eigene Leinwand, die nur waehrend der
+Animation zeichnet. Sie kostet fuer die vier Sekunden rund 40 % CPU.
+
+Zum Pruefen ohne zehn Minuten Wartezeit: Taste `b` im eigenen Fenster.
+
+## Tooltip
+
+Beim Ueberfahren einer Kachel -- in der **Halde wie im Block** -- erscheinen
+TxID, Groesse, Gebuehrenrate, Gebuehr und Gesamtwert; die Kachel selbst faerbt
+sich dabei blaugruen (im Original `hoverOn()` mit der Farbe `bluegreen`), damit
+klar ist, wozu die Angaben gehoeren. Ein- und Ausgaenge stehen nicht im
+Datenstrom und werden bei Bedarf einzeln ueber `/api/tx/<txid>` nachgeladen
+(mit Zwischenspeicher).
+
+Fuer den Block liegen die Angaben in `block.json` (Feld `txs`, dieselbe
+Reihenfolge wie die Kacheln). Das macht die Datei rund 500 kB gross -- sie wird
+aber nur einmal je Block geschrieben und gelesen. Getroffen wird ueber eine
+Zellenkarte des Blockrasters, nicht durch Durchsuchen aller Kacheln.
+
+Jede Kachel der Halde hat einen Datensatz -- es gibt keine Platzhalter mehr
+(siehe oben).
+
+## Pruefen
+
+```
+btcfeed --print                     # Zustand einmalig per REST holen und zeigen
+dms ipc call bitcoinFeed status     # was das Plugin gerade liest
+dms ipc call bitcoinFeed restart    # Feed neu starten
+```
