@@ -187,6 +187,18 @@ Item {
         root.go(k, m.arg);
     }
 
+    // Zurueck zur Startseite. Ohne ihn kam man aus einer Transaktion nur
+    // ueber wiederholtes Zurueckgehen wieder heraus.
+    function home() {
+        root.trail = [];
+        root.kind = "";
+        root.result = null;
+        root.extra = null;
+        root.tiles = null;
+        root.status = "";
+        root.currentArg = "";
+    }
+
     function back() {
         if (!trail.length)
             return;
@@ -205,10 +217,62 @@ Item {
         height: field.height + root.uiFont * 1.3
 
         Rectangle {
-            id: backBtn
+            id: homeBtn
 
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: parent.left
+            width: root.uiFont * 2.2
+            height: width
+            radius: width / 2
+            visible: root.kind !== "" || root.status.length > 0
+            color: homeArea.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.06)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.12)
+
+            // Haus, gezeichnet -- wie beim Zurueck-Pfeil aus demselben Grund:
+            // Schriftzeichen sitzen nicht zuverlaessig mittig.
+            Canvas {
+                anchors.centerIn: parent
+                width: parent.width * 0.5
+                height: width
+
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.reset();
+                    ctx.strokeStyle = root.textColor;
+                    ctx.lineWidth = Math.max(1.4, width * 0.14);
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                    ctx.beginPath();
+                    ctx.moveTo(width * 0.08, height * 0.46);
+                    ctx.lineTo(width * 0.5, height * 0.1);
+                    ctx.lineTo(width * 0.92, height * 0.46);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(width * 0.2, height * 0.44);
+                    ctx.lineTo(width * 0.2, height * 0.9);
+                    ctx.lineTo(width * 0.8, height * 0.9);
+                    ctx.lineTo(width * 0.8, height * 0.44);
+                    ctx.stroke();
+                }
+            }
+
+            MouseArea {
+                id: homeArea
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.home()
+            }
+        }
+
+        Rectangle {
+            id: backBtn
+
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: homeBtn.visible ? homeBtn.right : parent.left
+            anchors.leftMargin: homeBtn.visible ? root.uiFont * 0.4 : 0
             width: root.uiFont * 2.2
             height: width
             radius: width / 2
@@ -252,8 +316,9 @@ Item {
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            anchors.left: backBtn.visible ? backBtn.right : parent.left
-            anchors.leftMargin: backBtn.visible ? root.uiFont * 0.5 : 0
+            anchors.left: backBtn.visible ? backBtn.right
+                                          : (homeBtn.visible ? homeBtn.right : parent.left)
+            anchors.leftMargin: (backBtn.visible || homeBtn.visible) ? root.uiFont * 0.5 : 0
             anchors.right: parent.right
             height: field.height + root.uiFont * 0.8
             radius: height / 2
@@ -346,20 +411,7 @@ Item {
                 font.pixelSize: root.scaleUnit * 0.75
             }
 
-            Text {
-                width: parent.width
-                wrapMode: Text.WordWrap
-                visible: root.kind === "" && root.status.length === 0
-                text: "Gib eine Blockhöhe, einen Blockhash, eine TxID oder eine Adresse ein.\n"
-                      + "Auch txid:n für einen Ausgang und n:txid für einen Eingang.\n"
-                      + "Aus dem Feed heraus führt ein Klick auf eine Kachel direkt hierher."
-                color: root.dimColor
-                font.pixelSize: root.uiFont * 0.95
-            }
-
-            // Solange nichts gesucht ist, die letzten Bloecke zeigen -- so ist
-            // die Ansicht nicht leer und man kommt mit einem Klick hinein.
-            BlockChain {
+            ExplorerHome {
                 width: parent.width
                 visible: root.kind === "" && root.status.length === 0
                 feed: root.feed
@@ -369,6 +421,9 @@ Item {
                 uiFont: root.uiFont
                 onBlockPicked: function (hash) {
                     root.go("blockhash", hash);
+                }
+                onTxPicked: function (txid) {
+                    root.go("tx", txid);
                 }
             }
 

@@ -551,6 +551,9 @@ LOOKUP_ROUTES = (
     ("blockinfo", re.compile(r"^[0-9a-f]{64}$"), "/v1/block/%s"),
     # Kacheldaten -- **nicht** weitergereicht, sondern hier aufbereitet
     ("blocktiles", re.compile(r"^[0-9a-f]{64}$"), None),
+    # Die geplanten Bloecke: was aus dem Mempool als naechstes in Bloecke
+    # passen wuerde. "now" ist ein fester Platzhalter.
+    ("mempoolblocks", re.compile(r"^now$"), "/v1/fees/mempool-blocks"),
 )
 
 
@@ -588,8 +591,12 @@ def lookup(kind, arg):
         try:
             # `blocks` kennt zwei Formen: ohne Wert die neuesten, mit Hoehe
             # die fuenfzehn davor.
-            full = path if kind == "blocks" and arg == "recent" else (
-                (path + "/" + arg) if kind == "blocks" else (path % arg))
+            if kind == "mempoolblocks":
+                full = path
+            elif kind == "blocks":
+                full = path if arg == "recent" else (path + "/" + arg)
+            else:
+                full = path % arg
             req = urllib.request.Request(API + full, headers={"User-Agent": UA})
             with urllib.request.urlopen(req, timeout=12) as r:
                 body = r.read().decode()

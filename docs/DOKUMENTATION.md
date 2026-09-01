@@ -1261,3 +1261,31 @@ Ueber `/v1/block/<hash>` (Abfrage `blockinfo`) kommen neben den Kopfdaten:
 Mining-Pool, Belohnung, Gebuehren gesamt, mittlere Rate und Gebuehrenspanne,
 UTXO-Aenderung, SegWit-Anteil, mittlere Transaktionsgroesse, Coinbase-Angaben.
 Alles davon steht jetzt in der Ansicht.
+
+
+## Startseite des Explorers (`ExplorerHome.qml`)
+
+Vorher stand dort nur ein Hinweistext und darunter die Blockkette -- und aus
+einer geoeffneten Transaktion kam man nur durch wiederholtes Zurueckgehen
+wieder heraus. Jetzt:
+
+    Kennzahlen        Blockhoehe, Mempool, Gebuehr, Hashrate,
+                      Schwierigkeitsaenderung, Kurs -- alles aus `FeedState`,
+                      also ohne zusaetzlichen Abruf
+    Geplante Bloecke  was aus dem Mempool als naechstes in Bloecke passen
+                      wuerde (`/v1/fees/mempool-blocks`, Abfrage
+                      `mempoolblocks`), in eigener Farbe
+    Blockkette        die letzten bestaetigten Bloecke
+    Letzte Transaktionen  aus dem laufenden Feed, anklickbar
+
+Von jedem dieser Punkte fuehrt ein Klick weiter hinein.
+
+**Startknopf.** Links in der Suchleiste, sichtbar sobald man in der Tiefe ist;
+er raeumt Verlauf und Ergebnis und fuehrt zurueck. Wie der Zurueck-Pfeil ist
+das Haus gezeichnet, nicht gesetzt -- Schriftzeichen sitzen nicht zuverlaessig
+mittig.
+
+**Falle bei den Feldnamen:** die Transaktionen im Feed heissen kurz --
+`t` TxID, `v` **virtuelle Groesse**, `a` Betrag in sat, `f` Gebuehr, `r` Rate,
+`n` laufende Nummer. `v` ist also nicht der Wert; der erste Entwurf zeigte
+deshalb die vsize als Betrag an.

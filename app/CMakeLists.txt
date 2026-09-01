@@ -30,6 +30,7 @@ set(SHARED_QML
     ../ui/qml/CopyButton.qml
     ../ui/qml/BlockChain.qml
     ../ui/qml/BlockTiles.qml
+    ../ui/qml/ExplorerHome.qml
     ../ui/qml/search.js
     ../ui/qml/mondrian.js
     ../ui/qml/colors.js
