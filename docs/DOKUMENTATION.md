@@ -1348,3 +1348,37 @@ Deckkraft.
 Die Farbe kommt von aussen (`tone`): gruen fuer geplante, violett fuer
 bestaetigte. `highlighted` hebt den neuesten Block leicht ab, `hovered` die
 Kachel unter dem Zeiger.
+
+
+## Die vier Tafeln der Startseite (`MainPanels.qml`)
+
+    TRANSAKTIONSGEBUEHR       vier Stufen (keine / niedrige / mittlere / hohe
+                              Prioritaet) aus economy, hour, halfHour, fastest
+    SCHWIERIGKEITSANPASSUNG   Fortschrittsbalken, durchschnittliche Blockzeit,
+                              Aenderung mit Vorzeichen, Ziel und Restzeit
+    MEMPOOL                   Mindestgebuehr, Belegung, unbestaetigte Anzahl
+                              und die Kurve der eingehenden Transaktionen
+    ERSETZTE TRANSAKTIONEN    RBF: alte gegen neue Gebuehrenrate
+
+Bis auf die Ersetzungen kommt alles aus `FeedState` -- ohne zusaetzlichen
+Abruf. Die Tafeln stehen zweispaltig, unterhalb von etwa 62 Schriftgroessen
+Breite einspaltig.
+
+### Woher der Zulauf kommt
+
+Fuer die Kurve schreibt der Daemon einen Verlauf mit (`sample_stats`, 240
+Punkte im Fuenfsekundentakt, also zwanzig Minuten): Fuellstand, vByte je
+Sekunde und **Zulauf**. Letzterer ergibt sich aus dem Fortschritt der laufenden
+Nummer -- `seq` zaehlt jede gesehene Transaktion, die Differenz zwischen zwei
+Messungen geteilt durch die Zeit ist der Zulauf je Sekunde. Es braucht dafuer
+also keine eigene Abfrage.
+
+Die Kurve ist **nach Hoehe eingefaerbt**: ruhige Abschnitte gruen, Spitzen rot
+(Farbton von 0,33 nach 0 ueber den Anteil am Hoechstwert). Dazu eine
+gestrichelte Linie auf dem Mittelwert -- so sieht man auf einen Blick, ob
+gerade mehr los ist als sonst.
+
+### Farbe der Gebuehrenstufen
+
+Dieselbe Logik wie bei den geplanten Bloecken: derselbe Gruenton, nach oben
+kraeftiger. Hoehere Prioritaet, saftigeres Gruen.

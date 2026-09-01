@@ -88,6 +88,19 @@ Column {
         }
     }
 
+    // ------------------------------------------------------- Tafeln
+    MainPanels {
+        width: parent.width
+        feed: root.feed
+        textColor: root.textColor
+        dimColor: root.dimColor
+        accentColor: root.accentColor
+        uiFont: root.uiFont
+        onTxPicked: function (txid) {
+            root.txPicked(txid);
+        }
+    }
+
     // -------------------------------------- zuletzt gesehene Transaktionen
     Column {
         width: parent.width

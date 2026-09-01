@@ -168,6 +168,10 @@ MINER_INTERVAL = 5
 # mitschreiben funktioniert bei jedem Geraet gleich.
 MINER_HISTORY = 180
 SCOREBOARD_INTERVAL = 30
+# Verlauf des Mempools: Fuellstand und Zulauf. 240 Punkte im
+# Fuenfsekundentakt sind zwanzig Minuten.
+STATS_INTERVAL = 5
+STATS_HISTORY = 240
 # Die Hash-Domaenen einzeln rauschen stark: am BM1370 gemessen rund 27 bis
 # 32 GH/s Streuung auf einen Mittelwert von 260 bis 276, also ueber 10 %.
 # Einzelwerte gaukeln damit Unterschiede vor, die keine sind. Zwoelf Messungen
@@ -395,6 +399,9 @@ class Feed:
         self.miner_total = {}     # Summe ueber alle erreichbaren Geraete
         self.slow_at = 0.0
         self.miner_at = 0.0
+        self.stats_hist = {"t": [], "count": [], "vbps": [], "inflow": []}
+        self.stats_at = 0.0
+        self.stats_seq = 0
         self.miner_hist = {}      # Geraete-Kennung -> Verlauf
         self.miner_dom = {}       # Geraete-Kennung -> letzte Domaenenmessungen
         self.scoreboard = {}      # Geraete-Kennung -> Bestenliste
@@ -503,6 +510,7 @@ class Feed:
             "seq": self.seq,
             "recent": self.recent[-RECENT_KEEP:],
             "difficulty": self.difficulty,
+            "stats": self.stats_hist,
             "hashrate": self.hashrate,
             "miners": self.miners,
             "minerHistory": self.miner_hist,
@@ -554,6 +562,8 @@ LOOKUP_ROUTES = (
     # Die geplanten Bloecke: was aus dem Mempool als naechstes in Bloecke
     # passen wuerde. "now" ist ein fester Platzhalter.
     ("mempoolblocks", re.compile(r"^now$"), "/v1/fees/mempool-blocks"),
+    # Ersetzte Transaktionen (RBF)
+    ("replacements", re.compile(r"^now$"), "/v1/replacements"),
 )
 
 
@@ -591,7 +601,7 @@ def lookup(kind, arg):
         try:
             # `blocks` kennt zwei Formen: ohne Wert die neuesten, mit Hoehe
             # die fuenfzehn davor.
-            if kind == "mempoolblocks":
+            if kind in ("mempoolblocks", "replacements"):
                 full = path
             elif kind == "blocks":
                 full = path if arg == "recent" else (path + "/" + arg)
@@ -686,6 +696,31 @@ def serve_local(feed):
     return srv
 
 
+def sample_stats(feed):
+    """Fuellstand und Zulauf des Mempools mitschreiben.
+
+    Der Zulauf ergibt sich aus dem Fortschritt der laufenden Nummer: `seq`
+    zaehlt jede gesehene Transaktion, die Differenz zwischen zwei Messungen
+    geteilt durch die Zeit ist der Zulauf je Sekunde."""
+    now = time.time()
+    if now - feed.stats_at < STATS_INTERVAL:
+        return
+    dt = now - feed.stats_at if feed.stats_at else STATS_INTERVAL
+    inflow = (feed.seq - feed.stats_seq) / dt if feed.stats_at else 0
+    feed.stats_at = now
+    feed.stats_seq = feed.seq
+
+    h = feed.stats_hist
+    h["t"].append(round(now))
+    h["count"].append(int((feed.mempool or {}).get("count") or 0))
+    h["vbps"].append(round(feed.vbps or 0, 1))
+    h["inflow"].append(round(max(0.0, inflow), 2))
+    for k in ("t", "count", "vbps", "inflow"):
+        if len(h[k]) > STATS_HISTORY:
+            del h[k][:len(h[k]) - STATS_HISTORY]
+    feed.dirty = True
+
+
 def poll_slow(feed):
     """Schwierigkeitsanpassung und Hashrate. Beides aendert sich langsam und
     wird deshalb nur alle paar Minuten geholt -- es speist die BlockClock und
@@ -702,6 +737,10 @@ def poll_slow(feed):
             "remainingTime": d.get("remainingTime"),
             "nextHeight": d.get("nextRetargetHeight"),
             "previousChange": d.get("previousRetarget"),
+            # Fuer die Tafel auf der Startseite
+            "timeAvg": d.get("timeAvg"),
+            "retargetDate": d.get("estimatedRetargetDate"),
+            "expectedBlocks": d.get("expectedBlocks"),
         }
         feed.dirty = True
     except Exception as e:
@@ -1216,6 +1255,7 @@ def run_extras(feed):
     dort blockiert ja auf `ws.recv()`."""
     while True:
         try:
+            sample_stats(feed)
             poll_slow(feed)
             poll_miners(feed)
         except Exception as e:
