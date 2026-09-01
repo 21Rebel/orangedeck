@@ -124,6 +124,94 @@ Eine Einstellungsdatei, die auf allen drei Zielen gilt.
   Display-an. Qt 6.11.2 liegt hier bereits, SDK und NDK fehlen noch
   (installiert ist nur `android-tools`).
 
+## Sicherheitsgrundsatz: betrachten, niemals verfuegen — festgelegt 01.09.2026
+
+**Die Anwendung ist ein Betrachter. Sie bekommt nie etwas in die Hand, mit dem
+sich Geld bewegen liesse.** Ausdrueckliche Vorgabe vom 01.09.2026, angesichts
+der Luecken, die zuletzt in Bitcoin-Produkten aufgetaucht sind. Der Zweck ist
+eine Angriffsflaeche von null: geht hier etwas kaputt, darf niemandes Guthaben
+betroffen sein.
+
+Daraus folgt, verbindlich fuer jede spaetere Funktion:
+
+| erlaubt | ausgeschlossen |
+|---|---|
+| Eingabe eines **xpub** (auch ypub/zpub) | privater Schluessel, Seed, Mnemonic |
+| Ableiten von Adressen, Salden, Verlauf | Signieren, PSBT, Senden |
+| beliebige oeffentliche Kennzahlen lesen | Wallet-Anbindung jeder Art |
+| lokale Anzeige und Alarme | Schluesselverwaltung, Hardware-Wallet |
+
+**Nur lesende HTTP-Abfragen gegen oeffentliche Endpunkte. Keine Bibliothek, die
+signieren kann.** Damit ist der schlimmste denkbare Fehlerfall eine falsche
+Zahl auf dem Bildschirm.
+
+### Der Preis ist Privatsphaere, nicht Sicherheit
+
+Watch-only schuetzt die Guthaben vollstaendig. Was bleibt, ist ein
+Verkettungsproblem, und das gehoert offen benannt:
+
+1. **Den xpub selbst nie verschicken.** Wird er an einen Dienst uebergeben,
+   kennt dieser Betreiber schlagartig die gesamte Wallet — jede vergangene und
+   jede kuenftige Adresse. Richtig ist: **Adressen lokal ableiten** und einzeln
+   ueber `/api/address/:addr` abfragen. Der xpub verlaesst das Geraet nie.
+2. **Auch das verkettet noch.** Wer 100 Adressen nacheinander von derselben
+   Adresse abfragt, zeigt dem Betreiber, dass sie zusammengehoeren. Vollstaendig
+   loesen laesst sich das nur mit eigenem electrs. Zwischenschritte: Abfragen
+   streuen, optional ueber einen Proxy.
+3. **Der xpub liegt lokal** in der Konfiguration, Datei auf `0600`.
+
+Technisch angenehm: die oeffentliche Ableitung (BIP32) braucht nur
+Punktaddition auf secp256k1, keine Signaturmathematik — das sind rund 50 Zeilen
+reines Python ohne fremde Abhaengigkeit. Es gibt damit im ganzen Programm
+keinen Code, der ueberhaupt signieren koennte.
+
+## Weitere Kennzahlen und Grafiken — 01.09.2026 geprueft
+
+Alle Endpunkte am 01.09.2026 gegen die oeffentliche API abgefragt und
+bestaetigt:
+
+    /api/v1/mining/hashrate/3d          Zeitreihe + currentHashrate + currentDifficulty
+    /api/v1/difficulty-adjustment       Fortschritt, Aenderung, Restbloecke, Retarget-Datum
+    /api/v1/fees/recommended            steckt bereits in state.json
+
+Gemessene Beispielwerte: Hashrate rund 919 EH/s; Schwierigkeitsanpassung bei
+69 % Fortschritt, +1,40 %, 625 Bloecke bis Hoehe 965.664.
+
+Damit sind Hashrate-Verlauf, Schwierigkeitsanpassung mit Countdown und
+Gebuehrenverlauf ohne Node darstellbar. Sie speisen zugleich die BlockClock
+und die MinerView (Best-Difficulty des Bitaxe gegen die Netzschwierigkeit).
+
+## Andere Ebenen: Liquid, Lightning, Ark — 01.09.2026 geprueft
+
+**Liquid: faellt praktisch von selbst an.** `liquid.network` fuehrt dieselbe
+API-Form. Geprueft: `/api/blocks/tip/height` → 4.043.120 und
+`/api/v1/fees/recommended` antworten wie erwartet. Weil `HOST` in `btcfeed`
+bereits eine Variable ist, ist die Umschaltung auf Liquid **derselbe
+Handgriff wie die Umschaltung auf einen eigenen Node** — eine
+Konfigurationszeile, dieselbe Grafik. Das ist die billigste der drei Ebenen.
+
+**Lightning: eigene Endpunkte, eigene Ansicht.** `/api/v1/lightning/
+statistics/latest` geprueft, liefert Kanalzahl, Knotenzahl, Gesamtkapazitaet,
+Tor- gegen Clearnet-Knoten (Stand der Abfrage: 32.674 Kanaele, 16.232 Knoten).
+Aber: Lightning hat keinen Mempool und keine Bloecke. Die Halde-und-Block-
+Darstellung passt hier nicht — das wird eine **eigene Ansicht** (Kapazitaet,
+Knoten, Gebuehrenraten im Zeitverlauf), keine Umschaltung der bestehenden.
+
+**Ark: vorerst zurueckgestellt.** Es gibt einen Explorer
+(`arkexplorer.blockonomics.co`, Blockonomics), aber **keine oeffentliche API in
+der Form, die hier angebunden werden koennte**. Ohne eigene Datenquelle geht
+das nicht. Erneut ansehen, wenn sich das aendert.
+
+### Was das fuer den Aufbau heisst
+
+Zwei verschiedene Dinge, nicht eines:
+
+- **Kettenumschaltung** (Bitcoin / Liquid / eigener Node): eine Einstellung im
+  Daemon, `HOST`. Dieselbe Grafik, dieselben Ansichten.
+- **Zusatzansichten** (Lightning, Hashrate, Schwierigkeit, Bitaxe, Wallet):
+  eigene Quell-Adapter im Daemon und eigene Ansichten in `ui/qml`, jede ueber
+  die Einstellungen abschaltbar — wie alles Uebrige.
+
 ## Reihenfolge
 
 Die ersten sechs Schritte brauchen **keinen Bitcoin-Node**.
@@ -141,7 +229,14 @@ Die ersten sechs Schritte brauchen **keinen Bitcoin-Node**.
     6. Android-APK: SDK/NDK einrichten, Qt-Android-Build. Der frickelige Teil.
     ---- ab hier ist der Node Voraussetzung ----
     7. Node + eigene mempool-Instanz + electrs.
-    8. ExplorerView und WatchView.
+    8. ExplorerView und WatchView (gehen auch ohne Node -- siehe unten).
+
+Nachtrag 01.09.2026: Schritt 8 ist **nicht** vom Node abhaengig. Gegen die
+oeffentliche API sind `/api/address/:addr` und `/api/address/:addr/txs`
+verfuegbar (geprueft, volle Transaktionsobjekte). Der Node verbessert nur die
+Privatsphaere, siehe Sicherheitsgrundsatz. Einen `/api/v1/search`-Endpunkt gibt
+es nicht -- die Suche wird ueber die Eingabeform aufgeloest: 64 Hex =
+TXID/Blockhash, Zahl = Hoehe, sonst Adresse.
 
 ## Zwei harte Randbedingungen
 
