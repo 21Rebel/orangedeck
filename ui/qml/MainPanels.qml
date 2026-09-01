@@ -29,6 +29,11 @@ Grid {
     rowSpacing: uiFont * 1.2
 
     readonly property real panelWidth: (width - (columns - 1) * columnSpacing) / columns
+    // Die beiden unteren Tafeln sind gleich hoch -- unterschiedlich hohe
+    // Nachbarn wirken wie ein Versehen. Die Hoehe richtet sich nach der
+    // volleren von beiden, damit nichts abgeschnitten wird.
+    readonly property real lowerHeight: Math.max(uiFont * 19,
+                                                 rbfCol.implicitHeight + uiFont * 3.4)
     readonly property var fees: (feed && feed.snap.fees) || ({})
     readonly property var diff: feed ? feed.difficulty : ({})
     readonly property var stats: (feed && feed.snap.stats) || ({})
@@ -264,7 +269,7 @@ Grid {
 
     // ----------------------------------------------- Zustand des Mempools
     Panel {
-        height: root.uiFont * 16.5
+        height: root.lowerHeight
         title: "MEMPOOL"
 
         Column {
@@ -322,7 +327,8 @@ Grid {
                 id: inflow
 
                 width: parent.width
-                height: root.uiFont * 7
+                // Nimmt, was die Tafel uebrig laesst
+                height: root.lowerHeight - root.uiFont * 8.6
 
                 Connections {
                     target: root
@@ -337,11 +343,17 @@ Grid {
                     var s = root.stats.inflow || [];
                     if (s.length < 2)
                         return;
-                    var hi = Math.max.apply(null, s);
-                    if (hi <= 0)
+                    var peak = Math.max.apply(null, s);
+                    if (peak <= 0)
                         return;
-                    var padB = root.uiFont * 1.1, padL = root.uiFont * 2.2;
-                    var w = width - padL, h = height - padB;
+                    // **Luft nach oben.** Ohne sie beruehrt die hoechste Spitze
+                    // die Oberkante und wird durch die Strichstaerke
+                    // angeschnitten; die oberste Beschriftung haette dort auch
+                    // keinen Platz.
+                    var hi = peak * 1.12;
+                    var padB = root.uiFont * 1.1, padL = root.uiFont * 2.4;
+                    var padT = root.uiFont * 0.5;
+                    var w = width - padL, h = height - padB - padT;
 
                     // Waagerechte Hilfslinien mit Beschriftung
                     ctx.strokeStyle = Qt.rgba(1, 1, 1, 0.07);
@@ -350,13 +362,15 @@ Grid {
                     ctx.textAlign = "right";
                     ctx.lineWidth = 1;
                     for (var g = 0; g <= 2; g++) {
-                        var gy = Math.round(h * g / 2) + 0.5;
+                        var gy = Math.round(padT + h * g / 2) + 0.5;
                         ctx.beginPath();
                         ctx.moveTo(padL, gy);
                         ctx.lineTo(width, gy);
                         ctx.stroke();
-                        ctx.fillText(Math.round(hi * (1 - g / 2)), padL - root.uiFont * 0.4,
-                                     gy + root.uiFont * 0.25);
+                        // Beschriftet wird der **echte** Hoechstwert, nicht der
+                        // um die Luft erhoehte
+                        ctx.fillText((peak * (1 - g / 2)).toFixed(1).replace(".", ","),
+                                     padL - root.uiFont * 0.4, gy + root.uiFont * 0.25);
                     }
 
                     // Die Kurve, eingefaerbt nach Hoehe: ruhig gruen, Spitzen rot
@@ -365,8 +379,8 @@ Grid {
                     for (var i = 1; i < s.length; i++) {
                         var x0 = padL + w * (i - 1) / (s.length - 1);
                         var x1 = padL + w * i / (s.length - 1);
-                        var y0 = h - h * s[i - 1] / hi;
-                        var y1 = h - h * s[i] / hi;
+                        var y0 = padT + h - h * s[i - 1] / hi;
+                        var y1 = padT + h - h * s[i] / hi;
                         var f = Math.max(s[i - 1], s[i]) / hi;
                         ctx.strokeStyle = Qt.hsva((1 - f) * 0.33, 0.75, 0.9, 1);
                         ctx.beginPath();
@@ -380,7 +394,7 @@ Grid {
                     for (i = 0; i < s.length; i++)
                         sum += s[i];
                     var avg = sum / s.length;
-                    var ay = Math.round(h - h * avg / hi) + 0.5;
+                    var ay = Math.round(padT + h - h * avg / hi) + 0.5;
                     ctx.strokeStyle = Qt.rgba(1, 1, 1, 0.55);
                     ctx.lineWidth = 1;
                     ctx.beginPath();
@@ -402,9 +416,7 @@ Grid {
 
     // ------------------------------------------------ Ersetzungen (RBF)
     Panel {
-        // Hoehe aus dem Inhalt statt fest -- sonst stehen die letzten Zeilen
-        // unten heraus, sobald die Schrift oder die Zeilenzahl sich aendert.
-        height: rbfCol.implicitHeight + root.uiFont * 3.4
+        height: root.lowerHeight
         title: "ERSETZTE TRANSAKTIONEN (RBF)"
 
         Column {

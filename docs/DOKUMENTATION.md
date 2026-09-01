@@ -1418,3 +1418,21 @@ grosse Ausgaenge; erst danach die Zaehlregeln.
 Der erste Entwurf zaehlte jede Transaktion mit einem einzigen Ausgang als
 Umschichtung und kam damit auf 33 % -- eine Zahlung ohne Rueckgeld ist aber
 keine Umschichtung. Mit der Bedingung "ab zwei Eingaengen" sind es 13 %.
+
+
+## Gleich hohe Tafeln, Luft ueber der Kurve
+
+Die beiden unteren Tafeln waren verschieden hoch -- die eine fest, die andere
+nach Inhalt. Nebeneinander wirkt das wie ein Versehen. Jetzt teilen sie sich
+`lowerHeight`, die sich nach der volleren von beiden richtet und mindestens
+19 Schriftgroessen betraegt (rund 247 statt 214 Bildpunkten). Die Kurve bekommt,
+was uebrig bleibt -- gut 135 statt 91 Bildpunkten.
+
+**Die hohen Spitzen wurden abgeschnitten.** Die Achse endete genau beim
+Hoechstwert, also beruehrte die hoechste Spitze die Oberkante und wurde durch
+die Strichstaerke angeschnitten; die oberste Beschriftung hatte dort ebenfalls
+keinen Platz.
+
+Die Achse reicht deshalb bis zum **1,12-fachen** des Hoechstwerts. Beschriftet
+wird weiterhin der echte Wert, nicht der erhoehte -- sonst stuende an der Achse
+eine Zahl, die nie vorkommt. Eine Spitze endet damit bei rund 89 % der Hoehe.
