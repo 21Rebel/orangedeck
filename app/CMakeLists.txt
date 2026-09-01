@@ -34,6 +34,7 @@ set(SHARED_QML
     ../ui/qml/ExplorerHome.qml
     ../ui/qml/MainPanels.qml
     ../ui/qml/search.js
+    ../ui/qml/txtype.js
     ../ui/qml/mondrian.js
     ../ui/qml/colors.js
 )

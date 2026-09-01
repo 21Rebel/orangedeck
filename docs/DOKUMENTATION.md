@@ -1382,3 +1382,39 @@ gerade mehr los ist als sonst.
 
 Dieselbe Logik wie bei den geplanten Bloecken: derselbe Gruenton, nach oben
 kraeftiger. Hoehere Prioritaet, saftigeres Gruen.
+
+
+## Transaktionsarten und ihre Farben (`txtype.js`)
+
+**Bitcoin kennt keine Typen.** Was hier steht, ist eine Deutung anhand der
+Struktur -- nuetzlich, aber nie sicher: eine Wallet kann jedes Muster auch aus
+anderen Gruenden erzeugen. Die Ansicht nennt deshalb die Art und keine
+Gewissheit, und schreibt eine Erklaerung daneben.
+
+    Zahlung          orange   ein bis zwei Eingaenge, ein Ziel, meist Rueckgeld
+    Konsolidierung   tuerkis  viele Eingaenge auf wenige Ausgaenge
+    Sammelzahlung    blau     wenige Eingaenge auf viele Ausgaenge
+    CoinJoin         magenta  viele Beteiligte, mehrere gleich grosse Ausgaenge
+    Datenablage      grauviolett  enthaelt einen OP_RETURN-Ausgang
+    Blockbelohnung   gold     die Coinbase-Transaktion eines Blocks
+    Umschichtung     indigo   alles auf einen Ausgang, ab zwei Eingaengen
+
+Warme Toene fuer alltaegliche Zahlungen, kuehle fuer Umschichtungen, ein
+eigener Ton fuer Datenablage.
+
+**Reihenfolge der Pruefung** ist wichtig: Coinbase und OP_RETURN sind eindeutig
+und gehen vor; CoinJoin braucht viele Beteiligte **und** mindestens drei gleich
+grosse Ausgaenge; erst danach die Zaehlregeln.
+
+**An echten Daten geprueft** (Block 965080, 70 Transaktionen):
+
+    Zahlung          55  (79 %)
+    Umschichtung      9  (13 %)
+    Sammelzahlung     2  ( 3 %)
+    Datenablage       2  ( 3 %)
+    Blockbelohnung    1  ( 1 %)
+    Konsolidierung    1  ( 1 %)
+
+Der erste Entwurf zaehlte jede Transaktion mit einem einzigen Ausgang als
+Umschichtung und kam damit auf 33 % -- eine Zahlung ohne Rueckgeld ist aber
+keine Umschichtung. Mit der Bedingung "ab zwei Eingaengen" sind es 13 %.

@@ -7,6 +7,7 @@
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "search.js" as Search
+import "txtype.js" as TxType
 
 pragma ComponentBehavior: Bound
 
@@ -460,10 +461,65 @@ Item {
             readonly property var d: root.result
             readonly property bool confirmed: d.status && d.status.confirmed
 
-            Text {
-                text: "Transaktion"
-                color: root.dimColor
-                font.pixelSize: root.scaleUnit * 0.62
+            Row {
+                spacing: root.uiFont * 0.6
+
+                Text {
+                    anchors.verticalCenter: kindBadge.verticalCenter
+                    text: "Transaktion"
+                    color: root.dimColor
+                    font.pixelSize: root.scaleUnit * 0.62
+                }
+
+                // Die Art ergibt sich aus der Struktur -- eine Deutung, keine
+                // Eigenschaft der Transaktion. Deshalb nur als Kennzeichnung
+                // mit Erklaerung, nicht als Tatsache.
+                Rectangle {
+                    id: kindBadge
+
+                    readonly property string kind: TxType.classify(root.result)
+                    readonly property var meta: TxType.info(kindBadge.kind)
+
+                    width: kindLabel.width + root.uiFont * 1.1
+                    height: kindLabel.height + root.uiFont * 0.5
+                    radius: height / 2
+                    color: Qt.rgba(kindBadge.meta.color.r || 0, 0, 0, 0)
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: kindBadge.meta.color
+                        opacity: 0.22
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: "transparent"
+                        border.width: 1
+                        border.color: kindBadge.meta.color
+                        opacity: 0.6
+                    }
+
+                    Text {
+                        id: kindLabel
+
+                        anchors.centerIn: parent
+                        text: kindBadge.meta.label
+                        color: kindBadge.meta.color
+                        font.pixelSize: root.uiFont * 0.85
+                        font.bold: true
+                    }
+                }
+
+                Text {
+                    anchors.verticalCenter: kindBadge.verticalCenter
+                    width: Math.min(flick.width - kindBadge.width - root.uiFont * 10, implicitWidth)
+                    elide: Text.ElideRight
+                    text: kindBadge.meta.help
+                    color: root.dimColor
+                    font.pixelSize: root.uiFont * 0.8
+                }
             }
 
             Row {

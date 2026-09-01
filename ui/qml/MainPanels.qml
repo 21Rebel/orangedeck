@@ -125,7 +125,7 @@ Grid {
                     required property var modelData
                     required property int index
 
-                    spacing: root.uiFont * 0.25
+                    spacing: root.uiFont * 0.55
 
                     Rectangle {
                         width: root.uiFont * 7.6
@@ -264,7 +264,7 @@ Grid {
 
     // ----------------------------------------------- Zustand des Mempools
     Panel {
-        height: root.uiFont * 15
+        height: root.uiFont * 16.5
         title: "MEMPOOL"
 
         Column {
@@ -402,10 +402,14 @@ Grid {
 
     // ------------------------------------------------ Ersetzungen (RBF)
     Panel {
-        height: root.uiFont * 15
+        // Hoehe aus dem Inhalt statt fest -- sonst stehen die letzten Zeilen
+        // unten heraus, sobald die Schrift oder die Zeilenzahl sich aendert.
+        height: rbfCol.implicitHeight + root.uiFont * 3.4
         title: "ERSETZTE TRANSAKTIONEN (RBF)"
 
         Column {
+            id: rbfCol
+
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
