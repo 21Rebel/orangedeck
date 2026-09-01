@@ -365,6 +365,47 @@ Item {
                 height: root.scaleUnit * 0.3
             }
 
+            // Der Fluss: Betraege als Baender, links hinein, rechts hinaus
+            Text {
+                text: "Fluss"
+                color: root.dimColor
+                font.pixelSize: root.scaleUnit * 0.6
+            }
+
+            TxFlow {
+                width: flick.width
+                height: Math.max(root.scaleUnit * 5, Math.min(root.scaleUnit * 11,
+                        root.scaleUnit * 0.5 * Math.max((root.result.vin || []).length,
+                                                        (root.result.vout || []).length) + root.scaleUnit * 3))
+                vin: root.result.vin || []
+                vout: root.result.vout || []
+                fee: root.result.fee || 0
+                outColor: root.accentColor
+                textColor: root.textColor
+                dimColor: root.dimColor
+                labelSize: root.scaleUnit * 0.62
+
+                onActivated: function (side, index) {
+                    if (side === "in") {
+                        var vi = (root.result.vin || [])[index];
+                        if (vi && vi.txid)
+                            root.go("tx", vi.txid);
+                    } else if (side === "out") {
+                        var sp = root.extra && root.extra[index];
+                        var vo = (root.result.vout || [])[index];
+                        if (sp && sp.spent && sp.txid)
+                            root.go("tx", sp.txid);
+                        else if (vo && vo.scriptpubkey_address)
+                            root.go("address", vo.scriptpubkey_address);
+                    }
+                }
+            }
+
+            Item {
+                width: 1
+                height: root.scaleUnit * 0.3
+            }
+
             // Ein- und Ausgaenge nebeneinander -- der Weg des Geldes
             Row {
                 width: flick.width

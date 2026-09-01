@@ -838,3 +838,33 @@ Ein Zurueck-Knopf fuehrt den Weg wieder heraus (`trail`).
 - **`parent.parent.parent.x` in Repeater-Delegaten ist bruechig.** Sobald ein
   Element dazwischenkommt, zeigt die Kette woandershin. Die Bauteile haben
   jetzt Namen (`txBox`, `blockBox`, `addrBox`) und werden direkt angesprochen.
+
+
+## Der Fluss einer Transaktion (`TxFlow.qml`)
+
+Eingaenge links, Ausgaenge rechts, die Hoehe jedes Bandes im Verhaeltnis zum
+Betrag; in der Mitte laufen alle zu einem Strang zusammen.
+
+**Das Zusammenlaufen ist keine Vereinfachung, sondern die Wahrheit:** welcher
+Eingang welchen Ausgang bezahlt, laesst sich in Bitcoin **nicht** sagen. Ein
+Sankey-Diagramm mit Einzelverbindungen waere eine Erfindung. mempool.space
+zeichnet es aus demselben Grund als Fliege.
+
+Die **Gebuehr** ist der Unterschied zwischen beiden Seiten und steht unten
+rechts als eigenes, schmales Band -- so geht die Rechnung sichtbar auf.
+
+Ueber einem Band steht sein Betrag; ein Klick folgt dem Weg weiter (Eingang zur
+Vorgaengertransaktion, Ausgang zur ausgebenden Transaktion oder zur Adresse).
+
+### Zwei Rechenfallen
+
+**Mehr Baender als Bildpunkte.** Ab `maxBands` (40) werden die uebrigen zu
+einem Band zusammengefasst ("weitere 80"), sonst ist nichts mehr zu erkennen.
+
+**Die Mindesthoehe summiert sich.** Jedes Band bekommt mindestens einen
+Bildpunkt; bei 120 Eingaengen auf 220 px Hoehe lief der Stapel dadurch gut zwei
+Pixel unten aus dem Bild. Zum Schluss wird deshalb einmal auf die verfuegbare
+Hoehe normiert. Nachgerechnet ueber 1 bis 500 Eingaenge: immer exakt 220,00 px.
+
+Die Betraege gehen ebenfalls exakt auf -- links die Summe der Eingaenge, rechts
+die Ausgaenge plus Gebuehr, beide auf dieselbe Hoehe.
