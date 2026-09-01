@@ -1115,3 +1115,35 @@ Die Ueberlappung der beiden Seiten allein reichte nicht. Solange mit
 als ihre Umgebung -- der Strich bleibt sichtbar, nur andersherum. Die Baender
 werden deshalb voll deckend gezeichnet; das Hervorheben beim Ueberfahren
 geschieht ueber `Qt.lighter()` statt ueber die Deckkraft.
+
+
+## Der Hoehenversatz in der Mitte
+
+Ist ein Band **dicker als sein Gewicht** (weil die Mindestdicke greift), steht
+es oben und unten ueber den Strang hinaus. Wie weit, haengt davon ab, wie viele
+Baender betroffen sind -- und das ist auf beiden Seiten verschieden: bei 250
+Eingaengen greift die Mindestdicke ueberall, bei einem einzigen Ausgang
+nirgends. Dadurch sass die eine Seite ein paar Bildpunkte hoeher als die andere.
+
+Die Rechnung war also richtig und das Bild trotzdem versetzt. Behoben wird das
+nicht in der Rechnung, sondern beim Ausrichten: zum Schluss wird die
+**gezeichnete** Flaeche mittig gesetzt (kleinstes `midY` bis groesstes
+`midY + hMid`), nicht die gerechnete. Damit stimmt es unabhaengig davon, wie oft
+die Mindestdicke zuschlaegt.
+
+## Pfeilspitzen gleich lang
+
+Vorher haing die Laenge an der Banddicke (`tipRatio`). Das machte die rechte
+Kante unruhig, weil jedes Band anders weit hinausragte. Jetzt fuer alle gleich
+und bewusst knapp: bei dicken Baendern ergibt das eine flache Spitze, bei
+duennen faellt sie ohnehin kaum auf.
+
+## Duennere Faeden, mehr Luft
+
+Bei 250 Eingaengen blieben zwischen 1,29 px dicken Faeden nur 0,66 px Luecke --
+der Kamm am Rand wirkte gedrungen. Mit 0,81 px sind es 1,15 px:
+
+    Faeden   Dicke   Luecke   Verhaeltnis Luecke zu Faden
+       60    1,29 ->  0,81     6,94 ->  7,43 px    5,4 -> 9,2
+      120    1,29 ->  0,81     2,79 ->  3,28 px    2,2 -> 4,1
+      250    1,29 ->  0,81     0,66 ->  1,15 px    0,5 -> 1,4

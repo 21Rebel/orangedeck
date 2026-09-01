@@ -47,7 +47,10 @@ Item {
     property int maxBands: 250
     readonly property int bandLimit: Math.max(4, Math.min(maxBands,
                                      Math.floor(innerH / Math.max(1.6, minBand + 0.6))))
-    property real minBand: Math.max(1.2, labelSize * 0.16)
+    // Duenn genug, dass bei vielen Eingaengen noch Luft zwischen den Faeden
+    // bleibt. Zu dick wirkt der Kamm am Rand gedrungen: bei 250 Faeden zu je
+    // 1,3 px blieben nur 0,7 px Luecke, bei 0,8 px sind es 1,2 px.
+    property real minBand: Math.max(0.8, labelSize * 0.1)
     // Abstand zwischen zwei Baendern **am Rand**. Im Strang sind sie
     // lueckenlos -- daher wirkt er geschlossen, ohne dass ein Band schrumpft.
     // Wie schmal der Strang gegenueber den Raendern wird. **Nicht** durch
@@ -84,16 +87,15 @@ Item {
     // Werte lassen sie flacher ansetzen und in der Mitte steiler laufen.
     property real swing: 0.78
     property real edgeGap: Math.max(2, labelSize * 0.3)
-    // Pfeilspitze am rechten Ende, damit die Richtung erkennbar ist. Die
-    // Laenge haengt zusaetzlich an der Banddicke (siehe `tipFor`) -- eine feste
-    // Laenge ergibt bei dicken Baendern eine spitze Nadel und bei duennen einen
-    // stumpfen Klotz.
-    property real arrowLen: Math.max(6, Math.min(width * 0.03, labelSize * 1.3))
-    // Wie flach die Spitze laeuft: kleinere Werte = flacher.
-    property real tipRatio: 0.42
+    // Pfeilspitze am rechten Ende, damit die Richtung erkennbar ist.
+    // **Fuer alle Baender gleich lang** -- verschieden lange Spitzen lassen die
+    // rechte Kante unruhig wirken. Der Wert ist bewusst knapp: bei dicken
+    // Baendern ergibt das eine flache Spitze, bei duennen faellt sie ohnehin
+    // kaum auf.
+    property real arrowLen: Math.max(5, Math.min(width * 0.022, labelSize * 1.1))
 
     function tipFor(thickness) {
-        return Math.max(3, Math.min(root.arrowLen, thickness * root.tipRatio));
+        return Math.min(root.arrowLen, Math.max(2, thickness));
     }
     // Oben und unten bleibt Platz -- der Fluss soll frei liegen, nicht am
     // Bildrand kleben.
@@ -225,6 +227,24 @@ Item {
             out[i].hMid = out[i].thick;
             acc += out[i].weight;
         }
+
+        // Ist ein Band dicker als sein Gewicht (Mindestdicke), steht es oben
+        // und unten ueber. Wie weit, haengt davon ab, wie viele Baender
+        // betroffen sind -- und das ist auf beiden Seiten verschieden. Ohne
+        // Ausgleich sitzt die eine Seite darum ein paar Bildpunkte hoeher als
+        // die andere, und in der Mitte klafft ein Versatz.
+        //
+        // Deshalb zum Schluss die **gezeichnete** Flaeche mittig ausrichten,
+        // nicht die gerechnete.
+        var spanTop = out[0].midY;
+        var spanBot = out[0].midY + out[0].hMid;
+        for (i = 1; i < out.length; i++) {
+            spanTop = Math.min(spanTop, out[i].midY);
+            spanBot = Math.max(spanBot, out[i].midY + out[i].hMid);
+        }
+        var shift = (root.padY + root.innerH / 2) - (spanTop + spanBot) / 2;
+        for (i = 0; i < out.length; i++)
+            out[i].midY += shift;
 
         // --- Lage am Rand: nach Dicke, mit Luecken --------------------------
         var nGaps = Math.max(0, out.length - 1);
