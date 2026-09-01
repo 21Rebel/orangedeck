@@ -37,6 +37,9 @@ Item {
     // Seit der Inhalt rollbar ist, muss nichts mehr wegen Platzmangel
     // wegbleiben. Die Schwellen halten nur noch das ganz kleine
     // Desktop-Widget frei, wo Kurve und Liste sinnlos waeren.
+    // Im Dashboard sitzen oben rechts schon die Knoepfe von DMS -- damit sich
+    // unsere nicht darunterschieben, laesst sich Platz freihalten.
+    property real actionInset: 0
     readonly property bool roomForChart: height > 200
     readonly property bool roomForBoard: height > 240
 
@@ -71,6 +74,9 @@ Item {
         id: info
 
         anchors.fill: parent
+        buttonMargin: 0
+        buttonRightInset: root.actionInset
+        backdropSource: flick
         fontSize: root.scaleUnit * 0.72
         textColor: root.textColor
         dimColor: root.dimColor
@@ -108,17 +114,26 @@ Item {
         z: 40
     }
 
+    FrostedPanel {
+        content: openBtn
+        backdropSource: flick
+        pad: 0
+        cornerRadius: openBtn.height / 2
+        tintAlpha: 0.8
+        z: 19
+    }
+
     Rectangle {
         id: openBtn
 
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.rightMargin: info.buttonWidth + root.scaleUnit * 0.4
+        anchors.rightMargin: root.actionInset + info.buttonWidth + root.scaleUnit * 0.4
         visible: root.one !== null && root.one.type === "axeos"
         width: openLabel.width + root.scaleUnit * 0.9
         height: openLabel.height + root.scaleUnit * 0.45
         radius: height / 2
-        color: openArea.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.06)
+        color: openArea.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : "transparent"
         border.width: 1
         border.color: Qt.rgba(1, 1, 1, 0.1)
         z: 20

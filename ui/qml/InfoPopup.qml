@@ -24,6 +24,11 @@ Item {
     property bool open: false
     // Wo der Knopf sitzt
     property real buttonMargin: 0
+    property real buttonRightInset: 0
+    // Was hinter dem Knopf weichgezeichnet wird. Ohne Untergrund scheint der
+    // Inhalt durch und der Knopf ist nicht mehr zu lesen -- besonders ueber
+    // dem hellen Kachelfeld.
+    property Item backdropSource: null
     // Damit sich weitere Knoepfe daneben anordnen lassen. **Nicht** per Anker
     // an `button` haengen -- der ist ein Kind dieses Items und damit fuer
     // Geschwister nicht ankerbar ("Cannot anchor to an item that isn't a
@@ -38,17 +43,27 @@ Item {
         onClicked: root.open = false
     }
 
+    FrostedPanel {
+        content: button
+        backdropSource: root.backdropSource
+        pad: 0
+        cornerRadius: button.height / 2
+        tintAlpha: 0.8
+        z: 39
+    }
+
     Rectangle {
         id: button
 
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.margins: root.buttonMargin
+        anchors.rightMargin: root.buttonMargin + root.buttonRightInset
         width: root.fontSize * 1.9
         height: width
         radius: width / 2
-        color: root.open || hover.containsMouse ? Qt.rgba(1, 1, 1, 0.14)
-                                                : Qt.rgba(1, 1, 1, 0.06)
+        color: root.open || hover.containsMouse ? Qt.rgba(1, 1, 1, 0.16)
+                                                : "transparent"
         border.width: 1
         border.color: Qt.rgba(1, 1, 1, 0.12)
         z: 40

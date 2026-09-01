@@ -115,6 +115,9 @@ Item {
         anchors.fill: parent
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
+        // Oben rechts sitzen schon die beiden Knoepfe von DMS (je 28 px plus
+        // Abstand) -- so viel Platz halten unsere frei.
+        actionInset: 62
         feed: feedState
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
