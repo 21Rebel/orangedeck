@@ -402,6 +402,9 @@ class Feed:
         # Geplante Bloecke: was gerade verfolgt wird und was dabei herauskam
         self.want_track = None      # gewuenschter Rang, oder None
         self.tracked = None         # was tatsaechlich abonniert ist
+        self.track_until = 0.0      # bis wann jemand hinsieht
+        self.projected_rows = {}    # Rang -> {txid: Zeile}, laufend gepflegt
+        self.projected_at = {}      # Rang -> wann zuletzt geaendert
         self.projected_tiles = {}   # Rang -> aufbereitete Kacheldaten
         self.stats_hist = {"t": [], "count": [], "vbps": [], "inflow": []}
         self.stats_at = 0.0
@@ -541,6 +544,10 @@ class Feed:
 LOOKUP_TTL = 45          # Sekunden -- Blocktakt ist zehn Minuten
 LOOKUP_TTL_MEMPOOL = 8   # fuer noch unbestaetigte Sachen kuerzer
 LOOKUP_MAX = 400
+# Wie lange nach der letzten Abfrage weiter mitgehoert wird. Fragt die
+# Oberflaeche im Sekundentakt, bleibt der Strom an; sieht niemand mehr hin,
+# endet er von selbst.
+PROJECTED_LINGER = 20
 
 _lookup_cache = {}
 _lookup_lock = threading.Lock()
@@ -601,17 +608,27 @@ def lookup(kind, arg):
             feed = _feed_ref[0]
             if feed is None:
                 return None, ("Feed laeuft nicht", 503)
-            have = feed.projected_tiles.get(idx)
-            if have and now - have.get("ts", 0) < 20:
-                return json.dumps(have, separators=(",", ":")), None
+
+            # Jede Abfrage verlaengert das Mithoeren. Hoert die Oberflaeche auf
+            # zu fragen, meldet sich der Daemon von selbst wieder ab.
             feed.want_track = idx
+            feed.track_until = now + PROJECTED_LINGER
+
             deadline = now + 25
-            while time.time() < deadline:
-                have = feed.projected_tiles.get(idx)
-                if have and have.get("ts", 0) >= now - 1:
-                    return json.dumps(have, separators=(",", ":")), None
+            while True:
+                rows = feed.projected_rows.get(idx)
+                if rows:
+                    break
+                if time.time() >= deadline:
+                    return None, ("keine Antwort vom Server", 504)
                 time.sleep(0.2)
-            return None, ("keine Antwort vom Server", 504)
+
+            # Aus dem gepflegten Bestand aufbereiten -- nach Rate absteigend,
+            # so wie der Server sie auch sortiert schickt.
+            data = compress_projected(idx, sorted(rows.values(),
+                                                  key=lambda r: -(r[4] or 0)))
+            data["changedAt"] = round(feed.projected_at.get(idx, 0), 2)
+            return json.dumps(data, separators=(",", ":")), None
 
         if kind == "blocktiles":
             try:
@@ -693,7 +710,13 @@ class _Handler(BaseHTTPRequestHandler):
                     else:
                         self._send(body)
             elif path == "/health":
-                self._send(json.dumps({"ok": True, "source": self.feed.source}))
+                self._send(json.dumps({
+                    "ok": True,
+                    "source": self.feed.source,
+                    # Nachvollziehbar machen, ob gerade mitgehoert wird
+                    "tracking": self.feed.tracked,
+                    "trackFor": max(0, round(self.feed.track_until - time.time(), 1)),
+                }))
             else:
                 self._send('{"error":"unbekannter Pfad"}', 404)
         except BrokenPipeError:
@@ -1286,17 +1309,45 @@ def handle(feed, msg):
 
 
 def handle_projected(feed, p):
-    """Antwort auf `track-mempool-block`. Die Vollform kommt einmal, danach
-    schickt der Server nur noch Aenderungen -- die brauchen wir nicht, also
-    wird direkt wieder abbestellt."""
-    rows = p.get("blockTransactions")
-    if not rows:
-        return False
-    idx = p.get("index")
+    """Antwort auf `track-mempool-block`.
+
+    Zuerst kommt die Vollform, danach nur noch Aenderungen. Solange jemand
+    hinsieht, werden sie mitgefuehrt -- so bleibt die Ansicht lebendig, ohne
+    die Liste immer wieder ganz zu holen. Gemessen: die Vollform ist rund
+    430 kB, die Aenderungen kosten 7,8 kB/s."""
     try:
-        feed.projected_tiles[int(idx)] = compress_projected(idx, rows)
-    except Exception as e:
-        sys.stderr.write("geplanter Block: %s\n" % e)
+        idx = int(p.get("index"))
+    except (TypeError, ValueError):
+        return False
+
+    rows = p.get("blockTransactions")
+    if rows:
+        feed.projected_rows[idx] = {r[0]: r for r in rows if r}
+        feed.projected_at[idx] = time.time()
+        return True
+
+    d = p.get("delta")
+    if not d:
+        return False
+    cur = feed.projected_rows.get(idx)
+    if cur is None:
+        # Ohne Vollform ist eine Aenderung nichts wert
+        return False
+    for txid in (d.get("removed") or []):
+        cur.pop(txid if isinstance(txid, str) else (txid[0] if txid else None), None)
+    for r in (d.get("added") or []):
+        if r:
+            cur[r[0]] = r
+    for r in (d.get("changed") or []):
+        # Bekannte Form: [txid, rate, ...] -- die Rate wird nachgezogen
+        if not r:
+            continue
+        old = cur.get(r[0])
+        if old and len(r) > 1:
+            new = list(old)
+            new[4] = r[1]
+            cur[r[0]] = new
+    feed.projected_at[idx] = time.time()
     return True
 
 
@@ -1319,12 +1370,14 @@ def run_ws(feed):
                 continue
             p = msg.get("projected-block-transactions")
             if p is not None:
-                if handle_projected(feed, p):
-                    # Vollform erhalten -- abbestellen, sonst stroemen
-                    # fortlaufend Aenderungen herein
-                    feed.want_track = None
+                handle_projected(feed, p)
             else:
                 handle(feed, msg)
+
+            # Niemand sieht mehr hin -> abbestellen. Sonst laeuft der Strom
+            # dauerhaft mit, und das sind rund 8 kB/s.
+            if feed.want_track is not None and time.time() > feed.track_until:
+                feed.want_track = None
 
             # Ab- und Anmelden geschieht hier, im selben Faden wie das Senden
             if feed.want_track != feed.tracked:
