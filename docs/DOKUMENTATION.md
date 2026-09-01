@@ -1162,3 +1162,36 @@ der Kamm am Rand wirkte gedrungen. Mit 0,81 px sind es 1,15 px:
        60    1,29 ->  0,81     6,94 ->  7,43 px    5,4 -> 9,2
       120    1,29 ->  0,81     2,79 ->  3,28 px    2,2 -> 4,1
       250    1,29 ->  0,81     0,66 ->  1,15 px    0,5 -> 1,4
+
+
+## Baender als Strich, nicht als gefuellte Flaeche
+
+Der letzte grosse Fehler in der Flussgrafik, und ein grundsaetzlicher: ich habe
+zwischen **zwei** Kurven gefuellt, die denselben *senkrechten* Abstand haben.
+In einem steilen Abschnitt ist der *rechtwinklige* Abstand aber kleiner --
+das Band wird dort duenner:
+
+    Steigung   senkrechter Abstand   tatsaechliche Dicke   Verlust
+        0°            40 px               40,0 px            0 %
+       20°            40 px               37,6 px            6 %
+       40°            40 px               30,6 px           23 %
+       60°            40 px               20,0 px           50 %
+       75°            40 px               10,4 px           74 %
+
+Bei 60 Grad bleibt die Haelfte -- genau der Eindruck "dick, in der Rundung
+schmal, unten wieder dick".
+
+Das Original loest es, indem es die Baender **streicht** statt sie zu fuellen
+(`stroke-width: combinedWeight`). Ein Strich hat per Definition ueberall
+dieselbe Dicke. Genau so wird es jetzt gezeichnet: eine Mittellinie je Band,
+`lineWidth` gleich der Banddicke. Die Pfeilspitze kommt als eigenes Dreieck
+dazu, weil ein Strich nicht spitz zulaufen kann.
+
+Nebenwirkung, angenehm: der Code wurde kuerzer, und die Naht in der Mitte ist
+kein Sonderfall mehr.
+
+## Kopieren als Zeichen
+
+`CopyButton.qml` zeichnet zwei versetzte Blaetter, beim Kopieren fuer kurze Zeit
+einen Haken. Gezeichnet statt gesetzt -- ein passendes Schriftzeichen gibt es
+nicht ueberall, und auf Symbolschriften ist kein Verlass.

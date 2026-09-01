@@ -300,84 +300,82 @@ Item {
                 return;
 
             var w = width;
-            // Gerade Anschluesse aussen, dazwischen die Kurve. Ein- und
-            // Ausgaenge treffen sich in **einem** Punkt in der Mitte -- kein
-            // Rechteck dazwischen, sonst entsteht dort eine harte Kante.
             var xL = root.connector;
             var xC = w * 0.5;
-            // Die beiden Seiten stossen in der Mitte aneinander. Ohne
-            // Ueberlappung bleibt dort durch die Kantenglaettung ein feiner
-            // Strich stehen, und das Bild sieht nach zwei Formen aus statt nach
-            // einem Fluss. Ein halber Bildpunkt auf jeder Seite genuegt.
+            var xEnd = w - root.edgeMargin;
+            var xR = xEnd - root.arrowLen - root.connector;
+            // Die beiden Seiten stossen in der Mitte aneinander -- ein halber
+            // Bildpunkt Ueberlappung, damit dort keine Naht bleibt.
             var seam = 0.75;
-            var xR = w - root.edgeMargin - root.arrowLen - root.connector;
-            var i, b, lit, g;
+            var i, b, lit, g, k, cEdge, cMid;
 
-            // --- Eingaenge -------------------------------------------------
+            // **Als Strich gezeichnet, nicht als gefuellte Flaeche.** Fuellt man
+            // zwischen zwei Kurven mit gleichem *senkrechtem* Abstand, wird das
+            // Band in steilen Abschnitten duenner: bei 60 Grad Steigung bleibt
+            // nur die Haelfte. Ein Strich hat dagegen ueberall dieselbe Dicke.
+            // Das Original macht es genauso ("stroke-width: combinedWeight").
+            ctx.lineCap = "butt";
+            ctx.lineJoin = "round";
+
             for (i = 0; i < root.bandsIn.length; i++) {
                 b = root.bandsIn[i];
                 lit = root.hovered && root.hovered.side === "in" && root.hovered.index === b.i;
                 g = ctx.createLinearGradient(0, 0, xC, 0);
-                for (var k = 0; k <= 4; k++) {
-                    var ck = root.flowColor(k / 8);   // linke Haelfte: t von 0 bis 0,5
+                for (k = 0; k <= 4; k++) {
+                    var ck = root.flowColor(k / 8);
                     var cl = lit ? Qt.lighter(ck, 1.35) : ck;
                     g.addColorStop(k / 4, Qt.rgba(cl.r, cl.g, cl.b, 1));
                 }
-                ctx.fillStyle = g;
-
+                cEdge = b.edgeY + b.hEdge / 2;
+                cMid = b.midY + b.hMid / 2;
+                ctx.strokeStyle = g;
+                ctx.lineWidth = b.hEdge;
                 ctx.beginPath();
-                ctx.moveTo(0, b.edgeY);
-                ctx.lineTo(xL, b.edgeY);
-                canvas.curve(ctx, xL, b.edgeY, xC + seam, b.midY);
-                ctx.lineTo(xC + seam, b.midY + b.hMid);
-                canvas.curve(ctx, xC + seam, b.midY + b.hMid, xL, b.edgeY + b.hEdge);
-                ctx.lineTo(0, b.edgeY + b.hEdge);
-                ctx.closePath();
-                ctx.fill();
+                ctx.moveTo(0, cEdge);
+                ctx.lineTo(xL, cEdge);
+                canvas.curve(ctx, xL, cEdge, xC + seam, cMid);
+                ctx.stroke();
             }
 
-            // --- Ausgaenge -------------------------------------------------
             for (i = 0; i < root.bandsOut.length; i++) {
                 b = root.bandsOut[i];
                 lit = root.hovered && root.hovered.side === "out" && root.hovered.index === b.i;
                 var col = b.fee ? root.feeColor : root.outColor;
                 g = ctx.createLinearGradient(xC, 0, w, 0);
                 if (b.fee) {
-                    // Die Gebuehr laeuft aus der Mitte in ihren eigenen Ton
                     g.addColorStop(0, Qt.rgba(root.midColor.r, root.midColor.g, root.midColor.b, 1));
                     g.addColorStop(1, Qt.rgba(col.r, col.g, col.b, 1));
                 } else {
-                    for (var q = 0; q <= 4; q++) {
-                        var cq = root.flowColor(0.5 + q / 8);   // rechte Haelfte
+                    for (k = 0; k <= 4; k++) {
+                        var cq = root.flowColor(0.5 + k / 8);
                         var cr = lit ? Qt.lighter(cq, 1.35) : cq;
-                        g.addColorStop(q / 4, Qt.rgba(cr.r, cr.g, cr.b, 1));
+                        g.addColorStop(k / 4, Qt.rgba(cr.r, cr.g, cr.b, 1));
                     }
                 }
-                ctx.fillStyle = g;
-
-                // Alle Baender enden an derselben Stelle; nur die Spitze ist
-                // je nach Dicke unterschiedlich lang. Dazwischen ein gerades
-                // Stueck, damit die Kante ruhig laeuft.
-                // Rechts bleibt ein Rand frei; davor ein gerades Stueck, damit
-                // die Dicke am Pfeil klar erkennbar bleibt.
-                var xEnd = w - root.edgeMargin;
+                cEdge = b.edgeY + b.hEdge / 2;
+                cMid = b.midY + b.hMid / 2;
                 var tip = root.tipFor(b.hEdge);
                 var xT = xEnd - tip;
+
+                ctx.strokeStyle = g;
+                ctx.lineWidth = b.hEdge;
                 ctx.beginPath();
-                ctx.moveTo(xC - seam, b.midY);
-                canvas.curve(ctx, xC - seam, b.midY, xR, b.edgeY);
-                ctx.lineTo(xT, b.edgeY);
-                // Die Spitze laeuft **innerhalb** der Bandbreite zusammen --
-                // ein Ueberstand an den Ecken sieht nach Fehler aus.
-                ctx.lineTo(xEnd, b.edgeY + b.hEdge / 2);
-                ctx.lineTo(xT, b.edgeY + b.hEdge);
-                ctx.lineTo(xR, b.edgeY + b.hEdge);
-                canvas.curve(ctx, xR, b.edgeY + b.hEdge, xC - seam, b.midY + b.hMid);
+                ctx.moveTo(xC - seam, cMid);
+                canvas.curve(ctx, xC - seam, cMid, xR, cEdge);
+                ctx.lineTo(xT, cEdge);
+                ctx.stroke();
+
+                // Die Spitze als eigenes Dreieck -- ein Strich kann nicht
+                // spitz zulaufen.
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.moveTo(xT - 0.5, cEdge - b.hEdge / 2);
+                ctx.lineTo(xEnd, cEdge);
+                ctx.lineTo(xT - 0.5, cEdge + b.hEdge / 2);
                 ctx.closePath();
                 ctx.fill();
             }
 
-            // Die Gebuehr beschriften, wenn sie da ist
             if (root.fee > 0 && root.bandsOut.length) {
                 var fb = root.bandsOut[0];
                 ctx.font = root.labelSize + "px sans-serif";

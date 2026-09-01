@@ -401,17 +401,15 @@ Item {
                     }
                 }
 
-                Text {
+                CopyButton {
                     anchors.verticalCenter: txidLabel.verticalCenter
-                    text: root.copied === root.result.txid ? "kopiert" : "kopieren"
-                    color: root.copied === root.result.txid ? root.goodColor : root.dimColor
-                    font.pixelSize: root.uiFont * 0.8
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.copyText(root.result.txid)
-                    }
+                    text: root.result.txid
+                    done: root.copied === root.result.txid
+                    size: root.uiFont * 1.05
+                    iconColor: root.dimColor
+                    hoverColor: root.textColor
+                    doneColor: root.goodColor
+                    onCopy: function (what) { root.copyText(what); }
                 }
             }
 
@@ -717,17 +715,15 @@ Item {
                     }
                 }
 
-                Text {
+                CopyButton {
                     anchors.verticalCenter: hashLabel.verticalCenter
-                    text: root.copied === root.result.id ? "kopiert" : "kopieren"
-                    color: root.copied === root.result.id ? root.goodColor : root.dimColor
-                    font.pixelSize: root.uiFont * 0.8
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.copyText(root.result.id)
-                    }
+                    text: root.result.id
+                    done: root.copied === root.result.id
+                    size: root.uiFont * 1.05
+                    iconColor: root.dimColor
+                    hoverColor: root.textColor
+                    doneColor: root.goodColor
+                    onCopy: function (what) { root.copyText(what); }
                 }
             }
 
@@ -862,17 +858,15 @@ Item {
                     }
                 }
 
-                Text {
+                CopyButton {
                     anchors.verticalCenter: addrLabel.verticalCenter
-                    text: root.copied === root.result.address ? "kopiert" : "kopieren"
-                    color: root.copied === root.result.address ? root.goodColor : root.dimColor
-                    font.pixelSize: root.uiFont * 0.8
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.copyText(root.result.address)
-                    }
+                    text: root.result.address
+                    done: root.copied === root.result.address
+                    size: root.uiFont * 1.05
+                    iconColor: root.dimColor
+                    hoverColor: root.textColor
+                    doneColor: root.goodColor
+                    onCopy: function (what) { root.copyText(what); }
                 }
             }
 

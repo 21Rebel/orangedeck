@@ -27,6 +27,7 @@ set(SHARED_QML
     ../ui/qml/InfoPopup.qml
     ../ui/qml/ExplorerView.qml
     ../ui/qml/TxFlow.qml
+    ../ui/qml/CopyButton.qml
     ../ui/qml/search.js
     ../ui/qml/mondrian.js
     ../ui/qml/colors.js
