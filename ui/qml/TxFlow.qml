@@ -163,24 +163,32 @@ Item {
     // Ein Band behaelt seine Hoehe; nur die Luecken unterscheiden Rand und
     // Strang. `edgeY` ist die Lage am Rand (mit Luecken), `midY` die im Strang
     // (ohne). Beide Stapel werden am Ende auf die Hoehe normiert.
-    // **Ein Band hat ueberall dieselbe Dicke.** Der Massstab ist fuer beide
-    // Seiten derselbe: `waistStack`, die Hoehe des lueckenlosen Strangs. Am
-    // Rand kommen nur die Luecken dazu, die den Rest bis `innerH` fuellen --
-    // daher aussen breit und in der Mitte schmal, ohne dass irgendetwas
-    // gestaucht wird.
+    // Lage und Strichstaerke sind **zwei verschiedene Dinge** -- das ist der
+    // Kern der Darstellung und war lange falsch:
     //
-    // Weil beide Seiten denselben Gesamtbetrag haben (die Gebuehr zaehlt als
-    // Ausgang), ergibt sich derselbe Strang -- Ein- und Ausgaenge treffen sich
-    // dadurch in der Mitte genau. Eigene Massstaebe je Seite hatten hier einen
-    // Versatz von rund 23 Bildpunkten erzeugt.
-    function build(list, valueOf, scale) {
+    //   Gewicht   der echte Anteil am Betrag. Alle Gewichte zusammen ergeben
+    //             genau `trunkH`. Danach richtet sich die **Lage** im Strang.
+    //   Dicke     womit gezeichnet wird, mindestens `minBand`. Ist ein Band
+    //             duenner als das Minimum, ueberlappt es seine Nachbarn im
+    //             Strang -- und genau dadurch bleibt der Strang schmal, obwohl
+    //             zweihundertfuenfzig Faeden hineinlaufen.
+    //
+    // Vorher wurde beides gleichgesetzt und der Strang auf die Summe der
+    // Mindestdicken aufgezogen: bei 250 Baendern zu je 1,2 px waren das 300 px
+    // statt der vorgesehenen 40. Im Original steht dazu:
+    //
+    //   thickness = min(combinedWeight + 0.5, max(minWeight - 1, w) + 1)
+    //   innerY    = min(innerBottom - thickness/2,
+    //                   max(innerTop + thickness/2, lastInner + weight/2))
+    //
+    // -- die Lage kommt aus `weight`, die Dicke aus `thickness`.
+    function build(list, valueOf, total) {
         var n = Math.min(list.length, root.bandLimit);
         var out = [];
         var i;
 
         function add(v, more, idx) {
-            out.push({ "i": idx, "v": v, "h": Math.max(root.minBand, v * scale),
-                       "more": more || 0, "fee": false });
+            out.push({ "i": idx, "v": v, "more": more || 0, "fee": false });
         }
 
         for (i = 0; i < n; i++)
@@ -192,52 +200,42 @@ Item {
             add(rest, list.length - n, -1);
         }
 
-        var sum = 0;
-        for (i = 0; i < out.length; i++)
-            sum += out[i].h;
-        // Sicherheitsnetz: die Mindestdicke darf den Strang nicht sprengen
-        if (sum > root.innerH) {
-            var f = root.innerH / sum;
+        var t = total > 0 ? total : 1;
+        var sumThick = 0;
+        for (i = 0; i < out.length; i++) {
+            out[i].weight = (out[i].v / t) * root.trunkH;
+            out[i].thick = Math.max(root.minBand, out[i].weight);
+            sumThick += out[i].thick;
+        }
+        // Passen die Dicken nicht nebeneinander an den Rand, alle gleichmaessig
+        // duenner machen -- sonst laeuft der Faecher unten heraus.
+        if (sumThick > root.innerH) {
+            var f = root.innerH / sumThick;
             for (i = 0; i < out.length; i++)
-                out[i].h *= f;
-            sum = root.innerH;
+                out[i].thick *= f;
+            sumThick = root.innerH;
         }
 
-        out.sum = sum;
+        // --- Lage im Strang: nach Gewicht, mittig ---------------------------
+        var trunkTop = root.padY + (root.innerH - root.trunkH) / 2;
+        var acc = 0;
+        for (i = 0; i < out.length; i++) {
+            var centre = trunkTop + acc + out[i].weight / 2;
+            out[i].midY = centre - out[i].thick / 2;
+            out[i].hMid = out[i].thick;
+            acc += out[i].weight;
+        }
+
+        // --- Lage am Rand: nach Dicke, mit Luecken --------------------------
+        var nGaps = Math.max(0, out.length - 1);
+        var gap = nGaps > 0 ? Math.max(0, (root.innerH - sumThick) / nGaps) : 0;
+        var ey = nGaps > 0 ? root.padY : root.padY + (root.innerH - sumThick) / 2;
+        for (i = 0; i < out.length; i++) {
+            out[i].hEdge = out[i].thick;
+            out[i].edgeY = ey;
+            ey += out[i].thick + gap;
+        }
         return out;
-    }
-
-    // Beide Seiten auf **denselben** Strang bringen und die Lagen rechnen.
-    // Noetig, weil die Mindestdicke die Summen auseinandertreibt: bei 400
-    // Eingaengen kommen 61 Baender zu je mindestens gut zwei Bildpunkten
-    // zusammen und sprengen den Strang, waehrend die Gegenseite mit einem
-    // Ausgang weit darunter bleibt. Ohne Angleich klaffte die Mitte um rund
-    // 22 Bildpunkte auseinander.
-    function fit(bands, target) {
-        if (!bands.length)
-            return bands;
-        var i, sum = bands.sum || 0;
-        if (sum > 0 && Math.abs(sum - target) > 0.01) {
-            var f = target / sum;
-            for (i = 0; i < bands.length; i++)
-                bands[i].h *= f;
-            sum = target;
-        }
-        var nGaps = Math.max(0, bands.length - 1);
-        // Wie im Original: `spacing = max(4, (height - visibleWeight) / gaps)`
-        var gap = nGaps > 0 ? Math.max(0, (root.innerH - sum) / nGaps) : 0;
-        var top = root.padY + (root.innerH - sum) / 2;
-        var ey = nGaps > 0 ? root.padY : top;
-        var my = top;
-        for (i = 0; i < bands.length; i++) {
-            bands[i].hEdge = bands[i].h;
-            bands[i].hMid = bands[i].h;
-            bands[i].edgeY = ey;
-            bands[i].midY = my;
-            ey += bands[i].h + gap;
-            my += bands[i].h;
-        }
-        return bands;
     }
 
     function rebuild() {
@@ -247,21 +245,18 @@ Item {
             canvas.requestPaint();
             return;
         }
-        // Der Strang hat eine feste Dicke -- daraus der Massstab
-        var scale = trunkH / totalIn;
-        var bi = build(vin || [], function (e) {
+        // Beide Seiten tragen denselben Gesamtbetrag (die Gebuehr zaehlt als
+        // Ausgang) -- damit ergibt sich derselbe Strang, und sie treffen sich
+        // in der Mitte genau.
+        bandsIn = build(vin || [], function (e) {
             return (e.prevout && e.prevout.value) || 0;
-        }, scale);
+        }, totalIn);
         var bo = build(voutWithFee, function (e) {
             return e.value || 0;
-        }, scale);
-        // Beide Seiten tragen denselben Gesamtbetrag -- also denselben Strang
-        var target = Math.min(innerH, Math.max(bi.sum || 0, bo.sum || 0));
-        bandsIn = fit(bi, target);
-        // Die Gebuehr steht vorn und bekommt ihre eigene Farbe
+        }, totalIn);
         if (fee > 0 && bo.length)
             bo[0].fee = true;
-        bandsOut = fit(bo, target);
+        bandsOut = bo;
         canvas.requestPaint();
     }
 
@@ -304,7 +299,8 @@ Item {
                 g = ctx.createLinearGradient(0, 0, xC, 0);
                 for (var k = 0; k <= 4; k++) {
                     var ck = root.flowColor(k / 8);   // linke Haelfte: t von 0 bis 0,5
-                    g.addColorStop(k / 4, Qt.rgba(ck.r, ck.g, ck.b, lit ? 1 : 0.85));
+                    var cl = lit ? Qt.lighter(ck, 1.35) : ck;
+                    g.addColorStop(k / 4, Qt.rgba(cl.r, cl.g, cl.b, 1));
                 }
                 ctx.fillStyle = g;
 
@@ -327,12 +323,13 @@ Item {
                 g = ctx.createLinearGradient(xC, 0, w, 0);
                 if (b.fee) {
                     // Die Gebuehr laeuft aus der Mitte in ihren eigenen Ton
-                    g.addColorStop(0, Qt.rgba(root.midColor.r, root.midColor.g, root.midColor.b, 0.75));
-                    g.addColorStop(1, Qt.rgba(col.r, col.g, col.b, lit ? 1 : 0.85));
+                    g.addColorStop(0, Qt.rgba(root.midColor.r, root.midColor.g, root.midColor.b, 1));
+                    g.addColorStop(1, Qt.rgba(col.r, col.g, col.b, 1));
                 } else {
                     for (var q = 0; q <= 4; q++) {
                         var cq = root.flowColor(0.5 + q / 8);   // rechte Haelfte
-                        g.addColorStop(q / 4, Qt.rgba(cq.r, cq.g, cq.b, lit ? 1 : 0.88));
+                        var cr = lit ? Qt.lighter(cq, 1.35) : cq;
+                        g.addColorStop(q / 4, Qt.rgba(cr.r, cr.g, cr.b, 1));
                     }
                 }
                 ctx.fillStyle = g;

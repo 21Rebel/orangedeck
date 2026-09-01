@@ -1079,3 +1079,39 @@ QtQuick hat keine eigene Schnittstelle zur Zwischenablage. Der uebliche Weg ist
 ein unsichtbares `TextEdit`, dessen Inhalt man auswaehlt und kopieren laesst.
 TxID, Blockhash und Adresse sind anklickbar; daneben steht "kopieren" und fuer
 anderthalb Sekunden "kopiert".
+
+
+## Lage und Strichstaerke sind zwei verschiedene Dinge
+
+Der Kern der ganzen Darstellung, und lange falsch gemacht:
+
+    Gewicht   der echte Anteil am Betrag. Alle Gewichte zusammen ergeben genau
+              `trunkH`. Danach richtet sich die **Lage** im Strang.
+    Dicke     womit gezeichnet wird, mindestens `minBand`. Ist ein Band duenner
+              als das Minimum, **ueberlappt** es seine Nachbarn im Strang.
+
+Genau diese Ueberlappung haelt den Strang schmal, obwohl zweihundertfuenfzig
+Faeden hineinlaufen. Im Original steht dazu:
+
+    thickness = min(combinedWeight + 0.5, max(minWeight - 1, w) + 1)
+    innerY    = min(innerBottom - thickness/2,
+                    max(innerTop + thickness/2, lastInner + weight/2))
+
+Die Lage kommt aus `weight`, die Dicke aus `thickness`. Vorher wurde beides
+gleichgesetzt und der Strang ueber `fit()` auf die **Summe der Mindestdicken**
+aufgezogen -- bei 250 Baendern zu je 1,2 px waren das 300 px statt der
+vorgesehenen 40. Der Ausgang wurde dadurch ein fetter Klotz statt eines Bandes.
+
+    Eingaenge   Strang   Dicke je Faden   Summe Dicken   Ueberlappung
+          1      40 px      40,3 px           40 px       nein
+         10      40 px       4,0 px           40 px       nein
+         60      40 px       1,3 px           77 px       ja, 1,9-fach
+        250      40 px       1,3 px          322 px       ja, 8,0-fach
+
+## Die Naht in der Mitte, zweiter Anlauf
+
+Die Ueberlappung der beiden Seiten allein reichte nicht. Solange mit
+**Deckkraft unter 1** gezeichnet wird, ist die doppelt bemalte Stelle dichter
+als ihre Umgebung -- der Strich bleibt sichtbar, nur andersherum. Die Baender
+werden deshalb voll deckend gezeichnet; das Hervorheben beim Ueberfahren
+geschieht ueber `Qt.lighter()` statt ueber die Deckkraft.
