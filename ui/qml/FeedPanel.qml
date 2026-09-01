@@ -13,6 +13,10 @@ Item {
     property bool headerVisible: true
     property bool infoVisible: true
     property bool legendVisible: true
+    // Untergrund hinter den Textangaben. Ohne ihn gehen sie im Zoom unter,
+    // wenn grosse helle Kachelflaechen direkt dahinter liegen.
+    property bool frostedInfo: true
+    property bool frostedBlur: true
     property string colorMode: "age"
     property string sizeMode: "value"
 
@@ -100,8 +104,35 @@ Item {
     }
 
     // ------------------------------------------------------------ Kopfzeile
+    // ------------------------------------------------ Untergrund der Angaben
+    FrostedPanel {
+        content: header
+        backdropSource: canvasView
+        blurred: root.frostedBlur
+        visible: root.frostedInfo && header.visible
+        z: 4
+    }
+
+    FrostedPanel {
+        content: info
+        backdropSource: canvasView
+        blurred: root.frostedBlur
+        visible: root.frostedInfo && info.visible
+        z: 4
+    }
+
+    FrostedPanel {
+        content: legend
+        backdropSource: canvasView
+        blurred: root.frostedBlur
+        visible: root.frostedInfo && legend.visible
+        z: 4
+    }
+
     Item {
         id: header
+
+        z: 5
 
         anchors.top: parent.top
         anchors.left: parent.left
@@ -187,6 +218,8 @@ Item {
     Column {
         id: info
 
+        z: 5
+
         anchors.left: canvasView.left
         anchors.top: canvasView.top
         anchors.topMargin: Math.round(canvasView.height * (root.infoCompact ? 0.03 : 0.10))
@@ -267,6 +300,8 @@ Item {
     // ------------------------------------------------------------- Legende
     Column {
         id: legend
+
+        z: 5
 
         anchors.right: canvasView.right
         anchors.top: canvasView.top

@@ -345,3 +345,44 @@ Luecke, also 33 % Fuellung, waehrend die Halde daneben 4 px auf 2 px zeigt
 
 Damit hat der Block dieselbe Dichte wie die Halde. Der Wert ist eine
 Eigenschaft und laesst sich spaeter in die Einstellungen heben.
+
+
+## Stolperfalle: `transform` skaliert nicht die Lage eines Items
+
+`transform` wirkt im **eigenen** Koordinatensystem eines Items. Eine `Scale`
+erfasst dadurch Breite und Hoehe, **nicht** aber `x` und `y` -- die beschreiben
+ja die Lage im Elternitem und liegen ausserhalb der Transformation.
+
+Beim Zoom fiel das zuerst nicht auf, weil `flyLayer` den Elternbereich ausfuellt
+und damit ohnehin bei (0,0) sitzt -- dort ist der Unterschied null. `hoverMark`
+dagegen hat eine eigene Lage, und die Einfaerbung landete im Zoom neben der
+Kachel statt darauf.
+
+Richtig ist ein Behaelter bei (0,0), der die Sicht traegt (`sceneLayer`);
+alles darin rechnet in Szenenkoordinaten und wird korrekt mitskaliert.
+
+## Untergrund fuer die Textangaben (`FrostedPanel.qml`)
+
+Im Zoom liegen grosse helle Kachelflaechen direkt hinter der Schrift, und die
+Angaben am Rand gehen unter. `FrostedPanel` legt sich hinter ein beliebiges
+Item, uebernimmt dessen Lage und Groesse samt Rand und faerbt ein; ist
+`backdropSource` gesetzt, wird der Ausschnitt dahinter zusaetzlich
+weichgezeichnet (`ShaderEffectSource` + `MultiEffect`).
+
+**Gemessene Kosten** (eigenstaendige Anwendung, 1100x800, je 8 s):
+
+    ohne Weichzeichnung                       9,6 %
+    Weichzeichnung mit live: true            14,4 %
+    Weichzeichnung auf 5 Hz gedrosselt       12,5 %
+
+Der Untergrund muss nicht sechzigmal pro Sekunde neu abgegriffen werden -- die
+Halde selbst zeichnet nur fuenfmal (Timer mit 200 ms). Deshalb `live: false`
+plus ein Timer, der `scheduleUpdate()` im selben Takt ruft, dazu ein sofortiges
+Nachziehen bei Lage- oder Groessenaenderung. Der Rest der Mehrkosten ist der
+Weichzeichner selbst, der pro Bild laeuft.
+
+Abschaltbar ueber `frostedBlur` in `FeedPanel.qml`; die Einfaerbung allein
+macht bereits lesbar. Kleiner Schoenheitsfehler: `clip` ist in QML immer
+rechteckig, an den abgerundeten Ecken erscheint deshalb weichgezeichneter
+Inhalt ohne Einfaerbung. Bei 6 px Radius kaum sichtbar; sauber loesen liesse
+sich das ueber `maskEnabled` am MultiEffect.

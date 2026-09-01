@@ -999,14 +999,28 @@ Item {
 
     // Die Transaktion unter dem Zeiger wird eingefaerbt, damit klar ist, wozu
     // die Angaben gehoeren -- im Original `hoverOn()` mit der Farbe bluegreen.
-    Rectangle {
-        id: hoverMark
+    // `transform` wirkt im **eigenen** Koordinatensystem eines Items: die
+    // Skalierung erfasst Breite und Hoehe, nicht aber x und y, die ja die Lage
+    // im Elternitem beschreiben. Direkt auf hoverMark gesetzt landete der
+    // Umriss deshalb an der unskalierten Stelle -- im Zoom also neben der
+    // Kachel. Bei flyLayer fiel das nicht auf, weil es den Elternbereich
+    // ausfuellt und damit ohnehin bei (0,0) sitzt.
+    //
+    // Richtig ist ein Behaelter, der wie flyLayer bei (0,0) liegt und die
+    // Sicht traegt; alles darin rechnet dann in Szenenkoordinaten.
+    Item {
+        id: sceneLayer
 
-        // Liegt in Szenenkoordinaten, wird also wie die Leinwaende transformiert.
+        anchors.fill: parent
         transform: [
             Scale { xScale: root.zoom; yScale: root.zoom },
             Translate { x: root.viewX; y: root.viewY }
         ]
+        z: 60
+
+    Rectangle {
+        id: hoverMark
+
         visible: opacity > 0.01
         color: Palette.hoverColor()
         opacity: root.hoverRect ? 1 : 0
@@ -1014,13 +1028,13 @@ Item {
         y: root.hoverRect ? root.hoverRect.y : 0
         width: root.hoverRect ? root.hoverRect.w : 0
         height: root.hoverRect ? (root.hoverRect.h !== undefined ? root.hoverRect.h : root.hoverRect.w) : 0
-        z: 60
-
         Behavior on opacity {
             NumberAnimation {
                 duration: 180
             }
         }
+    }
+
     }
 
     // ----------------------------------------------------- Halde und Fallen
