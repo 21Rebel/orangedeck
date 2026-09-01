@@ -27,6 +27,17 @@ Item {
     // Mehr Baender als das bringen nichts -- der Rest wird zusammengefasst
     property int maxBands: 40
 
+    // Unten bleibt ein Streifen frei, in den die Gebuehr abzweigt. Ohne ihn
+    // waere sie unsichtbar: eine uebliche Gebuehr ist ein Bruchteil eines
+    // Promille des Betrags -- 385 sat von 646.354 sind 0,06 %, auf 220 px also
+    // 0,13 Bildpunkte.
+    readonly property real feeLane: Math.max(labelSize * 2.2, height * 0.18)
+    readonly property real mainH: Math.max(10, height - feeLane)
+    // So duenn wird die Abzweigung mindestens gezeichnet, damit man sie sieht.
+    // Ihr **Ansatz** am Strang bleibt massstabsgetreu -- ueberhoeht ist nur das
+    // Ende, und der Tooltip nennt den genauen Betrag.
+    readonly property real feeMinThickness: Math.max(2, labelSize * 0.22)
+
     // Welches Band liegt unter dem Zeiger: {side: "in"|"out"|"fee", index}
     property var hovered: null
 
@@ -83,8 +94,8 @@ Item {
         // Eingaengen laeuft der Stapel sonst unten aus dem Bild. Nachgemessen
         // waren es bei 120 Eingaengen auf 220 px gut zwei Pixel. Deshalb zum
         // Schluss einmal auf die verfuegbare Hoehe normieren.
-        if (edgeY > root.height && edgeY > 0) {
-            var f = root.height / edgeY;
+        if (edgeY > root.mainH && edgeY > 0) {
+            var f = root.mainH / edgeY;
             var y = 0;
             for (var m = 0; m < out.length; m++) {
                 out[m].h *= f;
@@ -104,7 +115,7 @@ Item {
             canvas.requestPaint();
             return;
         }
-        var scale = height / totalIn;
+        var scale = mainH / totalIn;
         bandsIn = build(vin || [], function (e) {
             return (e.prevout && e.prevout.value) || 0;
         }, totalIn, scale);
@@ -139,7 +150,7 @@ Item {
             if (!root.bandsIn.length)
                 return;
 
-            var w = width, h = height;
+            var w = width, h = root.mainH;
             var midL = w * 0.42, midR = w * 0.58;
 
             // Eingaenge: vom linken Rand in die Mitte
@@ -172,19 +183,45 @@ Item {
                 canvas.band(ctx, midR, o.midY, o.midY + o.h, w, o.edgeY, o.edgeY + o.hEdge);
             }
 
-            // Die Gebuehr ist der Rest -- unten, in eigener Farbe
+            // --- Die Gebuehr zweigt ab -------------------------------------
+            // Sie ist der Unterschied zwischen beiden Seiten. Am Strang setzt
+            // sie massstabsgetreu an (meist ein Haarstrich), laeuft nach unten
+            // aus dem Hauptfeld heraus und endet im Streifen darunter mit
+            // sichtbarer Dicke.
             var feeH = root.fee * (h / Math.max(1, root.totalIn));
-            if (feeH > 0.6) {
-                var top = h - feeH;
+            if (root.fee > 0) {
                 var lit3 = root.hovered && root.hovered.side === "fee";
-                ctx.fillStyle = Qt.rgba(root.feeColor.r, root.feeColor.g, root.feeColor.b, lit3 ? 0.95 : 0.65);
-                canvas.band(ctx, midR, top, h, w, top, h);
+                var top = h - feeH;               // Ansatz, massstabsgetreu
+                var endT = Math.max(feeH, root.feeMinThickness);
+                var endY = height - root.feeLane * 0.45;   // Ziel im Streifen
+                var c1 = midR + (w - midR) * 0.45;
+                var c2 = w - (w - midR) * 0.35;
+
+                ctx.beginPath();
+                ctx.moveTo(midR, top);
+                ctx.bezierCurveTo(c1, top, c2, endY - endT / 2, w, endY - endT / 2);
+                ctx.lineTo(w, endY + endT / 2);
+                ctx.bezierCurveTo(c2, endY + endT / 2, c1, h, midR, h);
+                ctx.closePath();
+                ctx.fillStyle = Qt.rgba(root.feeColor.r, root.feeColor.g, root.feeColor.b,
+                                        lit3 ? 0.95 : 0.7);
+                ctx.fill();
+
+                // Beschriftung an der Abzweigung
+                ctx.font = root.labelSize + "px sans-serif";
+                ctx.fillStyle = root.dimColor;
+                ctx.textAlign = "right";
+                ctx.fillText("Gebühr " + root.fee + " sat",
+                             w - root.labelSize * 0.4, endY - endT / 2 - root.labelSize * 0.4);
             }
         }
     }
 
     // Welches Band liegt unter dem Zeiger?
     function bandAt(px, py) {
+        // Alles unterhalb des Hauptfelds gehoert zur Gebuehrenabzweigung
+        if (py > mainH && fee > 0)
+            return { "side": "fee", "index": -1, "value": fee, "more": 0 };
         var side = px < width * 0.5 ? "in" : "out";
         var list = side === "in" ? bandsIn : bandsOut;
         // Am Rand gelten die Randpositionen, in der Mitte die gestapelten
@@ -196,9 +233,9 @@ Item {
             if (py >= y0 && py <= y1)
                 return { "side": side, "index": b.i, "value": b.v, "more": b.more || 0 };
         }
-        if (side === "out") {
-            var feeH = root.fee * (height / Math.max(1, root.totalIn));
-            if (py >= height - feeH)
+        if (side === "out" && fee > 0) {
+            var feeH = root.fee * (mainH / Math.max(1, root.totalIn));
+            if (py >= mainH - Math.max(feeH, 3))
                 return { "side": "fee", "index": -1, "value": root.fee, "more": 0 };
         }
         return null;
@@ -248,8 +285,11 @@ Item {
                 if (!hv)
                     return "";
                 var v = "₿ " + (hv.value / 1e8).toFixed(8).replace(".", ",");
-                if (hv.side === "fee")
-                    return "Gebühr " + v;
+                if (hv.side === "fee") {
+                    var exact = root.fee * (root.mainH / Math.max(1, root.totalIn));
+                    return "Gebühr " + v + " · " + root.fee + " sat"
+                         + (exact < root.feeMinThickness ? " (überhöht gezeichnet)" : "");
+                }
                 if (hv.more)
                     return (hv.side === "in" ? "weitere " : "weitere ") + hv.more + " · " + v;
                 return (hv.side === "in" ? "Eingang " : "Ausgang ") + (hv.index + 1) + " · " + v;

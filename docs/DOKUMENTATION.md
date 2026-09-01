@@ -850,8 +850,28 @@ Eingang welchen Ausgang bezahlt, laesst sich in Bitcoin **nicht** sagen. Ein
 Sankey-Diagramm mit Einzelverbindungen waere eine Erfindung. mempool.space
 zeichnet es aus demselben Grund als Fliege.
 
-Die **Gebuehr** ist der Unterschied zwischen beiden Seiten und steht unten
-rechts als eigenes, schmales Band -- so geht die Rechnung sichtbar auf.
+### Die Gebuehr zweigt ab -- und warum sie nicht massstabsgetreu enden kann
+
+Die Gebuehr ist der Unterschied zwischen beiden Seiten. Als schlichtes Band am
+unteren Rand war sie **unsichtbar**: eine uebliche Gebuehr ist ein Bruchteil
+eines Promille. Nachgerechnet an einer echten Transaktion: 385 sat von
+646.354 sind 0,06 %, auf 220 Bildpunkte also **0,13 Pixel**.
+
+Deshalb bleibt unten ein Streifen frei (18 % der Hoehe), in den die Gebuehr als
+Arm abzweigt:
+
+    Ansatz am Strang   massstabsgetreu -- meist ein Haarstrich
+    Ende im Streifen   mindestens gut zwei Bildpunkte, damit man es sieht
+
+Der **Ansatz** zeigt also die Wahrheit, ueberhoeht ist nur das Ende. Ist es
+ueberhoeht, sagt der Tooltip es dazu ("überhöht gezeichnet") und nennt den
+genauen Betrag in sat. Danebengeschrieben steht er ohnehin.
+
+Beispiele:
+
+    646.354 sat Eingang, 385 sat Gebuehr (0,060 %)  Ansatz  0,12 px -> Ende 2,20 px
+    100 Mio. sat,      5.000 sat Gebuehr (0,005 %)  Ansatz  0,01 px -> Ende 2,20 px
+     50.000 sat,       3.000 sat Gebuehr (6,000 %)  Ansatz 11,81 px -> Ende 11,81 px
 
 Ueber einem Band steht sein Betrag; ein Klick folgt dem Weg weiter (Eingang zur
 Vorgaengertransaktion, Ausgang zur ausgebenden Transaktion oder zur Adresse).
