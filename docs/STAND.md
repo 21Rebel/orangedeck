@@ -1,86 +1,130 @@
 # Stand und offene Punkte
 
-## Stand 01.09.2026, Abend
+## Stand 01.09.2026, Abend — Uebergabe
 
-Das Projekt ist an diesem Tag von einem DMS-Plugin zu einer portablen
-Anwendung geworden. 15 Commits. Ausgearbeitetes Ziel in `ZIELBILD.md`,
-Mechanik und Stolperfallen in `DOKUMENTATION.md`.
+58 Commits an diesem Tag. Arbeitsbaum sauber, `btcfeed.service` laeuft ohne
+Neustarts, DMS laeuft, die eigenstaendige App ist beendet.
 
-### Erledigt
+Aus einem DMS-Plugin ist eine portable Anwendung mit vier Ansichten geworden.
+Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
+`ZIELBILD.md`.
 
-- **Repo `~/Schreibtisch/btcfeed`** ist die Quelle der Wahrheit;
+## Was steht
+
+**Grundlage**
+- Repo `~/Schreibtisch/btcfeed` ist die Quelle der Wahrheit;
   `tools/install-links.sh` verteilt alles. **bitfeed als `git subtree`** unter
   `upstream/bitfeed/`, Historie erhalten.
-- **Fallanimation repariert** (STAND-Punkt 1) und **Karomuster behoben**
-  (Punkt 2, drei Ursachen).
-- **Die Grafik ist quickshell-frei.** `FeedState.qml` importiert nur `QtQuick`;
-  Daten kommen ueber die Loopback-Schnittstelle des Daemons
-  (`127.0.0.1:21021`, nur lesend, nur GET).
-- **Eigenstaendige Qt-Anwendung** in `app/`, laeuft auf jedem Linux-Desktop,
-  bindet dieselben Dateien ein (app_id `dev.21rebel.btcfeed-app`, ~3 % CPU).
-- **Zoom** ueber Rad, Zusammenziehen und Ziehen, ganzzahliger Massstab.
-- **Untergrund** hinter den Textangaben (`FrostedPanel.qml`), Blur auf 5 Hz
-  gedrosselt (12,5 % statt 14,4 %; ohne Blur 9,6 %).
-- **Grundsaetze festgelegt**: Watch-only ueber xpub, keine signierfaehige
-  Bibliothek, keine Telemetrie, Bindung auf 127.0.0.1. Siehe `ZIELBILD.md`.
-- **Kein eigener Node** -- entschieden am 01.09. Explorer und
-  Adressbeobachtung gehen trotzdem, gegen die oeffentliche API.
+- **`btcfeed` laeuft als abgesicherter Benutzerdienst** und bietet seine Daten
+  unter `http://127.0.0.1:21021` an -- nur lesend, nur GET, gebunden auf
+  Loopback. Abfragen: `/state`, `/block`, `/health`, `/lookup/<art>/<wert>`.
+- **Die Grafik haengt an nichts ausser Qt Quick.** Dieselben QML-Dateien
+  bedienen DMS-Plugin, Dashboard-Tab und die eigenstaendige Anwendung
+  (`app/`, CMake, app_id `dev.21rebel.btcfeed-app`).
 
-### Offen, in sinnvoller Reihenfolge
+**Vier Ansichten** (Tabs oder Tasten 1-4)
+- **Feed** -- Halde und Block wie bitfeed, mit Zoom (Rad, Zusammenziehen,
+  Ziehen), Tooltip, Klick auf eine Kachel fuehrt in den Explorer.
+- **BlockClock** -- Blockhoehe gross, Gebuehr, Kurs, Mempool, Hashrate,
+  Schwierigkeit mit Countdown, Halving.
+- **Miner** -- AxeOS und cgminer, mehrere Geraete, Verlaufskurve, Bestenliste,
+  Rechenwerke; Suche im eigenen Netz per `btcfeed --discover-miners`.
+- **Explorer** -- Startseite mit Blockkette (geplant und bestaetigt in einer
+  Leiste), vier Tafeln, letzte Transaktionen; Suche; Transaktions-, Block- und
+  Adressansicht; Flussdiagramm; Kachelgrafik fuer bestaetigte **und** geplante
+  Bloecke.
 
-1. ~~Daemon als systemd-Unit~~ -- **erledigt 01.09.2026.** Abgesichert,
-   `Restart=on-failure`, Absturztest bestanden. Die Waechter in DMS und
-   `btcfeed-window` starten jetzt den Dienst statt eigener Prozesse.
-2. ~~Vorhandene Leisten fuettern~~ -- **erledigt 01.09.2026.**
-   `--waybar`, `--polybar`, `--genmon`; Vorlagen in `packaging/bars/`,
-   gegen echtes Waybar geprueft.
+**Leisten** -- `btcfeed --waybar`, `--polybar`, `--genmon`, Vorlagen in
+`packaging/bars/`.
+
+## Offene Punkte, in der Reihenfolge, in der sie anzugehen sind
+
+1. **Lebendige Darstellung des geplanten Blocks auf der Startseite.**
+   Die Datenseite steht bereits: der Daemon fuehrt den Block ueber
+   `track-mempool-block` laufend mit (Aenderungen kosten 7,8 kB/s) und meldet
+   sich 20 Sekunden nach der letzten Abfrage von selbst ab
+   (`PROJECTED_LINGER`). Die Kachelgrafik gibt es. Offen ist nur die Ansicht,
+   die sich mit dem Zulauf veraendert.
+2. **Mempool-Goggles** -- dieselben Kacheln nach Transaktionsart einfaerben.
+   `ui/qml/txtype.js` ist fertig und an echten Daten geprueft.
 3. **Flatpak.** `flatpak` ist da, **`flatpak-builder` fehlt** und muesste
-   installiert werden. Erst damit ist "laeuft auf jedem Linux-Desktop" auch
-   verteilbar.
-4. ~~ClockView (BlockClock) und MinerView (Bitaxe)~~ -- **erledigt
-   01.09.2026.** Umschalten mit 1/2/3, Auswahl wird gemerkt. Der Daemon holt
-   Schwierigkeit und Hashrate nebenher; die Miner-Adresse steht in
-   `~/.config/btcfeed/sources.json`.
-   Die Miner-Unterstuetzung ist **nicht auf Bitaxe festgelegt**: AxeOS ueber
-   HTTP und die cgminer-Schnittstelle ueber TCP 4028, mehrere Geraete
-   zugleich, plus `btcfeed --discover-miners` fuers eigene Netz (die Geraete
-   haengen im WLAN und bekommen DHCP-Adressen).
-   **Am echten Geraet geprueft** (01.09.2026): Bitaxe Gamma 601, AxeOS
-   v2.14.2 unter 192.168.100.9, von `--discover-miners` selbst gefunden. Die
-   cgminer-Familie ist weiterhin nur gegen nachgestellte Antworten geprueft.
-5. **Layer-Shell** (`layer-shell-qt`, in den Paketquellen) fuer eigenes
-   Desktop-Widget und eigene Leiste auf Wayland.
-6. **Android-APK.** SDK und NDK fehlen; der frickeligste Teil.
+   installiert werden.
+4. **Layer-Shell** (`layer-shell-qt`, in den Paketquellen, nicht installiert)
+   fuer ein eigenes Desktop-Widget und eine eigene Leiste auf Wayland.
+5. **Android-APK.** SDK und NDK fehlen; der frickeligste Teil.
    **>>> Vor diesem Schritt dem Nutzer Bescheid geben <<<** -- er haengt dann
-   sein Handy an den Rechner, um darauf zu testen (abgesprochen am 01.09.2026).
-7. **ExplorerView** -- Etappe 1 **erledigt 01.09.2026**: Suche,
-   Transaktionsdetails mit Ein- und Ausgaengen, Blocknavigation,
-   Adressansicht, Klick auf eine Kachel im Feed. Offen: Blockhistorie mit
-   Transaktionsliste, und **WatchView** (xpub).
-   Frueherer Eintrag: **ExplorerView und WatchView.** Groesster Brocken, haengt an nichts mehr
-   ausser Arbeit. Am 01.09.2026 vorbereitet: `matchQuery()` aus dem Fork ist
-   direkt portierbar, und `/api/tx/:txid` samt `/outspends` deckt den ganzen
-   Pfad ohne Node ab. Einzelheiten in `ZIELBILD.md`.
+   sein Handy an den Rechner (abgesprochen am 01.09.2026).
+6. **WatchView** (xpub, watch-only). Der letzte grosse Brocken. Grundsatz steht
+   in `ZIELBILD.md`: Adressen **lokal** ableiten, den xpub nie verschicken.
+7. **Blockhistorie** mit Transaktionsliste zum Durchblaettern.
 
-### Offen fuer morgen
+## Kleinigkeiten, notiert
 
-- Der **geplante Block** laesst sich laufend mitfuehren (Aenderungen ueber den
-  WebSocket, 7,8 kB/s, bedarfsabhaengig). Die Kachelgrafik dafuer steht; offen
-  ist die **lebendige Darstellung auf der Startseite**, die sich mit dem
-  Zulauf veraendert.
-- **Mempool-Goggles**: dieselben Kacheln nach Transaktionsart einfaerben
-  (`txtype.js` ist fertig).
-
-### Kleinigkeiten, notiert
-
-- Dashboard-Tab: echte Einzelquadrate braeuchten `implicitHeight` von 410 auf
-  rund 545 (`daemon/btcfeed-dashtab`). Derzeit geglaettete Textur, weil bei
-  156 px Blockseite und 105 Rasterzellen kein Platz fuer Kachel plus Luecke ist.
+- Der WebSocket liefert `rbfSummary`, `da` und `conversions` mit -- die holen
+  wir teils per REST. Liesse sich zusammenlegen und spart Abfragen.
+- Der Bitaxe war nur einmal erreichbar; die **cgminer-Familie** ist bis heute
+  nur gegen nachgestellte Antworten geprueft.
+- Dashboard-Tab: echte Einzelquadrate im Block braeuchten `implicitHeight` von
+  410 auf rund 545.
 - `FrostedPanel`: an den abgerundeten Ecken erscheint weichgezeichneter Inhalt
   ohne Einfaerbung (QML beschneidet nur rechteckig). Sauber ueber `maskEnabled`.
-- Eine neue geteilte QML-Datei braucht ausser `install-links.sh` und
-  `btcfeed-dashtab` (beide lesen jetzt das Verzeichnis) noch den Eintrag in
-  `app/CMakeLists.txt` von Hand.
+- Eine neue geteilte QML-Datei braucht den Eintrag in `app/CMakeLists.txt`
+  **von Hand**; `install-links.sh` und `btcfeed-dashtab` lesen das Verzeichnis.
+- "Angepasste vsize" und "Transaktion in Hex" fehlen in der Detailtafel.
+
+## Die Erkenntnisse, die Zeit gekostet haben
+
+Ausfuehrlich in `DOKUMENTATION.md`. Die wichtigsten in einem Satz:
+
+- **`Item.visible` sagt nichts darueber, ob jemand hinsieht.** Schliesst das
+  Fenster, bleibt es wahr. Kostete 7,4 % CPU im Leerlauf.
+- **Lage und Strichstaerke sind zwei verschiedene Dinge.** Im Flussdiagramm
+  bestimmt das Gewicht die Lage, die Dicke das Zeichnen -- werden sie
+  gleichgesetzt, wird der Strang bei vielen Faeden achtmal zu dick.
+- **Baender als Strich zeichnen, nicht als gefuellte Flaeche.** Zwischen zwei
+  Kurven mit gleichem *senkrechtem* Abstand wird das Band in steilen
+  Abschnitten duenner -- bei 60 Grad um die Haelfte.
+- **Nicht im RGB-Raum mischen.** Blau und Orange liegen 177 Grad auseinander;
+  ihre Mitte faellt auf 28 % Saettigung und wirkt grau.
+- **Ein 4-px-Raster vertraegt nur ganzzahlige Rasterweiten und Massstaebe.**
+  Alles andere erzeugt ungleiche Kacheln -- ausser unterhalb von zwei
+  Bildpunkten je Zelle, dort ist gebrochen mit Kantenglaettung richtig.
+- **`transform` skaliert Breite und Hoehe, nicht `x`/`y`.** Deshalb liegt die
+  Zoom-Transformation auf Behaeltern bei (0,0).
+- **`data` ist in QML belegt**, und `parent.parent.parent.x` in
+  Repeater-Delegaten ist bruechig.
+- **Qt schickt seine Meldungen ans Journal, nicht auf stderr.** QML-Fehler
+  werden erst mit `QT_FORCE_STDERR_LOGGING=1` sichtbar.
+- **`QT_RESOURCE_ALIAS` wirkt nur vor `qt_add_qml_module`.**
+- **Offene Verbindungen taugen nicht als Aktivitaetsmass** -- Keep-Alive haelt
+  sie, auch wenn niemand fragt. Deshalb zaehlt der Daemon jetzt seine Abfragen
+  (`/health`, Feld `hits`).
+- **Beim Messen die PID frisch holen.** Nach `systemctl restart` zeigt eine
+  gemerkte PID ins Leere und liefert stillschweigend Unsinn.
+- **`systemctl show -p MainPID` liefert waehrend eines Neustarts `0`** --
+  `kill -9 0` trifft dann die ganze Prozessgruppe.
+
+## Wie man morgen anfaengt
+
+    cd ~/Schreibtisch/btcfeed
+    git log --oneline -10
+    systemctl --user status btcfeed
+    curl -s http://127.0.0.1:21021/health
+
+Aendert man etwas an den geteilten QML-Dateien:
+
+    tools/install-links.sh          # verteilt alles
+    python3 daemon/btcfeed-dashtab  # baut die DMS-Ueberlagerung neu
+    systemctl --user restart dms
+
+Die eigenstaendige Anwendung:
+
+    cmake -S app -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build
+    QT_FORCE_STDERR_LOGGING=1 ./build/btcfeed-app
+
+**Nicht vergessen: die App nach dem Pruefen wieder beenden.** Sie kostet rund
+7 % CPU, und genau das ist am 01.09. abends als hochdrehender Luefter
+aufgefallen.
 
 ---
 
