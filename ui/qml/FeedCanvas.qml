@@ -303,6 +303,28 @@ Item {
         return gridLeft + sq.x * gridSize + unitPad;
     }
 
+    // Zwischen zwei Kacheln liegt eine Luecke von wenigen Bildpunkten. Faellt
+    // der Zeiger darauf, soll die letzte Angabe stehen bleiben statt zu
+    // flackern -- faehrt er dagegen weg, muss sie verschwinden.
+    //
+    // Frueher wurde nur beim Verlassen der ganzen Flaeche geraeumt
+    // (`onExited`). Im Dashboard liegen aber grosse leere Bereiche **innerhalb**
+    // der Flaeche: dort verlaesst man nie etwas, und der Tooltip blieb ewig
+    // stehen. Massstab ist deshalb der Abstand zur zuletzt getroffenen Kachel,
+    // mit einer Rasterzelle Nachsicht.
+    function clearHoverIfAway(sx, sy) {
+        var r = hoverRect;
+        if (!r)
+            return;
+        var tol = Math.max(4, gridSize);
+        var rh = (r.h !== undefined) ? r.h : r.w;
+        if (sx < r.x - tol || sx > r.x + r.w + tol
+                || sy < r.y - tol || sy > r.y + rh + tol) {
+            hoveredTx = null;
+            hoverRect = null;
+        }
+    }
+
     // Der Bildpunkt wandert mit dem Foerderband: rowOffset zaehlt die Zeilen,
     // die unten schon herausgefallen sind, scrollPx laesst die Halde danach
     // sanft nachrutschen statt zu springen.
@@ -912,11 +934,12 @@ Item {
                 if (bt) {
                     root.hoveredTx = bt;
                     root.hoverRect = blockCanvas.hoverRectAt(sx, sy);
+                } else {
+                    root.clearHoverIfAway(sx, sy);
                 }
+            } else {
+                root.clearHoverIfAway(sx, sy);
             }
-            // Zwischen zwei Kacheln liegt eine Luecke von ein paar Pixeln.
-            // Faellt der Zeiger darauf, bleibt die letzte Angabe stehen, statt
-            // zu flackern -- geraeumt wird beim Verlassen.
         }
 
         onExited: {

@@ -481,3 +481,27 @@ sonst bleibt die Grafik bewusst hart.
 Wer im Dashboard echte Einzelquadrate will, muss dem Tab mehr Hoehe geben:
 `implicitHeight` in `BitcoinTab.qml` (Vorlage in `daemon/btcfeed-dashtab`)
 muesste von 410 auf rund 545 steigen, damit `Hoehe / 2,5` ueber 210 px kommt.
+
+
+## Tooltip: Raeumen ueber den Abstand, nicht ueber das Verlassen
+
+Zwischen zwei Kacheln liegt eine Luecke von wenigen Bildpunkten. Faellt der
+Zeiger darauf, soll die letzte Angabe stehen bleiben statt zu flackern -- das
+war der Grund, warum urspruenglich nur `onExited` geraeumt hat.
+
+Im **Dashboard** faellt das auf die Fuesse: dort liegen grosse leere Bereiche
+**innerhalb** der Flaeche (der Block fuellt sie nicht aus). Man verlaesst die
+MouseArea also nie, und der Tooltip blieb stehen, bis der Zeiger das ganze
+Popup verliess.
+
+Massstab ist jetzt der **Abstand zur zuletzt getroffenen Kachel**, mit einer
+Rasterzelle Nachsicht (`clearHoverIfAway`). Nachgerechnet an einer 4-px-Kachel
+bei Rasterweite 6:
+
+    auf der Kachel                     bleibt stehen
+    2 px Luecke daneben                bleibt stehen
+    6 px daneben (Rand der Nachsicht)  bleibt stehen
+    12 px daneben                      raeumt
+    leere Flaeche weit weg             raeumt
+
+`onExited` bleibt als zweite Absicherung bestehen.
