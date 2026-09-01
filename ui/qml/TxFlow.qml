@@ -1,11 +1,23 @@
-// Der Fluss einer Transaktion: Eingaenge links, Ausgaenge rechts, die Breite
-// jedes Bandes im Verhaeltnis zum Betrag. In der Mitte laufen alle zu einem
-// Strang zusammen -- so ist es auch richtig: welcher Eingang welchen Ausgang
-// bezahlt, laesst sich in Bitcoin **nicht** sagen. Ein Sankey-Diagramm mit
-// Einzelverbindungen waere daher eine Erfindung.
+// Der Fluss einer Transaktion: Eingaenge links, Ausgaenge rechts, die Hoehe
+// jedes Bandes im Verhaeltnis zum Betrag.
 //
-// Die Gebuehr ist der Unterschied zwischen beiden Seiten und wird unten rechts
-// als eigenes, schmales Band gezeigt.
+// Aufbau wie im Original (mempool.space,
+// frontend/src/app/components/tx-bowtie-graph/tx-bowtie-graph.component.ts,
+// am 01.09.2026 nachgelesen). Drei Dinge davon uebernommen:
+//
+//   * **Keine Verjuengung.** Ein Band behaelt seine Hoehe von links nach
+//     rechts. Was in der Mitte schmaler wirkt, sind nur die geschlossenen
+//     Luecken -- am Rand stehen die Baender mit Abstand, im Strang lueckenlos.
+//   * **Die Gebuehr ist ein Ausgang wie jeder andere**, nur in eigener Farbe.
+//     Im Original `voutWithFee.unshift({ type: 'fee', value: tx.fee })`, also
+//     an erster Stelle. Dadurch geht die Rechnung von selbst auf: Summe links
+//     gleich Summe rechts.
+//   * **Mindestdicke**, damit kleine Betraege nicht verschwinden. Im Original
+//     `minWeight = 2` mit `Math.max(minWeight - 1, weight) + 1`.
+//
+// Dass alle Eingaenge zu einem Strang zusammenlaufen, ist keine Vereinfachung:
+// welcher Eingang welchen Ausgang bezahlt, laesst sich in Bitcoin **nicht**
+// sagen. Einzelverbindungen waeren erfunden.
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
@@ -24,101 +36,86 @@ Item {
     property color textColor: "#f2eef8"
     property color dimColor: "#9a94a6"
     property real labelSize: 10
-    // Mehr Baender als das bringen nichts -- der Rest wird zusammengefasst
-    property int maxBands: 40
+    // Mehr Baender bringen nichts -- der Rest wird zusammengefasst. Das
+    // Original erlaubt 250, hier ist deutlich weniger Platz.
+    property int maxBands: 60
+    property real minBand: Math.max(2, labelSize * 0.22)
+    // Abstand zwischen zwei Baendern **am Rand**. Im Strang sind sie
+    // lueckenlos -- daher wirkt er geschlossen, ohne dass ein Band schrumpft.
+    property real edgeGap: Math.max(2, labelSize * 0.4)
 
-    // Unten bleibt ein Streifen frei, in den die Gebuehr abzweigt. Ohne ihn
-    // waere sie unsichtbar: eine uebliche Gebuehr ist ein Bruchteil eines
-    // Promille des Betrags -- 385 sat von 646.354 sind 0,06 %, auf 220 px also
-    // 0,13 Bildpunkte.
-    readonly property real feeLane: Math.max(labelSize * 2.2, height * 0.18)
-    readonly property real mainH: Math.max(10, height - feeLane)
-    // Mindestdicke fuer **jedes** Band, damit nie etwas ganz verschwindet.
-    // Unterhalb dieser Schwelle wird ueberhoeht gezeichnet; der Tooltip nennt
-    // dann den genauen Betrag und sagt es dazu.
-    readonly property real minBand: Math.max(2, labelSize * 0.25)
-    // In der Mitte laeuft alles auf eine **Taille** zusammen -- daher die
-    // geschwungene Form. Waere der Strang so hoch wie die Raender, blieben die
-    // Baender waagerecht und das Bild wirkte wie ein Balken.
-    property real waistFrac: 0.62
-    // Abstand zwischen zwei Baendern am Rand. In der Taille sind sie
-    // lueckenlos, dort bilden sie den geschlossenen Strang.
-    property real edgeGap: Math.max(2, labelSize * 0.35)
-    // Die Gebuehr zweigt durchgehend mit dieser Dicke ab -- Ansatz wie Ende.
-    readonly property real feeThickness: Math.max(fee * (mainH / Math.max(1, totalIn)), minBand)
-    // Was nach dem Abzweig fuer die Ausgaenge bleibt
-    readonly property real outH: Math.max(4, mainH - feeThickness)
-
-    // Welches Band liegt unter dem Zeiger: {side: "in"|"out"|"fee", index}
     property var hovered: null
 
     signal activated(string side, int index)
 
-    readonly property real totalIn: {
-        var s = 0;
-        for (var i = 0; i < (vin || []).length; i++)
-            s += (vin[i].prevout && vin[i].prevout.value) || 0;
-        return s;
-    }
-    readonly property real totalOut: {
-        var s = 0;
-        for (var i = 0; i < (vout || []).length; i++)
-            s += vout[i].value || 0;
-        return s;
+    // Die Gebuehr zaehlt als Ausgang, damit beide Seiten gleich hoch sind
+    readonly property var voutWithFee: {
+        var l = [];
+        if (fee > 0)
+            l.push({ "__fee": true, "value": fee });
+        var v = vout || [];
+        for (var i = 0; i < v.length; i++)
+            l.push(v[i]);
+        return l;
     }
 
-    onVinChanged: rebuild()
-    onVoutChanged: rebuild()
-    onWidthChanged: rebuild()
-    onHeightChanged: rebuild()
+    readonly property real totalIn: {
+        var s = 0, v = vin || [];
+        for (var i = 0; i < v.length; i++)
+            s += (v[i].prevout && v[i].prevout.value) || 0;
+        return s;
+    }
 
     property var bandsIn: []
     property var bandsOut: []
 
-    // Baender ausrechnen: Betrag -> Hoehe, gestapelt. Die Mitte ist
-    // luekenlos, die Raender bekommen Abstaende -- daher der Trichter.
-    function build(list, valueOf, total, scale, fitInto) {
-        var out = [];
-        var n = Math.min(list.length, root.maxBands);
-        // Am Rand mit Abstand, in der Taille lueckenlos
-        var gap = list.length > 1
-            ? Math.min(root.edgeGap, fitInto * 0.3 / Math.max(1, n)) : 0;
-        var waistH = fitInto * root.waistFrac;
-        var waistTop = (fitInto - waistH) / 2;
-        var edgeY = 0, midY = waistTop;
+    onVinChanged: rebuild()
+    onVoutChanged: rebuild()
+    onFeeChanged: rebuild()
+    onWidthChanged: rebuild()
+    onHeightChanged: rebuild()
+    Component.onCompleted: rebuild()
 
-        function push(v, more) {
-            var h = Math.max(root.minBand, v * scale);
-            var wh = h * root.waistFrac;
-            out.push({ "i": more ? -1 : out.length, "v": v,
-                       "edgeY": edgeY, "hEdge": Math.max(1, h - gap),
-                       "midY": midY, "h": wh, "more": more || 0 });
-            edgeY += h;
-            midY += wh;
+    // Ein Band behaelt seine Hoehe; nur die Luecken unterscheiden Rand und
+    // Strang. `edgeY` ist die Lage am Rand (mit Luecken), `midY` die im Strang
+    // (ohne). Beide Stapel werden am Ende auf die Hoehe normiert.
+    function build(list, valueOf, scale) {
+        var n = Math.min(list.length, root.maxBands);
+        var gaps = Math.max(0, n - 1) + (list.length > n ? 1 : 0);
+        var gap = gaps > 0 ? Math.min(root.edgeGap, root.height * 0.3 / gaps) : 0;
+        var out = [];
+        var i;
+
+        function add(v, more, idx) {
+            out.push({ "i": idx, "v": v, "h": Math.max(root.minBand, v * scale),
+                       "more": more || 0, "fee": false });
         }
 
-        for (var i = 0; i < n; i++)
-            push(valueOf(list[i]) || 0, 0);
+        for (i = 0; i < n; i++)
+            add(valueOf(list[i]) || 0, 0, i);
         if (list.length > n) {
             var rest = 0;
-            for (var k = n; k < list.length; k++)
-                rest += valueOf(list[k]) || 0;
-            push(rest, list.length - n);
+            for (i = n; i < list.length; i++)
+                rest += valueOf(list[i]) || 0;
+            add(rest, list.length - n, -1);
         }
 
-        // Die Mindestdicke summiert sich -- zum Schluss auf den verfuegbaren
-        // Platz normieren, sonst laeuft der Stapel unten heraus.
-        if (edgeY > fitInto && edgeY > 0) {
-            var f = fitInto / edgeY;
-            var y = 0, my = waistTop;
-            for (var m = 0; m < out.length; m++) {
-                out[m].hEdge = Math.max(0.5, out[m].hEdge * f);
-                out[m].h *= f;
-                out[m].edgeY = y;
-                out[m].midY = my;
-                y += (out[m].hEdge + gap);
-                my += out[m].h;
-            }
+        // Am Rand teilen sich die Baender die Hoehe abzueglich der Luecken
+        var sum = 0;
+        for (i = 0; i < out.length; i++)
+            sum += out[i].h;
+        var avail = Math.max(4, root.height - gap * Math.max(0, out.length - 1));
+        var f = sum > 0 ? avail / sum : 1;
+        var fMid = sum > 0 ? root.height / sum : 1;
+
+        var ey = 0, my = 0;
+        for (i = 0; i < out.length; i++) {
+            out[i].hEdge = out[i].h * f;
+            out[i].hMid = out[i].h * fMid;
+            out[i].edgeY = ey;
+            out[i].midY = my;
+            ey += out[i].hEdge + gap;
+            my += out[i].hMid;
         }
         return out;
     }
@@ -130,19 +127,19 @@ Item {
             canvas.requestPaint();
             return;
         }
-        // Eingaenge fuellen die ganze Hoehe des Hauptfelds. Die Ausgaenge
-        // teilen sich, was nach dem Gebuehrenabzweig bleibt -- so passt beides
-        // zusammen und der Abzweig ist immer zu sehen.
+        var scale = height / totalIn;
         bandsIn = build(vin || [], function (e) {
             return (e.prevout && e.prevout.value) || 0;
-        }, totalIn, mainH / totalIn, mainH);
-        bandsOut = build(vout || [], function (e) {
+        }, scale);
+        var bo = build(voutWithFee, function (e) {
             return e.value || 0;
-        }, totalOut, outH / Math.max(1, totalOut), outH);
+        }, scale);
+        // Die Gebuehr steht vorn und bekommt ihre eigene Farbe
+        if (fee > 0 && bo.length)
+            bo[0].fee = true;
+        bandsOut = bo;
         canvas.requestPaint();
     }
-
-    Component.onCompleted: rebuild()
 
     Canvas {
         id: canvas
@@ -167,94 +164,63 @@ Item {
             if (!root.bandsIn.length)
                 return;
 
-            var w = width, h = root.mainH;
+            var w = width, h = height;
             var midL = w * 0.42, midR = w * 0.58;
+            var i, b, lit;
 
-            // Eingaenge: vom linken Rand in die Mitte
-            for (var i = 0; i < root.bandsIn.length; i++) {
-                var b = root.bandsIn[i];
-                var lit = root.hovered && root.hovered.side === "in" && root.hovered.index === b.i;
+            for (i = 0; i < root.bandsIn.length; i++) {
+                b = root.bandsIn[i];
+                lit = root.hovered && root.hovered.side === "in" && root.hovered.index === b.i;
                 var g = ctx.createLinearGradient(0, 0, midL, 0);
-                g.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 1 : 0.75));
-                g.addColorStop(1, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 0.95 : 0.6));
+                g.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 1 : 0.8));
+                g.addColorStop(1, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, lit ? 0.95 : 0.62));
                 ctx.fillStyle = g;
-                canvas.band(ctx, 0, b.edgeY, b.edgeY + b.hEdge, midL, b.midY, b.midY + b.h);
+                canvas.band(ctx, 0, b.edgeY, b.edgeY + b.hEdge, midL, b.midY, b.midY + b.hMid);
             }
 
-            // Der Strang in der Mitte -- nur so hoch wie die Taille
-            var waistH = h * root.waistFrac;
-            var waistTop = (h - waistH) / 2;
+            // Der Strang: volle Hoehe, nur der Farbverlauf
             var trunk = ctx.createLinearGradient(midL, 0, midR, 0);
-            trunk.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, 0.6));
-            trunk.addColorStop(1, Qt.rgba(root.outColor.r, root.outColor.g, root.outColor.b, 0.6));
+            trunk.addColorStop(0, Qt.rgba(root.inColor.r, root.inColor.g, root.inColor.b, 0.62));
+            trunk.addColorStop(1, Qt.rgba(root.outColor.r, root.outColor.g, root.outColor.b, 0.62));
             ctx.fillStyle = trunk;
-            ctx.fillRect(midL, waistTop, midR - midL, waistH);
+            ctx.fillRect(midL, 0, midR - midL, h);
 
-            // Ausgaenge: aus der Mitte an den rechten Rand
-            for (var j = 0; j < root.bandsOut.length; j++) {
-                var o = root.bandsOut[j];
-                var lit2 = root.hovered && root.hovered.side === "out" && root.hovered.index === o.i;
+            for (i = 0; i < root.bandsOut.length; i++) {
+                b = root.bandsOut[i];
+                lit = root.hovered && root.hovered.side === "out" && root.hovered.index === b.i;
+                var col = b.fee ? root.feeColor : root.outColor;
                 var g2 = ctx.createLinearGradient(midR, 0, w, 0);
-                g2.addColorStop(0, Qt.rgba(root.outColor.r, root.outColor.g, root.outColor.b, lit2 ? 0.95 : 0.6));
-                g2.addColorStop(1, Qt.rgba(root.outColor.r, root.outColor.g, root.outColor.b, lit2 ? 1 : 0.8));
+                g2.addColorStop(0, Qt.rgba(col.r, col.g, col.b, b.fee ? 0.5 : (lit ? 0.95 : 0.62)));
+                g2.addColorStop(1, Qt.rgba(col.r, col.g, col.b, lit ? 1 : (b.fee ? 0.85 : 0.82)));
                 ctx.fillStyle = g2;
-                canvas.band(ctx, midR, o.midY, o.midY + o.h, w, o.edgeY, o.edgeY + o.hEdge);
+                canvas.band(ctx, midR, b.midY, b.midY + b.hMid, w, b.edgeY, b.edgeY + b.hEdge);
             }
 
-            // --- Die Gebuehr zweigt ab -------------------------------------
-            // Sie ist der Unterschied zwischen beiden Seiten. Am Strang setzt
-            // sie massstabsgetreu an (meist ein Haarstrich), laeuft nach unten
-            // aus dem Hauptfeld heraus und endet im Streifen darunter mit
-            // sichtbarer Dicke.
-            if (root.fee > 0) {
-                var lit3 = root.hovered && root.hovered.side === "fee";
-                var endT = root.feeThickness;     // durchgehend gleich dick
-                // Setzt am unteren Rand der Taille an, nicht am Bildrand
-                var top = waistTop + waistH - endT * root.waistFrac;
-                var endY = height - root.feeLane * 0.45;   // Ziel im Streifen
-                var c1 = midR + (w - midR) * 0.45;
-                var c2 = w - (w - midR) * 0.35;
-
-                ctx.beginPath();
-                ctx.moveTo(midR, top);
-                ctx.bezierCurveTo(c1, top, c2, endY - endT / 2, w, endY - endT / 2);
-                ctx.lineTo(w, endY + endT / 2);
-                ctx.bezierCurveTo(c2, endY + endT / 2, c1, h, midR, h);
-                ctx.closePath();
-                ctx.fillStyle = Qt.rgba(root.feeColor.r, root.feeColor.g, root.feeColor.b,
-                                        lit3 ? 0.95 : 0.7);
-                ctx.fill();
-
-                // Beschriftung an der Abzweigung
+            // Die Gebuehr beschriften, wenn Platz ist
+            if (root.fee > 0 && root.bandsOut.length) {
+                var fb = root.bandsOut[0];
                 ctx.font = root.labelSize + "px sans-serif";
                 ctx.fillStyle = root.dimColor;
                 ctx.textAlign = "right";
-                ctx.fillText("Gebühr " + root.fee + " sat",
-                             w - root.labelSize * 0.4, endY - endT / 2 - root.labelSize * 0.4);
+                var ty = fb.edgeY + fb.hEdge / 2 + root.labelSize * 0.35;
+                if (fb.hEdge < root.labelSize * 1.4)
+                    ty = fb.edgeY - root.labelSize * 0.35;
+                ctx.fillText("Gebühr " + root.fee + " sat", w - root.labelSize * 0.4, ty);
             }
         }
     }
 
-    // Welches Band liegt unter dem Zeiger?
     function bandAt(px, py) {
-        // Alles unterhalb des Hauptfelds gehoert zur Gebuehrenabzweigung
-        if (py > mainH && fee > 0)
-            return { "side": "fee", "index": -1, "value": fee, "more": 0 };
         var side = px < width * 0.5 ? "in" : "out";
         var list = side === "in" ? bandsIn : bandsOut;
-        // Am Rand gelten die Randpositionen, in der Mitte die gestapelten
-        var edge = side === "in" ? px < width * 0.2 : px > width * 0.8;
+        var edge = side === "in" ? px < width * 0.25 : px > width * 0.75;
         for (var i = 0; i < list.length; i++) {
             var b = list[i];
             var y0 = edge ? b.edgeY : b.midY;
-            var y1 = y0 + (edge ? b.hEdge : b.h);
+            var y1 = y0 + (edge ? b.hEdge : b.hMid);
             if (py >= y0 && py <= y1)
-                return { "side": side, "index": b.i, "value": b.v, "more": b.more || 0 };
-        }
-        if (side === "out" && fee > 0) {
-            var feeH = root.fee * (mainH / Math.max(1, root.totalIn));
-            if (py >= mainH - Math.max(feeH, 3))
-                return { "side": "fee", "index": -1, "value": root.fee, "more": 0 };
+                return { "side": b.fee ? "fee" : side, "index": b.i,
+                         "value": b.v, "more": b.more };
         }
         return null;
     }
@@ -275,12 +241,18 @@ Item {
             canvas.requestPaint();
         }
         onClicked: {
-            if (root.hovered && root.hovered.index >= 0)
-                root.activated(root.hovered.side, root.hovered.index);
+            if (!root.hovered || root.hovered.side === "fee" || root.hovered.index < 0)
+                return;
+            // Die Gebuehr steht vorn in der Liste -- der Index der echten
+            // Ausgaenge ist deshalb um eins verschoben.
+            var idx = root.hovered.index;
+            if (root.hovered.side === "out" && root.fee > 0)
+                idx -= 1;
+            if (idx >= 0)
+                root.activated(root.hovered.side, idx);
         }
     }
 
-    // Kurzauskunft zum Band unter dem Zeiger
     Rectangle {
         visible: root.hovered !== null
         width: tipText.width + root.labelSize * 1.4
@@ -303,14 +275,12 @@ Item {
                 if (!hv)
                     return "";
                 var v = "₿ " + (hv.value / 1e8).toFixed(8).replace(".", ",");
-                if (hv.side === "fee") {
-                    var exact = root.fee * (root.mainH / Math.max(1, root.totalIn));
-                    return "Gebühr " + v + " · " + root.fee + " sat"
-                         + (exact < root.minBand ? " (überhöht gezeichnet)" : "");
-                }
+                if (hv.side === "fee")
+                    return "Gebühr " + v + " · " + root.fee + " sat";
                 if (hv.more)
-                    return (hv.side === "in" ? "weitere " : "weitere ") + hv.more + " · " + v;
-                return (hv.side === "in" ? "Eingang " : "Ausgang ") + (hv.index + 1) + " · " + v;
+                    return "weitere " + hv.more + " · " + v;
+                var n = hv.index + (hv.side === "out" && root.fee > 0 ? 0 : 1);
+                return (hv.side === "in" ? "Eingang " : "Ausgang ") + n + " · " + v;
             }
         }
     }

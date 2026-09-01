@@ -843,48 +843,39 @@ Ein Zurueck-Knopf fuehrt den Weg wieder heraus (`trail`).
 ## Der Fluss einer Transaktion (`TxFlow.qml`)
 
 Eingaenge links, Ausgaenge rechts, die Hoehe jedes Bandes im Verhaeltnis zum
-Betrag; in der Mitte laufen alle zu einem Strang zusammen.
+Betrag. Aufbau nach dem Vorbild von mempool.space
+(`frontend/src/app/components/tx-bowtie-graph/tx-bowtie-graph.component.ts`,
+am 01.09.2026 nachgelesen). Drei Dinge daraus uebernommen:
 
-**Die Taille macht die Form.** Der Strang in der Mitte ist nur `waistFrac`
-(62 %) so hoch wie die Raender. Ohne sie blieben die Baender waagerecht und das
-Bild waere ein Balken -- erst durch das Zusammenlaufen kruemmen sie sich, wie
-bei mempool.space. Am Rand haben die Baender ausserdem Abstand voneinander
-(`edgeGap`), in der Taille sind sie lueckenlos und bilden den geschlossenen
-Strang.
+**Keine Verjuengung.** Ein Band behaelt seine Hoehe von links nach rechts. Was
+in der Mitte schmaler wirkt, sind allein die geschlossenen Luecken: am Rand
+stehen die Baender mit Abstand (`edgeGap`), im Strang lueckenlos. Ein erster
+Versuch mit einer Taille (Strang auf 62 % der Randhoehe) sah zwar geschwungen
+aus, verjuengte aber jedes Band -- und stellte damit Betraege kleiner dar, als
+sie sind.
 
-**Das Zusammenlaufen ist keine Vereinfachung, sondern die Wahrheit:** welcher
-Eingang welchen Ausgang bezahlt, laesst sich in Bitcoin **nicht** sagen. Ein
-Sankey-Diagramm mit Einzelverbindungen waere eine Erfindung. mempool.space
-zeichnet es aus demselben Grund als Fliege.
+**Die Gebuehr ist ein Ausgang wie jeder andere**, nur in eigener Farbe und an
+erster Stelle (im Original `voutWithFee.unshift({ type: 'fee', value: tx.fee })`).
+Damit geht die Rechnung von selbst auf -- Summe links gleich Summe rechts --
+und der frueher noetige Sonderweg mit eigenem Streifen faellt weg.
 
-### Die Gebuehr zweigt ab -- und warum sie nicht massstabsgetreu enden kann
+**Mindestdicke**, damit kleine Betraege nicht verschwinden (`minBand`; im
+Original `minWeight = 2` mit `Math.max(minWeight - 1, weight) + 1`). Eine
+uebliche Gebuehr ist ein Bruchteil eines Promille: 385 sat von 646.354 sind
+0,06 %, auf 220 Bildpunkte also 0,13 Pixel.
 
-Die Gebuehr ist der Unterschied zwischen beiden Seiten. Als schlichtes Band am
-unteren Rand war sie **unsichtbar**: eine uebliche Gebuehr ist ein Bruchteil
-eines Promille. Nachgerechnet an einer echten Transaktion: 385 sat von
-646.354 sind 0,06 %, auf 220 Bildpunkte also **0,13 Pixel**.
+Ab `maxBands` (60) werden die uebrigen zu einem Band zusammengefasst; das
+Original erlaubt 250, hier ist weniger Platz.
 
-Deshalb gilt eine **Mindestdicke fuer jedes Band** (`minBand`, gut zwei
-Bildpunkte), und unten bleibt ein Streifen frei (18 % der Hoehe), in den die
-Gebuehr als durchgehend gleich dicker Arm abzweigt.
+Dass alle Eingaenge zu einem Strang zusammenlaufen, ist keine Vereinfachung:
+welcher Eingang welchen Ausgang bezahlt, laesst sich in Bitcoin **nicht**
+sagen. Einzelverbindungen waeren erfunden.
 
-Damit die Rechnung trotzdem aufgeht, teilen sich die **Ausgaenge, was nach dem
-Abzweig uebrig bleibt** (`outH = mainH - feeThickness`) -- bei einer winzigen
-Gebuehr sind das gut ein Prozent weniger Hoehe, unsichtbar. Die Eingaenge
-fuellen weiter das ganze Hauptfeld. Zum Schluss wird jede Seite auf ihren Platz
-normiert, sonst summiert sich die Mindestdicke heraus.
+**Nachgerechnet** (200 px, mit Gebuehr als Ausgang): Rand plus Luecken ergibt
+200 px, der Strang ebenfalls 200 px, und das Verhaeltnis Strang zu Rand ist
+fuer jedes Band identisch (Streuung 0,0000) -- es wird also keines bevorzugt
+oder benachteiligt.
 
-Ist die Gebuehr ueberhoeht gezeichnet, sagt der Tooltip es dazu ("überhöht
-gezeichnet") und nennt den genauen Betrag; danebengeschrieben steht er ohnehin.
-
-Nachgerechnet, Hauptfeld 197 px:
-
-    Eingang      Gebuehr    Abzweig   Ausgaenge   Summe
-      646.354      385 sat   2,50 px  194,30 px  196,80 px
-    100 Mio.     5.000 sat   2,50 px  194,30 px  196,80 px
-       50.000    3.000 sat  11,81 px  184,99 px  196,80 px
-
-Ab etwa einem Prozent Gebuehr ist die Darstellung durchgehend
 massstabsgetreu.
 
 Ueber einem Band steht sein Betrag; ein Klick folgt dem Weg weiter (Eingang zur
