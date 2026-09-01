@@ -33,10 +33,14 @@ Item {
     // 0,13 Bildpunkte.
     readonly property real feeLane: Math.max(labelSize * 2.2, height * 0.18)
     readonly property real mainH: Math.max(10, height - feeLane)
-    // So duenn wird die Abzweigung mindestens gezeichnet, damit man sie sieht.
-    // Ihr **Ansatz** am Strang bleibt massstabsgetreu -- ueberhoeht ist nur das
-    // Ende, und der Tooltip nennt den genauen Betrag.
-    readonly property real feeMinThickness: Math.max(2, labelSize * 0.22)
+    // Mindestdicke fuer **jedes** Band, damit nie etwas ganz verschwindet.
+    // Unterhalb dieser Schwelle wird ueberhoeht gezeichnet; der Tooltip nennt
+    // dann den genauen Betrag und sagt es dazu.
+    readonly property real minBand: Math.max(2, labelSize * 0.25)
+    // Die Gebuehr zweigt durchgehend mit dieser Dicke ab -- Ansatz wie Ende.
+    readonly property real feeThickness: Math.max(fee * (mainH / Math.max(1, totalIn)), minBand)
+    // Was nach dem Abzweig fuer die Ausgaenge bleibt
+    readonly property real outH: Math.max(4, mainH - feeThickness)
 
     // Welches Band liegt unter dem Zeiger: {side: "in"|"out"|"fee", index}
     property var hovered: null
@@ -66,7 +70,7 @@ Item {
 
     // Baender ausrechnen: Betrag -> Hoehe, gestapelt. Die Mitte ist
     // luekenlos, die Raender bekommen Abstaende -- daher der Trichter.
-    function build(list, valueOf, total, scale) {
+    function build(list, valueOf, total, scale, fitInto) {
         var out = [];
         var n = Math.min(list.length, root.maxBands);
         var gap = list.length > 1
@@ -74,7 +78,7 @@ Item {
         var edgeY = 0, midY = 0;
         for (var i = 0; i < n; i++) {
             var v = valueOf(list[i]) || 0;
-            var h = Math.max(1, v * scale);
+            var h = Math.max(root.minBand, v * scale);
             out.push({ "i": i, "v": v, "edgeY": edgeY, "midY": midY, "h": h,
                        "hEdge": Math.max(1, h - gap) });
             edgeY += h;
@@ -84,7 +88,7 @@ Item {
             var rest = 0;
             for (var k = n; k < list.length; k++)
                 rest += valueOf(list[k]) || 0;
-            var rh = Math.max(1, rest * scale);
+            var rh = Math.max(root.minBand, rest * scale);
             out.push({ "i": -1, "v": rest, "edgeY": edgeY, "midY": midY, "h": rh,
                        "hEdge": Math.max(1, rh - gap), "more": list.length - n });
             edgeY += rh;
@@ -94,8 +98,10 @@ Item {
         // Eingaengen laeuft der Stapel sonst unten aus dem Bild. Nachgemessen
         // waren es bei 120 Eingaengen auf 220 px gut zwei Pixel. Deshalb zum
         // Schluss einmal auf die verfuegbare Hoehe normieren.
-        if (edgeY > root.mainH && edgeY > 0) {
-            var f = root.mainH / edgeY;
+        // Die Mindestdicke summiert sich -- zum Schluss auf den verfuegbaren
+        // Platz normieren, sonst laeuft der Stapel unten heraus.
+        if (edgeY > fitInto && edgeY > 0) {
+            var f = fitInto / edgeY;
             var y = 0;
             for (var m = 0; m < out.length; m++) {
                 out[m].h *= f;
@@ -115,13 +121,15 @@ Item {
             canvas.requestPaint();
             return;
         }
-        var scale = mainH / totalIn;
+        // Eingaenge fuellen die ganze Hoehe des Hauptfelds. Die Ausgaenge
+        // teilen sich, was nach dem Gebuehrenabzweig bleibt -- so passt beides
+        // zusammen und der Abzweig ist immer zu sehen.
         bandsIn = build(vin || [], function (e) {
             return (e.prevout && e.prevout.value) || 0;
-        }, totalIn, scale);
+        }, totalIn, mainH / totalIn, mainH);
         bandsOut = build(vout || [], function (e) {
             return e.value || 0;
-        }, totalOut, scale);
+        }, totalOut, outH / Math.max(1, totalOut), outH);
         canvas.requestPaint();
     }
 
@@ -188,11 +196,10 @@ Item {
             // sie massstabsgetreu an (meist ein Haarstrich), laeuft nach unten
             // aus dem Hauptfeld heraus und endet im Streifen darunter mit
             // sichtbarer Dicke.
-            var feeH = root.fee * (h / Math.max(1, root.totalIn));
             if (root.fee > 0) {
                 var lit3 = root.hovered && root.hovered.side === "fee";
-                var top = h - feeH;               // Ansatz, massstabsgetreu
-                var endT = Math.max(feeH, root.feeMinThickness);
+                var endT = root.feeThickness;     // durchgehend gleich dick
+                var top = h - endT;               // setzt unter den Ausgaengen an
                 var endY = height - root.feeLane * 0.45;   // Ziel im Streifen
                 var c1 = midR + (w - midR) * 0.45;
                 var c2 = w - (w - midR) * 0.35;
@@ -288,7 +295,7 @@ Item {
                 if (hv.side === "fee") {
                     var exact = root.fee * (root.mainH / Math.max(1, root.totalIn));
                     return "Gebühr " + v + " · " + root.fee + " sat"
-                         + (exact < root.feeMinThickness ? " (überhöht gezeichnet)" : "");
+                         + (exact < root.minBand ? " (überhöht gezeichnet)" : "");
                 }
                 if (hv.more)
                     return (hv.side === "in" ? "weitere " : "weitere ") + hv.more + " · " + v;

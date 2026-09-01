@@ -857,21 +857,28 @@ unteren Rand war sie **unsichtbar**: eine uebliche Gebuehr ist ein Bruchteil
 eines Promille. Nachgerechnet an einer echten Transaktion: 385 sat von
 646.354 sind 0,06 %, auf 220 Bildpunkte also **0,13 Pixel**.
 
-Deshalb bleibt unten ein Streifen frei (18 % der Hoehe), in den die Gebuehr als
-Arm abzweigt:
+Deshalb gilt eine **Mindestdicke fuer jedes Band** (`minBand`, gut zwei
+Bildpunkte), und unten bleibt ein Streifen frei (18 % der Hoehe), in den die
+Gebuehr als durchgehend gleich dicker Arm abzweigt.
 
-    Ansatz am Strang   massstabsgetreu -- meist ein Haarstrich
-    Ende im Streifen   mindestens gut zwei Bildpunkte, damit man es sieht
+Damit die Rechnung trotzdem aufgeht, teilen sich die **Ausgaenge, was nach dem
+Abzweig uebrig bleibt** (`outH = mainH - feeThickness`) -- bei einer winzigen
+Gebuehr sind das gut ein Prozent weniger Hoehe, unsichtbar. Die Eingaenge
+fuellen weiter das ganze Hauptfeld. Zum Schluss wird jede Seite auf ihren Platz
+normiert, sonst summiert sich die Mindestdicke heraus.
 
-Der **Ansatz** zeigt also die Wahrheit, ueberhoeht ist nur das Ende. Ist es
-ueberhoeht, sagt der Tooltip es dazu ("überhöht gezeichnet") und nennt den
-genauen Betrag in sat. Danebengeschrieben steht er ohnehin.
+Ist die Gebuehr ueberhoeht gezeichnet, sagt der Tooltip es dazu ("überhöht
+gezeichnet") und nennt den genauen Betrag; danebengeschrieben steht er ohnehin.
 
-Beispiele:
+Nachgerechnet, Hauptfeld 197 px:
 
-    646.354 sat Eingang, 385 sat Gebuehr (0,060 %)  Ansatz  0,12 px -> Ende 2,20 px
-    100 Mio. sat,      5.000 sat Gebuehr (0,005 %)  Ansatz  0,01 px -> Ende 2,20 px
-     50.000 sat,       3.000 sat Gebuehr (6,000 %)  Ansatz 11,81 px -> Ende 11,81 px
+    Eingang      Gebuehr    Abzweig   Ausgaenge   Summe
+      646.354      385 sat   2,50 px  194,30 px  196,80 px
+    100 Mio.     5.000 sat   2,50 px  194,30 px  196,80 px
+       50.000    3.000 sat  11,81 px  184,99 px  196,80 px
+
+Ab etwa einem Prozent Gebuehr ist die Darstellung durchgehend
+massstabsgetreu.
 
 Ueber einem Band steht sein Betrag; ein Klick folgt dem Weg weiter (Eingang zur
 Vorgaengertransaktion, Ausgang zur ausgebenden Transaktion oder zur Adresse).
