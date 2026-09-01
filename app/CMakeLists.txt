@@ -20,6 +20,8 @@ set(SHARED_QML
     ../ui/qml/FeedCanvas.qml
     ../ui/qml/FeedPanel.qml
     ../ui/qml/FrostedPanel.qml
+    ../ui/qml/ClockView.qml
+    ../ui/qml/MinerView.qml
     ../ui/qml/mondrian.js
     ../ui/qml/colors.js
 )

@@ -37,9 +37,15 @@ Mechanik und Stolperfallen in `DOKUMENTATION.md`.
 3. **Flatpak.** `flatpak` ist da, **`flatpak-builder` fehlt** und muesste
    installiert werden. Erst damit ist "laeuft auf jedem Linux-Desktop" auch
    verteilbar.
-4. **ClockView (BlockClock) und MinerView (Bitaxe).** Beide klein, beide ohne
-   Node machbar, beide sofort sichtbarer Mehrwert. Vorlage fuer die BlockClock
-   ist der unveroeffentlichte Commit `display-mode` im Fork.
+4. ~~ClockView (BlockClock) und MinerView (Bitaxe)~~ -- **erledigt
+   01.09.2026.** Umschalten mit 1/2/3, Auswahl wird gemerkt. Der Daemon holt
+   Schwierigkeit und Hashrate nebenher; die Miner-Adresse steht in
+   `~/.config/btcfeed/sources.json`.
+   **Offen dazu:** Der Bitaxe war beim Bauen nicht erreichbar (die Adresse
+   192.168.1.81 aus dem Memory ist veraltet, der Rechner haengt inzwischen in
+   192.168.100.0/24, ein Suchlauf fand nichts). Die Miner-Ansicht ist deshalb
+   nur gegen den Zustand "nicht erreichbar" geprueft, **nicht gegen echte
+   Geraetedaten** -- beim naechsten Einschalten nachholen.
 5. **Layer-Shell** (`layer-shell-qt`, in den Paketquellen) fuer eigenes
    Desktop-Widget und eigene Leiste auf Wayland.
 6. **Android-APK.** SDK und NDK fehlen; der frickeligste Teil.

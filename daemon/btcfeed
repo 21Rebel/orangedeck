@@ -70,6 +70,40 @@ FEE_BUCKETS = [0.5, 1, 2, 3, 5, 8, 15, 30, 80]
 SERVE_ADDR = os.environ.get("BTCFEED_ADDR", "127.0.0.1")
 SERVE_PORT = int(os.environ.get("BTCFEED_PORT", "21021"))
 
+# Zusaetzliche Quellen. Jede ist einzeln abschaltbar, indem man sie weglaesst.
+# Reihenfolge: Umgebungsvariable schlaegt Datei.
+#
+#   ~/.config/btcfeed/sources.json
+#   { "bitaxe": "http://192.168.100.42" }
+#
+# Spaeter schreibt die Einstellungsseite diese Datei; heute traegt man sie von
+# Hand ein. Die Datei ist bewusst getrennt von btcfeed.conf, die QSettings der
+# Anwendung gehoert.
+SOURCES_FILE = os.path.join(
+    os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"),
+    "btcfeed", "sources.json")
+
+
+def load_sources():
+    cfg = {}
+    try:
+        with open(SOURCES_FILE) as f:
+            cfg = json.load(f) or {}
+    except Exception:
+        pass
+    env = os.environ.get("BTCFEED_BITAXE")
+    if env:
+        cfg["bitaxe"] = env
+    return cfg
+
+
+SOURCES = load_sources()
+
+# Wie oft die langsamen Kennzahlen geholt werden. Schwierigkeit und Hashrate
+# aendern sich im Stunden- bis Tagestakt -- alle fuenf Minuten ist reichlich.
+SLOW_INTERVAL = 300
+BITAXE_INTERVAL = 5
+
 
 def fee_bucket(rate):
     r = rate or 0
@@ -272,6 +306,12 @@ class Feed:
         self.error = ""
         self.dirty = True
         self.summary_for = None
+        # Langsame Kennzahlen fuer die BlockClock, und der eigene Miner
+        self.difficulty = {}
+        self.hashrate = {}
+        self.miner = {}
+        self.slow_at = 0.0
+        self.bitaxe_at = 0.0
 
     # -- Einspeisung ------------------------------------------------------
     def add_txs(self, txs):
@@ -375,6 +415,9 @@ class Feed:
             "blockEvent": round(self.block_event, 2),
             "seq": self.seq,
             "recent": self.recent[-RECENT_KEEP:],
+            "difficulty": self.difficulty,
+            "hashrate": self.hashrate,
+            "miner": self.miner,
         }
 
     def write(self):
@@ -448,6 +491,71 @@ def serve_local(feed):
                          % SERVE_ADDR)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv
+
+
+def poll_slow(feed):
+    """Schwierigkeitsanpassung und Hashrate. Beides aendert sich langsam und
+    wird deshalb nur alle paar Minuten geholt -- es speist die BlockClock und
+    den Vergleich mit der Netzschwierigkeit in der Miner-Ansicht."""
+    if time.time() - feed.slow_at < SLOW_INTERVAL:
+        return
+    feed.slow_at = time.time()
+    try:
+        d = http_json("/v1/difficulty-adjustment")
+        feed.difficulty = {
+            "progress": d.get("progressPercent"),
+            "change": d.get("difficultyChange"),
+            "remainingBlocks": d.get("remainingBlocks"),
+            "remainingTime": d.get("remainingTime"),
+            "nextHeight": d.get("nextRetargetHeight"),
+            "previousChange": d.get("previousRetarget"),
+        }
+        feed.dirty = True
+    except Exception as e:
+        sys.stderr.write("Schwierigkeit: %s\n" % e)
+    try:
+        # /3d liefert nur drei Messpunkte -- zu wenig fuer eine Kurve.
+        # /1m sind 31 Punkte bei 2,2 kB, alle fuenf Minuten geholt.
+        h = http_json("/v1/mining/hashrate/1m")
+        feed.hashrate = {
+            "current": h.get("currentHashrate"),
+            "difficulty": h.get("currentDifficulty"),
+            "series": [p.get("avgHashrate") for p in (h.get("hashrates") or [])][-40:],
+        }
+        feed.dirty = True
+    except Exception as e:
+        sys.stderr.write("Hashrate: %s\n" % e)
+
+
+def poll_bitaxe(feed):
+    """Eigener Solo-Miner. Nur aktiv, wenn in sources.json eingetragen --
+    ohne Eintrag passiert hier gar nichts."""
+    base = SOURCES.get("bitaxe")
+    if not base or time.time() - feed.bitaxe_at < BITAXE_INTERVAL:
+        return
+    feed.bitaxe_at = time.time()
+    try:
+        req = urllib.request.Request(base.rstrip("/") + "/api/system/info",
+                                     headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=4) as r:
+            d = json.loads(r.read().decode())
+        feed.miner = {
+            "online": True,
+            "hashRate": d.get("hashRate"),
+            "bestDiff": d.get("bestDiff"),
+            "bestSessionDiff": d.get("bestSessionDiff"),
+            "temp": d.get("temp"),
+            "power": d.get("power"),
+            "shares": d.get("sharesAccepted"),
+            "rejected": d.get("sharesRejected"),
+            "uptime": d.get("uptimeSeconds"),
+            "model": d.get("ASICModel") or d.get("boardVersion"),
+        }
+    except Exception as e:
+        # Der Miner ist oft schlicht aus -- das ist kein Fehler, sondern ein
+        # Zustand. Die Ansicht zeigt ihn dann als "nicht erreichbar".
+        feed.miner = {"online": False, "error": str(e)}
+    feed.dirty = True
 
 
 # --------------------------------------------------------------------------
@@ -586,6 +694,19 @@ def run_ws(feed):
         ws.close()
 
 
+def run_extras(feed):
+    """Die langsamen Quellen laufen **nebenher**. Im WebSocket-Faden haetten
+    ihre HTTP-Abfragen den Feed bis zu 15 Sekunden angehalten -- die Schleife
+    dort blockiert ja auf `ws.recv()`."""
+    while True:
+        try:
+            poll_slow(feed)
+            poll_bitaxe(feed)
+        except Exception as e:
+            sys.stderr.write("Nebenquellen: %s\n" % e)
+        time.sleep(1)
+
+
 def poll_rest(feed):
     """Notbetrieb ohne WebSocket -- deutlich grober, aber die Ansicht lebt."""
     feed.source = "rest"
@@ -642,6 +763,8 @@ def main():
 
     if "--once" in args or "--print" in args:
         poll_rest(feed)
+        poll_slow(feed)
+        poll_bitaxe(feed)
         if "--print" in args:
             print(json.dumps(feed.snapshot(), indent=2))
         return 0
@@ -652,6 +775,7 @@ def main():
         return 0
 
     serve_local(feed)
+    threading.Thread(target=run_extras, args=(feed,), daemon=True).start()
 
     backoff = 2
     rest_deadline = 0.0

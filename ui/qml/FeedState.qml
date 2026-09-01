@@ -49,6 +49,11 @@ Item {
     readonly property var nextBlock: snap.nextBlock || ({})
     readonly property var price: snap.price || ({})
     readonly property int tipHeight: tip.height || 0
+    // Langsame Kennzahlen und der eigene Miner -- der Daemon holt sie nebenher
+    readonly property var difficulty: snap.difficulty || ({})
+    readonly property var hashrate: snap.hashrate || ({})
+    readonly property var miner: snap.miner || ({})
+    readonly property bool minerOnline: miner.online === true
 
     signal transactionsArrived(var txs)
     signal blockMined(var tip)

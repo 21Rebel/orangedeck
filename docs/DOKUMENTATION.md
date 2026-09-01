@@ -542,3 +542,49 @@ selbstaendig zurueck (eine Instanz, ein Neustart, Daten sofort wieder da).
 **Nebenbei:** `systemctl show -p MainPID --value` liefert waehrend eines
 Neustarts `0`. Ein `kill -9 0` trifft dann die **ganze Prozessgruppe** --
 also immer auf Plausibilitaet pruefen, bevor man die Zahl an `kill` gibt.
+
+
+## BlockClock und Miner-Ansicht
+
+Zwei zusaetzliche Ansichten in `ui/qml/`, umschaltbar mit 1/2/3; die Auswahl
+merkt sich `Settings` (damit ein Tablet nach dem Einschalten gleich wieder als
+BlockClock hochkommt). Beide importieren nur `QtQuick` und laufen damit auch
+unter Android.
+
+**`ClockView.qml`** -- Blockhoehe gross, dazu Gebuehr, Kurs, Mempool und
+Hashrate, ein Fortschrittsbalken bis zur naechsten Schwierigkeitsanpassung, der
+Halving-Abstand und eine Hashrate-Kurve ueber einen Monat. Vorbild ist der
+unveroeffentlichte Zweig `display-mode` aus dem Fork (03.04.2023).
+
+**`MinerView.qml`** -- Hashrate des eigenen Geraets und, als eigentliche Zahl
+beim Solomining, die **beste Freigabe gegen die Netzschwierigkeit**. Angezeigt
+als "1 zu N" statt als Prozentzahl mit acht Nullen. Dazu Temperatur, Leistung,
+Freigaben, Laufzeit. Drei Zustaende: nicht eingetragen, nicht erreichbar, in
+Betrieb -- der Miner ist meistens schlicht aus, das ist kein Fehler.
+
+### Datenseite
+
+`btcfeed` holt die langsamen Kennzahlen **in einem eigenen Faden**
+(`run_extras`): die WebSocket-Schleife blockiert auf `ws.recv()`, dort haetten
+HTTP-Abfragen den Feed bis zu 15 Sekunden angehalten.
+
+    /v1/difficulty-adjustment      alle 5 Minuten
+    /v1/mining/hashrate/1m         alle 5 Minuten -- 31 Messpunkte, 2,2 kB
+                                   (/3d liefert nur drei, zu wenig fuer eine Kurve)
+    <bitaxe>/api/system/info       alle 5 Sekunden, nur wenn eingetragen
+
+Die Miner-Adresse steht in `~/.config/btcfeed/sources.json`:
+
+    { "bitaxe": "http://192.168.1.42" }
+
+`BTCFEED_BITAXE` in der Umgebung schlaegt die Datei. Ohne Eintrag passiert
+nichts -- die Quelle ist damit abschaltbar wie alles andere. Die Datei ist
+bewusst getrennt von `btcfeed.conf`, die den QSettings der Anwendung gehoert.
+
+### qmllint: `pragma ComponentBehavior: Bound`
+
+Beide Ansichten benutzen einen `Repeater`, dessen Delegat auf `root` zugreift.
+Dafuer will Qt 6 die Zeile `pragma ComponentBehavior: Bound` -- und dann muss
+auch `modelData` im Delegaten ausdruecklich angefordert werden
+(`required property var modelData`, Zugriff ueber `parent.modelData`). Ohne
+beides meckert `qmllint`, und die Bindung waere tatsaechlich nicht garantiert.

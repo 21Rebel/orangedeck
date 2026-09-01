@@ -30,6 +30,9 @@ Window {
     property bool showInfo: true
     property bool showLegend: true
     property real bgOpacity: 0.82
+    // 0 = Feed, 1 = BlockClock, 2 = Miner. Wird gemerkt, damit ein Tablet
+    // nach dem Einschalten gleich wieder als BlockClock hochkommt.
+    property int view: 0
 
     // Bleibt auf dem Geraet: QSettings schreibt nach
     // ~/.config/btcfeed/btcfeed.conf (Linux) bzw. in den App-Speicher (Android).
@@ -41,6 +44,7 @@ Window {
         property alias showInfo: win.showInfo
         property alias showLegend: win.showLegend
         property alias bgOpacity: win.bgOpacity
+        property alias view: win.view
     }
 
     FeedState {
@@ -50,6 +54,7 @@ Window {
     FeedPanel {
         id: panel
 
+        visible: win.view === 0
         anchors.fill: parent
         anchors.margins: 14
         feed: feedState
@@ -58,6 +63,20 @@ Window {
         sizeMode: win.sizeMode
         infoVisible: win.showInfo
         legendVisible: win.showLegend
+    }
+
+    ClockView {
+        visible: win.view === 1
+        anchors.fill: parent
+        anchors.margins: 14
+        feed: feedState
+    }
+
+    MinerView {
+        visible: win.view === 2
+        anchors.fill: parent
+        anchors.margins: 14
+        feed: feedState
     }
 
     Item {
@@ -94,6 +113,12 @@ Window {
                 win.showInfo = !win.showInfo;
                 hint.flash();
                 break;
+            case Qt.Key_1:
+            case Qt.Key_2:
+            case Qt.Key_3:
+                win.view = event.key - Qt.Key_1;
+                hint.flash();
+                break;
             case Qt.Key_F11:
                 win.visibility = win.visibility === Window.FullScreen
                     ? Window.Windowed : Window.FullScreen;
@@ -116,7 +141,7 @@ Window {
         anchors.bottomMargin: 16
         color: "#9a94a6"
         font.pixelSize: 11
-        text: "c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft · F11 Vollbild"
+        text: "1 Feed · 2 BlockClock · 3 Miner   ·   c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft · F11 Vollbild"
         opacity: 0
 
         function flash() {
