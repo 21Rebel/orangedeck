@@ -31,6 +31,8 @@ Item {
     readonly property real netDiff: (feed && feed.hashrate.difficulty) || 0
     readonly property real bestShare: (netDiff > 0 && total.bestDiff)
         ? total.bestDiff / netDiff : 0
+    // Bei genau einem Geraet ist Platz fuer die Einzelheiten
+    readonly property var one: (miners.length === 1 && miners[0].online) ? miners[0] : null
 
     function big(n, unit) {
         if (!n)
@@ -146,6 +148,42 @@ Item {
             font.bold: true
         }
 
+        // Die Momentanrate schwankt um rund zehn Prozent -- oben steht deshalb
+        // der geglaettete Zehnminutenwert, hier der Vergleich mit dem, was das
+        // Geraet bei seiner Taktung erwarten laesst.
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.one && root.one.expected
+            text: root.one && root.one.expected
+                ? "geglättet über 10 min · erwartet " + root.big(root.one.expected, "H/s")
+                : ""
+            color: root.dimColor
+            font.pixelSize: root.scaleUnit * 0.55
+        }
+
+        // Der Grund, warum man das ueberhaupt macht
+        Rectangle {
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.one && root.one.blockFound > 0
+            width: blockText.width + root.scaleUnit
+            height: blockText.height + root.scaleUnit * 0.4
+            radius: height / 2
+            color: root.goodColor
+
+            Text {
+                id: blockText
+
+                anchors.centerIn: parent
+                text: root.one && root.one.blockFound > 0
+                    ? (root.one.blockFound === 1 ? "1 Block gefunden"
+                                                 : root.one.blockFound + " Blöcke gefunden")
+                    : ""
+                color: "#0b0b12"
+                font.pixelSize: root.scaleUnit * 0.62
+                font.bold: true
+            }
+        }
+
         // Die eigentliche Zahl beim Solomining
         Column {
             width: parent.width
@@ -185,10 +223,73 @@ Item {
             height: root.scaleUnit * 0.3
         }
 
+        // --------------------------------------- Einzelheiten, ein Geraet
+        Column {
+            width: parent.width
+            spacing: root.scaleUnit * 0.2
+            visible: root.one !== null
+
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: root.scaleUnit * 1.1
+
+                Repeater {
+                    model: root.one ? [
+                        { "k": "Temperatur", "v": root.one.temp !== undefined && root.one.temp !== null
+                            ? Math.round(root.one.temp) + " °C" : "–" },
+                        { "k": "Leistung", "v": root.one.power ? root.one.power.toFixed(1).replace(".", ",") + " W" : "–" },
+                        { "k": "Lüfter", "v": root.one.fanRpm ? root.one.fanRpm + " U/min" : "–" },
+                        { "k": "Fehlerquote", "v": root.one.errorPct !== undefined && root.one.errorPct !== null
+                            ? root.one.errorPct.toFixed(1).replace(".", ",") + " %" : "–" },
+                        { "k": "Freigaben", "v": root.one.shares !== undefined
+                            ? String(root.one.shares) + (root.one.rejected ? " (" + root.one.rejected + " abgelehnt)" : "") : "–" },
+                        { "k": "Laufzeit", "v": root.span(root.one.uptime) }
+                    ] : []
+
+                    Column {
+                        id: cell
+
+                        required property var modelData
+
+                        spacing: root.scaleUnit * 0.1
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: cell.modelData.k
+                            color: root.dimColor
+                            font.pixelSize: root.scaleUnit * 0.55
+                        }
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: cell.modelData.v
+                            color: root.textColor
+                            font.pixelSize: root.scaleUnit * 0.8
+                        }
+                    }
+                }
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                // Nur der Wirt des Pools -- der Benutzername enthaelt beim
+                // Solomining die Auszahlungsadresse und wird nirgends angezeigt.
+                text: root.one
+                    ? [root.one.model, root.one.version, root.one.pool].filter(function (x) {
+                          return !!x;
+                      }).join(" · ")
+                    : ""
+                color: root.dimColor
+                font.pixelSize: root.scaleUnit * 0.55
+            }
+        }
+
         // ------------------------------------------------ Geraete einzeln
         Column {
             width: parent.width
             spacing: root.scaleUnit * 0.2
+
+            visible: root.one === null
 
             Repeater {
                 model: root.miners

@@ -45,9 +45,9 @@ Mechanik und Stolperfallen in `DOKUMENTATION.md`.
    HTTP und die cgminer-Schnittstelle ueber TCP 4028, mehrere Geraete
    zugleich, plus `btcfeed --discover-miners` fuers eigene Netz (die Geraete
    haengen im WLAN und bekommen DHCP-Adressen).
-   **Offen dazu:** geprueft ist alles nur gegen **nachgestellte** Geraete.
-   Der Nutzer richtet einen Bitaxe ein, sobald wir gegen echte Hardware testen
-   wollen -- **dafuer Bescheid geben** (abgesprochen am 01.09.2026).
+   **Am echten Geraet geprueft** (01.09.2026): Bitaxe Gamma 601, AxeOS
+   v2.14.2 unter 192.168.100.9, von `--discover-miners` selbst gefunden. Die
+   cgminer-Familie ist weiterhin nur gegen nachgestellte Antworten geprueft.
 5. **Layer-Shell** (`layer-shell-qt`, in den Paketquellen) fuer eigenes
    Desktop-Widget und eigene Leiste auf Wayland.
 6. **Android-APK.** SDK und NDK fehlen; der frickeligste Teil.

@@ -621,10 +621,33 @@ und TCP :4028. Virtuelle Bruecken (`virbr`, `docker`, `br-`, `veth`, `tun`,
 **Der Dienst sucht nicht von selbst.** Ein Durchlauf ueber alle Adressen des
 Netzes gehoert nicht in einen Hintergrunddienst; er passiert nur auf Zuruf.
 
-### Geprueft ohne Geraet
+### Am echten Geraet geprueft (01.09.2026)
 
-Am 01.09.2026 war kein Miner erreichbar. Die Adapter sind deshalb gegen
-**nachgestellte Geraete** geprueft (realistische Antworten, HTTP und TCP):
+Bitaxe Gamma 601, AxeOS v2.14.2 unter `http://192.168.100.9`:
+
+    Hashrate     1060 GH/s geglaettet, 1048 im Moment, 1071 erwartet
+    beste Freigabe 295.580.247  ->  1 zu 425.627
+    Sitzungsbestwert 1.092.084, Pool-Schwierigkeit 8.192
+    56,5 C, 16,8 W, Luefter 5927 U/min, Fehlerquote 6,6 %
+    Netzschwierigkeit laut Geraet 125.807.076.547.197
+      -- deckt sich exakt mit dem Wert von mempool.space
+
+`btcfeed --discover-miners` fand es von selbst im WLAN.
+
+Zwei Dinge dabei gelernt:
+
+- **`bestDiff` kommt als Zahl**, nicht als Text mit Einheit wie erwartet.
+  `parse_diff` nimmt beides.
+- **Die Momentanrate schwankt um rund zehn Prozent.** Angezeigt wird deshalb
+  `hashRate_10m`; die Momentanrate steht daneben. Ohne das springt die grosse
+  Zahl staendig.
+- **`stratumUser` enthaelt beim Solomining die Auszahlungsadresse.** Sie wird
+  bewusst **nirgends** uebernommen -- weder in den Zustand noch in die Anzeige
+  noch ins Protokoll. Vom Pool wird nur der Wirt gezeigt.
+
+### Vorher gegen nachgestellte Geraete geprueft
+
+Solange kein Miner erreichbar war, gegen nachgebaute Antworten (HTTP und TCP):
 
     AxeOS    1204,7 GH/s -> 1,20 TH/s, "1.23M" -> 1.230.000, Temp/Freigaben/Laufzeit
     cgminer  95.000.000 MH/s -> 95,00 TH/s, Best Share 123.456.789

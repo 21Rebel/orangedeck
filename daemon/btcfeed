@@ -592,21 +592,44 @@ def probe_axeos(url, timeout=4):
                                  headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         d = json.loads(r.read().decode())
+    def gh(v):
+        """AxeOS meldet GH/s -- hier wird ueberall in H/s gerechnet."""
+        return float(v) * 1e9 if isinstance(v, (int, float)) else None
+
+    # Die Momentanrate schwankt um rund zehn Prozent (am echten Geraet
+    # gemessen: 1103 gegen 1063 GH/s geglaettet). Fuer die Anzeige ist der
+    # Zehnminutenwert der ehrlichere -- die Momentanrate bleibt daneben stehen.
+    avg = gh(d.get("hashRate_10m")) or gh(d.get("hashRate_1m")) or gh(d.get("hashRate"))
+
+    # Aus der Stratum-Adresse nur den Wirt uebernehmen. Der Benutzername
+    # enthaelt bei Solomining die Auszahlungsadresse -- die hat in keinem
+    # Zustand, keiner Anzeige und keinem Protokoll etwas verloren.
+    pool = (d.get("stratumURL") or "").split("//")[-1].split("/")[0] or None
+
     return {
         "type": "axeos",
         "id": url,
         "name": d.get("hostname") or d.get("ASICModel") or d.get("boardVersion") or "AxeOS",
         "model": d.get("ASICModel") or d.get("boardVersion") or "",
+        "version": d.get("axeOSVersion") or d.get("version") or "",
         "online": True,
-        # AxeOS meldet GH/s
-        "hashRate": float(d.get("hashRate") or 0) * 1e9,
+        "hashRate": avg or 0.0,                 # geglaettet, das ist der Anzeigewert
+        "hashRateNow": gh(d.get("hashRate")),   # Momentanwert
+        "expected": gh(d.get("expectedHashrate")),
         "bestDiff": parse_diff(d.get("bestDiff")),
         "bestSessionDiff": parse_diff(d.get("bestSessionDiff")),
+        "poolDiff": parse_diff(d.get("poolDifficulty")),
+        "netDiffDevice": parse_diff(d.get("networkDifficulty")),
+        "blockFound": d.get("blockFound"),
+        "errorPct": d.get("errorPercentage"),
         "temp": d.get("temp"),
         "power": d.get("power"),
+        "fanRpm": d.get("fanrpm"),
         "shares": d.get("sharesAccepted"),
         "rejected": d.get("sharesRejected"),
         "uptime": d.get("uptimeSeconds"),
+        "paused": d.get("miningPaused"),
+        "pool": pool,
     }
 
 
@@ -783,6 +806,9 @@ def cmd_discover(write=False):
         print("  %-22s %-8s %-18s %s" % (
             m["id"], m["type"], m.get("name") or "",
             ("%.2f TH/s" % (m["hashRate"] / 1e12)) if m.get("hashRate") else ""))
+    # stdout ist gepuffert, stderr nicht -- ohne das hier erscheinen die
+    # Hinweise vor der Liste.
+    sys.stdout.flush()
     if write:
         specs = []
         for m in found:
