@@ -696,12 +696,32 @@ schwankt, nicht staendig hin und her springt.
 Ansicht die besten fuenf, jeweils mit dem Abstand zur Netzschwierigkeit als
 "1 zu N". Nur AxeOS hat so etwas; bei anderen Geraeten bleibt der Abschnitt weg.
 
-### Rechenwerke
+### Rechenwerke (Hash-Domaenen) -- und warum sie geglaettet werden muessen
 
-`hashrateMonitor.asics[0].domains` sind die einzelnen Hash-Domaenen -- in der
-Weboberflaeche "Hashrate Registers". Als Balken im Verhaeltnis zum staerksten
-dargestellt, damit sofort auffaellt, wenn eines abfaellt. Gemessen am Testgeraet
-schwanken sie zwischen etwa 230 und 290 GH/s.
+Der BM1370 ist **ein** Chip (`asicCount: 1`), intern aber in **vier
+Hash-Domaenen** geteilt (`hashDomains: 4`). Die 2040 kleinen Kerne verteilen
+sich darauf, jede Domaene mit eigener Spannungs- und Taktversorgung. AxeOS
+misst je Domaene, wie viele Nonces von dort kommen -- das ist eine Diagnose:
+faellt eine Domaene **dauerhaft** ab, ist dieser Teil des Chips instabil.
+
+**Die Einzelmessungen rauschen erheblich.** Am 01.09.2026 ueber zwoelf
+Messungen im Sekundentakt nachgemessen:
+
+    Domaene 0   Mittel 260,4   Spanne 225,5 bis 304,9   Streuung 27,3 GH/s
+    Domaene 1   Mittel 274,3   Spanne 221,3 bis 317,8   Streuung 24,5 GH/s
+    Domaene 2   Mittel 275,7   Spanne 240,4 bis 320,1   Streuung 32,3 GH/s
+    Domaene 3   Mittel 263,9   Spanne 231,9 bis 343,6   Streuung 31,7 GH/s
+
+Ueber 10 % Streuung auf den Mittelwert. Ein einzelnes Bild gaukelt damit
+Unterschiede vor, die keine sind -- und die erste Fassung dieser Ansicht
+skalierte die Balken auf den groessten Wert des Augenblicks, stellte also
+Rauschen als Defekt dar.
+
+Der Daemon mittelt deshalb ueber `DOMAIN_SMOOTH` Messungen (12, also eine
+Minute) und liefert `domainsAvg`; die Ansicht zeigt diesen Wert und schreibt
+den Zeitraum dazu. Wirkung am Geraet gemessen: Spreizung **17,4 % momentan
+gegen 9,8 % geglaettet** -- und die 9,8 % decken sich mit den echten
+Mittelwertunterschieden, sind also Struktur statt Rauschen.
 
 ### Platz
 

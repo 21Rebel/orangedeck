@@ -346,7 +346,13 @@ Item {
                      && root.roomForChart
 
             Text {
-                text: "Rechenwerke"
+                // Der Chip ist intern in Hash-Domaenen geteilt (beim BM1370
+                // vier). Die Einzelmessungen rauschen um ueber zehn Prozent --
+                // gezeigt wird deshalb der geglaettete Wert, sonst sieht
+                // Rauschen wie ein Defekt aus.
+                text: root.one && root.one.domainSamples
+                    ? "Rechenwerke · Mittel über " + Math.round(root.one.domainSamples * 5 / 60 * 10) / 10 + " Min"
+                    : "Rechenwerke"
                 color: root.dimColor
                 font.pixelSize: root.scaleUnit * 0.55
             }
@@ -356,7 +362,7 @@ Item {
                 spacing: root.scaleUnit * 0.25
 
                 Repeater {
-                    model: root.one ? root.one.domains : []
+                    model: root.one ? (root.one.domainsAvg || root.one.domains) : []
 
                     Rectangle {
                         id: dom
@@ -364,7 +370,9 @@ Item {
                         required property var modelData
                         required property int index
 
-                        width: (root.width * 0.9 - root.scaleUnit * 0.75) / Math.max(1, (root.one.domains || []).length)
+                        readonly property var vals: root.one.domainsAvg || root.one.domains || []
+
+                        width: (root.width * 0.9 - root.scaleUnit * 0.75) / Math.max(1, dom.vals.length)
                         height: root.scaleUnit * 0.95
                         radius: 3
                         color: Qt.rgba(1, 1, 1, 0.06)
@@ -373,7 +381,7 @@ Item {
                             // Anteil am staerksten Rechenwerk -- so sieht man
                             // sofort, wenn eines abfaellt.
                             width: parent.width * Math.max(0.05, Math.min(1,
-                                dom.modelData / Math.max.apply(null, root.one.domains)))
+                                dom.modelData / Math.max.apply(null, dom.vals)))
                             height: parent.height
                             radius: parent.radius
                             color: root.accentColor

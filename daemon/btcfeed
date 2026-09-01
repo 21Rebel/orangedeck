@@ -141,6 +141,12 @@ MINER_INTERVAL = 5
 # mitschreiben funktioniert bei jedem Geraet gleich.
 MINER_HISTORY = 180
 SCOREBOARD_INTERVAL = 30
+# Die Hash-Domaenen einzeln rauschen stark: am BM1370 gemessen rund 27 bis
+# 32 GH/s Streuung auf einen Mittelwert von 260 bis 276, also ueber 10 %.
+# Einzelwerte gaukeln damit Unterschiede vor, die keine sind. Zwoelf Messungen
+# (eine Minute) gemittelt ergeben ein ehrliches Bild -- eine dauerhaft
+# abfallende Domaene bleibt dabei sichtbar.
+DOMAIN_SMOOTH = 12
 
 
 def fee_bucket(rate):
@@ -352,6 +358,7 @@ class Feed:
         self.slow_at = 0.0
         self.miner_at = 0.0
         self.miner_hist = {}      # Geraete-Kennung -> Verlauf
+        self.miner_dom = {}       # Geraete-Kennung -> letzte Domaenenmessungen
         self.scoreboard = {}      # Geraete-Kennung -> Bestenliste
         self.scoreboard_at = 0.0
 
@@ -756,10 +763,25 @@ def poll_miners(feed):
             for k in ("t", "hr", "temp", "err"):
                 if len(h[k]) > MINER_HISTORY:
                     del h[k][:len(h[k]) - MINER_HISTORY]
+    # Hash-Domaenen glaetten -- siehe DOMAIN_SMOOTH
+    for m in found:
+        dom = m.get("domains") or []
+        if not (m.get("online") and dom):
+            continue
+        buf = feed.miner_dom.setdefault(m["id"], [])
+        buf.append(dom)
+        if len(buf) > DOMAIN_SMOOTH:
+            del buf[:len(buf) - DOMAIN_SMOOTH]
+        n = min(len(d) for d in buf)
+        m["domainsAvg"] = [round(sum(d[i] for d in buf) / len(buf), 1) for i in range(n)]
+        m["domainSamples"] = len(buf)
+
     # Verlaeufe verschwundener Geraete nicht ewig mitschleppen
     known = {m["id"] for m in found}
     for gone in [k for k in feed.miner_hist if k not in known]:
         del feed.miner_hist[gone]
+    for gone in [k for k in feed.miner_dom if k not in known]:
+        del feed.miner_dom[gone]
 
     # Bestenliste seltener holen, sie aendert sich kaum
     if now - feed.scoreboard_at >= SCOREBOARD_INTERVAL:
