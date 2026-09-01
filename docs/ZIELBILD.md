@@ -238,8 +238,8 @@ Die ersten sechs Schritte brauchen **keinen Bitcoin-Node**.
        danach ist die gesamte Grafik plattformunabhaengig.
     2. btcfeedd: Quell-Adapter, systemd-Unit. (Die Netzschnittstelle steht
        bereits: Loopback-HTTP, siehe unten.)
-    3. Eigenstaendige Qt-App + Flatpak. Damit ist "beliebiger Linux-Desktop"
-       erreicht.
+    3. [App ERLEDIGT 01.09.2026, Flatpak offen] Eigenstaendige Qt-App +
+       Flatpak. Damit ist "beliebiger Linux-Desktop" erreicht.
     4. DMS-Plugin auf die geteilten Komponenten umstellen.
     5. MinerView (Bitaxe) und ClockView. Beide klein und ohne Node machbar --
        deshalb frueh, sie zahlen sofort ein.
@@ -307,3 +307,36 @@ Der Daemon bietet dafuer an (nur lesend, nur `GET`, gebunden auf 127.0.0.1):
 **Gegengeprueft:** nach dem Neustart haelt der DMS-Prozess zwei stehende
 Verbindungen auf `127.0.0.1:21021` — die Schleifen fuer Zustand (400 ms) und
 Block (3 s). Keine QML-Fehler, Plugin geladen, Daten live (`source ws`).
+
+
+## Nachtrag 01.09.2026: die eigenstaendige Anwendung laeuft
+
+`app/` enthaelt eine gewoehnliche Qt-Anwendung (CMake, `qt_add_qml_module`).
+Sie bindet **dieselben Dateien** aus `ui/qml/` ein, kopiert nichts, und laeuft
+ohne Quickshell und ohne DMS.
+
+Nachgewiesen am 01.09.2026: eigenes Fenster auf dem Desktop mit der app_id
+`dev.21rebel.btcfeed-app`, zwei stehende Verbindungen zum Daemon auf
+`127.0.0.1:21021` (Zustand und Block), **3,0 % CPU** ueber sechs Sekunden
+gemessen. Einstellungen liegen portabel in `~/.config/btcfeed/btcfeed.conf`.
+
+Portiert wurde `shell/quickshell/shell.qml`:
+
+| vorher | jetzt |
+|---|---|
+| `ShellRoot` / `FloatingWindow` | `Window` aus QtQuick |
+| `FileView` auf `view.json` | `Settings` aus `QtCore` (QSettings), auch unter Android |
+
+Zwei Fallen, die dabei Zeit gekostet haben:
+
+1. **`QT_RESOURCE_ALIAS` muss vor `qt_add_qml_module` gesetzt werden.** Danach
+   wirkt es nicht mehr. Landet `Main.qml` deshalb unter `qml/` im
+   Ressourcenbaum, waehrend die geteilten Dateien in der Modulwurzel liegen,
+   findet es sie nicht: `FeedState is not a type`.
+2. **Qt schickt seine Meldungen ans Journal, nicht auf stderr.** Die Anwendung
+   beendete sich wortlos mit Rueckgabewert 1, ohne dass eine Fehlermeldung zu
+   sehen war. Mit `QT_FORCE_STDERR_LOGGING=1` kam sie sofort zum Vorschein.
+   Gilt fuer jede Fehlersuche an Qt-Programmen auf diesem System.
+
+**Offen fuer Schritt 3:** die Flatpak-Verpackung. `flatpak` ist vorhanden,
+**`flatpak-builder` fehlt** und muesste installiert werden.
