@@ -80,8 +80,17 @@ Item {
     // Werte lassen sie flacher ansetzen und in der Mitte steiler laufen.
     property real swing: 0.78
     property real edgeGap: Math.max(2, labelSize * 0.3)
-    // Pfeilspitze am rechten Ende, damit die Richtung erkennbar ist
-    property real arrowLen: Math.max(8, Math.min(width * 0.035, labelSize * 1.6))
+    // Pfeilspitze am rechten Ende, damit die Richtung erkennbar ist. Die
+    // Laenge haengt zusaetzlich an der Banddicke (siehe `tipFor`) -- eine feste
+    // Laenge ergibt bei dicken Baendern eine spitze Nadel und bei duennen einen
+    // stumpfen Klotz.
+    property real arrowLen: Math.max(6, Math.min(width * 0.03, labelSize * 1.3))
+    // Wie flach die Spitze laeuft: kleinere Werte = flacher.
+    property real tipRatio: 0.42
+
+    function tipFor(thickness) {
+        return Math.max(3, Math.min(root.arrowLen, thickness * root.tipRatio));
+    }
     // Oben und unten bleibt Platz -- der Fluss soll frei liegen, nicht am
     // Bildrand kleben.
     property real padY: Math.max(4, height * 0.09)
@@ -297,12 +306,19 @@ Item {
                 }
                 ctx.fillStyle = g;
 
+                // Alle Baender enden an derselben Stelle; nur die Spitze ist
+                // je nach Dicke unterschiedlich lang. Dazwischen ein gerades
+                // Stueck, damit die Kante ruhig laeuft.
+                var tip = root.tipFor(b.hEdge);
+                var xT = w - tip;
                 ctx.beginPath();
                 ctx.moveTo(xC, b.midY);
                 canvas.curve(ctx, xC, b.midY, xR, b.edgeY);
+                ctx.lineTo(xT, b.edgeY);
                 // Die Spitze laeuft **innerhalb** der Bandbreite zusammen --
                 // ein Ueberstand an den Ecken sieht nach Fehler aus.
                 ctx.lineTo(w, b.edgeY + b.hEdge / 2);
+                ctx.lineTo(xT, b.edgeY + b.hEdge);
                 ctx.lineTo(xR, b.edgeY + b.hEdge);
                 canvas.curve(ctx, xR, b.edgeY + b.hEdge, xC, b.midY + b.hMid);
                 ctx.closePath();

@@ -20,6 +20,10 @@ Item {
     property color goodColor: "#57b894"
     property color badColor: "#d9534f"
     property real scaleUnit: Math.max(10, Math.min(width / 34, height / 20))
+    // Die Suchleiste soll nicht mitwachsen -- in einem grossen Fenster wird
+    // sie sonst albern gross. Der Inhalt darunter darf skalieren, die
+    // Bedienelemente nicht.
+    readonly property real uiFont: Math.min(scaleUnit * 0.78, 15)
 
     // --- Zustand ---------------------------------------------------------
     property string kind: ""          // tx | block | address
@@ -155,14 +159,14 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        height: field.height + root.scaleUnit * 1.1
+        height: field.height + root.uiFont * 1.3
 
         Rectangle {
             id: backBtn
 
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: parent.left
-            width: root.scaleUnit * 1.9
+            width: root.uiFont * 2.2
             height: width
             radius: width / 2
             visible: root.trail.length > 0
@@ -170,11 +174,27 @@ Item {
             border.width: 1
             border.color: Qt.rgba(1, 1, 1, 0.12)
 
-            Text {
+            // Gezeichnet statt gesetzt: das Zeichen "‹" bringt je nach Schrift
+            // eine eigene Seiten- und Grundlinienlage mit und sitzt dann nicht
+            // mittig. Zwei Striche sind immer da, wo sie sein sollen.
+            Canvas {
                 anchors.centerIn: parent
-                text: "‹"
-                color: root.textColor
-                font.pixelSize: root.scaleUnit * 1.1
+                width: parent.width * 0.42
+                height: width
+
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.reset();
+                    ctx.strokeStyle = root.textColor;
+                    ctx.lineWidth = Math.max(1.5, width * 0.16);
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                    ctx.beginPath();
+                    ctx.moveTo(width * 0.68, height * 0.12);
+                    ctx.lineTo(width * 0.28, height * 0.5);
+                    ctx.lineTo(width * 0.68, height * 0.88);
+                    ctx.stroke();
+                }
             }
 
             MouseArea {
@@ -190,9 +210,9 @@ Item {
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: backBtn.visible ? backBtn.right : parent.left
-            anchors.leftMargin: backBtn.visible ? root.scaleUnit * 0.5 : 0
+            anchors.leftMargin: backBtn.visible ? root.uiFont * 0.5 : 0
             anchors.right: parent.right
-            height: field.height + root.scaleUnit * 0.7
+            height: field.height + root.uiFont * 0.8
             radius: height / 2
             color: Qt.rgba(1, 1, 1, 0.06)
             border.width: 1
@@ -203,11 +223,11 @@ Item {
 
                 anchors.left: parent.left
                 anchors.right: hintLabel.left
-                anchors.leftMargin: root.scaleUnit * 0.9
-                anchors.rightMargin: root.scaleUnit * 0.5
+                anchors.leftMargin: root.uiFont
+                anchors.rightMargin: root.uiFont * 0.6
                 anchors.verticalCenter: parent.verticalCenter
                 color: root.textColor
-                font.pixelSize: root.scaleUnit * 0.8
+                font.pixelSize: root.uiFont
                 font.family: "monospace"
                 selectByMouse: true
                 clip: true
@@ -218,7 +238,7 @@ Item {
                     visible: field.text.length === 0
                     text: "Blockhöhe, Blockhash, TxID oder Adresse …"
                     color: root.dimColor
-                    font.pixelSize: root.scaleUnit * 0.8
+                    font.pixelSize: root.uiFont
                 }
             }
 
@@ -226,11 +246,14 @@ Item {
                 id: hintLabel
 
                 anchors.right: parent.right
-                anchors.rightMargin: root.scaleUnit * 0.9
+                anchors.rightMargin: root.uiFont
                 anchors.verticalCenter: parent.verticalCenter
-                text: root.busy ? "sucht …" : Search.hintFor(field.text)
+                // Bei leerem Feld stuende hier dasselbe wie im Platzhalter --
+                // also nichts.
+                text: root.busy ? "sucht …"
+                                : (field.text.length ? Search.hintFor(field.text) : "")
                 color: root.busy ? root.accentColor : root.dimColor
-                font.pixelSize: root.scaleUnit * 0.62
+                font.pixelSize: root.uiFont * 0.82
             }
         }
     }

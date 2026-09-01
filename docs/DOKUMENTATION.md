@@ -938,6 +938,20 @@ das bricht die Farbe in der Mitte hart um.
 den Ecken -- der erste Versuch hatte einen -- sieht nach Fehler aus, nicht nach
 Absicht.
 
+Ihre Laenge haengt an der **Banddicke** (`tipFor`, `tipRatio`). Eine feste
+Laenge ergibt bei dicken Baendern eine spitze Nadel und bei duennen einen
+stumpfen Klotz:
+
+    Banddicke   feste Laenge   an die Dicke gekoppelt   Winkel fest / gekoppelt
+        2 px       10,5 px            3,0 px                11° / 37°
+        4 px       10,5 px            3,0 px                22° / 67°
+       10 px       10,5 px            4,2 px                51° / 100°
+       25 px       10,5 px           10,5 px               100° / 100°
+      110 px       10,5 px           10,5 px               158° / 158°
+
+Alle Baender enden an derselben Stelle; nur die Spitze ist unterschiedlich
+lang, dazwischen ein gerades Stueck.
+
 ### Rand, Anschluesse
 
 Oben und unten bleibt Platz (`padY`), damit der Fluss frei liegt statt am
@@ -986,3 +1000,18 @@ Hoehe normiert. Nachgerechnet ueber 1 bis 500 Eingaenge: immer exakt 220,00 px.
 
 Die Betraege gehen ebenfalls exakt auf -- links die Summe der Eingaenge, rechts
 die Ausgaenge plus Gebuehr, beide auf dieselbe Hoehe.
+
+
+## Bedienelemente skalieren nicht mit
+
+`ExplorerView` hat neben `scaleUnit` ein eigenes `uiFont`
+(`min(scaleUnit * 0.78, 15)`). Der **Inhalt** darf mit der Flaeche wachsen, die
+**Bedienelemente** nicht -- die Suchleiste wurde in einem grossen Fenster sonst
+albern gross. Der Hinweis rechts im Feld bleibt zudem leer, solange nichts
+eingegeben ist: dort staende sonst dasselbe wie im Platzhalter.
+
+**Zeichen wie `‹` sitzen nicht zuverlaessig mittig.** Sie bringen je nach
+Schrift eine eigene Seiten- und Grundlinienlage mit; `anchors.centerIn` zentriert
+das Textfeld, nicht das sichtbare Zeichen. Der Zurueck-Pfeil ist deshalb mit
+zwei Strichen auf einer kleinen Leinwand gezeichnet -- schriftunabhaengig und
+immer dort, wo er sein soll.
