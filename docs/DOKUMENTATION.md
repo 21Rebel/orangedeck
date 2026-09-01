@@ -318,3 +318,30 @@ Nebenbei zwei Fallen beim Nachmessen selbst:
 - Dessen `console.log`/`console.warn` erreicht die Konsole in dieser Umgebung
   nicht. Ergebnisse lassen sich zuverlaessig ueber `Qt.exit(<code>)` heraus-
   tragen.
+
+
+## Bewusste Abweichung: der Block liegt enger als im Original
+
+`TxBlockScene.js` rechnet:
+
+    this.gridSize    = width / this.blockWidth
+    this.unitPadding = this.gridSize / 4
+    this.unitWidth   = this.gridSize - (this.unitPadding * 2)
+
+Die Kachel ist dort also **genau halb so breit wie die Rasterzelle**. Bei den
+kleinen Rasterweiten, die hier vorkommen, wirkt der Block dadurch als
+Punktraster statt als Flaeche -- bei `g = 6` waren das 2 px Kachel auf 4 px
+Luecke, also 33 % Fuellung, waehrend die Halde daneben 4 px auf 2 px zeigt
+(67 %).
+
+`blockPadDivisor` steht deshalb auf **8** statt 4:
+
+     g   alt: Kachel/Luecke  Fuellung      neu: Kachel/Luecke  Fuellung
+     6          2 px / 4 px       33%             4 px / 2 px       67%
+     7          3 px / 4 px       43%             5 px / 2 px       71%
+     8          4 px / 4 px       50%             6 px / 2 px       75%
+    12          6 px / 6 px       50%             8 px / 4 px       67%
+    24        12 px / 12 px       50%            18 px / 6 px       75%
+
+Damit hat der Block dieselbe Dichte wie die Halde. Der Wert ist eine
+Eigenschaft und laesst sich spaeter in die Einstellungen heben.

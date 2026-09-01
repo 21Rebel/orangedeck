@@ -180,8 +180,21 @@ Item {
     // Kanten (siehe blockRect) sind die Luecken dadurch ueberall exakt gleich
     // breit. Vorher lagen sie auf gebrochenen Pixelwerten: mal fiel ein Pixel
     // mehr auf die Luecke, mal weniger, und daraus entstand ein Karomuster.
+    // Rand um jede Blockkachel; die Luecke zwischen zwei Nachbarn ist doppelt
+    // so breit. Das Original rechnet `unitPadding = gridSize / 4`, die Kachel
+    // ist dort also genau halb so breit wie die Rasterzelle -- bei kleinen
+    // Rasterweiten wirkt der Block dadurch sehr luftig: bei g = 7 sind das
+    // 3 px Kachel auf 4 px Luecke, waehrend die Halde daneben 4 px Kachel auf
+    // 2 px Luecke zeigt.
+    //
+    // Hier ist der Teiler deshalb groesser. 8 ergibt bei g = 7 einen Rand von
+    // 1 px, also 5 px Kachel auf 2 px Luecke -- dieselbe Dichte wie in der
+    // Halde, und der Block wirkt als geschlossene Flaeche statt als Punktraster.
+    // Bewusste Abweichung vom Original; ueber blockPadDivisor einstellbar.
+    property int blockPadDivisor: 8
+
     function blockPad(g) {
-        return Math.max(1, Math.round(g / 4));
+        return Math.max(1, Math.round(g / Math.max(1, blockPadDivisor)));
     }
 
     // Rasterweite des Blocks -- **ganzzahlig**. Vorher war das
