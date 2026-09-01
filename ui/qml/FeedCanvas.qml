@@ -102,34 +102,43 @@ Item {
             viewY = 0;
             return;
         }
-        viewX = Math.min(0, Math.max(width - width * zoom, viewX));
-        viewY = Math.min(0, Math.max(height - height * zoom, viewY));
+        viewX = Math.round(Math.min(0, Math.max(width - width * zoom, viewX)));
+        viewY = Math.round(Math.min(0, Math.max(height - height * zoom, viewY)));
     }
 
     // Vergroessern um einen festen Punkt herum: was unter dem Zeiger liegt,
     // bleibt unter dem Zeiger.
+    // Der Massstab ist **ganzzahlig**, und die Verschiebung liegt auf ganzen
+    // Bildpunkten. Grund: die Halde ist ein Pixelraster aus 4-px-Kacheln. Ein
+    // gebrochener Massstab macht jede Kante gebrochen, und weil ohne
+    // Kantenglaettung gezeichnet wird, schnappt jede Kante einzeln -- aus
+    // Quadraten werden Rechtecke und es entsteht ein Karomuster. Mit ganzen
+    // Zahlen bleibt jede Kachel exakt quadratisch und jede Luecke gleich breit,
+    // bei jeder Vergroesserung.
     function setZoomAt(px, py, z) {
-        var z1 = Math.max(minZoom, Math.min(maxZoom, z));
-        if (Math.abs(z1 - zoom) < 0.0001)
+        var z1 = Math.max(minZoom, Math.min(maxZoom, Math.round(z)));
+        if (z1 === zoom)
             return;
         var sx = toSceneX(px);
         var sy = toSceneY(py);
         zoom = z1;
-        viewX = px - sx * z1;
-        viewY = py - sy * z1;
+        viewX = Math.round(px - sx * z1);
+        viewY = Math.round(py - sy * z1);
         clampView();
         repaintView();
     }
 
-    function zoomAt(px, py, factor) {
-        setZoomAt(px, py, zoom * factor);
+    // Ein Radschritt = eine Stufe. Ein Faktor waere hier sinnlos, weil ohnehin
+    // auf ganze Zahlen gerundet wird.
+    function zoomStep(px, py, dir) {
+        setZoomAt(px, py, zoom + dir);
     }
 
     function panBy(dx, dy) {
         if (!zoomed)
             return;
-        viewX += dx;
-        viewY += dy;
+        viewX = Math.round(viewX + dx);
+        viewY = Math.round(viewY + dy);
         clampView();
         repaintView();
     }
@@ -173,6 +182,18 @@ Item {
     // mehr auf die Luecke, mal weniger, und daraus entstand ein Karomuster.
     function blockPad(g) {
         return Math.max(1, Math.round(g / 4));
+    }
+
+    // Rasterweite des Blocks -- **ganzzahlig**. Vorher war das
+    // `blockSide / rowsUsed` und damit gebrochen; blockRect rundet beide Kanten
+    // einzeln, wodurch `x1 - x0` je nach Nachkommastelle mal floor(g*r) und mal
+    // ceil(g*r) ergab. Aus einem Quadrat wurde dann ein Rechteck von z. B. 3x4,
+    // und genau das erzeugte das Karomuster (offener Punkt 2 aus STAND.md).
+    // Der Block wird dadurch bis zu `rowsUsed` Pixel kleiner als der verfuegbare
+    // Platz -- unsichtbar, und dafuer ist jede Kachel exakt quadratisch und
+    // jede Luecke gleich breit.
+    function blockUnit(rows) {
+        return Math.max(1, Math.floor(blockSide / Math.max(1, rows)));
     }
 
     function txSize(valueSats, vbytes) {
@@ -686,10 +707,10 @@ Item {
         function hoverRectAt(px, py) {
             if (squares.length === 0)
                 return null;
-            var g = root.blockSide / rowsUsed;
+            var g = root.blockUnit(rowsUsed);
             var pad = root.blockPad(g);
-            var bx = (root.width - gridUnits * g) / 2;
-            var by = root.blockCenterY - (rowsUsed * g) / 2;
+            var bx = Math.round((root.width - gridUnits * g) / 2);
+            var by = Math.round(root.blockCenterY - (rowsUsed * g) / 2);
             var cx = Math.floor((px - bx) / g);
             var cy = Math.floor((py - by) / g);
             var i = cellIdx[cx + ":" + cy];
@@ -716,9 +737,9 @@ Item {
         function blockTxAt(px, py) {
             if (squares.length === 0 || !root.blockRevealed)
                 return null;
-            var g = root.blockSide / rowsUsed;
-            var bx = (root.width - gridUnits * g) / 2;
-            var by = root.blockCenterY - (rowsUsed * g) / 2;
+            var g = root.blockUnit(rowsUsed);
+            var bx = Math.round((root.width - gridUnits * g) / 2);
+            var by = Math.round(root.blockCenterY - (rowsUsed * g) / 2);
             var cx = Math.floor((px - bx) / g);
             var cy = Math.floor((py - by) / g);
             if (cx < 0 || cy < 0 || cx >= gridUnits || cy >= rowsUsed)
@@ -742,11 +763,11 @@ Item {
 
         // Bildschirmrechteck einer Blockkachel -- die Flugziele beim Blockfund
         function rectFor(q) {
-            var side = root.blockSide;
-            var g = side / rowsUsed;
+            var g = root.blockUnit(rowsUsed);
+            var side = g * rowsUsed;
             var pad = root.blockPad(g);
-            var bx = (root.width - gridUnits * g) / 2;
-            var by = root.blockCenterY - (rowsUsed * g) / 2;
+            var bx = Math.round((root.width - gridUnits * g) / 2);
+            var by = Math.round(root.blockCenterY - (rowsUsed * g) / 2);
             var r = blockRect(q, g, bx, by, pad);
             return {
                 "x": r.x,
@@ -764,13 +785,13 @@ Item {
             if (!root.blockRevealed || squares.length === 0 || root.poolTop < 24)
                 return;
 
-            var side = root.blockSide;
-            var g = side / rowsUsed;
+            var g = root.blockUnit(rowsUsed);
+            var side = g * rowsUsed;
             var pad = root.blockPad(g);
-            var bx = (root.width - gridUnits * g) / 2;
+            var bx = Math.round((root.width - gridUnits * g) / 2);
             // Im Block laeuft die Rasterachse nach unten (Zeile 0 oben) -- die
             // zuerst gesetzten, grossen Transaktionen liegen dadurch oben.
-            var by = root.blockCenterY - (rowsUsed * g) / 2;
+            var by = Math.round(root.blockCenterY - (rowsUsed * g) / 2);
 
             var byColor = {};
             for (var i = 0; i < squares.length; i++) {
@@ -861,9 +882,9 @@ Item {
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
 
         onWheel: event => {
-            // 1,0016 pro Rasterschritt: ein ueblicher Radschritt (120) ergibt
-            // rund 21 % -- fein genug zum Anpeilen, schnell genug zum Erreichen.
-            root.zoomAt(event.x, event.y, Math.pow(1.0016, event.angleDelta.y));
+            if (event.angleDelta.y === 0)
+                return;
+            root.zoomStep(event.x, event.y, event.angleDelta.y > 0 ? 1 : -1);
             event.accepted = true;
         }
     }
@@ -1043,7 +1064,12 @@ Item {
                     var side = t.sq.r * root.gridSize - root.unitPad * 2;
                     if (side < 1)
                         side = 1;
-                    ctx.fillRect(root.targetX(t.sq), root.targetY(t.sq), side, side);
+                    // Auf ganze Bildpunkte: targetY enthaelt das animierte
+                    // scrollPx und ist damit gebrochen. Ohne Rundung schnappt
+                    // die Unterkante anders als die Oberkante, und die Kachel
+                    // wird ein Pixel hoeher oder niedriger als breit.
+                    ctx.fillRect(Math.round(root.targetX(t.sq)),
+                                 Math.round(root.targetY(t.sq)), side, side);
                 }
             }
 

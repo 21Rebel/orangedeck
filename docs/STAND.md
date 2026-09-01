@@ -61,14 +61,35 @@ Die alte Fassung trifft die am 31.08. gemessenen `flying 59 / poolTx 59` exakt.
 Ab `capacity: 320` in `flyLayer` bekommen neue Kacheln kein Rechteck mehr —
 daher "anfangs fiel es, spaeter nicht mehr".
 
-### 2. Karomuster kommt auch von nicht-quadratischen Kacheln
+### 2. Karomuster kommt auch von nicht-quadratischen Kacheln — BEHOBEN 01.09.2026
 
-Beobachtung vom 31.08.: die ungleichen Luecken sind zwar behoben (Kanten werden
-gerundet, siehe Stolperfalle 16), aber es bleibt ein Muster, weil manche Kacheln
-nicht quadratisch gezeichnet werden. Naechster Schritt: in `blockRect` pruefen,
-ob `w` und `h` auseinanderlaufen -- bei gerundeten Kanten kann ein Quadrat als
-Rechteck von z. B. 3x4 herauskommen. Ueberlegen, ob man auf die kleinere Kante
-quadriert oder das Raster ganzzahlig macht.
+Am 01.09. unter dem neuen Zoom sofort sichtbar geworden. Es waren **drei**
+verschiedene Ursachen, die alle gleich aussahen:
+
+**(a) Der Block rechnete mit gebrochener Rasterweite.** `g = blockSide /
+rowsUsed`, und `blockRect` rundet beide Kanten einzeln -- `x1 - x0` ergab also
+je nach Nachkommastelle mal `floor(g*r)`, mal `ceil(g*r)`. Eine `r=1`-Kachel kam
+als **3x3, 3x4, 4x3 oder 4x4** heraus. Behoben durch `blockUnit(rows)`:
+`floor(blockSide / rows)`, also **ganzzahlig**. Der Block wird dadurch bis zu
+`rowsUsed` Pixel kleiner als der Platz -- unsichtbar. Zusaetzlich sind `bx` und
+`by` gerundet, sonst landen die Kanten trotz ganzem `g` auf halben Pixeln.
+
+**(b) In der Halde steckt das animierte `scrollPx` in `targetY`.** Die
+Unterkante schnappte dadurch anders als die Oberkante, die Kachel wurde ein
+Pixel hoeher oder niedriger als breit. Behoben durch Rundung beim Zeichnen.
+
+**(c) Der Zoom selbst, neu hinzugekommen.** Ein gebrochener Massstab macht jede
+Kante gebrochen. Ein 4-px-Raster laesst sich nicht ungleichmaessig skalieren,
+ohne dass Kacheln ungleich werden. Deshalb ist der Massstab jetzt
+**ganzzahlig** (1x bis 24x, ein Radschritt = eine Stufe) und die Verschiebung
+liegt auf ganzen Bildpunkten.
+
+**Nachgerechnet** (blockRect nachgebildet, alte gegen neue Rasterweite):
+
+    Blockseite 560 px, 73 Zeilen   ALT: 4796/15554 nicht quadratisch (30,8 %)
+                                   NEU:     0/15554                  (0,0 %)
+    ueber Blockseite 300..900 und 20..90 Zeilen, 20,4 Mio. Kacheln:
+                                   ALT: 33,2 %      NEU: 0,0 %
 
 ### 3. Eigener Node als Datenquelle
 
