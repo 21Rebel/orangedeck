@@ -37,9 +37,20 @@ Item {
     // Seit der Inhalt rollbar ist, muss nichts mehr wegen Platzmangel
     // wegbleiben. Die Schwellen halten nur noch das ganz kleine
     // Desktop-Widget frei, wo Kurve und Liste sinnlos waeren.
-    // Im Dashboard sitzen oben rechts schon die Knoepfe von DMS -- damit sich
-    // unsere nicht darunterschieben, laesst sich Platz freihalten.
-    property real actionInset: 0
+    // Hat der Wirt schon eine Knopfleiste (im Dashboard die von DMS), stellt
+    // er die Knoepfe selbst und schaltet unsere ab. Sie sitzen dann in der
+    // obersten Zeile, wo nichts sie ueberdecken kann.
+    property bool showActions: true
+    // Fuer den Wirt: Legende auf- und zuklappen
+    function toggleInfo() {
+        info.open = !info.open;
+    }
+    // Weboberflaeche des Geraets oeffnen. Gilt fuer jeden Miner, der eine hat.
+    readonly property string webUrl: (one && one.type === "axeos") ? one.id : ""
+    function openWeb() {
+        if (webUrl)
+            Qt.openUrlExternally(webUrl);
+    }
     readonly property bool roomForChart: height > 200
     readonly property bool roomForBoard: height > 240
 
@@ -67,16 +78,16 @@ Item {
         return m + " Min";
     }
 
-    // Zu den Einstellungen geht es in AxeOS -- die bleiben dort, hier wird nur
-    // angezeigt. Der Knopf oeffnet die Weboberflaeche des Geraets.
+    // Zu den Einstellungen geht es in der Weboberflaeche des Geraets -- die
+    // bleiben dort, hier wird nur angezeigt. Nur ein Zeichen, keine
+    // Beschriftung: so passt der Knopf fuer jeden Miner.
     // Alle Erklaerungen an einem Ort, statt sie in die Flaeche zu streuen
     InfoPopup {
         id: info
 
         anchors.fill: parent
         buttonMargin: 0
-        buttonRightInset: root.actionInset
-        backdropSource: flick
+        showButton: root.showActions
         fontSize: root.scaleUnit * 0.72
         textColor: root.textColor
         dimColor: root.dimColor
@@ -114,37 +125,26 @@ Item {
         z: 40
     }
 
-    FrostedPanel {
-        content: openBtn
-        backdropSource: flick
-        pad: 0
-        cornerRadius: openBtn.height / 2
-        tintAlpha: 0.8
-        z: 19
-    }
-
     Rectangle {
         id: openBtn
 
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.rightMargin: root.actionInset + info.buttonWidth + root.scaleUnit * 0.4
-        visible: root.one !== null && root.one.type === "axeos"
-        width: openLabel.width + root.scaleUnit * 0.9
-        height: openLabel.height + root.scaleUnit * 0.45
+        anchors.rightMargin: info.buttonWidth + root.scaleUnit * 0.4
+        visible: root.showActions && root.webUrl !== ""
+        width: info.buttonWidth
+        height: width
         radius: height / 2
-        color: openArea.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : "transparent"
+        color: openArea.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.06)
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.1)
+        border.color: Qt.rgba(1, 1, 1, 0.12)
         z: 20
 
         Text {
-            id: openLabel
-
             anchors.centerIn: parent
-            text: "AxeOS öffnen ↗"
+            text: "↗"
             color: root.textColor
-            font.pixelSize: root.scaleUnit * 0.58
+            font.pixelSize: root.scaleUnit * 0.8
         }
 
         MouseArea {
@@ -153,10 +153,7 @@ Item {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (root.one)
-                    Qt.openUrlExternally(root.one.id);
-            }
+            onClicked: root.openWeb()
         }
     }
 

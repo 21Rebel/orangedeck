@@ -111,13 +111,15 @@ Item {
     }
 
     MinerView {
+        id: minerView
+
         visible: root.view === 2
         anchors.fill: parent
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
-        // Oben rechts sitzen schon die beiden Knoepfe von DMS (je 28 px plus
-        // Abstand) -- so viel Platz halten unsere frei.
-        actionInset: 62
+        // Die Knoepfe stellt hier die Leiste oben rechts -- dort kann sie
+        // nichts ueberdecken.
+        showActions: false
         feed: feedState
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
@@ -156,6 +158,22 @@ Item {
         anchors.top: parent.top
         anchors.margins: 2
         spacing: 2
+
+        DankActionButton {
+            visible: root.view === 2 && minerView.webUrl !== ""
+            iconName: "lan"
+            buttonSize: 28
+            tooltipText: "Weboberfläche des Miners öffnen"
+            onClicked: minerView.openWeb()
+        }
+
+        DankActionButton {
+            visible: root.view === 2
+            iconName: "info"
+            buttonSize: 28
+            tooltipText: "Legende"
+            onClicked: minerView.toggleInfo()
+        }
 
         DankActionButton {
             iconName: "open_in_new"
