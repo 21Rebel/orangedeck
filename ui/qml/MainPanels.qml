@@ -108,7 +108,7 @@ Grid {
 
     // ------------------------------------------------ Gebuehrenstufen
     Panel {
-        height: root.uiFont * 7.5
+        height: root.uiFont * 8.4
         title: "TRANSAKTIONSGEBÜHR"
 
         Row {
@@ -130,7 +130,7 @@ Grid {
                     required property var modelData
                     required property int index
 
-                    spacing: root.uiFont * 0.55
+                    spacing: root.uiFont * 0.95
 
                     Rectangle {
                         width: root.uiFont * 7.6
@@ -177,7 +177,7 @@ Grid {
 
     // ------------------------------------------ Schwierigkeitsanpassung
     Panel {
-        height: root.uiFont * 7.5
+        height: root.uiFont * 8.4
         title: "SCHWIERIGKEITSANPASSUNG"
 
         Column {

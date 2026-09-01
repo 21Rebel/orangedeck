@@ -29,6 +29,21 @@ Item {
     property string error: ""
 
     signal blockPicked(string hash)
+    // Ein geplanter Block hat keinen Hash -- er wird ueber seinen Rang
+    // gemeldet (0 = der naechste).
+    signal projectedPicked(int rank, var data)
+
+    // Wie lange es voraussichtlich bis zu diesem geplanten Block dauert.
+    // Grundlage ist die **gemessene** durchschnittliche Blockzeit aus der
+    // Schwierigkeitsanpassung, nicht die nominellen zehn Minuten.
+    function etaFor(rank) {
+        var avg = (root.feed && root.feed.difficulty.timeAvg) || 600000;
+        var min = Math.round((rank + 1) * avg / 60000);
+        if (min < 60)
+            return "in ~" + min + " Min";
+        var h = Math.floor(min / 60);
+        return "in ~" + h + " Std " + (min % 60) + " Min";
+    }
 
     implicitHeight: uiFont * 13.5
 
@@ -104,8 +119,15 @@ Item {
     readonly property var projectedShown: {
         var p = (root.projected || []).slice(0, 8);
         var out = [];
-        for (var i = p.length - 1; i >= 0; i--)
-            out.push(p[i]);
+        // Umgedreht, damit der naechste rechts an der Grenze steht -- der
+        // urspruengliche Rang wird dabei mitgefuehrt.
+        for (var i = p.length - 1; i >= 0; i--) {
+            var e = {};
+            for (var k in p[i])
+                e[k] = p[i][k];
+            e.rank = i;
+            out.push(e);
+        }
         return out;
     }
 
@@ -161,13 +183,23 @@ Item {
                         width: root.uiFont * 9
                         height: strip.height
 
+                        Text {
+                            id: etaLabel
+
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: root.etaFor(pcell.modelData.rank)
+                            color: root.dimColor
+                            font.pixelSize: root.uiFont * 0.85
+                        }
+
                         BlockCard {
                             anchors.left: parent.left
                             anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.topMargin: root.uiFont * 1.6
+                            anchors.top: etaLabel.bottom
+                            anchors.topMargin: root.uiFont * 0.3
                             anchors.bottom: parent.bottom
                             tone: root.feeShade(pcell.modelData.medianFee)
+                            hovered: parea.containsMouse
                             depth: root.uiFont * 0.45
                             cornerRadius: root.uiFont * 0.3
 
@@ -214,6 +246,15 @@ Item {
                                     color: Qt.rgba(1, 1, 1, 0.74)
                                     font.pixelSize: root.uiFont * 0.72
                                 }
+                            }
+
+                            MouseArea {
+                                id: parea
+
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.projectedPicked(pcell.modelData.rank, pcell.modelData)
                             }
                         }
                     }

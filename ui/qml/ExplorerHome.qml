@@ -18,6 +18,7 @@ Column {
 
     signal blockPicked(string hash)
     signal txPicked(string txid)
+    signal projectedPicked(int rank, var data)
 
     spacing: uiFont * 1.4
 
@@ -85,6 +86,9 @@ Column {
         uiFont: root.uiFont
         onBlockPicked: function (hash) {
             root.blockPicked(hash);
+        }
+        onProjectedPicked: function (rank, data) {
+            root.projectedPicked(rank, data);
         }
     }
 

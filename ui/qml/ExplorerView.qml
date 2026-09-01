@@ -91,6 +91,17 @@ Item {
         return id.length > 2 * k ? id.slice(0, k) + "…" + id.slice(-k) : id;
     }
 
+    // Wie lange es voraussichtlich bis zu einem geplanten Block dauert --
+    // auf Grundlage der **gemessenen** Blockzeit, nicht der nominellen zehn
+    // Minuten.
+    function etaFor(rank) {
+        var avg = (root.feed && root.feed.difficulty.timeAvg) || 600000;
+        var min = Math.round((rank + 1) * avg / 60000);
+        if (min < 60)
+            return "in ~" + min + " Min";
+        return "in ~" + Math.floor(min / 60) + " Std " + (min % 60) + " Min";
+    }
+
     function ago(ts) {
         if (!ts)
             return "";
@@ -167,6 +178,22 @@ Item {
     }
 
     property string currentArg: ""
+
+    // Ein geplanter Block hat keinen Hash und keine abrufbaren Inhalte -- er
+    // wird deshalb nicht ueber `go()` geladen, sondern direkt gesetzt.
+    property int projRank: 0
+
+    function showProjected(rank, data) {
+        if (root.kind && root.result)
+            root.trail = root.trail.concat([{ "kind": root.kind, "arg": root.currentArg }]);
+        root.kind = "projected";
+        root.projRank = rank;
+        root.result = data;
+        root.extra = null;
+        root.tiles = null;
+        root.status = "";
+        root.currentArg = "";
+    }
 
     function fail(msg) {
         root.kind = "";
@@ -426,6 +453,9 @@ Item {
                 onTxPicked: function (txid) {
                     root.go("tx", txid);
                 }
+                onProjectedPicked: function (rank, data) {
+                    root.showProjected(rank, data);
+                }
             }
 
             // ------------------------------------------- Transaktion
@@ -445,6 +475,12 @@ Item {
                 width: parent.width
                 active: root.kind === "address" && root.result !== null
                 sourceComponent: addressDetail
+            }
+
+            Loader {
+                width: parent.width
+                active: root.kind === "projected" && root.result !== null
+                sourceComponent: projectedDetail
             }
         }
     }
@@ -850,6 +886,125 @@ Item {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // ================================================== geplanter Block
+    Component {
+        id: projectedDetail
+
+        Column {
+            id: projBox
+
+            spacing: root.scaleUnit * 0.45
+
+            readonly property var d: root.result
+            readonly property var range: projBox.d.feeRange || []
+
+            Text {
+                text: root.projRank === 0 ? "Nächster Block" : (root.projRank + 1) + ". Block voraus"
+                color: root.dimColor
+                font.pixelSize: root.scaleUnit * 0.62
+            }
+
+            Text {
+                text: "~" + Math.round(projBox.d.medianFee) + " sat/vB"
+                color: root.accentColor
+                font.pixelSize: root.scaleUnit * 1.8
+                font.bold: true
+            }
+
+            Row {
+                spacing: root.scaleUnit * 1.2
+
+                Repeater {
+                    model: [
+                        { "k": "Transaktionen", "v": root.grp(projBox.d.nTx) },
+                        { "k": "Größe", "v": (projBox.d.blockSize / 1e6).toFixed(2).replace(".", ",") + " MB" },
+                        { "k": "Gebühren", "v": root.btc(projBox.d.totalFees) },
+                        { "k": "voraussichtlich", "v": root.etaFor(root.projRank) }
+                    ]
+
+                    Column {
+                        id: pc
+
+                        required property var modelData
+
+                        spacing: root.scaleUnit * 0.1
+
+                        Text {
+                            text: pc.modelData.k
+                            color: root.dimColor
+                            font.pixelSize: root.scaleUnit * 0.55
+                        }
+
+                        Text {
+                            text: pc.modelData.v
+                            color: root.textColor
+                            font.pixelSize: root.scaleUnit * 0.75
+                        }
+                    }
+                }
+            }
+
+            Item {
+                width: 1
+                height: root.scaleUnit * 0.4
+            }
+
+            // Der praktische Teil: was muss man zahlen, um hineinzukommen
+            Rectangle {
+                width: flick.width
+                height: hintCol.implicitHeight + root.uiFont * 1.6
+                radius: root.uiFont * 0.4
+                color: Qt.rgba(1, 1, 1, 0.04)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.08)
+
+                Column {
+                    id: hintCol
+
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.margins: root.uiFont * 0.9
+                    spacing: root.uiFont * 0.35
+
+                    Text {
+                        text: projBox.range.length
+                            ? "Wer hier hinein will, zahlt mindestens "
+                              + projBox.range[0].toFixed(2).replace(".", ",") + " sat/vB"
+                            : ""
+                        color: root.textColor
+                        font.pixelSize: root.uiFont * 1.05
+                    }
+
+                    Text {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: projBox.range.length
+                            ? "Die Gebühren in diesem Block reichen von "
+                              + projBox.range[0].toFixed(2).replace(".", ",") + " bis "
+                              + projBox.range[projBox.range.length - 1].toFixed(2).replace(".", ",")
+                              + " sat/vB. Miner nehmen die teuersten zuerst — wer weniger zahlt, rutscht in einen späteren Block."
+                            : ""
+                        color: root.dimColor
+                        font.pixelSize: root.uiFont * 0.85
+                    }
+                }
+            }
+
+            Text {
+                width: flick.width
+                wrapMode: Text.WordWrap
+                // Ehrlich sagen, was hier nicht geht
+                text: "Welche Transaktionen genau in diesem Block landen würden, "
+                      + "lässt sich nicht abrufen — dafür gibt es keine Schnittstelle. "
+                      + "Die Aufteilung ist ohnehin nur eine Vorhersage: sie ändert sich "
+                      + "mit jeder neuen Transaktion, und der Miner entscheidet am Ende selbst."
+                color: root.dimColor
+                font.pixelSize: root.uiFont * 0.85
             }
         }
     }

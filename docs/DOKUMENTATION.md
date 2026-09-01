@@ -1436,3 +1436,39 @@ keinen Platz.
 Die Achse reicht deshalb bis zum **1,12-fachen** des Hoechstwerts. Beschriftet
 wird weiterhin der echte Wert, nicht der erhoehte -- sonst stuende an der Achse
 eine Zahl, die nie vorkommt. Eine Spitze endet damit bei rund 89 % der Hoehe.
+
+
+## Geplante Bloecke: was geht und was nicht
+
+**Die Inhalte sind nicht abrufbar.** Am 01.09.2026 geprueft:
+
+    /api/v1/mempool-blocks/0        404
+    /api/v1/mempool-block/0         404
+    /api/v1/fees/mempool-blocks/0   404
+    /api/v1/projected-block/0       404
+
+Auch ueber den WebSocket kam nichts: `{"action":"track-mempool-block","index":0}`
+lieferte in 25 Sekunden keine Transaktionsliste. Was ankommt, sind die
+Zusammenfassungen (`mempool-blocks`), dazu `rbfSummary`, `da` und
+`conversions`.
+
+Eine Kachelgrafik wie bei bestaetigten Bloecken ist damit **nicht** moeglich.
+
+### Was stattdessen darin steht
+
+Beim Klick auf einen geplanten Block: mittlere Rate gross, Anzahl, Groesse,
+Gebuehren, voraussichtliche Zeit -- und der praktische Teil: **welche Gebuehr
+noetig waere, um in diesen Block zu kommen** (die untere Grenze seiner
+Gebuehrenspanne), mit einer Erklaerung, warum Miner die teuersten zuerst
+nehmen.
+
+Dazu ein Satz, der offen sagt, was nicht geht: die Aufteilung ist eine
+Vorhersage, sie aendert sich mit jeder neuen Transaktion, und der Miner
+entscheidet am Ende selbst.
+
+### Die Zeitschaetzung
+
+Grundlage ist die **gemessene** durchschnittliche Blockzeit aus der
+Schwierigkeitsanpassung (`timeAvg`), nicht die nominellen zehn Minuten. Gerade
+sind das 9,9 Minuten, also 10 / 20 / 30 / 39 Minuten fuer die ersten vier
+Bloecke. Ueber der Kachel steht die Schaetzung mit.
