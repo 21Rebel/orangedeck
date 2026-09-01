@@ -1,7 +1,11 @@
-// Die letzten Bloecke als Kette, waagerecht rollbar. Neuester links.
+// Die Kette in einer Leiste: links die geplanten Bloecke aus dem Mempool,
+// rechts die bestaetigten -- dazwischen die Grenze zwischen "steht noch aus"
+// und "steht fest". So sieht man unmittelbar, welcher Block als naechster
+// bestaetigt wuerde.
 //
-// Die Daten kommen ueber den Daemon (`/lookup/blocks/recent`), der sie von
-// mempool.space oder einem eigenen Node holt.
+// Reihenfolge wie im Original: die geplanten laufen von weit draussen nach
+// innen, der naechste steht direkt an der Grenze; rechts davon der neueste
+// bestaetigte, dann aelter werdend.
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
@@ -15,17 +19,18 @@ Item {
     property color textColor: "#f2eef8"
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
-    // Bestaetigte Bloecke sind violett, geplante gruen -- die Farbe trennt den
-    // **Zustand**, nicht die Gebuehr. So macht es auch das Original, und man
-    // erkennt auf einen Blick, was schon feststeht und was noch aussteht.
-    property color blockColor: "#7b5cd6"
+    // Die Farbe trennt den Zustand: gruen steht aus, violett steht fest.
+    property color pendingColor: "#2f9e63"
+    property color minedColor: "#7b5cd6"
     property real uiFont: 13
+
     property var blocks: []
+    property var projected: []
     property string error: ""
 
     signal blockPicked(string hash)
 
-    implicitHeight: uiFont * 13
+    implicitHeight: uiFont * 13.5
 
     function grp(n) {
         if (n === undefined || n === null)
@@ -44,12 +49,21 @@ Item {
             return "";
         var s = Math.max(0, Math.floor(Date.now() / 1000 - ts));
         var m = Math.floor(s / 60);
+        if (m < 1)
+            return "gerade eben";
         if (m < 60)
             return "vor " + m + " Min";
         var h = Math.floor(m / 60);
         if (h < 48)
             return "vor " + h + " Std";
         return "vor " + Math.floor(h / 24) + " Tagen";
+    }
+
+    // Abgestuft nach Gebuehr, im selben Gruen -- der naechste Block traegt die
+    // hoechsten Gebuehren und leuchtet am staerksten.
+    function feeShade(medianFee) {
+        var f = Math.max(0, Math.min(1, (medianFee || 0) / 12));
+        return Qt.hsva(root.pendingColor.hsvHue, 0.45 + 0.3 * f, 0.34 + 0.30 * f, 1);
     }
 
     function reload() {
@@ -63,11 +77,14 @@ Item {
             root.error = "";
             root.blocks = d || [];
         });
+        root.feed.lookup("mempoolblocks", "now", function (d, err) {
+            if (!err)
+                root.projected = d || [];
+        });
     }
 
     Component.onCompleted: reload()
 
-    // Nach einem neuen Block nachladen
     Connections {
         target: root.feed
         enabled: root.feed !== null
@@ -83,10 +100,21 @@ Item {
         onTriggered: root.reload()
     }
 
+    // Der naechste Block steht rechts an der Grenze, die ferneren links davon
+    readonly property var projectedShown: {
+        var p = (root.projected || []).slice(0, 8);
+        var out = [];
+        for (var i = p.length - 1; i >= 0; i--)
+            out.push(p[i]);
+        return out;
+    }
+
     Text {
+        id: label
+
         anchors.left: parent.left
         anchors.top: parent.top
-        text: "Letzte Blöcke"
+        text: "Geplant  ·  bestätigt"
         color: root.dimColor
         font.pixelSize: root.uiFont * 0.85
     }
@@ -96,8 +124,8 @@ Item {
 
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.topMargin: root.uiFont * 1.6
+        anchors.top: label.bottom
+        anchors.topMargin: root.uiFont * 0.5
         anchors.bottom: parent.bottom
         clip: true
         contentWidth: row.width
@@ -105,11 +133,111 @@ Item {
         flickableDirection: Flickable.HorizontalFlick
         boundsBehavior: Flickable.StopAtBounds
 
+        // Beim ersten Aufbau an die Grenze rollen -- dort spielt die Musik
+        onContentWidthChanged: {
+            if (contentWidth > width && contentX === 0)
+                contentX = Math.max(0, pending.width - width * 0.45);
+        }
+
         Row {
             id: row
 
-            spacing: root.uiFont * 0.6
+            spacing: root.uiFont * 0.55
 
+            // ------------------------------------------------ geplant
+            Row {
+                id: pending
+
+                spacing: root.uiFont * 0.55
+
+                Repeater {
+                    model: root.projectedShown
+
+                    Item {
+                        id: pcell
+
+                        required property var modelData
+
+                        width: root.uiFont * 9
+                        height: strip.height
+
+                        BlockCard {
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.topMargin: root.uiFont * 1.6
+                            anchors.bottom: parent.bottom
+                            tone: root.feeShade(pcell.modelData.medianFee)
+                            depth: root.uiFont * 0.45
+                            cornerRadius: root.uiFont * 0.3
+
+                            Column {
+                                anchors.centerIn: parent
+                                width: parent.width - root.uiFont
+                                spacing: root.uiFont * 0.18
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: "~" + Math.round(pcell.modelData.medianFee) + " sat/vB"
+                                    color: "#ffffff"
+                                    font.pixelSize: root.uiFont
+                                    font.bold: true
+                                }
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: (pcell.modelData.feeRange && pcell.modelData.feeRange.length)
+                                        ? Math.round(pcell.modelData.feeRange[0]) + " – "
+                                          + Math.round(pcell.modelData.feeRange[pcell.modelData.feeRange.length - 1])
+                                        : ""
+                                    color: Qt.rgba(1, 1, 1, 0.72)
+                                    font.pixelSize: root.uiFont * 0.72
+                                }
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: root.grp(pcell.modelData.nTx) + " Transaktionen"
+                                    color: Qt.rgba(1, 1, 1, 0.74)
+                                    font.pixelSize: root.uiFont * 0.72
+                                }
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: (pcell.modelData.blockSize / 1e6).toFixed(2).replace(".", ",") + " MB"
+                                    color: Qt.rgba(1, 1, 1, 0.74)
+                                    font.pixelSize: root.uiFont * 0.72
+                                }
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: (pcell.modelData.totalFees / 1e8).toFixed(3).replace(".", ",") + " BTC"
+                                    color: Qt.rgba(1, 1, 1, 0.74)
+                                    font.pixelSize: root.uiFont * 0.72
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ------------------------------------------------- die Grenze
+            Item {
+                width: root.uiFont * 1.6
+                height: strip.height
+                visible: root.projectedShown.length > 0 && root.blocks.length > 0
+
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: root.uiFont * 1.8
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: root.uiFont * 0.4
+                    width: 1
+                    color: Qt.rgba(1, 1, 1, 0.18)
+                }
+            }
+
+            // --------------------------------------------- bestaetigt
             Repeater {
                 model: root.blocks
 
@@ -121,7 +249,7 @@ Item {
 
                     readonly property var ex: cell.modelData.extras || ({})
 
-                    width: root.uiFont * 10
+                    width: root.uiFont * 9
                     height: strip.height
 
                     Text {
@@ -134,47 +262,17 @@ Item {
                         font.bold: true
                     }
 
-                    // Die dunklere Flaeche rechts und unten gibt Tiefe --
-                    // dieselbe Wirkung wie die Schraegkanten im Original.
-                    Rectangle {
-                        anchors.fill: face
-                        anchors.margins: -root.uiFont * 0.22
-                        anchors.rightMargin: -root.uiFont * 0.45
-                        anchors.bottomMargin: -root.uiFont * 0.45
-                        radius: root.uiFont * 0.3
-                        color: Qt.darker(root.blockColor, 2.4)
-                        opacity: 0.85
-                    }
-
-                    Rectangle {
-                        id: face
-
-                        anchors.top: heightLabel.bottom
-                        anchors.topMargin: root.uiFont * 0.3
+                    BlockCard {
                         anchors.left: parent.left
                         anchors.right: parent.right
+                        anchors.top: heightLabel.bottom
+                        anchors.topMargin: root.uiFont * 0.3
                         anchors.bottom: parent.bottom
-                        anchors.rightMargin: root.uiFont * 0.45
-                        anchors.bottomMargin: root.uiFont * 0.45
-                        radius: root.uiFont * 0.3
-                        border.width: 1
-                        border.color: Qt.rgba(1, 1, 1, 0.14)
-
-                        // Der neueste Block leuchtet etwas staerker
-                        gradient: Gradient {
-                            GradientStop {
-                                position: 0
-                                color: area.containsMouse
-                                    ? Qt.lighter(root.blockColor, 1.25)
-                                    : (cell.index === 0 ? Qt.lighter(root.blockColor, 1.1)
-                                                        : root.blockColor)
-                            }
-                            GradientStop {
-                                position: 1
-                                color: area.containsMouse
-                                    ? root.blockColor : Qt.darker(root.blockColor, 1.35)
-                            }
-                        }
+                        tone: root.minedColor
+                        highlighted: cell.index === 0
+                        hovered: area.containsMouse
+                        depth: root.uiFont * 0.45
+                        cornerRadius: root.uiFont * 0.3
 
                         Column {
                             anchors.centerIn: parent

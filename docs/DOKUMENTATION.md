@@ -1312,3 +1312,39 @@ Ergebnis dasselbe.
 
 Auf farbigem Grund werden die Beschriftungen ueber Weiss mit Deckkraft gesetzt
 statt ueber die Themenfarben; sonst verschwinden sie je nach Blockfarbe.
+
+
+## Eine Leiste fuer beide Zustaende
+
+Geplante und bestaetigte Bloecke standen zuerst in zwei getrennten
+Abschnitten untereinander -- damit sah man zwar beides, aber nicht, **welcher
+Block als naechster kommt**. Jetzt stehen sie in einer Leiste, getrennt durch
+einen senkrechten Strich:
+
+    [ferner ... naechster geplanter] │ [neuester bestaetigter ... aelter]
+
+Die geplanten laufen also von aussen nach innen; der naechste steht direkt an
+der Grenze, gleich neben dem zuletzt gefundenen Block. Das entspricht der
+Anordnung im Original.
+
+Die Leiste rollt beim Aufbau selbst an die Grenze -- dort spielt die Musik, und
+bei acht geplanten plus fuenfzehn bestaetigten Bloecken waere sie sonst am
+falschen Ende.
+
+## Blockkachel mit Glasoptik (`BlockCard.qml`)
+
+Ein Bauteil fuer beide Zustaende, damit sie sich nicht auseinanderentwickeln.
+Drei Lagen ergeben den Eindruck:
+
+    Rueckflaeche   dunkel, schaut rechts und unten hervor -- die Tiefe
+    Vorderflaeche  Farbverlauf von hell oben ueber die Grundfarbe nach dunkel
+    Glanz          heller, schraeg gedrehter Verlauf ueber die obere Haelfte
+
+Der Glanz macht den Glaseindruck. Er liegt in einem Item mit `clip: true` --
+ohne das steht der gedrehte Verlauf ueber die abgerundeten Ecken hinaus. Dazu
+eine helle Kante oben und ein durchgehender heller Rahmen mit geringer
+Deckkraft.
+
+Die Farbe kommt von aussen (`tone`): gruen fuer geplante, violett fuer
+bestaetigte. `highlighted` hebt den neuesten Block leicht ab, `hovered` die
+Kachel unter dem Zeiger.

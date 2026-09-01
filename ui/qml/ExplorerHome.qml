@@ -14,21 +14,7 @@ Column {
     property color textColor: "#f2eef8"
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
-    // Geplante Bloecke gruen, bestaetigte violett -- die Farbe trennt den
-    // Zustand. Innerhalb der geplanten wird nach Gebuehr abgestuft: der
-    // naechste Block traegt die hoechsten Gebuehren und leuchtet am staerksten.
-    property color pendingColor: "#2f9e63"
-
-    function feeShade(medianFee) {
-        var f = Math.max(0, Math.min(1, (medianFee || 0) / 12));
-        // Von gedaempft bis kraeftig, aber im selben Gruen
-        return Qt.hsva(root.pendingColor.hsvHue,
-                       0.45 + 0.3 * f,
-                       0.34 + 0.30 * f, 1);
-    }
     property real uiFont: 13
-
-    property var projected: []
 
     signal blockPicked(string hash)
     signal txPicked(string txid)
@@ -45,24 +31,6 @@ Column {
                 out = "." + out;
         }
         return out;
-    }
-
-    function reload() {
-        if (!root.feed)
-            return;
-        root.feed.lookup("mempoolblocks", "now", function (d, err) {
-            if (!err)
-                root.projected = d || [];
-        });
-    }
-
-    Component.onCompleted: reload()
-
-    Timer {
-        interval: 20000
-        repeat: true
-        running: root.visible
-        onTriggered: root.reload()
     }
 
     // ------------------------------------------------------- Kennzahlen
@@ -107,134 +75,7 @@ Column {
         }
     }
 
-    // --------------------------------------------- geplante Bloecke
-    Item {
-        width: parent.width
-        height: root.uiFont * 11
-        visible: root.projected.length > 0
-
-        Text {
-            id: projLabel
-
-            text: "Geplante Blöcke — was als nächstes bestätigt würde"
-            color: root.dimColor
-            font.pixelSize: root.uiFont * 0.85
-        }
-
-        Flickable {
-            anchors.top: projLabel.bottom
-            anchors.topMargin: root.uiFont * 0.5
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            clip: true
-            contentWidth: projRow.width
-            contentHeight: height
-            flickableDirection: Flickable.HorizontalFlick
-            boundsBehavior: Flickable.StopAtBounds
-
-            Row {
-                id: projRow
-
-                spacing: root.uiFont * 0.6
-
-                Repeater {
-                    model: root.projected
-
-                    Item {
-                        id: pcell
-
-                        required property var modelData
-
-                        readonly property color tone: root.feeShade(pcell.modelData.medianFee)
-
-                        width: root.uiFont * 9
-                        height: root.uiFont * 8.5
-
-                        // Tiefe wie bei den bestaetigten Bloecken
-                        Rectangle {
-                            anchors.fill: pface
-                            anchors.margins: -root.uiFont * 0.22
-                            anchors.rightMargin: -root.uiFont * 0.45
-                            anchors.bottomMargin: -root.uiFont * 0.45
-                            radius: root.uiFont * 0.3
-                            color: Qt.darker(pcell.tone, 2.2)
-                            opacity: 0.85
-                        }
-
-                        Rectangle {
-                            id: pface
-
-                            anchors.fill: parent
-                            anchors.rightMargin: root.uiFont * 0.45
-                            anchors.bottomMargin: root.uiFont * 0.45
-                            radius: root.uiFont * 0.3
-                            border.width: 1
-                            border.color: Qt.rgba(1, 1, 1, 0.14)
-
-                            gradient: Gradient {
-                                GradientStop {
-                                    position: 0
-                                    color: Qt.lighter(pcell.tone, 1.12)
-                                }
-                                GradientStop {
-                                    position: 1
-                                    color: Qt.darker(pcell.tone, 1.3)
-                                }
-                            }
-                        }
-
-                        Column {
-                            anchors.centerIn: pface
-                            width: pface.width - root.uiFont
-                            spacing: root.uiFont * 0.2
-
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: "~" + Math.round(pcell.modelData.medianFee) + " sat/vB"
-                                color: "#ffffff"
-                                font.pixelSize: root.uiFont
-                                font.bold: true
-                            }
-
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: (pcell.modelData.feeRange && pcell.modelData.feeRange.length)
-                                    ? Math.round(pcell.modelData.feeRange[0]) + " – "
-                                      + Math.round(pcell.modelData.feeRange[pcell.modelData.feeRange.length - 1])
-                                    : ""
-                                color: Qt.rgba(1, 1, 1, 0.78)
-                                font.pixelSize: root.uiFont * 0.75
-                            }
-
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: root.grp(pcell.modelData.nTx) + " Transaktionen"
-                                color: Qt.rgba(1, 1, 1, 0.74)
-                                font.pixelSize: root.uiFont * 0.72
-                            }
-
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: (pcell.modelData.blockSize / 1e6).toFixed(2).replace(".", ",") + " MB"
-                                color: Qt.rgba(1, 1, 1, 0.74)
-                                font.pixelSize: root.uiFont * 0.72
-                            }
-
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: (pcell.modelData.totalFees / 1e8).toFixed(3).replace(".", ",") + " BTC"
-                                color: Qt.rgba(1, 1, 1, 0.74)
-                                font.pixelSize: root.uiFont * 0.72
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // ------------------------------------------ bestaetigte Bloecke
+    // Geplante und bestaetigte Bloecke in einer Leiste
     BlockChain {
         width: parent.width
         feed: root.feed
