@@ -1289,3 +1289,26 @@ mittig.
 `t` TxID, `v` **virtuelle Groesse**, `a` Betrag in sat, `f` Gebuehr, `r` Rate,
 `n` laufende Nummer. `v` ist also nicht der Wert; der erste Entwurf zeigte
 deshalb die vsize als Betrag an.
+
+
+## Farbe der Bloecke
+
+Die Farbe trennt den **Zustand**, nicht die Gebuehr -- so macht es auch das
+Original, und man erkennt auf einen Blick, was schon feststeht und was noch
+aussteht:
+
+    geplante Bloecke     gruen   (aus dem Mempool, noch nicht bestaetigt)
+    bestaetigte Bloecke  violett (in der Kette)
+
+Innerhalb der **geplanten** wird zusaetzlich nach Gebuehr abgestuft, im selben
+Gruenton -- der naechste Block traegt die hoechsten Gebuehren und leuchtet am
+staerksten (`feeShade`, Saettigung 0,45 bis 0,75 und Helligkeit 0,34 bis 0,64
+ueber die Spanne 0 bis 12 sat/vB). Bei den **bestaetigten** hebt sich nur der
+neueste leicht ab.
+
+Die raeumliche Wirkung kommt aus einer dunkleren Flaeche, die rechts und unten
+hinter der vorderen hervorschaut -- billiger als echte Schraegkanten und im
+Ergebnis dasselbe.
+
+Auf farbigem Grund werden die Beschriftungen ueber Weiss mit Deckkraft gesetzt
+statt ueber die Themenfarben; sonst verschwinden sie je nach Blockfarbe.

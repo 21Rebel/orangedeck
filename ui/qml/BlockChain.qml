@@ -15,6 +15,10 @@ Item {
     property color textColor: "#f2eef8"
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
+    // Bestaetigte Bloecke sind violett, geplante gruen -- die Farbe trennt den
+    // **Zustand**, nicht die Gebuehr. So macht es auch das Original, und man
+    // erkennt auf einen Blick, was schon feststeht und was noch aussteht.
+    property color blockColor: "#7b5cd6"
     property real uiFont: 13
     property var blocks: []
     property string error: ""
@@ -113,6 +117,7 @@ Item {
                     id: cell
 
                     required property var modelData
+                    required property int index
 
                     readonly property var ex: cell.modelData.extras || ({})
 
@@ -129,16 +134,47 @@ Item {
                         font.bold: true
                     }
 
+                    // Die dunklere Flaeche rechts und unten gibt Tiefe --
+                    // dieselbe Wirkung wie die Schraegkanten im Original.
                     Rectangle {
+                        anchors.fill: face
+                        anchors.margins: -root.uiFont * 0.22
+                        anchors.rightMargin: -root.uiFont * 0.45
+                        anchors.bottomMargin: -root.uiFont * 0.45
+                        radius: root.uiFont * 0.3
+                        color: Qt.darker(root.blockColor, 2.4)
+                        opacity: 0.85
+                    }
+
+                    Rectangle {
+                        id: face
+
                         anchors.top: heightLabel.bottom
                         anchors.topMargin: root.uiFont * 0.3
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.bottom: parent.bottom
+                        anchors.rightMargin: root.uiFont * 0.45
+                        anchors.bottomMargin: root.uiFont * 0.45
                         radius: root.uiFont * 0.3
-                        color: area.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
                         border.width: 1
-                        border.color: Qt.rgba(1, 1, 1, 0.1)
+                        border.color: Qt.rgba(1, 1, 1, 0.14)
+
+                        // Der neueste Block leuchtet etwas staerker
+                        gradient: Gradient {
+                            GradientStop {
+                                position: 0
+                                color: area.containsMouse
+                                    ? Qt.lighter(root.blockColor, 1.25)
+                                    : (cell.index === 0 ? Qt.lighter(root.blockColor, 1.1)
+                                                        : root.blockColor)
+                            }
+                            GradientStop {
+                                position: 1
+                                color: area.containsMouse
+                                    ? root.blockColor : Qt.darker(root.blockColor, 1.35)
+                            }
+                        }
 
                         Column {
                             anchors.centerIn: parent
@@ -149,7 +185,7 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: cell.ex.medianFee !== undefined
                                     ? "~" + Math.round(cell.ex.medianFee) + " sat/vB" : ""
-                                color: root.dimColor
+                                color: Qt.rgba(1, 1, 1, 0.75)
                                 font.pixelSize: root.uiFont * 0.75
                             }
 
@@ -157,7 +193,7 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: cell.ex.reward
                                     ? (cell.ex.reward / 1e8).toFixed(3).replace(".", ",") + " BTC" : ""
-                                color: root.textColor
+                                color: "#ffffff"
                                 font.pixelSize: root.uiFont * 0.95
                                 font.bold: true
                             }
@@ -165,21 +201,21 @@ Item {
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: root.grp(cell.modelData.tx_count) + " Transaktionen"
-                                color: root.dimColor
+                                color: Qt.rgba(1, 1, 1, 0.72)
                                 font.pixelSize: root.uiFont * 0.72
                             }
 
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: (cell.modelData.size / 1024 / 1024).toFixed(2).replace(".", ",") + " MB"
-                                color: root.dimColor
+                                color: Qt.rgba(1, 1, 1, 0.72)
                                 font.pixelSize: root.uiFont * 0.72
                             }
 
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: root.ago(cell.modelData.timestamp)
-                                color: root.dimColor
+                                color: Qt.rgba(1, 1, 1, 0.72)
                                 font.pixelSize: root.uiFont * 0.72
                             }
 
@@ -189,7 +225,7 @@ Item {
                                 horizontalAlignment: Text.AlignHCenter
                                 elide: Text.ElideRight
                                 text: (cell.ex.pool && cell.ex.pool.name) || ""
-                                color: root.accentColor
+                                color: Qt.rgba(1, 1, 1, 0.92)
                                 font.pixelSize: root.uiFont * 0.72
                             }
                         }
