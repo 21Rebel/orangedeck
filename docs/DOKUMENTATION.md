@@ -754,3 +754,39 @@ trifft man sonst schlecht.
 
 Im Fenster geht das Umschalten weiterhin auch mit 1/2/3; die Auswahl merkt sich
 `Settings`, im Dashboard `SettingsData.setPluginSetting`.
+
+
+## Legende hinter einem "i"-Knopf (`InfoPopup.qml`)
+
+Erklaerungen gehoeren an **einen** Ort, nicht in die Flaeche. `InfoPopup`
+legt sich ueber eine Ansicht, zeigt oben rechts einen "i"-Knopf und blendet
+darunter ein Feld mit Eintraegen ein -- jeweils Ueberschrift, Text und
+optional ein Farbstrich, der die Zuordnung zur Kurve herstellt (kraeftig fuer
+den geglaetteten Wert, duenn und blass fuer den Momentanwert).
+
+Das Item faengt Eingaben nur dort ab, wo der Knopf sitzt; ist das Feld offen,
+schliesst ein Klick daneben es wieder.
+
+**Falle:** ein Geschwister kann sich **nicht** per Anker an den Knopf haengen
+(`Cannot anchor to an item that isn't a parent or sibling`) -- der Knopf ist
+ein Kind des InfoPopup. Deshalb gibt es `buttonWidth`, ueber das sich weitere
+Knoepfe per `anchors.rightMargin` danebensetzen.
+
+## Rollbare Ansichten
+
+Der Inhalt der Miner-Ansicht wird hoeher als die Flaeche, sobald Kurve,
+Rechenwerke und Bestenliste zusammenkommen -- im Dashboard-Tab (410 px) stand
+er ueber den Rand hinaus.
+
+`ClockView` und `MinerView` legen ihren Inhalt deshalb in eine `Flickable` mit
+`clip: true`. Der Trick fuers Verhalten steckt in einer Zeile:
+
+    y: Math.max(0, (flick.height - implicitHeight) / 2)
+
+Passt alles, steht der Inhalt mittig wie zuvor; passt es nicht, beginnt er oben
+und laesst sich schieben. Rechts erscheint ein schmaler Balken, aber nur
+solange es etwas zu rollen gibt.
+
+Damit muessen Kurve und Bestenliste nicht mehr wegen Platzmangel wegbleiben --
+die Schwellen (`roomForChart`, `roomForBoard`) halten nur noch das ganz kleine
+Desktop-Widget frei.

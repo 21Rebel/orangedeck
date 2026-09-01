@@ -66,9 +66,23 @@ Item {
         return m + " Min";
     }
 
+    // Auch hier kann es eng werden -- im Dashboard-Tab und auf einem hochkant
+    // gehaltenen Tablet.
+    Flickable {
+        id: flick
+
+        anchors.fill: parent
+        clip: true
+        contentWidth: width
+        contentHeight: body.implicitHeight + root.scaleUnit
+        boundsBehavior: Flickable.StopAtBounds
+
     Column {
-        anchors.centerIn: parent
+        id: body
+
         width: parent.width * 0.86
+        x: (flick.width - width) / 2
+        y: Math.max(0, (flick.height - implicitHeight) / 2)
         spacing: root.scaleUnit * 0.5
 
         // ---------------------------------------------------- Blockhoehe
@@ -244,6 +258,8 @@ Item {
                 ctx.stroke();
             }
         }
+    }
+
     }
 
     // Bei fehlender Verbindung nicht luegen, sondern es sagen
