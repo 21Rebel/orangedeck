@@ -1,0 +1,81 @@
+// Umschalter zwischen den Ansichten. Bewusst ein eigenes Bauteil, damit
+// Fenster und Dashboard-Tab denselben benutzen -- und nur `import QtQuick`,
+// damit es auch unter Android laeuft.
+import QtQuick
+
+pragma ComponentBehavior: Bound
+
+Row {
+    id: root
+
+    property var labels: []
+    property int current: 0
+    property color textColor: "#f2eef8"
+    property color dimColor: "#9a94a6"
+    property color accentColor: "#f7931a"
+    property real fontSize: 12
+
+    signal picked(int index)
+
+    spacing: fontSize * 1.4
+
+    Repeater {
+        model: root.labels
+
+        Item {
+            id: tab
+
+            required property var modelData
+            required property int index
+
+            readonly property bool active: root.current === tab.index
+
+            width: label.width
+            height: label.height + root.fontSize * 0.55
+            // Beruehrungsflaeche ist hoeher als die Schrift -- auf einem
+            // Bildschirm mit den Fingern trifft man sonst schlecht.
+            implicitHeight: height
+
+            Text {
+                id: label
+
+                anchors.top: parent.top
+                text: tab.modelData
+                color: tab.active ? root.textColor
+                                  : (touch.containsMouse ? root.textColor : root.dimColor)
+                font.pixelSize: root.fontSize
+                font.bold: tab.active
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 120
+                    }
+                }
+            }
+
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: tab.active ? label.width : 0
+                height: Math.max(2, root.fontSize * 0.14)
+                radius: height / 2
+                color: root.accentColor
+
+                Behavior on width {
+                    NumberAnimation {
+                        duration: 160
+                    }
+                }
+            }
+
+            MouseArea {
+                id: touch
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.picked(tab.index)
+            }
+        }
+    }
+}

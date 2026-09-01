@@ -754,13 +754,18 @@ def poll_miners(feed):
     # wird zweieinhalbmal pro Sekunde geschrieben, da zaehlt jede Stelle.
     now = time.time()
     for m in found:
-        h = feed.miner_hist.setdefault(m["id"], {"t": [], "hr": [], "temp": [], "err": []})
+        h = feed.miner_hist.setdefault(m["id"], {"t": [], "hr": [], "hrNow": [], "temp": [], "err": []})
+        h.setdefault("hrNow", [])
         if m.get("online"):
             h["t"].append(round(now))
-            h["hr"].append(round((m.get("hashRate") or 0) / 1e9, 1))   # GH/s
+            h["hr"].append(round((m.get("hashRate") or 0) / 1e9, 1))   # GH/s, geglaettet
+            # Der Momentanwert dazu: er schwankt stark und macht damit erst
+            # sichtbar, dass die ruhige Linie ein Mittelwert ist.
+            h["hrNow"].append(round((m.get("hashRateNow") or 0) / 1e9, 1)
+                              if m.get("hashRateNow") else None)
             h["temp"].append(round(m["temp"], 1) if m.get("temp") is not None else None)
             h["err"].append(round(m["errorPct"], 1) if m.get("errorPct") is not None else None)
-            for k in ("t", "hr", "temp", "err"):
+            for k in ("t", "hr", "hrNow", "temp", "err"):
                 if len(h[k]) > MINER_HISTORY:
                     del h[k][:len(h[k]) - MINER_HISTORY]
     # Hash-Domaenen glaetten -- siehe DOMAIN_SMOOTH

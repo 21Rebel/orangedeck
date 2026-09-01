@@ -357,6 +357,20 @@ Item {
                 font.pixelSize: root.scaleUnit * 0.55
             }
 
+            Text {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                // Kurz erklaeren, was man da sieht -- die Zahl allein sagt
+                // niemandem etwas.
+                text: "Der Chip rechnet in " + ((root.one && (root.one.domains || []).length) || 0)
+                      + " getrennten Bereichen mit eigener Spannung und Taktung. "
+                      + "Liegen sie gleichauf, ist alles in Ordnung; fällt einer "
+                      + "dauerhaft ab, ist dieser Teil instabil. Einzelmessungen "
+                      + "schwanken stark, deshalb der Mittelwert."
+                color: root.dimColor
+                font.pixelSize: root.scaleUnit * 0.5
+            }
+
             Row {
                 width: parent.width
                 spacing: root.scaleUnit * 0.25

@@ -23,6 +23,7 @@ set(SHARED_QML
     ../ui/qml/ClockView.qml
     ../ui/qml/MinerView.qml
     ../ui/qml/MinerChart.qml
+    ../ui/qml/ViewTabs.qml
     ../ui/qml/mondrian.js
     ../ui/qml/colors.js
 )

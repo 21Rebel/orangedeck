@@ -680,6 +680,20 @@ braucht am Geraet keine Einstellung.
 `MinerChart.qml` zeichnet daraus Hashrate und Temperatur uebereinander, mit
 zwei Achsen -- die Groessen haben nichts miteinander zu tun.
 
+Gezeichnet werden **drei** Linien: der Momentanwert der Hashrate duenn und
+blass, der Zehnminutenwert kraeftig darueber (beide orange, gemeinsame Achse),
+und die Temperatur hell auf eigener Achse rechts.
+
+Das war nicht immer so. Zuerst stand nur der geglaettete Wert da -- und der ist
+so ruhig, dass er wie eine Temperaturkurve aussieht, waehrend die Temperatur
+auf einer Achse von nur gut einem Grad durch die 0,1-Grad-Stufen des Sensors
+zackig wirkt. Genau andersherum als in der Weboberflaeche des Geraets, wo der
+**Momentanwert** gezeichnet wird. Nachgemessen:
+
+    Hashrate (geglaettet)  Spanne 1063,5 bis 1073,5 GH/s, Sprung 0,19 ->  2 % der Spanne
+    Temperatur             Spanne   55,1 bis   56,2 C,    Sprung 0,10 ->  9 % der Spanne
+    Hashrate (Moment)      156-mal groessere Spanne als der geglaettete Wert
+
 **Die Achsenbeschriftung traegt die Farbe ihrer Kurve** (Hashrate orange links,
 Temperatur hell rechts). Grau beschriftet liess sich nicht erkennen, welche
 Linie zu welcher Achse gehoert -- eine Legende waere zusaetzlicher Platz fuer
@@ -727,3 +741,16 @@ Mittelwertunterschieden, sind also Struktur statt Rauschen.
 
 Kurve und Bestenliste erscheinen erst ab 330 bzw. 460 Bildpunkten Hoehe -- im
 Dashboard-Tab ist dafuer kein Platz, dort bleiben die Kennzahlen.
+
+
+## Ansichten und Tabs
+
+`ViewTabs.qml` ist der Umschalter zwischen Feed, BlockClock und Miner --
+bewusst ein eigenes Bauteil, weil ihn **beide** Oberflaechen benutzen: das
+eigene Fenster (`app/qml/Main.qml`) und der Dashboard-Tab (Vorlage in
+`daemon/btcfeed-dashtab`). Nur `import QtQuick`, laeuft also auch unter
+Android. Die Beruehrungsflaeche ist hoeher als die Schrift -- mit dem Finger
+trifft man sonst schlecht.
+
+Im Fenster geht das Umschalten weiterhin auch mit 1/2/3; die Auswahl merkt sich
+`Settings`, im Dashboard `SettingsData.setPluginSetting`.

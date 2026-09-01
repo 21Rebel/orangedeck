@@ -51,12 +51,29 @@ Window {
         id: feedState
     }
 
+    // Umschalten auch mit der Maus, nicht nur mit 1/2/3
+    ViewTabs {
+        id: tabs
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 8
+        labels: ["Feed", "BlockClock", "Miner"]
+        current: win.view
+        fontSize: 13
+        z: 30
+        onPicked: function (i) {
+            win.view = i;
+        }
+    }
+
     FeedPanel {
         id: panel
 
         visible: win.view === 0
         anchors.fill: parent
         anchors.margins: 14
+        anchors.topMargin: tabs.height + 14
         feed: feedState
         baseFont: 13
         colorMode: win.colorMode
@@ -69,6 +86,7 @@ Window {
         visible: win.view === 1
         anchors.fill: parent
         anchors.margins: 14
+        anchors.topMargin: tabs.height + 14
         feed: feedState
     }
 
@@ -76,6 +94,7 @@ Window {
         visible: win.view === 2
         anchors.fill: parent
         anchors.margins: 14
+        anchors.topMargin: tabs.height + 14
         feed: feedState
     }
 

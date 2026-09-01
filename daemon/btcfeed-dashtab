@@ -49,6 +49,9 @@ Item {
     property string sizeMode: SettingsData.getPluginSetting(pid, "sizeMode", "value")
     property bool showInfo: SettingsData.getPluginSetting(pid, "showInfo", true)
     property bool showLegend: SettingsData.getPluginSetting(pid, "showLegend", true)
+    // 0 = Feed, 1 = BlockClock, 2 = Miner -- gemerkt wie die uebrigen
+    // Einstellungen des Plugins
+    property int view: SettingsData.getPluginSetting(pid, "view", 0)
     property bool desktopOn: {
         const list = SettingsData.desktopWidgetInstances || [];
         for (var i = 0; i < list.length; i++) {
@@ -76,10 +79,53 @@ Item {
         active: root.visible
     }
 
-    FeedPanel {
+    // Umschalten mit der Maus -- dasselbe Bauteil wie im eigenen Fenster
+    ViewTabs {
+        id: tabs
+
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.leftMargin: Theme.spacingS
+        anchors.topMargin: 2
+        labels: ["Feed", "BlockClock", "Miner"]
+        current: root.view
+        fontSize: Theme.fontSizeSmall
+        textColor: Theme.surfaceText
+        dimColor: Theme.surfaceVariantText
+        accentColor: Theme.primary
+        z: 30
+        onPicked: function (i) {
+            root.put("view", i);
+        }
+    }
+
+    ClockView {
+        visible: root.view === 1
         anchors.fill: parent
         anchors.margins: Theme.spacingS
-        anchors.topMargin: Theme.spacingS + 18
+        anchors.topMargin: tabs.height + 4
+        feed: feedState
+        textColor: Theme.surfaceText
+        dimColor: Theme.surfaceVariantText
+        accentColor: Theme.primary
+    }
+
+    MinerView {
+        visible: root.view === 2
+        anchors.fill: parent
+        anchors.margins: Theme.spacingS
+        anchors.topMargin: tabs.height + 4
+        feed: feedState
+        textColor: Theme.surfaceText
+        dimColor: Theme.surfaceVariantText
+        accentColor: Theme.primary
+    }
+
+    FeedPanel {
+        visible: root.view === 0
+        anchors.fill: parent
+        anchors.margins: Theme.spacingS
+        anchors.topMargin: tabs.height + 4
         feed: feedState
         headerVisible: false
         colorMode: root.colorMode

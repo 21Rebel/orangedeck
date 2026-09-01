@@ -1,19 +1,19 @@
-# Upstream-Issue für DankMaterialShell (Entwurf)
+# Upstream issue for DankMaterialShell (draft)
 
-Ziel: Plugins sollen einen eigenen DankDash-Tab registrieren können, ohne
-Kerndateien zu patchen. Wird das umgesetzt, sinkt der Abstand des
-BitcoinFeed-Plugins zu Upstream von 22 Zeilen auf null.
+Goal: let plugins register their own DankDash tab without patching core files.
+If this lands, the BitcoinFeed plugin's delta against upstream drops from 22
+lines to zero.
 
 Repo: https://github.com/AvengeMedia/DankMaterialShell
-Getestet gegen: dms-shell 1.5.3-1 ("The Wolverine")
+Tested against: dms-shell 1.5.3-1 ("The Wolverine")
 
 ---
 
-## Titel
+## Title
 
 Allow plugins to register DankDash tabs
 
-## Text
+## Body
 
 ### What I'm trying to do
 
@@ -99,9 +99,9 @@ operate on a list of ids.
 
 ---
 
-## Vor dem Absenden zu klären
+## To settle before sending
 
-- Account: der Issue soll vom neuen Account kommen, nicht vom bestehenden.
-- Screenshot des Bitcoin-Tabs anhängen — zeigt sofort, worum es geht.
-- Prüfen, ob es dazu schon ein Issue gibt (Suche: "dash tab plugin",
+- Account: the issue should come from the new account, not the existing one.
+- Attach a screenshot of the Bitcoin tab -- it shows the point immediately.
+- Check whether such an issue already exists (search: "dash tab plugin",
   "custom dash tab").

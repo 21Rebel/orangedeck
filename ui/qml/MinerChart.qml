@@ -28,6 +28,7 @@ Item {
     }
 
     readonly property var hr: (hist && hist.hr) || []
+    readonly property var hrNow: (hist && hist.hrNow) || []
     readonly property var temp: (hist && hist.temp) || []
 
     onHrChanged: canvas.requestPaint()
@@ -60,6 +61,46 @@ Item {
                 ctx.stroke();
             }
 
+            // Beide Hashraten teilen sich eine Achse, sonst waere der
+            // Vergleich sinnlos.
+            function rangeOf(lists) {
+                var lo = null, hi = null;
+                for (var a = 0; a < lists.length; a++) {
+                    var v = lists[a];
+                    for (var b = 0; b < v.length; b++) {
+                        if (v[b] === null || v[b] === undefined)
+                            continue;
+                        lo = (lo === null) ? v[b] : Math.min(lo, v[b]);
+                        hi = (hi === null) ? v[b] : Math.max(hi, v[b]);
+                    }
+                }
+                if (lo === null)
+                    return null;
+                var span = Math.max(hi - lo, Math.abs(hi) * 0.02, 0.1);
+                return [lo - span * 0.15, hi + span * 0.15];
+            }
+
+            function drawIn(vals, range, color, width2, alpha) {
+                if (!range)
+                    return;
+                var lo = range[0], hi = range[1];
+                ctx.beginPath();
+                var started = false;
+                for (var i = 0; i < vals.length; i++) {
+                    if (vals[i] === null || vals[i] === undefined)
+                        continue;
+                    var x = padL + w * i / Math.max(1, vals.length - 1);
+                    var y = padT + h - h * (vals[i] - lo) / (hi - lo);
+                    started ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+                    started = true;
+                }
+                ctx.strokeStyle = color;
+                ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+                ctx.lineWidth = width2;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+
             function draw(vals, color, width2) {
                 var pts = [];
                 for (var i = 0; i < vals.length; i++) {
@@ -90,7 +131,12 @@ Item {
             }
 
             var tRange = draw(root.temp, root.tempColor, 1.2);
-            var hRange = draw(s, root.lineColor, 1.8);
+            // Momentanwert duenn und blass, der Zehnminutenwert kraeftig
+            // darueber -- so wie es die Weboberflaeche des Geraets zeigt, und
+            // es macht auf einen Blick klar, welche Linie die Hashrate ist.
+            var hRange = rangeOf([s, root.hrNow]);
+            drawIn(root.hrNow, hRange, root.lineColor, 1.0, 0.45);
+            drawIn(s, hRange, root.lineColor, 2.0, 1.0);
 
             // Beschriftung **in der Farbe der jeweiligen Kurve** -- sonst ist
             // nicht zu erkennen, welche Achse zu welcher Linie gehoert.
