@@ -22,6 +22,8 @@ Item {
     signal colorModeRequested(string mode)
     property bool frostedInfo: true
     property bool frostedBlur: true
+    // Die gestrichelte Linie ueber der Halde
+    property bool rulerVisible: true
     property string colorMode: "age"
     property string sizeMode: "value"
 
@@ -216,6 +218,7 @@ Item {
         colorMode: root.colorMode
         sizeMode: root.sizeMode
         showBlock: height > 130
+        showRuler: root.rulerVisible
         gridColor: root.lineColor
         rulerColor: root.dimColor
         labelFont: root.baseFont - 1

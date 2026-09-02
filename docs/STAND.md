@@ -30,6 +30,54 @@ Anwendung und in DMS, `dms ipc call dash toggle bitcoin` meldet
 `DASH_TOGGLE_SUCCESS`, und 18 Sekunden nach dem Beenden der Anwendung meldet
 sich der Daemon beim Server wieder ab (`tracking: null`).
 
+## Stand 02.09.2026, nachmittags -- Durchgang nach dem Ansehen
+
+Nach einem Durchgang durch alle Reiter, Punkt fuer Punkt:
+
+**Das Fenster aus `btcfeed-window` war die alte Fassung** -- nur der Feed,
+keine Reiter. `shell.qml` hat jetzt dieselben Ansichten wie die eigenstaendige
+Anwendung; zwei Fenster mit verschiedenem Inhalt waren nur verwirrend.
+
+**Feed:** Abstaende im Zoom (gelandete Kacheln lagen auf gebrochenen
+Koordinaten), die gestrichelte Linie doppelt und mitvergroessert, drei Lesarten
+statt zwei (Alter/Gebuehr/Art), Weichzeichnung mit Maske in der Form des
+Feldes, und die grosse Zahl im Blockfeld heisst jetzt "Bewegter Wert".
+
+**Explorer:** Blockkacheln quadratisch und ohne den dunklen Schlagschatten,
+Gebuehrenstufen mittig im Kaestchen, Pfeile im Flussdiagramm mit einem Winkel
+und als Kerbe im Band statt als angesetztes Dreieck.
+
+**Miner:** Kennzahlen verteilen sich ab sechs Stueck auf Zeilen zu je drei.
+
+**Einstellungen:** neuer Reiter, gegliedert wie die Ansichten. Die
+Wallet-Ansicht ist **zugesperrt** und erscheint erst nach einer Warnung, die
+gelesen und bestaetigt werden muss.
+
+**BlockClock:** Kennzahlen einzeln waehlbar, Waehrung Euro oder Dollar, und
+**Moscow Time** ist dazugekommen.
+
+### Was aus diesem Durchgang offen geblieben ist
+
+1. **Kursverlauf mit Schieber** (Boersen-Optik). Braucht eine Datenreihe, die
+   der Daemon nicht holt -- `/api/v1/historical-price` waere die Quelle.
+2. **Freie Waehrungswahl.** Geliefert werden zurzeit nur Euro und Dollar.
+3. **Wahl der Datenquelle je Ansicht.** Umgestellt wird bis auf Weiteres ueber
+   `host` in `sources.json`, was den ganzen Feed umzieht.
+4. Die **Halde** kann die Transaktionsart nicht zeigen -- der WebSocket
+   liefert kein `flags`. Waere nur mit eigenem Node zu haben.
+
+### Und ein Fehler, den ich selbst gebaut habe
+
+Nach zwei neuen geteilten QML-Dateien lief `tools/install-links.sh`, aber
+**nicht** `python3 daemon/btcfeed-dashtab` -- das Dashboard ging dadurch nicht
+mehr auf. Dieselbe Falle wie schon dokumentiert. Beide Schritte gehoeren immer
+zusammen.
+
+Ausserdem: **`pkill -f "qs -p"` trifft auch DMS.** Beim Pruefen des
+Quickshell-Fensters hat das die Leiste des Nutzers abgeschossen (systemd hat
+sie sofort neu gestartet). Fuer Testfenster die PID merken und gezielt
+beenden.
+
 ## Dazu am 02.09.2026: Blockhistorie und Transaktionsliste
 
 "Alle Blöcke durchblättern" auf der Explorer-Startseite fuehrt in die

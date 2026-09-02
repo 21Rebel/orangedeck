@@ -56,6 +56,14 @@ Item {
     readonly property string desktopInstance: "bitcoinFeed-1"
 
     property string colorMode: SettingsData.getPluginSetting(pid, "colorMode", "age")
+    // Die Wallet-Ansicht bleibt aus, bis sie in den Einstellungen der
+    // Anwendung ausdruecklich eingeschaltet wird -- hier gilt derselbe
+    // Schalter, damit der Reiter nicht im Dashboard doch erscheint.
+    property bool walletEnabled: SettingsData.getPluginSetting(pid, "walletEnabled", false)
+    readonly property var tabViews: walletEnabled ? [0, 1, 2, 3, 4] : [0, 1, 2, 3]
+    readonly property var tabLabels: walletEnabled
+        ? ["Feed", "BlockClock", "Miner", "Explorer", "Wallet"]
+        : ["Feed", "BlockClock", "Miner", "Explorer"]
     property string sizeMode: SettingsData.getPluginSetting(pid, "sizeMode", "value")
     property bool showInfo: SettingsData.getPluginSetting(pid, "showInfo", true)
     property bool showLegend: SettingsData.getPluginSetting(pid, "showLegend", true)
@@ -98,15 +106,15 @@ Item {
         anchors.top: parent.top
         anchors.leftMargin: Theme.spacingS
         anchors.topMargin: 2
-        labels: ["Feed", "BlockClock", "Miner", "Explorer", "Wallet"]
-        current: root.view
+        labels: root.tabLabels
+        current: root.tabViews.indexOf(root.view)
         fontSize: Theme.fontSizeSmall
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
         accentColor: Theme.primary
         z: 30
         onPicked: function (i) {
-            root.put("view", i);
+            root.put("view", root.tabViews[i]);
         }
     }
 
@@ -135,7 +143,7 @@ Item {
     }
 
     WatchView {
-        visible: root.live && root.view === 4
+        visible: root.live && root.view === 4 && root.walletEnabled
         // Nur nachfragen, wenn der Tab auch offen ist
         live: visible
         anchors.fill: parent

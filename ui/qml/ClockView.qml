@@ -21,6 +21,19 @@ Item {
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
     property real scaleUnit: Math.max(10, Math.min(width / 26, height / 16))
+    // Welche Kennzahlen erscheinen. Leere Liste heisst: alle. So bleibt eine
+    // spaeter hinzukommende sichtbar, statt stillschweigend zu fehlen.
+    property var fields: []
+    property string currency: "eur"
+    property bool showBars: true
+
+    readonly property real kurs: currency === "usd"
+        ? (price.usd || 0) : (price.eur || price.usd || 0)
+    readonly property string waehrung: currency === "usd" ? "$" : "€"
+
+    function zeigt(id) {
+        return !root.fields || root.fields.length === 0 || root.fields.indexOf(id) >= 0;
+    }
 
     readonly property var tip: feed ? feed.tip : ({})
     readonly property var fees: (feed && feed.snap.fees) || ({})
@@ -113,25 +126,42 @@ Item {
             spacing: root.scaleUnit * 1.6
 
             Repeater {
-                model: [
-                    {
-                        "k": "Gebühr",
-                        "v": root.comma(root.fees.fastest) + " sat/vB"
-                    },
-                    {
-                        "k": "Kurs",
-                        "v": root.price.eur ? root.grp(root.price.eur) + " €"
-                                            : (root.price.usd ? root.grp(root.price.usd) + " $" : "–")
-                    },
-                    {
-                        "k": "Mempool",
-                        "v": root.feed ? root.grp(root.feed.mempoolCount) : "–"
-                    },
-                    {
-                        "k": "Hashrate",
-                        "v": root.hr.current ? root.comma(root.hr.current / 1e18, 0) + " EH/s" : "–"
-                    }
-                ]
+                model: {
+                    var alle = [
+                        {
+                            "id": "fee",
+                            "k": "Gebühr",
+                            "v": root.comma(root.fees.fastest) + " sat/vB"
+                        },
+                        {
+                            "id": "price",
+                            "k": "Kurs",
+                            "v": root.kurs ? root.grp(root.kurs) + " " + root.waehrung : "–"
+                        },
+                        {
+                            // Wie viele Satoshi es fuer eine Einheit der
+                            // Waehrung gibt. Die Zahl steigt, wenn der Kurs
+                            // faellt -- sie misst Bitcoin in Geld statt Geld
+                            // in Bitcoin, und genau darum geht es dabei.
+                            "id": "moscow",
+                            "k": "Moscow Time",
+                            "v": root.kurs ? root.grp(1e8 / root.kurs) + " sat" : "–"
+                        },
+                        {
+                            "id": "mempool",
+                            "k": "Mempool",
+                            "v": root.feed ? root.grp(root.feed.mempoolCount) : "–"
+                        },
+                        {
+                            "id": "hashrate",
+                            "k": "Hashrate",
+                            "v": root.hr.current ? root.comma(root.hr.current / 1e18, 0) + " EH/s" : "–"
+                        }
+                    ];
+                    return alle.filter(function (x) {
+                        return root.zeigt(x.id);
+                    });
+                }
 
                 Column {
                     // Mit `pragma ComponentBehavior: Bound` muss modelData
@@ -166,6 +196,7 @@ Item {
         Column {
             width: parent.width
             spacing: root.scaleUnit * 0.25
+            visible: root.showBars
 
             Row {
                 width: parent.width

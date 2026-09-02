@@ -1906,3 +1906,66 @@ Loadern:
 
 **Merksatz: `active` steuert den Inhalt, `visible` die Flaeche. Wer einen
 Loader in einen Positionierer haengt, braucht beides.**
+
+
+## Einstellungen mit denselben Reitern (`SettingsView.qml`)
+
+Bisher gab es Einstellungen nur als Tastenkuerzel und im DMS-Plugin. Jetzt hat
+jedes Fenster einen Reiter "Einstellungen", und der ist genauso gegliedert wie
+die Ansichten: Allgemein, Feed, BlockClock, Miner, Explorer, Wallet.
+
+**Die Werte gehoeren dem Wirt, nicht der Ansicht.** `SettingsView` liest `opts`
+und meldet jede Aenderung ueber `changed(key, value)` zurueck; wo sie liegen
+bleiben, entscheidet der Wirt: die eigenstaendige Anwendung ueber `Settings`
+aus `QtCore`, das Quickshell-Fenster in `view.json`, der Dashboard-Tab in den
+Plugin-Einstellungen von DMS. So gibt es **eine** Oberflaeche und drei
+Ablagen, statt dreimal derselben Oberflaeche.
+
+Die Bedienelemente sind selbstgebaut (`Schalter`, `Wahl`, `Regler`, `Haken`) --
+`QtQuick.Controls` waere eine weitere Abhaengigkeit, und der Rest des Programms
+kommt mit `import QtQuick` aus. Das soll so bleiben, damit dieselben Dateien im
+Fenster, im DMS-Plugin und spaeter unter Android laufen.
+
+**Falle dabei:** in einem `Row` darf ein Kind kein `anchors.fill` haben. Die
+Beruehrungsflaeche eines Kaestchens braucht aber genau das -- also ein `Item`
+um die Zeile herum, `Row` darin, `MouseArea` daneben.
+
+**Mehrfachauswahl: leere Liste heisst alle.** Wer keine Kennzahl abwaehlt,
+speichert eine leere Liste, und die zeigt alles. Eine spaeter hinzukommende
+Kennzahl erscheint dadurch von selbst, statt bei allen Bestandsnutzern
+stillschweigend zu fehlen.
+
+### Die Wallet-Ansicht ist zugesperrt
+
+Der Reiter "Wallet" **erscheint gar nicht**, bis er in den Einstellungen
+ausdruecklich eingeschaltet wird -- nach einer Warnung, die dasteht und gelesen
+werden will. Grund ist nicht das Guthaben: watch-only ist es vollstaendig
+geschuetzt, das Programm kann nicht signieren. Grund ist die **Verkettung**.
+Es ist der einzige Teil des Programms, bei dem der Benutzer etwas ueber sich
+preisgibt, und das gehoert vor die Tuer und nicht dahinter.
+
+Der Schalter gilt in allen drei Wirten. Wird er ausgeschaltet, waehrend die
+Ansicht offen ist, springt das Fenster zurueck.
+
+### Was die Einstellungen jetzt koennen
+
+    Allgemein   Deckkraft, Kachelgroesse, Startansicht
+    Feed        Farbe (Alter/Gebuehr/Art), Groesse, Blockangaben, Legende,
+                Trennlinie, Weichzeichnung
+    BlockClock  welche Kennzahlen, Waehrung (Euro/Dollar), Balken
+    Miner       welche Kennzahlen
+    Explorer    Farbe der Kachelgrafiken
+    Wallet      der Schalter samt Warnung
+
+**Moscow Time** ist dazugekommen: wie viele Satoshi es fuer eine Einheit der
+Waehrung gibt (`1e8 / Kurs`). Die Zahl steigt, wenn der Kurs faellt -- sie
+misst Bitcoin in Geld statt Geld in Bitcoin, und genau darum geht es dabei.
+
+### Noch offen
+
+Ein **Kursverlauf** mit Schieber (wie bei einer Boerse) braucht eine Datenreihe,
+die der Daemon bisher nicht holt -- `/api/v1/historical-price` waere die
+Quelle. Ebenso die **freie Waehrungswahl**: geliefert werden zurzeit nur Euro
+und Dollar. Und die **Wahl der Datenquelle** je Ansicht ist noch nicht
+eingebaut; umgestellt wird bis auf Weiteres ueber `host` in
+`~/.config/btcfeed/sources.json`, was den ganzen Feed umzieht.

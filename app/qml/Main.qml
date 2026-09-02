@@ -29,7 +29,24 @@ Window {
     property string sizeMode: "value"
     property bool showInfo: true
     property bool showLegend: true
+    property bool showRuler: true
+    property bool frosted: true
     property real bgOpacity: 0.82
+    property real density: 1.0
+    property int startView: 0
+    property string currency: "eur"
+    property string tileColorMode: "fee"
+    property bool clockBars: true
+    // Leere Liste heisst: alles zeigen
+    property var clockFields: []
+    property var minerFields: []
+    // Die Wallet-Ansicht ist **abgeschaltet, bis sie ausdruecklich
+    // eingeschaltet wird**. Nicht wegen der Guthaben -- die sind watch-only
+    // vollstaendig geschuetzt --, sondern wegen der Verkettung: es ist der
+    // einzige Teil des Programms, bei dem der Benutzer etwas ueber sich
+    // preisgibt. Der Reiter erscheint erst nach der Warnung in den
+    // Einstellungen.
+    property bool walletEnabled: false
     // 0 = Feed, 1 = BlockClock, 2 = Miner, 3 = Explorer, 4 = Wallet. Wird
     // gemerkt, damit ein Tablet nach dem Einschalten gleich wieder als
     // BlockClock hochkommt.
@@ -46,7 +63,91 @@ Window {
         property alias showLegend: win.showLegend
         property alias bgOpacity: win.bgOpacity
         property alias view: win.view
+        property alias showRuler: win.showRuler
+        property alias frosted: win.frosted
+        property alias density: win.density
+        property alias startView: win.startView
+        property alias currency: win.currency
+        property alias tileColorMode: win.tileColorMode
+        property alias clockBars: win.clockBars
+        property alias clockFields: win.clockFields
+        property alias minerFields: win.minerFields
+        property alias walletEnabled: win.walletEnabled
     }
+
+    // Beim Start in die gemerkte Ansicht -- fuer ein Tablet an der Wand ist
+    // das meist die BlockClock. Der Reiter "Wallet" faellt weg, solange er
+    // nicht eingeschaltet ist.
+    Component.onCompleted: {
+        if (win.startView >= 0 && win.startView <= 3)
+            win.view = win.startView;
+        // Ausgeschaltete Wallet-Ansicht darf nicht als leere Seite dastehen
+        if (win.view === 4 && !win.walletEnabled)
+            win.view = 0;
+    }
+
+    // Welche Reiter es gibt und welche Ansicht dahinter steckt
+    readonly property var tabViews: win.walletEnabled ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 5]
+    readonly property var tabLabels: win.walletEnabled
+        ? ["Feed", "BlockClock", "Miner", "Explorer", "Wallet", "Einstellungen"]
+        : ["Feed", "BlockClock", "Miner", "Explorer", "Einstellungen"]
+
+    // Eine Einstellung setzen. Alles laeuft hier durch, damit es nur eine
+    // Stelle gibt, an der etwas geaendert wird.
+    function setOpt(key, value) {
+        if (key === "bgOpacity")
+            win.bgOpacity = value;
+        else if (key === "density")
+            win.density = value;
+        else if (key === "startView")
+            win.startView = value;
+        else if (key === "colorMode")
+            win.colorMode = value;
+        else if (key === "sizeMode")
+            win.sizeMode = value;
+        else if (key === "showInfo")
+            win.showInfo = value;
+        else if (key === "showLegend")
+            win.showLegend = value;
+        else if (key === "showRuler")
+            win.showRuler = value;
+        else if (key === "frosted")
+            win.frosted = value;
+        else if (key === "currency")
+            win.currency = value;
+        else if (key === "tileColorMode")
+            win.tileColorMode = value;
+        else if (key === "clockBars")
+            win.clockBars = value;
+        else if (key === "clockFields")
+            win.clockFields = value;
+        else if (key === "minerFields")
+            win.minerFields = value;
+        else if (key === "walletEnabled") {
+            win.walletEnabled = value;
+            // Ausgeschaltet, waehrend die Ansicht offen war -> zurueck
+            if (!value && win.view === 4)
+                win.view = 5;
+        }
+    }
+
+    readonly property var opts: ({
+        "bgOpacity": win.bgOpacity,
+        "density": win.density,
+        "startView": win.startView,
+        "colorMode": win.colorMode,
+        "sizeMode": win.sizeMode,
+        "showInfo": win.showInfo,
+        "showLegend": win.showLegend,
+        "showRuler": win.showRuler,
+        "frosted": win.frosted,
+        "currency": win.currency,
+        "tileColorMode": win.tileColorMode,
+        "clockBars": win.clockBars,
+        "clockFields": win.clockFields,
+        "minerFields": win.minerFields,
+        "walletEnabled": win.walletEnabled
+    })
 
     FeedState {
         id: feedState
@@ -59,12 +160,12 @@ Window {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         anchors.topMargin: 8
-        labels: ["Feed", "BlockClock", "Miner", "Explorer", "Wallet"]
-        current: win.view
+        labels: win.tabLabels
+        current: win.tabViews.indexOf(win.view)
         fontSize: 13
         z: 30
         onPicked: function (i) {
-            win.view = i;
+            win.view = win.tabViews[i];
         }
     }
 
@@ -89,6 +190,10 @@ Window {
         sizeMode: win.sizeMode
         infoVisible: win.showInfo
         legendVisible: win.showLegend
+        rulerVisible: win.showRuler
+        frostedInfo: win.frosted
+        frostedBlur: win.frosted
+        density: win.density
     }
 
     ClockView {
@@ -97,6 +202,9 @@ Window {
         anchors.margins: 14
         anchors.topMargin: tabs.height + 14
         feed: feedState
+        fields: win.clockFields
+        currency: win.currency
+        showBars: win.clockBars
     }
 
     ExplorerView {
@@ -107,6 +215,10 @@ Window {
         anchors.margins: 14
         anchors.topMargin: tabs.height + 14
         feed: feedState
+        tileColorMode: win.tileColorMode
+        onTileColorModeRequested: function (m) {
+            win.tileColorMode = m;
+        }
     }
 
     MinerView {
@@ -115,10 +227,22 @@ Window {
         anchors.margins: 14
         anchors.topMargin: tabs.height + 14
         feed: feedState
+        metricKeys: win.minerFields
+    }
+
+    SettingsView {
+        visible: win.view === 5
+        anchors.fill: parent
+        anchors.margins: 14
+        anchors.topMargin: tabs.height + 14
+        opts: win.opts
+        onChanged: function (key, value) {
+            win.setOpt(key, value);
+        }
     }
 
     WatchView {
-        visible: win.view === 4
+        visible: win.view === 4 && win.walletEnabled
         // Nur nachfragen, solange die Ansicht auch zu sehen ist
         live: visible
         anchors.fill: parent
@@ -176,8 +300,14 @@ Window {
             case Qt.Key_3:
             case Qt.Key_4:
             case Qt.Key_5:
-                win.view = event.key - Qt.Key_1;
-                hint.flash();
+            case Qt.Key_6:
+                // Die Ziffer zaehlt die **sichtbaren** Reiter ab -- ist die
+                // Wallet-Ansicht aus, ruecken die dahinter auf.
+                var n = event.key - Qt.Key_1;
+                if (n < win.tabViews.length) {
+                    win.view = win.tabViews[n];
+                    hint.flash();
+                }
                 break;
             case Qt.Key_F11:
                 win.visibility = win.visibility === Window.FullScreen
@@ -201,7 +331,7 @@ Window {
         anchors.bottomMargin: 16
         color: "#9a94a6"
         font.pixelSize: 11
-        text: "1 Feed · 2 BlockClock · 3 Miner · 4 Explorer   ·   c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft · F11 Vollbild"
+        text: "1–6 Ansicht   ·   c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft · F11 Vollbild"
         opacity: 0
 
         function flash() {

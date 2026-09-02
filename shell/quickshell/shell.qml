@@ -21,9 +21,80 @@ ShellRoot {
         property string sizeMode: "value"
         property bool showInfo: true
         property bool showLegend: true
+        property bool showRuler: true
+        property bool frosted: true
         property real bgOpacity: 0.82
-        // 0 Feed, 1 BlockClock, 2 Miner, 3 Explorer, 4 Wallet
+        property real density: 1.0
+        property int startView: 0
+        property string currency: "eur"
+        property string tileColorMode: "fee"
+        property bool clockBars: true
+        property var clockFields: []
+        property var minerFields: []
+        // Aus, bis sie in den Einstellungen ausdruecklich eingeschaltet wird
+        property bool walletEnabled: false
+        // 0 Feed, 1 BlockClock, 2 Miner, 3 Explorer, 4 Wallet, 5 Einstellungen
         property int view: 0
+
+        readonly property var tabViews: walletEnabled ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 5]
+        readonly property var tabLabels: walletEnabled
+            ? ["Feed", "BlockClock", "Miner", "Explorer", "Wallet", "Einstellungen"]
+            : ["Feed", "BlockClock", "Miner", "Explorer", "Einstellungen"]
+
+        readonly property var opts: ({
+            "bgOpacity": bgOpacity,
+            "density": density,
+            "startView": startView,
+            "colorMode": colorMode,
+            "sizeMode": sizeMode,
+            "showInfo": showInfo,
+            "showLegend": showLegend,
+            "showRuler": showRuler,
+            "frosted": frosted,
+            "currency": currency,
+            "tileColorMode": tileColorMode,
+            "clockBars": clockBars,
+            "clockFields": clockFields,
+            "minerFields": minerFields,
+            "walletEnabled": walletEnabled
+        })
+
+        function setOpt(key, value) {
+            if (key === "bgOpacity")
+                bgOpacity = value;
+            else if (key === "density")
+                density = value;
+            else if (key === "startView")
+                startView = value;
+            else if (key === "colorMode")
+                colorMode = value;
+            else if (key === "sizeMode")
+                sizeMode = value;
+            else if (key === "showInfo")
+                showInfo = value;
+            else if (key === "showLegend")
+                showLegend = value;
+            else if (key === "showRuler")
+                showRuler = value;
+            else if (key === "frosted")
+                frosted = value;
+            else if (key === "currency")
+                currency = value;
+            else if (key === "tileColorMode")
+                tileColorMode = value;
+            else if (key === "clockBars")
+                clockBars = value;
+            else if (key === "clockFields")
+                clockFields = value;
+            else if (key === "minerFields")
+                minerFields = value;
+            else if (key === "walletEnabled") {
+                walletEnabled = value;
+                if (!value && view === 4)
+                    view = 5;
+            }
+            save();
+        }
 
         function save() {
             viewFile.setText(JSON.stringify({
@@ -32,7 +103,17 @@ ShellRoot {
                 "showInfo": showInfo,
                 "showLegend": showLegend,
                 "bgOpacity": bgOpacity,
-                "view": view
+                "view": view,
+                "showRuler": showRuler,
+                "frosted": frosted,
+                "density": density,
+                "startView": startView,
+                "currency": currency,
+                "tileColorMode": tileColorMode,
+                "clockBars": clockBars,
+                "clockFields": clockFields,
+                "minerFields": minerFields,
+                "walletEnabled": walletEnabled
             }));
             hint.flash();
         }
@@ -55,7 +136,29 @@ ShellRoot {
                     if (typeof v.bgOpacity === "number")
                         win.bgOpacity = Math.max(0.15, Math.min(1, v.bgOpacity));
                     if (typeof v.view === "number")
-                        win.view = Math.max(0, Math.min(4, v.view));
+                        win.view = Math.max(0, Math.min(5, v.view));
+                    if (typeof v.showRuler === "boolean")
+                        win.showRuler = v.showRuler;
+                    if (typeof v.frosted === "boolean")
+                        win.frosted = v.frosted;
+                    if (typeof v.density === "number")
+                        win.density = Math.max(0.6, Math.min(2, v.density));
+                    if (typeof v.startView === "number")
+                        win.startView = Math.max(0, Math.min(3, v.startView));
+                    if (v.currency)
+                        win.currency = v.currency;
+                    if (v.tileColorMode)
+                        win.tileColorMode = v.tileColorMode;
+                    if (typeof v.clockBars === "boolean")
+                        win.clockBars = v.clockBars;
+                    if (Array.isArray(v.clockFields))
+                        win.clockFields = v.clockFields;
+                    if (Array.isArray(v.minerFields))
+                        win.minerFields = v.minerFields;
+                    if (typeof v.walletEnabled === "boolean")
+                        win.walletEnabled = v.walletEnabled;
+                    if (win.view === 4 && !win.walletEnabled)
+                        win.view = 0;
                 } catch (e) {}
             }
         }
@@ -74,12 +177,12 @@ ShellRoot {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
             anchors.topMargin: 8
-            labels: ["Feed", "BlockClock", "Miner", "Explorer", "Wallet"]
-            current: win.view
+            labels: win.tabLabels
+            current: win.tabViews.indexOf(win.view)
             fontSize: 13
             z: 30
             onPicked: function (i) {
-                win.view = i;
+                win.view = win.tabViews[i];
                 win.save();
             }
         }
@@ -101,6 +204,10 @@ ShellRoot {
             sizeMode: win.sizeMode
             infoVisible: win.showInfo
             legendVisible: win.showLegend
+            rulerVisible: win.showRuler
+            frostedInfo: win.frosted
+            frostedBlur: win.frosted
+            density: win.density
             onTxActivated: function (txid) {
                 win.view = 3;
                 explorer.go("tx", txid);
@@ -113,6 +220,9 @@ ShellRoot {
             anchors.margins: 14
             anchors.topMargin: tabs.height + 14
             feed: feedState
+            fields: win.clockFields
+            currency: win.currency
+            showBars: win.clockBars
         }
 
         MinerView {
@@ -121,6 +231,7 @@ ShellRoot {
             anchors.margins: 14
             anchors.topMargin: tabs.height + 14
             feed: feedState
+            metricKeys: win.minerFields
         }
 
         ExplorerView {
@@ -131,10 +242,26 @@ ShellRoot {
             anchors.margins: 14
             anchors.topMargin: tabs.height + 14
             feed: feedState
+            tileColorMode: win.tileColorMode
+            onTileColorModeRequested: function (m) {
+                win.tileColorMode = m;
+                win.save();
+            }
+        }
+
+        SettingsView {
+            visible: win.view === 5
+            anchors.fill: parent
+            anchors.margins: 14
+            anchors.topMargin: tabs.height + 14
+            opts: win.opts
+            onChanged: function (key, value) {
+                win.setOpt(key, value);
+            }
         }
 
         WatchView {
-            visible: win.view === 4
+            visible: win.view === 4 && win.walletEnabled
             live: visible
             anchors.fill: parent
             anchors.margins: 14
@@ -190,8 +317,12 @@ ShellRoot {
                 case Qt.Key_3:
                 case Qt.Key_4:
                 case Qt.Key_5:
-                    win.view = event.key - Qt.Key_1;
-                    win.save();
+                case Qt.Key_6:
+                    var n = event.key - Qt.Key_1;
+                    if (n < win.tabViews.length) {
+                        win.view = win.tabViews[n];
+                        win.save();
+                    }
                     break;
                 default:
                     return;
@@ -208,7 +339,7 @@ ShellRoot {
             anchors.bottomMargin: 16
             color: "#9a94a6"
             font.pixelSize: 11
-            text: "1–5 Ansicht · c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft"
+            text: "1–6 Ansicht · c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft"
             opacity: 0
 
             function flash() {

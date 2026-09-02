@@ -36,6 +36,7 @@ set(SHARED_QML
     ../ui/qml/WatchView.qml
     ../ui/qml/TxList.qml
     ../ui/qml/BlockHistory.qml
+    ../ui/qml/SettingsView.qml
     ../ui/qml/ExplorerHome.qml
     ../ui/qml/MainPanels.qml
     ../ui/qml/search.js

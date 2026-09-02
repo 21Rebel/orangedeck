@@ -182,6 +182,10 @@ Item {
     // Kachelfarbe fuer alle Kachelgrafiken dieser Ansicht: "fee" oder "type".
     // Sie liegt hier, damit die Wahl beim Blaettern erhalten bleibt.
     property string tileColorMode: "fee"
+    // Der Wirt haelt die Lesart und merkt sie sich -- hier wird sie nur
+    // erbeten, nicht selbst gesetzt. Sonst zerschlaegt die Zuweisung die
+    // Bindung, die von den Einstellungen herkommt.
+    signal tileColorModeRequested(string mode)
 
     // Ein geplanter Block hat keinen Hash und keine abrufbaren Inhalte -- er
     // wird deshalb nicht ueber `go()` geladen, sondern direkt gesetzt.
@@ -477,7 +481,7 @@ Item {
                 live: visible && root.visible
                 colorMode: root.tileColorMode
                 onColorModeRequested: function (m) {
-                    root.tileColorMode = m;
+                    root.tileColorModeRequested(m);
                 }
                 feed: root.feed
                 textColor: root.textColor
@@ -1080,7 +1084,7 @@ Item {
                 showHeader: false
                 colorMode: root.tileColorMode
                 onColorModeRequested: function (m) {
-                    root.tileColorMode = m;
+                    root.tileColorModeRequested(m);
                 }
                 feed: root.feed
                 textColor: root.textColor
@@ -1271,7 +1275,7 @@ Item {
                 accentColor: root.accentColor
                 uiFont: root.uiFont
                 onPicked: function (m) {
-                    root.tileColorMode = m;
+                    root.tileColorModeRequested(m);
                 }
             }
 
