@@ -46,6 +46,22 @@ Deckkraft, `F11` Vollbild, `q` beenden.
 nicht auf stderr -- QML-Fehler bleiben dadurch unsichtbar. Mit
 `QT_FORCE_STDERR_LOGGING=1` starten, dann erscheinen sie.
 
+## Woher die Daten kommen
+
+Zwei Wege, umschaltbar in den Einstellungen unter "Allgemein":
+
+- **Eigener Dienst** (Vorgabe) -- `daemon/btcfeed` auf `127.0.0.1:21021`. Er
+  haelt **eine** Verbindung fuer alle Fenster und Widgets, leitet Wallets aus
+  dem xpub ab und fragt den Miner im Heimnetz.
+- **Direkt** -- die Oberflaeche redet selbst mit mempool.space, ueber denselben
+  WebSocket, den auch der Dienst benutzt. Kein Dienst noetig, kein systemd,
+  keine Einrichtung. Dafuer fallen Miner und Wallet weg: das eine steht im
+  Heimnetz, das andere ist Rechenarbeit des Dienstes.
+
+Auf dem Rechner ist der Dienst die bessere Wahl, auf dem Handy gibt es ihn
+nicht. Auf der Befehlszeile: `btcfeed-app --source direct`. Der Direktbezug
+braucht `qt6-websockets`; fehlt das Paket, bleibt der Dienst.
+
 ## Als Flatpak
 
     flatpak install --user flathub org.kde.Platform//6.9 org.kde.Sdk//6.9

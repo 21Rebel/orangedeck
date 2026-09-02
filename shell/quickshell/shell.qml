@@ -27,6 +27,8 @@ ShellRoot {
         property real bgOpacity: 0.82
         property real density: 1.0
         property int startView: -1
+        // "daemon" oder "direct" -- siehe FeedState.mode
+        property string dataSource: "daemon"
         property string currency: "eur"
         property string tileColorMode: "fee"
         property bool clockBars: true
@@ -51,20 +53,40 @@ ShellRoot {
         // 0 Feed, 1 BlockClock, 2 Miner, 3 Explorer, 4 Wallet, 5 Einstellungen
         property int view: 0
 
-        readonly property var tabViews: walletEnabled ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 5]
+        // Zwei Reiter fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit:
+        // der Miner steht im Heimnetz und die Wallet-Ableitung ist Rechenarbeit des
+        // Dienstes. Ein Reiter, hinter dem nichts sein kann, ist schlimmer als keiner.
+        readonly property var tabViews: {
+            var v = [0, 1];
+            if (feedState.canMiner)
+                v.push(2);
+            v.push(3);
+            if (walletEnabled && feedState.canWallet)
+                v.push(4);
+            v.push(5);
+            return v;
+        }
         readonly property var tabLabels: {
-            var l = [Tr.t("tab.feed", lang), Tr.t("tab.clock", lang),
-                     Tr.t("tab.miner", lang), Tr.t("tab.explorer", lang)];
-            if (walletEnabled)
+            var l = [Tr.t("tab.feed", lang), Tr.t("tab.clock", lang)];
+            if (feedState.canMiner)
+                l.push(Tr.t("tab.miner", lang));
+            l.push(Tr.t("tab.explorer", lang));
+            if (walletEnabled && feedState.canWallet)
                 l.push(Tr.t("tab.wallet", lang));
             l.push(Tr.t("tab.settings", lang));
             return l;
+        }
+
+        onTabViewsChanged: {
+            if (win.tabViews.indexOf(win.view) < 0)
+                win.view = 0;
         }
 
         readonly property var opts: ({
             "bgOpacity": bgOpacity,
             "density": density,
             "startView": startView,
+            "dataSource": dataSource,
             "colorMode": colorMode,
             "sizeMode": sizeMode,
             "showInfo": showInfo,
@@ -100,6 +122,8 @@ ShellRoot {
                 density = value;
             else if (key === "startView")
                 startView = value;
+            else if (key === "dataSource")
+                dataSource = value;
             else if (key === "colorMode")
                 colorMode = value;
             else if (key === "sizeMode")
@@ -170,6 +194,7 @@ ShellRoot {
                 "frosted": frosted,
                 "density": density,
                 "startView": startView,
+                "dataSource": dataSource,
                 "currency": currency,
                 "tileColorMode": tileColorMode,
                 "clockBars": clockBars,
@@ -221,6 +246,8 @@ ShellRoot {
                         win.density = Math.max(0.6, Math.min(2, v.density));
                     if (typeof v.startView === "number")
                         win.startView = Math.max(-1, Math.min(3, v.startView));
+                    if (v.dataSource)
+                        win.dataSource = v.dataSource;
                     if (v.currency)
                         win.currency = v.currency;
                     if (v.tileColorMode)
@@ -269,6 +296,8 @@ ShellRoot {
 
         FeedState {
             id: feedState
+
+            mode: win.dataSource
         }
 
         // Dieselben fuenf Ansichten wie in der eigenstaendigen Anwendung.

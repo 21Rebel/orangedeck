@@ -1,5 +1,95 @@
 # Stand und offene Punkte
 
+## Stand 02.09.2026, spaeter Abend -- Direktbezug, und was er kostet
+
+**Die Oberflaeche kann jetzt selbst mit mempool.space reden.** Der Anlass:
+ein Widget, das nur laeuft, solange der Heimrechner an ist, ist keines --
+und auf einem Handy gibt es den Dienst ohnehin nicht.
+
+Neu ist `ui/qml/DirectFeed.qml`: derselbe WebSocket, den auch der Dienst
+benutzt, dazu die REST-Abfragen fuer Kacheldaten und langsame Kennzahlen.
+Herausgekommen ist ein Zustand mit **genau demselben Aufbau** wie `/state`
+und `/block` -- `FeedState` schiebt beide Quellen durch dieselbe Auswertung
+(`__apply`), und keine einzige Ansicht merkt, woher die Zahlen kommen.
+Umgestellt wird in den Einstellungen unter "Allgemein" oder mit
+`btcfeed-app --source direct`.
+
+Weniger Arbeit als befuerchtet, aus zwei Gruenden: die Kachelpackung lief
+**schon immer** in QML (`mondrian.js`), der Dienst liefert nur rohe Listen --
+und die Schnittstelle zwischen beiden ist schmal, drei Abfragen.
+
+**Zwei Reiter fallen im Direktbezug weg**, und das ist keine Bequemlichkeit:
+der Miner steht im Heimnetz, und die Wallet-Ableitung ist Punktarithmetik auf
+secp256k1 -- die gehoert nicht in QML nachgebaut. `FeedState` sagt das ueber
+`canMiner` und `canWallet`, alle drei Hosts blenden die Reiter danach aus.
+Ein Reiter, hinter dem nichts sein kann, ist schlimmer als keiner.
+
+`import QtWebSockets` steht bewusst in einer **eigenen** Datei: das Paket
+(`qt6-websockets`) ist nicht ueberall installiert, und stuende die Zeile in
+`FeedState.qml`, fiele damit die ganze Anwendung aus statt nur einer
+Betriebsart. Geladen wird sie ueber einen `Loader`. Die KDE-Flatpak-Laufzeit
+bringt das Modul mit -- das Flatpak laeuft damit ganz ohne Dienst.
+
+### Dabei eine teure Gewohnheit gefunden
+
+Beim Nachmessen fiel auf, dass die Anwendung **im Dienstbetrieb** deutlich
+mehr Rechenzeit brauchte als im Direktbezug. Nachgesehen, warum:
+
+    /state                     32 kB, alle 400 ms geholt = 80 kB/s JSON
+      davon recent             16 kB, wovon die Ansicht alles bis `seq` wegwirft
+      davon stats +
+            minerHistory       14 kB, die sich hoechstens im Minutentakt aendern
+
+Der Dienst nimmt jetzt zwei freiwillige Parameter: `?since=<seq>` schickt nur
+die neuen Transaktionen, `?slow=<rev>` laesst die langsamen Felder weg,
+solange sie sich nicht geaendert haben. Was fehlt, behaelt die Oberflaeche vom
+vorigen Stand. **Aus 32 kB werden rund 2 kB.** Ohne Parameter kommt die
+Vollform wie eh und je -- `curl` und aeltere Fassungen merken nichts davon.
+
+**Und eine Lehre ueber das Messen selbst.** Nacheinander gemessen kamen
+19,97 % gegen 5,82 % heraus, kurz darauf 7,20 % gegen 13,48 % -- die Zahlen
+haengen am Mempool-Verkehr, nicht an der Betriebsart. Erst **gleichzeitig**
+gemessen, im selben Zeitfenster, sind sie vergleichbar:
+
+    Dienst (gekuerzt)   11,1 % CPU
+    Direktbezug         14,7 % CPU
+
+Der Dienst bleibt also die guenstigere Quelle -- er nimmt der Oberflaeche den
+WebSocket und das Zusammenbauen ab. Auf dem Handy zaehlt das nicht, dort gibt
+es keine Wahl.
+
+## Dazu am 02.09.2026: der Fluss einer Transaktion
+
+Drei Punkte aus dem Durchgang, alle am Vorbild (mempool.space) geprueft:
+
+- **Anschlussstuecke an beiden Enden.** Vor dem Eingang und hinter dem
+  Ausgang steht jetzt ein kurzer Balken, der nach aussen in nichts uebergeht.
+  Er sagt: davor haengt eine andere Transaktion, danach geht es weiter.
+- **Die Stufe an der Naht ist weg.** Ursache war nicht die Lage, sondern die
+  Dicke: gezeichnet wird ein Band ueberall mit **einer** Staerke, und das
+  erste und letzte Band steht oben und unten um die Haelfte dessen ueber, was
+  ihm die Mindestdicke ueber sein Gewicht hinaus gibt. Dieser Ueberstand ist
+  auf beiden Seiten verschieden gross -- links ein dicker Eingang, rechts die
+  winzige Gebuehr. Jetzt wird der Platz fuer die Gewichte um beide
+  Ueberstaende gekuerzt; dann misst der gezeichnete Strang auf beiden Seiten
+  genau `trunkH`. Ein erster Versuch, der nur `hMid` staucht, blieb wirkungslos:
+  gezeichnet wird mit `hEdge`.
+- **Die Angaben stehen am Zeiger**, nicht mehr am Fussrand: welcher Ein- oder
+  Ausgang, der Betrag, die Adresse -- und im Strang darueber die Transaktion,
+  weil dort beide Seiten zu ihr gehoeren.
+
+Nebenbei ein echter Fehler, den erst der Pruefstand zeigte: steht die eine
+Seite schon und die andere noch nicht -- die Eigenschaften kommen nacheinander
+an --, lief der Aufbau in `out[0]` einer leeren Liste.
+
+**Der Pruefstand ist die Lehre daraus.** Eine einzelne QML-Datei, die nur
+`TxFlow` mit einer echten Transaktion zeichnet und den Zeiger von aussen
+setzt (`scratchpad/flowtest.qml`, mit `qml6` gestartet). Das Diagramm im
+ganzen Programm zu erreichen kostet Klicks, die sich kopflos nicht
+nachstellen lassen -- ein Zeigerwerkzeug gibt es hier nicht, und die Ziffern
+einer TxID schalten beim Tippen die Ansicht um, weil das Suchfeld beim
+Oeffnen keinen Eingabefokus hat.
+
 ## Stand 02.09.2026, Abend -- Flatpak, Layer-Shell, Android-APK
 
 Drei der offenen Punkte auf einmal. Vorher wurde installiert, was fehlte:

@@ -98,6 +98,16 @@ Item {
     // Abstand des Pfeils vom rechten Rand -- ohne ihn klebt er an der Kante.
     property real edgeMargin: Math.max(4, Math.min(width * 0.012, labelSize))
 
+    // Ein kurzes gerades Stueck vor dem Eingang und hinter dem Ausgang, das
+    // nach aussen in nichts uebergeht. Es sagt: hier hoert die Transaktion
+    // nicht auf, davor haengt eine andere und danach geht es weiter. Das
+    // Original macht das genauso (die kurzen Balken links und rechts am
+    // Fluss auf mempool.space).
+    property real stubLen: Math.max(10, Math.min(width * 0.075, 90))
+    // Die Luecke zwischen Anschlussstueck und Band -- ohne sie verschmelzen
+    // beide und die Kerbe verliert ihre Wirkung.
+    property real stubGap: Math.max(2, labelSize * 0.28)
+
     // **Ein Winkel fuer beide Enden.** Vorher war die Spitze rechts auf eine
     // feste Laenge gedeckelt und der Pfeil links wuchs mit der Banddicke -- an
     // einem dicken Band trafen dadurch zwei verschiedene Steigungen aufeinander.
@@ -151,6 +161,13 @@ Item {
     readonly property color midColor: flowColor(0.5)
 
     property var hovered: null
+    // Wo der Zeiger steht -- die Angaben stehen daneben, nicht am Fussrand.
+    // So wie im Original: man liest dort, wo man hinsieht.
+    property real zeigerX: 0
+    property real zeigerY: 0
+    // Die Transaktion selbst. Im Strang gehoeren beide Seiten zu ihr, deshalb
+    // steht sie dort ueber den Angaben.
+    property string txid: ""
 
     signal activated(string side, int index)
 
@@ -222,6 +239,12 @@ Item {
             add(rest, list.length - n, -1);
         }
 
+        // Kann leer sein, wenn die eine Seite schon gesetzt ist und die andere
+        // noch nicht -- die Eigenschaften kommen nacheinander an. Ohne diese
+        // Zeile lief der Aufbau danach in `out[0]` von einer leeren Liste.
+        if (!out.length)
+            return out;
+
         var t = total > 0 ? total : 1;
         var sumThick = 0;
         for (i = 0; i < out.length; i++) {
@@ -239,32 +262,32 @@ Item {
         }
 
         // --- Lage im Strang: nach Gewicht, mittig ---------------------------
-        var trunkTop = root.padY + (root.innerH - root.trunkH) / 2;
+        //
+        // Gezeichnet wird ein Band ueberall mit derselben Dicke -- am Rand wie
+        // im Strang, das ist der Kern der Darstellung. Die **gezeichnete**
+        // Hoehe des Strangs ist deshalb nicht die Summe der Gewichte: oben und
+        // unten steht das erste und das letzte Band um die Haelfte dessen
+        // ueber, was ihm die Mindestdicke ueber sein Gewicht hinaus gibt.
+        //
+        // Dieser Ueberstand ist auf beiden Seiten verschieden gross -- links
+        // steht vielleicht ein dicker Eingang oben, rechts die winzige
+        // Gebuehr. Genau daran wurde die eine Seite an der Naht sichtbar
+        // dicker als die andere. Also wird der Platz fuer die Gewichte um die
+        // beiden Ueberstaende gekuerzt; dann misst der gezeichnete Strang auf
+        // beiden Seiten genau `trunkH`, und die Naht stimmt.
+        var ueOben = Math.max(0, (out[0].thick - out[0].weight) / 2);
+        var letzt = out[out.length - 1];
+        var ueUnten = Math.max(0, (letzt.thick - letzt.weight) / 2);
+        var k = root.trunkH > 0
+            ? Math.max(0.2, (root.trunkH - ueOben - ueUnten) / root.trunkH) : 1;
+        var trunkTop = root.padY + (root.innerH - root.trunkH) / 2 + ueOben;
         var acc = 0;
         for (i = 0; i < out.length; i++) {
-            var centre = trunkTop + acc + out[i].weight / 2;
-            out[i].midY = centre - out[i].thick / 2;
+            var anteil = out[i].weight * k;
             out[i].hMid = out[i].thick;
-            acc += out[i].weight;
+            out[i].midY = trunkTop + acc + anteil / 2 - out[i].thick / 2;
+            acc += anteil;
         }
-
-        // Ist ein Band dicker als sein Gewicht (Mindestdicke), steht es oben
-        // und unten ueber. Wie weit, haengt davon ab, wie viele Baender
-        // betroffen sind -- und das ist auf beiden Seiten verschieden. Ohne
-        // Ausgleich sitzt die eine Seite darum ein paar Bildpunkte hoeher als
-        // die andere, und in der Mitte klafft ein Versatz.
-        //
-        // Deshalb zum Schluss die **gezeichnete** Flaeche mittig ausrichten,
-        // nicht die gerechnete.
-        var spanTop = out[0].midY;
-        var spanBot = out[0].midY + out[0].hMid;
-        for (i = 1; i < out.length; i++) {
-            spanTop = Math.min(spanTop, out[i].midY);
-            spanBot = Math.max(spanBot, out[i].midY + out[i].hMid);
-        }
-        var shift = (root.padY + root.innerH / 2) - (spanTop + spanBot) / 2;
-        for (i = 0; i < out.length; i++)
-            out[i].midY += shift;
 
         // --- Lage am Rand: nach Dicke, mit Luecken --------------------------
         var nGaps = Math.max(0, out.length - 1);
@@ -334,6 +357,28 @@ Item {
             ctx.lineJoin = "round";
         }
 
+        // Das kurze Stueck am Rand: eine Seite voll, die andere in nichts
+        // auslaufend. `nachAussenRechts` sagt, wohin ausgeblendet wird.
+        function stub(ctx, x, len, cy, thickness, col, nachAussenRechts, lit) {
+            if (len < 1 || thickness < 0.5)
+                return;
+            var c = lit ? Qt.lighter(col, 1.35) : col;
+            var g = ctx.createLinearGradient(x, 0, x + len, 0);
+            var a0 = nachAussenRechts ? 1 : 0;
+            var a1 = nachAussenRechts ? 0 : 1;
+            // Gleichmaessig, ohne Stuetzstelle in der Mitte: mit ihr sass die
+            // Deckkraft dort zu hoch und der Balken wirkte wie ein Kloetzchen
+            // statt wie ein Auslaufen.
+            g.addColorStop(0, Qt.rgba(c.r, c.g, c.b, a0));
+            g.addColorStop(1, Qt.rgba(c.r, c.g, c.b, a1));
+            ctx.strokeStyle = g;
+            ctx.lineWidth = thickness;
+            ctx.beginPath();
+            ctx.moveTo(x, cy);
+            ctx.lineTo(x + len, cy);
+            ctx.stroke();
+        }
+
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
@@ -341,9 +386,11 @@ Item {
                 return;
 
             var w = width;
-            var xL = root.connector;
+            // Links: Anschlussstueck, Luecke, dann erst das Band mit der Kerbe.
+            var xIn = root.stubLen + root.stubGap;
+            var xL = xIn + root.connector;
             var xC = w * 0.5;
-            var xEnd = w - root.edgeMargin;
+            var xEnd = w - root.edgeMargin - root.stubLen - root.stubGap;
             var xR = xEnd - root.arrowLen - root.connector;
             // Die beiden Seiten stossen in der Mitte aneinander -- ein halber
             // Bildpunkt Ueberlappung, damit dort keine Naht bleibt.
@@ -377,14 +424,15 @@ Item {
                 // hinter dem Pfeil, und weil der Strich stumpf endet, blieb
                 // zwischen der schraegen Kante des Dreiecks und der senkrechten
                 // Kante des Bandes beidseits ein Spalt stehen.
-                ctx.moveTo(0, cEdge);
+                ctx.moveTo(xIn, cEdge);
                 ctx.lineTo(xL, cEdge);
                 canvas.curve(ctx, xL, cEdge, xC + seam, cMid);
                 ctx.stroke();
+                canvas.stub(ctx, 0, root.stubLen, cEdge, b.hEdge, root.flowColor(0), false, lit);
                 // Der Pfeil ist jetzt eine **Kerbe im Band**, kein angesetztes
                 // Dreieck: ein schmaler Winkel wird wieder herausgeschnitten.
                 // Dadurch gibt es keine Naht, und die Richtung bleibt lesbar.
-                canvas.notch(ctx, 0, cEdge, head, b.hEdge);
+                canvas.notch(ctx, xIn, cEdge, head, b.hEdge);
             }
 
             for (i = 0; i < root.bandsOut.length; i++) {
@@ -428,6 +476,10 @@ Item {
                 // Dieselbe Kerbe wie am Eingang, kurz vor der Spitze -- so
                 // sehen beide Enden gleich aus.
                 canvas.notch(ctx, xT - tip, cEdge, tip, b.hEdge);
+                // Und dahinter das Anschlussstueck, das nach aussen ausblendet
+                canvas.stub(ctx, w - root.edgeMargin - root.stubLen, root.stubLen,
+                            cEdge, b.hEdge,
+                            b.fee ? root.feeColor : root.flowColor(1), true, lit);
             }
 
             if (root.fee > 0 && root.bandsOut.length) {
@@ -453,9 +505,37 @@ Item {
             var y1 = y0 + (edge ? b.hEdge : b.hMid);
             if (py >= y0 && py <= y1)
                 return { "side": b.fee ? "fee" : side, "index": b.i,
-                         "value": b.v, "more": b.more };
+                         "value": b.v, "more": b.more, "edge": edge };
         }
         return null;
+    }
+
+    // Die Adresse zu einem Band. Am Rand steht sie, im Strang gehoert sie
+    // ebenso dazu -- dort kommt nur die Transaktion darueber.
+    function addrFor(hv) {
+        if (!hv || hv.index < 0)
+            return "";
+        var e;
+        if (hv.side === "in") {
+            e = (root.vin || [])[hv.index];
+            return (e && e.prevout && e.prevout.scriptpubkey_address) || "";
+        }
+        if (hv.side === "out") {
+            e = root.voutWithFee[hv.index];
+            return (e && e.scriptpubkey_address) || "";
+        }
+        return "";
+    }
+
+    function titleFor(hv) {
+        if (!hv)
+            return "";
+        if (hv.side === "fee")
+            return Tr.t("flow.fee", root.lang, root.fee);
+        if (hv.more)
+            return Tr.t("flow.more", root.lang, hv.more);
+        var n = hv.index + (hv.side === "out" && root.fee > 0 ? 0 : 1);
+        return Tr.t(hv.side === "in" ? "flow.in" : "flow.out", root.lang, n);
     }
 
     MouseArea {
@@ -463,6 +543,8 @@ Item {
         hoverEnabled: true
 
         onPositionChanged: mouse => {
+            root.zeigerX = mouse.x;
+            root.zeigerY = mouse.y;
             var b = root.bandAt(mouse.x, mouse.y);
             if (JSON.stringify(b) !== JSON.stringify(root.hovered)) {
                 root.hovered = b;
@@ -486,35 +568,64 @@ Item {
         }
     }
 
+    // Die Angaben am Zeiger. Aufbau wie im Original: Transaktion (nur im
+    // Strang), dann welcher Ein- oder Ausgang, der Betrag und die Adresse.
     Rectangle {
+        id: tip
+
+        readonly property bool imStrang: root.hovered !== null && !root.hovered.edge
+        readonly property string adresse: root.addrFor(root.hovered)
+
         visible: root.hovered !== null
-        width: tipText.width + root.labelSize * 1.4
-        height: tipText.height + root.labelSize * 0.8
+        width: tipInhalt.width + root.labelSize * 1.6
+        height: tipInhalt.height + root.labelSize * 1.1
         radius: root.labelSize * 0.4
-        color: Qt.rgba(0.05, 0.05, 0.08, 0.95)
+        color: Qt.rgba(0.05, 0.05, 0.08, 0.96)
         border.width: 1
         border.color: Qt.rgba(1, 1, 1, 0.12)
-        x: Math.max(0, Math.min(root.width - width, root.width / 2 - width / 2))
-        y: root.height - height - root.labelSize * 0.4
+        z: 10
+        // Rechts unter dem Zeiger, sofern das passt -- sonst kippt der Kasten
+        // auf die andere Seite, damit er nicht aus der Flaeche laeuft.
+        x: Math.max(0, Math.min(root.width - width, root.zeigerX + root.labelSize))
+        y: Math.max(0, Math.min(root.height - height, root.zeigerY + root.labelSize * 0.8))
 
-        Text {
-            id: tipText
+        Column {
+            id: tipInhalt
 
             anchors.centerIn: parent
-            color: root.textColor
-            font.pixelSize: root.labelSize
-            text: {
-                var hv = root.hovered;
-                if (!hv)
-                    return "";
-                var v = "₿ " + Tr.fixed(hv.value / 1e8, 8, root.lang);
-                if (hv.side === "fee")
-                    return Tr.t("flow.fee", root.lang, root.fee) + " · " + v;
-                if (hv.more)
-                    return "weitere " + hv.more + " · " + v;
-                var n = hv.index + (hv.side === "out" && root.fee > 0 ? 0 : 1);
-                return Tr.t(hv.side === "in" ? "flow.in" : "flow.out", root.lang, n)
-                       + " · " + v;
+            spacing: root.labelSize * 0.25
+
+            Text {
+                visible: tip.imStrang && root.txid !== ""
+                width: Math.min(root.width * 0.6, implicitWidth)
+                elide: Text.ElideMiddle
+                text: Tr.t("flow.tx", root.lang) + "  " + root.txid
+                color: root.dimColor
+                font.pixelSize: root.labelSize * 0.92
+                font.family: "monospace"
+            }
+
+            Text {
+                text: root.titleFor(root.hovered)
+                color: root.textColor
+                font.pixelSize: root.labelSize
+            }
+
+            Text {
+                text: "\u20BF " + Tr.fixed((root.hovered ? root.hovered.value : 0) / 1e8,
+                                           8, root.lang)
+                color: root.textColor
+                font.pixelSize: root.labelSize
+            }
+
+            Text {
+                visible: tip.adresse !== ""
+                width: Math.min(root.width * 0.6, implicitWidth)
+                elide: Text.ElideMiddle
+                text: tip.adresse
+                color: root.dimColor
+                font.pixelSize: root.labelSize * 0.92
+                font.family: "monospace"
             }
         }
     }

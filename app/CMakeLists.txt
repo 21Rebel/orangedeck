@@ -17,6 +17,12 @@ if(NOT ANDROID)
     find_package(LayerShellQt QUIET)
 endif()
 
+# Fuer den Direktbezug (DirectFeed.qml, `import QtWebSockets`). Freiwillig:
+# ohne das Modul faellt nur diese Betriebsart aus, der Dienst traegt weiter.
+# Verlinkt wird es trotzdem, wo es da ist -- unter Android packt
+# androiddeployqt nur mit, was auch gebraucht wird.
+find_package(Qt6 QUIET COMPONENTS WebSockets)
+
 qt_add_executable(btcfeed-app src/main.cpp)
 
 # Die geteilten Dateien liegen ausserhalb dieses Verzeichnisses. Ohne
@@ -24,6 +30,7 @@ qt_add_executable(btcfeed-app src/main.cpp)
 # und dann findet FeedCanvas.qml sein "mondrian.js" nicht mehr.
 set(SHARED_QML
     ../ui/qml/FeedState.qml
+    ../ui/qml/DirectFeed.qml
     ../ui/qml/FeedCanvas.qml
     ../ui/qml/FeedPanel.qml
     ../ui/qml/FrostedPanel.qml
@@ -69,6 +76,13 @@ qt_add_qml_module(btcfeed-app
 )
 
 target_link_libraries(btcfeed-app PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick)
+
+if(Qt6WebSockets_FOUND)
+    target_link_libraries(btcfeed-app PRIVATE Qt6::WebSockets)
+    message(STATUS "btcfeed: QtWebSockets vorhanden, Direktbezug steht bereit")
+else()
+    message(STATUS "btcfeed: ohne QtWebSockets gebaut, nur Betrieb ueber den Dienst")
+endif()
 
 if(LayerShellQt_FOUND)
     target_compile_definitions(btcfeed-app PRIVATE BTCFEED_LAYERSHELL)

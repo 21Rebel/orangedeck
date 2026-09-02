@@ -378,6 +378,22 @@ Item {
                 visible: root.tab === "allgemein"
 
                 Zeile {
+                    label: Tr.t("set.source", root.lang)
+                    help: Tr.t("set.sourceHelp", root.lang)
+
+                    Wahl {
+                        gewaehlt: root.val("dataSource", "daemon")
+                        eintraege: [
+                            { "k": "daemon", "l": Tr.t("src.daemon", root.lang) },
+                            { "k": "direct", "l": Tr.t("src.direct", root.lang) }
+                        ]
+                        onPicked: function (k) {
+                            root.changed("dataSource", k);
+                        }
+                    }
+                }
+
+                Zeile {
                     label: Tr.t("set.currency", root.lang)
                     help: Tr.t("set.currencyHelp", root.lang)
 

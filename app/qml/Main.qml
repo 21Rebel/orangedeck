@@ -37,6 +37,10 @@ Window {
     // -1 heisst: die zuletzt benutzte Ansicht. Sonst faengt das Fenster
     // immer bei derselben an und merkt sich gar nichts mehr.
     property int startView: -1
+    // "daemon" oder "direct" -- siehe FeedState.mode
+    property string dataSource: "daemon"
+    readonly property string effSource: win.forcedSource.length ? win.forcedSource
+                                                                : win.dataSource
     property string currency: "eur"
     property string tileColorMode: "fee"
     property bool clockBars: true
@@ -100,6 +104,8 @@ Window {
     // die zuletzt benutzte Ansicht des grossen Fensters umzuschreiben.
     property int forcedView: -1
     property bool bare: false
+    // Von der Befehlszeile (`--source`), ebenfalls nicht gespeichert
+    property string forcedSource: ""
 
     // Bleibt auf dem Geraet: QSettings schreibt nach
     // ~/.config/btcfeed/btcfeed.conf (Linux) bzw. in den App-Speicher (Android).
@@ -116,6 +122,7 @@ Window {
         property alias frosted: win.frosted
         property alias density: win.density
         property alias startView: win.startView
+        property alias dataSource: win.dataSource
         property alias currency: win.currency
         property alias tileColorMode: win.tileColorMode
         property alias clockBars: win.clockBars
@@ -151,15 +158,38 @@ Window {
             win.view = 0;
     }
 
-    // Welche Reiter es gibt und welche Ansicht dahinter steckt
-    readonly property var tabViews: win.walletEnabled ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 5]
+    // Welche Reiter es gibt und welche Ansicht dahinter steckt.
+    //
+    // Zwei fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit: der
+    // Miner steht im Heimnetz und die Wallet-Ableitung ist Rechenarbeit des
+    // Dienstes. Ein Reiter, hinter dem nichts sein kann, ist schlimmer als
+    // keiner.
+    readonly property var tabViews: {
+        var v = [0, 1];
+        if (feedState.canMiner)
+            v.push(2);
+        v.push(3);
+        if (win.walletEnabled && feedState.canWallet)
+            v.push(4);
+        v.push(5);
+        return v;
+    }
     readonly property var tabLabels: {
-        var l = [Tr.t("tab.feed", win.lang), Tr.t("tab.clock", win.lang),
-                 Tr.t("tab.miner", win.lang), Tr.t("tab.explorer", win.lang)];
-        if (win.walletEnabled)
+        var l = [Tr.t("tab.feed", win.lang), Tr.t("tab.clock", win.lang)];
+        if (feedState.canMiner)
+            l.push(Tr.t("tab.miner", win.lang));
+        l.push(Tr.t("tab.explorer", win.lang));
+        if (win.walletEnabled && feedState.canWallet)
             l.push(Tr.t("tab.wallet", win.lang));
         l.push(Tr.t("tab.settings", win.lang));
         return l;
+    }
+
+    // Steht die Ansicht auf einem Reiter, den es gerade nicht gibt, zurueck
+    // auf den Feed -- sonst bliebe eine leere Seite stehen.
+    onTabViewsChanged: {
+        if (win.tabViews.indexOf(win.view) < 0)
+            win.view = 0;
     }
 
     // Eine Einstellung setzen. Alles laeuft hier durch, damit es nur eine
@@ -171,6 +201,8 @@ Window {
             win.density = value;
         else if (key === "startView")
             win.startView = value;
+        else if (key === "dataSource")
+            win.dataSource = value;
         else if (key === "colorMode")
             win.colorMode = value;
         else if (key === "sizeMode")
@@ -233,6 +265,7 @@ Window {
         "bgOpacity": win.bgOpacity,
         "density": win.density,
         "startView": win.startView,
+        "dataSource": win.dataSource,
         "colorMode": win.colorMode,
         "sizeMode": win.sizeMode,
         "showInfo": win.showInfo,
@@ -263,6 +296,8 @@ Window {
 
     FeedState {
         id: feedState
+
+        mode: win.effSource
     }
 
     // Ein unsichtbares Element behaelt seine Hoehe -- ohne diese Zeile

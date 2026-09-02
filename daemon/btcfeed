@@ -80,6 +80,11 @@ LOCK_FILE = os.path.join(STATE_DIR, "btcfeed.lock")
 
 WRITE_INTERVAL = 0.4      # Sekunden zwischen zwei Schreibvorgaengen
 RECENT_KEEP = 120         # wie viele frische TX im Zustand liegen bleiben
+# Felder, die sich hoechstens im Minutentakt aendern. Sie machen fast die
+# Haelfte des Zustands aus und werden deshalb nur mitgeschickt, wenn sich
+# wirklich etwas geaendert hat -- siehe Feed.snapshot().
+SLOW_FIELDS = ("stats", "minerHistory", "miners", "minerTotal",
+               "difficulty", "hashrate", "wallets")
 MAX_TILES = 8000          # Obergrenze an Kacheln pro Block
 # Wie viele geplante Bloecke im Zustand mitgefuehrt werden. Acht, weil
 # `projectedtiles` genau diese Raenge kennt.
@@ -733,6 +738,9 @@ class Feed:
         self.projected_seq = {}     # Rang -> laufende Nummer
         self.projected_log = {}     # Rang -> [(Nummer, zugegangen, abgegangen)]
         self.stats_hist = {"t": [], "count": [], "vbps": [], "inflow": []}
+        # Hochgezaehlt, sobald sich eines der SLOW_FIELDS aendert. Die
+        # Oberflaeche schickt ihren Stand mit und bekommt sie nur dann.
+        self.slow_rev = 0
         self.stats_at = 0.0
         self.stats_seq = 0
         self.miner_hist = {}      # Geraete-Kennung -> Verlauf
@@ -863,8 +871,24 @@ class Feed:
         threading.Thread(target=work, daemon=True).start()
 
     # -- Ausgabe ----------------------------------------------------------
-    def snapshot(self):
-        return {
+    def snapshot(self, since=0, slow_rev=-1):
+        """Der Zustand, auf Wunsch gekuerzt.
+
+        Gemessen am 02.09.2026: die Vollform ist 32 kB, und die Oberflaeche
+        holt sie alle 400 ms -- 80 kB/s JSON, die im Zeichenfaden zerlegt
+        werden. Das kostete **20 % CPU** gegenueber 5,8 % im Direktbezug.
+        Zwei Drittel davon sind Ballast:
+
+          recent        16 kB, wovon die Ansicht alles bis `seq` wegwirft
+          stats +
+          minerHistory  14 kB, die sich hoechstens im Minutentakt aendern
+
+        Mit `?since=<seq>` kommen nur noch die neuen Transaktionen, mit
+        `?slow=<rev>` bleiben die langsamen Felder weg, solange sie sich nicht
+        geaendert haben. Was fehlt, behaelt die Oberflaeche vom vorigen Stand.
+        Ohne Parameter bleibt alles wie vorher -- aeltere Fassungen und
+        `curl` merken nichts davon."""
+        d = {
             "ts": round(time.time(), 2),
             "source": self.source,
             "error": self.error,
@@ -877,7 +901,9 @@ class Feed:
             "price": self.price,
             "blockEvent": round(self.block_event, 2),
             "seq": self.seq,
-            "recent": self.recent[-RECENT_KEEP:],
+            "slowRev": self.slow_rev,
+            "recent": ([r for r in self.recent if r["n"] > since] if since
+                       else self.recent[-RECENT_KEEP:]),
             "difficulty": self.difficulty,
             "stats": self.stats_hist,
             "hashrate": self.hashrate,
@@ -896,6 +922,10 @@ class Feed:
             } for w in self.wallets],
             "walletBusy": self.watch_busy,
         }
+        if slow_rev == self.slow_rev:
+            for k in SLOW_FIELDS:
+                d.pop(k, None)
+        return d
 
     def write(self):
         os.makedirs(STATE_DIR, exist_ok=True)
@@ -1089,13 +1119,27 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def do_GET(self):
-        path = urlparse(self.path).path
+        zerlegt = urlparse(self.path)
+        path = zerlegt.path
         with _hits_lock:
             key = path.split("/")[1] if "/" in path[1:] else path.lstrip("/")
             _hits[key] = _hits.get(key, 0) + 1
         try:
             if path == "/state":
-                self._send(json.dumps(self.feed.snapshot(), separators=(",", ":")))
+                # `?since=<seq>&slow=<rev>` -- beides freiwillig. Ohne die
+                # Parameter kommt die Vollform wie eh und je.
+                seit, langsam = 0, -1
+                for teil in (zerlegt.query or "").split("&"):
+                    name, _, wert = teil.partition("=")
+                    try:
+                        if name == "since":
+                            seit = max(0, int(wert))
+                        elif name == "slow":
+                            langsam = int(wert)
+                    except ValueError:
+                        pass
+                self._send(json.dumps(self.feed.snapshot(seit, langsam),
+                                      separators=(",", ":")))
             elif path == "/block":
                 try:
                     with open(BLOCK_FILE, "rb") as f:
@@ -1184,6 +1228,7 @@ def sample_stats(feed):
     for k in ("t", "count", "vbps", "inflow"):
         if len(h[k]) > STATS_HISTORY:
             del h[k][:len(h[k]) - STATS_HISTORY]
+    feed.slow_rev += 1
     feed.dirty = True
 
 
@@ -1196,6 +1241,7 @@ def poll_slow(feed):
     feed.slow_at = time.time()
     try:
         d = http_json("/v1/difficulty-adjustment")
+        feed.slow_rev += 1
         feed.difficulty = {
             "progress": d.get("progressPercent"),
             "change": d.get("difficultyChange"),
@@ -1215,6 +1261,7 @@ def poll_slow(feed):
         # /3d liefert nur drei Messpunkte -- zu wenig fuer eine Kurve.
         # /1m sind 31 Punkte bei 2,2 kB, alle fuenf Minuten geholt.
         h = http_json("/v1/mining/hashrate/1m")
+        feed.slow_rev += 1
         feed.hashrate = {
             "current": h.get("currentHashrate"),
             "difficulty": h.get("currentDifficulty"),
@@ -1454,6 +1501,7 @@ def poll_miners(feed):
         if m.get("domains"):
             pass
 
+    feed.slow_rev += 1
     feed.miners = found
     feed.miner_total = {
         "count": len(found),
@@ -2128,6 +2176,7 @@ def poll_watch(feed):
     wallets = SOURCES.get("watch") or []
     if not wallets:
         if feed.wallets:
+            feed.slow_rev += 1
             feed.wallets = []
             feed.dirty = True
         return
@@ -2140,6 +2189,7 @@ def poll_watch(feed):
     try:
         halt = lambda: feed.watch_stop
         out = [scan_wallet(w, halt) for w in wallets]
+        feed.slow_rev += 1
         feed.wallets = out
         # Fuer die Halde: eigene Transaktionen werden hervorgehoben
         ids = set()

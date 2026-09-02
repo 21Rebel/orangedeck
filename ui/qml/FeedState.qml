@@ -30,6 +30,23 @@ Item {
     property string endpoint: "http://127.0.0.1:21021"
     property int pollMs: 400
 
+    // Woher die Daten kommen:
+    //
+    //   "daemon"  der eigene Dienst auf 127.0.0.1. Vorgabe auf dem Rechner --
+    //             er haelt **eine** Verbindung fuer alle Fenster und Widgets,
+    //             kann Wallets ableiten und den Miner im Heimnetz abfragen.
+    //   "direct"  die Oberflaeche redet selbst mit mempool.space. Vorgabe auf
+    //             dem Handy: dort gibt es keinen Dienst, und ein Widget, das
+    //             nur laeuft, solange der Heimrechner an ist, ist keines.
+    //
+    // Nach aussen ist der Unterschied keiner: beide Quellen laufen durch
+    // dieselbe Auswertung, alle Ansichten lesen dieselben Eigenschaften.
+    property string mode: "daemon"
+    readonly property bool direkt: root.mode === "direct"
+    // Was der Direktbezug nicht kann -- die Ansichten blenden sich danach aus
+    readonly property bool canWallet: !root.direkt
+    readonly property bool canMiner: !root.direkt
+
     // Ausgelesener Zustand
     property var snap: ({})
     property var block: ({})          // Kacheldaten des zuletzt gefundenen Blocks
@@ -78,6 +95,9 @@ Item {
     // Netzweg wuerden sich sonst Anfragen stapeln.
     property bool __statePending: false
     property bool __blockPending: false
+    // Stand der langsamen Felder, den wir schon haben -- der Dienst laesst sie
+    // dann weg. -1 heisst "noch keinen".
+    property int __slowRev: -1
 
     function __get(path, pendingKey, onOk, onFail) {
         if (root[pendingKey])
@@ -107,6 +127,12 @@ Item {
     // `lookup`, weil das die Pfade nach draussen meint -- hier geht es um die
     // eigenen Pfade des Dienstes (`/wallets`).
     function getJson(path, done) {
+        if (root.direkt) {
+            // `/wallets` ist der einzige Aufrufer. Die Ableitung aus dem xpub
+            // ist Punktarithmetik auf secp256k1 und bleibt im Dienst.
+            done(null, "im Direktbezug nicht verfuegbar");
+            return;
+        }
         var x = new XMLHttpRequest();
         x.onreadystatechange = function () {
             if (x.readyState !== XMLHttpRequest.DONE)
@@ -133,6 +159,13 @@ Item {
     // nach draussen -- er kennt die Datenquelle (mempool.space oder ein
     // eigener Node) und puffert die Antworten.
     function lookup(kind, arg, done) {
+        if (root.direkt) {
+            if (direkt.item)
+                direkt.item.lookup(kind, String(arg), done);
+            else
+                done(null, "Direktbezug nicht bereit");
+            return;
+        }
         var x = new XMLHttpRequest();
         x.onreadystatechange = function () {
             if (x.readyState !== XMLHttpRequest.DONE)
@@ -169,8 +202,30 @@ Item {
         } catch (e) {
             return;
         }
+        root.__apply(d);
+    }
+
+    // Der eigentliche Kern -- er sieht nicht, woher der Zustand kommt. Der
+    // Dienst liefert ihn als JSON, der Direktbezug baut ihn selbst zusammen;
+    // ab hier ist es derselbe Weg.
+    function __apply(d) {
         if (!d || typeof d !== "object")
             return;
+
+        // Was der Dienst weggelassen hat, bleibt aus dem vorigen Stand stehen.
+        // Er kuerzt zwei Dinge: die schon bekannten Transaktionen (`?since`)
+        // und die langsamen Felder, solange sie sich nicht geaendert haben
+        // (`?slow`). Gemessen am 02.09.2026: 32 kB alle 400 ms kosteten 20 %
+        // CPU, gekuerzt sind es rund 2 kB.
+        var alt = root.snap;
+        if (alt && typeof alt === "object") {
+            for (var k in alt) {
+                if (d[k] === undefined)
+                    d[k] = alt[k];
+            }
+        }
+        if (typeof d.slowRev === "number")
+            root.__slowRev = d.slowRev;
 
         root.snap = d;
         root.stateTs = d.ts || 0;
@@ -205,11 +260,42 @@ Item {
     Timer {
         interval: root.pollMs
         repeat: true
-        running: root.active
+        running: root.active && !root.direkt
         triggeredOnStart: true
-        onTriggered: root.__get("/state", "__statePending", root.__parse, function () {
+        onTriggered: root.__get("/state?since=" + root.seq + "&slow=" + root.__slowRev,
+                                "__statePending", root.__parse, function () {
             root.online = false;
         })
+    }
+
+    // Der Direktbezug liegt in einer eigenen Datei, weil er `QtWebSockets`
+    // braucht -- ein Paket, das nicht ueberall installiert ist. Als Loader
+    // faellt bei einem fehlenden Modul nur diese Betriebsart aus, nicht die
+    // ganze Anwendung.
+    Loader {
+        id: direkt
+
+        active: root.direkt
+        source: "DirectFeed.qml"
+        onStatusChanged: {
+            if (direkt.status === Loader.Error) {
+                root.lastError = "Direktbezug nicht verfuegbar (QtWebSockets fehlt)";
+                root.online = false;
+            }
+        }
+    }
+
+    Connections {
+        target: direkt.item
+
+        function onSnapChanged() {
+            root.__apply(direkt.item.snap);
+        }
+
+        function onBlockChanged() {
+            if (direkt.item.block && direkt.item.block.height)
+                root.block = direkt.item.block;
+        }
     }
 
     // Der Daemon holt die Blockdaten nach dem Blockfund im Hintergrund nach,
@@ -217,7 +303,7 @@ Item {
     Timer {
         interval: 3000
         repeat: true
-        running: root.active
+        running: root.active && !root.direkt
         triggeredOnStart: true
         onTriggered: {
             if (root.block.height && root.block.height === root.tipHeight)

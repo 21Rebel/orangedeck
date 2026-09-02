@@ -403,6 +403,8 @@ var S = {
     "addr.lastTxs": ["Letzte Transaktionen", "Latest transactions", "Últimas transacciones", "Dernières transactions", "Ultime transazioni", "Últimas transações", "Laatste transacties", "Последние транзакции", "最近のトランザクション", "最近的交易", "Últimas transações", "Ostatnie transakcje", "Poslední transakce"],
     "flow.in": ["Eingang {0}", "Input {0}", "Entrada {0}", "Entrée {0}", "Ingresso {0}", "Entrada {0}", "Invoer {0}", "Вход {0}", "入力 {0}", "输入 {0}", "Entrada {0}", "Wejście {0}", "Vstup {0}"],
     "flow.out": ["Ausgang {0}", "Output {0}", "Salida {0}", "Sortie {0}", "Uscita {0}", "Saída {0}", "Uitvoer {0}", "Выход {0}", "出力 {0}", "输出 {0}", "Saída {0}", "Wyjście {0}", "Výstup {0}"],
+    "flow.tx": ["Transaktion", "Transaction", "Transacción", "Transaction", "Transazione", "Transação", "Transactie", "Транзакция", "トランザクション", "交易", "Transação", "Transakcja", "Transakce"],
+    "flow.more": ["weitere {0}", "{0} more", "otras {0}", "{0} autres", "altre {0}", "mais {0}", "nog {0}", "ещё {0}", "他 {0} 件", "另外 {0} 个", "mais {0}", "jeszcze {0}", "dalších {0}"],
     "flow.fee": ["Gebühr {0} sat", "Fee {0} sat", "Comisión {0} sat", "Frais {0} sat", "Commissione {0} sat", "Taxa {0} sat", "Kosten {0} sat", "Комиссия {0} sat", "手数料 {0} sat", "手续费 {0} sat", "Taxa {0} sat", "Opłata {0} sat", "Poplatek {0} sat"],
 
     // ------------------------------------------------ Transaktionsarten
@@ -564,7 +566,24 @@ var S = {
     "set.off": ["aus", "off", "no", "non", "no", "não", "uit", "выкл", "オフ", "关闭", "não", "wył.", "vyp."],
     "unit.sec": ["{0} s", "{0} s", "{0} s", "{0} s", "{0} s", "{0} s", "{0} s", "{0} с", "{0} 秒", "{0} 秒", "{0} s", "{0} s", "{0} s"]
 ,
-    "set.lastUsed": ["zuletzt benutzte", "last used", "la última usada", "la dernière", "l’ultima usata", "a última usada", "laatst gebruikte", "последний", "前回の画面", "上次使用", "a última usada", "ostatnio używany", "naposledy použité"]
+    "set.lastUsed": ["zuletzt benutzte", "last used", "la última usada", "la dernière", "l’ultima usata", "a última usada", "laatst gebruikte", "последний", "前回の画面", "上次使用", "a última usada", "ostatnio używany", "naposledy použité"],
+    "set.source": ["Datenquelle", "Data source", "Fuente de datos", "Source des données", "Origine dei dati", "Fonte de dados", "Gegevensbron", "Источник данных", "データ取得元", "数据来源", "Fonte de dados", "Źródło danych", "Zdroj dat"],
+    "set.sourceHelp": [
+        "Der eigene Dienst hält eine Verbindung für alle Fenster und kann Miner und Wallet. Direkt braucht keinen Dienst — dafür fallen Miner und Wallet weg.",
+        "The service keeps one connection for every window and can do miner and wallet. Direct needs no service — but miner and wallet are gone.",
+        "El servicio propio mantiene una sola conexión para todas las ventanas y permite minero y monedero. Directo no necesita servicio, pero pierde minero y monedero.",
+        "Le service local garde une seule connexion pour toutes les fenêtres et gère mineur et portefeuille. En direct, aucun service n’est requis, mais mineur et portefeuille disparaissent.",
+        "Il servizio locale tiene una sola connessione per tutte le finestre e gestisce miner e portafoglio. In diretta non serve alcun servizio, ma miner e portafoglio spariscono.",
+        "O serviço próprio mantém uma ligação para todas as janelas e permite mineiro e carteira. Direto não precisa de serviço, mas perde mineiro e carteira.",
+        "De eigen dienst houdt één verbinding voor alle vensters en kan miner en portemonnee. Rechtstreeks heeft geen dienst nodig, maar miner en portemonnee vervallen.",
+        "Собственная служба держит одно соединение для всех окон и умеет майнер и кошелёк. Напрямую служба не нужна, но майнер и кошелёк отпадают.",
+        "自前のサービスは全ウィンドウで接続を一本にまとめ、マイナーとウォレットも扱えます。直接接続ならサービスは不要ですが、マイナーとウォレットは使えません。",
+        "本地服务为所有窗口共用一条连接，并支持矿机与钱包。直连无需服务，但矿机与钱包将不可用。",
+        "O serviço próprio mantém uma conexão para todas as janelas e permite minerador e carteira. Direto dispensa o serviço, mas perde minerador e carteira.",
+        "Własna usługa utrzymuje jedno połączenie dla wszystkich okien i obsługuje koparkę oraz portfel. Bezpośrednio usługa nie jest potrzebna, ale koparka i portfel odpadają.",
+        "Vlastní služba drží jedno spojení pro všechna okna a zvládne těžbu i peněženku. Přímo žádnou službu nepotřebujete, ale těžba a peněženka odpadají."],
+    "src.daemon": ["Eigener Dienst", "Own service", "Servicio propio", "Service local", "Servizio locale", "Serviço próprio", "Eigen dienst", "Собственная служба", "自前のサービス", "本地服务", "Serviço próprio", "Własna usługa", "Vlastní služba"],
+    "src.direct": ["Direkt zu mempool.space", "Directly to mempool.space", "Directo a mempool.space", "Directement à mempool.space", "Diretto a mempool.space", "Diretamente ao mempool.space", "Rechtstreeks naar mempool.space", "Напрямую к mempool.space", "mempool.space に直接", "直连 mempool.space", "Diretamente ao mempool.space", "Bezpośrednio do mempool.space", "Přímo na mempool.space"]
 };
 
 // Text holen. `lang` bestimmt die Spalte; fehlt der Schluessel oder die

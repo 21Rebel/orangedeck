@@ -106,6 +106,10 @@ int main(int argc, char *argv[])
         QStringLiteral("Tastatur annehmen (nur mit --layer)."));
     const QCommandLineOption oNackt(QStringLiteral("bare"),
         QStringLiteral("Ohne Reiter, Kopf- und Fusszeile -- fuer ein Widget."));
+    const QCommandLineOption oQuelle(QStringLiteral("source"),
+        QStringLiteral("Datenquelle: daemon (eigener Dienst, Vorgabe) oder "
+                       "direct (selbst zu mempool.space)."),
+        QStringLiteral("name"));
     const QCommandLineOption oKennung(QStringLiteral("id"),
         QStringLiteral("Eigener Einstellungsspeicher unter diesem Namen. "
                        "Mehrere Widgets koennen so verschiedene Ansichten "
@@ -120,6 +124,7 @@ int main(int argc, char *argv[])
     p.addOption(oPlatz);
     p.addOption(oTasten);
     p.addOption(oNackt);
+    p.addOption(oQuelle);
     p.addOption(oKennung);
     p.process(app);
 
@@ -145,6 +150,8 @@ int main(int argc, char *argv[])
     }
     if (p.isSet(oNackt))
         start.insert(QStringLiteral("bare"), true);
+    if (p.isSet(oQuelle))
+        start.insert(QStringLiteral("forcedSource"), p.value(oQuelle));
     engine.setInitialProperties(start);
     engine.loadFromModule("BtcFeed", "Main");
 

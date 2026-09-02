@@ -96,6 +96,21 @@ function feeColorForRate(rate) {
 // Repraesentative Rate je Gebuehrenklasse aus block.json
 var BUCKET_RATES = [0.3, 0.7, 1.5, 2.5, 4, 6.5, 11, 22, 55, 150];
 
+// Die Grenzen zwischen den Klassen. **Muss mit FEE_BUCKETS in daemon/btcfeed
+// uebereinstimmen** -- sonst faerbt derselbe Block je nach Datenquelle anders.
+// Zehn Klassen, neun Grenzen; BUCKET_RATES oben nennt zu jeder einen
+// stellvertretenden Satz fuer die Farbe.
+var FEE_EDGES = [0.5, 1, 2, 3, 5, 8, 15, 30, 80];
+
+function feeBucket(rate) {
+    var r = rate || 0;
+    for (var i = 0; i < FEE_EDGES.length; i++) {
+        if (r < FEE_EDGES[i])
+            return i;
+    }
+    return FEE_EDGES.length;
+}
+
 function feeColors() {
     if (!feePalette) {
         feePalette = [];

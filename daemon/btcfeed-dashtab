@@ -99,17 +99,37 @@ Item {
 
     // 5 ist die Einstellungsseite -- sie steht immer am Ende, die
     // Wallet-Ansicht davor nur, wenn sie eingeschaltet ist.
-    readonly property var tabViews: walletEnabled ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 5]
+    // Zwei Reiter fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit:
+    // der Miner steht im Heimnetz und die Wallet-Ableitung ist Rechenarbeit des
+    // Dienstes. Ein Reiter, hinter dem nichts sein kann, ist schlimmer als keiner.
+    readonly property var tabViews: {
+        var v = [0, 1];
+        if (feedState.canMiner)
+            v.push(2);
+        v.push(3);
+        if (walletEnabled && feedState.canWallet)
+            v.push(4);
+        v.push(5);
+        return v;
+    }
     readonly property var tabLabels: {
-        var l = [Tr.t("tab.feed", lang), Tr.t("tab.clock", lang),
-                 Tr.t("tab.miner", lang), Tr.t("tab.explorer", lang)];
-        if (walletEnabled)
+        var l = [Tr.t("tab.feed", lang), Tr.t("tab.clock", lang)];
+        if (feedState.canMiner)
+            l.push(Tr.t("tab.miner", lang));
+        l.push(Tr.t("tab.explorer", lang));
+        if (walletEnabled && feedState.canWallet)
             l.push(Tr.t("tab.wallet", lang));
         l.push(Tr.t("tab.settings", lang));
         return l;
     }
 
+    onTabViewsChanged: {
+        if (root.tabViews.indexOf(root.view) < 0)
+            root.put("view", 0);
+    }
+
     readonly property var opts: ({
+        "dataSource": dataSource,
         "currency": currency,
         "lang": lang,
         "density": density,
@@ -150,6 +170,10 @@ Item {
         if (key === "walletEnabled" && !value && root.view === 4)
             root.put("view", 5);
     }
+    // "daemon" oder "direct" -- siehe FeedState.mode. Im Dashboard laeuft der
+    // Dienst ohnehin; die Wahl steht trotzdem offen, damit die Einstellungen
+    // ueberall dieselben sind.
+    property string dataSource: SettingsData.getPluginSetting(pid, "dataSource", "daemon")
     property string sizeMode: SettingsData.getPluginSetting(pid, "sizeMode", "value")
     property bool showInfo: SettingsData.getPluginSetting(pid, "showInfo", true)
     property bool showLegend: SettingsData.getPluginSetting(pid, "showLegend", true)
@@ -182,6 +206,7 @@ Item {
 
         // Sieht niemand hin, wird auch nichts geholt
         active: root.live
+        mode: root.dataSource
     }
 
     // Umschalten mit der Maus -- dasselbe Bauteil wie im eigenen Fenster

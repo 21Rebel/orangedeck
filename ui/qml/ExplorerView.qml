@@ -757,6 +757,9 @@ Item {
             TxFlow {
                 width: flick.width
                 lang: root.lang
+                // Im Strang gehoeren beide Seiten zu derselben Transaktion --
+                // dort steht sie ueber den Angaben.
+                txid: String(root.result.txid || "")
                 // Die Rundung lebt vom Verhaeltnis senkrecht zu waagerecht.
                 // Das Original zeichnet 1200 x 600; hier ist die Flaeche viel
                 // flacher, deshalb bekommt sie mit jedem Band mehr Hoehe --
