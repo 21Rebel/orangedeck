@@ -11,6 +11,9 @@ Column {
     id: root
 
     property var feed: null
+    // Sieht jemand auf die Startseite? Nur dann wird der geplante Block
+    // mitverfolgt -- er kostet 7,8 kB/s, solange er laeuft.
+    property bool live: true
     property color textColor: "#f2eef8"
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
@@ -89,6 +92,20 @@ Column {
         }
         onProjectedPicked: function (rank, data) {
             root.projectedPicked(rank, data);
+        }
+    }
+
+    // ------------------------- der naechste Block, laufend mitgefuehrt
+    ProjectedBlock {
+        width: parent.width
+        feed: root.feed
+        live: root.live
+        textColor: root.textColor
+        dimColor: root.dimColor
+        accentColor: root.accentColor
+        uiFont: root.uiFont
+        onTxPicked: function (txid) {
+            root.txPicked(txid);
         }
     }
 

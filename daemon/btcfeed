@@ -80,6 +80,13 @@ LOCK_FILE = os.path.join(STATE_DIR, "btcfeed.lock")
 WRITE_INTERVAL = 0.4      # Sekunden zwischen zwei Schreibvorgaengen
 RECENT_KEEP = 120         # wie viele frische TX im Zustand liegen bleiben
 MAX_TILES = 8000          # Obergrenze an Kacheln pro Block
+# Wie viele geplante Bloecke im Zustand mitgefuehrt werden. Acht, weil
+# `projectedtiles` genau diese Raenge kennt.
+PROJECTED_KEEP = 8
+# Wie viele Aenderungsschritte je Rang aufgehoben werden. Die Oberflaeche
+# fragt alle zwei Sekunden nach, der Server schickt etwa im Sekundentakt --
+# 200 Schritte sind also mehrere Minuten Rueckstand.
+PROJECTED_LOG_KEEP = 200
 
 # Gebuehrenklassen fuer die Kachelfarben. Der Index landet als Ziffer in
 # block.json, die Ansicht rechnet ihn ueber dieselbe Tabelle zurueck.
@@ -403,9 +410,18 @@ class Feed:
         self.want_track = None      # gewuenschter Rang, oder None
         self.tracked = None         # was tatsaechlich abonniert ist
         self.track_until = 0.0      # bis wann jemand hinsieht
+        # Die geplanten Bloecke in Kurzform, so wie sie ueber den WebSocket
+        # hereinkommen -- damit die Startseite sie ohne eigene Abfrage
+        # lebendig zeigen kann.
+        self.projected = []
         self.projected_rows = {}    # Rang -> {txid: Zeile}, laufend gepflegt
         self.projected_at = {}      # Rang -> wann zuletzt geaendert
         self.projected_tiles = {}   # Rang -> aufbereitete Kacheldaten
+        # Aenderungsbuch je Rang. Ohne es muesste die Oberflaeche bei jeder
+        # Abfrage die ganze Liste holen -- gemessen 583 kB alle zwei Sekunden,
+        # und das JSON-Zerlegen davon kostete allein 6 % CPU.
+        self.projected_seq = {}     # Rang -> laufende Nummer
+        self.projected_log = {}     # Rang -> [(Nummer, zugegangen, abgegangen)]
         self.stats_hist = {"t": [], "count": [], "vbps": [], "inflow": []}
         self.stats_at = 0.0
         self.stats_seq = 0
@@ -456,6 +472,20 @@ class Feed:
             "totalFees": int(b.get("totalFees") or 0),
             "depth": len(blocks),
         }
+        # Die ganze Reihe mitfuehren, nicht nur den naechsten Block. Der
+        # WebSocket schickt sie ohnehin bei jeder Aenderung mit; sie hier
+        # abzulegen erspart der Oberflaeche die REST-Abfrage
+        # `/v1/fees/mempool-blocks` und macht die Leiste auf der
+        # Explorer-Startseite lebendig. Die Feldnamen sind bewusst dieselben
+        # wie in der REST-Antwort -- beide Quellen sind austauschbar.
+        self.projected = [{
+            "nTx": int(x.get("nTx") or 0),
+            "blockSize": int(x.get("blockSize") or 0),
+            "blockVSize": round(float(x.get("blockVSize") or 0)),
+            "medianFee": round(float(x.get("medianFee") or 0), 2),
+            "totalFees": int(x.get("totalFees") or 0),
+            "feeRange": [round(float(v), 2) for v in (x.get("feeRange") or [])],
+        } for x in blocks[:PROJECTED_KEEP]]
         self.dirty = True
 
     def set_tip(self, b, is_new=False):
@@ -511,6 +541,7 @@ class Feed:
             "fees": self.fees,
             "vbps": self.vbps,
             "nextBlock": self.next_block,
+            "projected": self.projected,
             "tip": self.tip,
             "price": self.price,
             "blockEvent": round(self.block_event, 2),
@@ -580,7 +611,9 @@ LOOKUP_ROUTES = (
     ("replacements", re.compile(r"^now$"), "/v1/replacements"),
     # Kacheldaten eines **geplanten** Blocks. Kommen nicht ueber REST, sondern
     # ueber den WebSocket -- siehe lookup().
-    ("projectedtiles", re.compile(r"^[0-7]$"), None),
+    # "0" liefert die Vollform, "0-1234" nur, was sich seit Nummer 1234
+    # geaendert hat.
+    ("projectedtiles", re.compile(r"^[0-7](-[0-9]{1,9})?$"), None),
 )
 
 
@@ -604,7 +637,8 @@ def lookup(kind, arg):
             # Der WebSocket-Faden abonniert und legt das Ergebnis ab. Hier nur
             # anfordern und warten -- die Vollform kommt binnen weniger
             # Sekunden.
-            idx = int(arg)
+            rank, _, since = arg.partition("-")
+            idx = int(rank)
             feed = _feed_ref[0]
             if feed is None:
                 return None, ("Feed laeuft nicht", 503)
@@ -623,10 +657,20 @@ def lookup(kind, arg):
                     return None, ("keine Antwort vom Server", 504)
                 time.sleep(0.2)
 
+            seq = feed.projected_seq.get(idx, 0)
+            # Nur die Aenderungen, wenn der Fragende nah genug dran ist. Sonst
+            # die Vollform -- die traegt den Stand mit, an dem er weiterzaehlt.
+            if since:
+                delta = projected_delta(feed, idx, int(since), len(rows))
+                if delta is not None:
+                    return json.dumps(delta, separators=(",", ":")), None
+
             # Aus dem gepflegten Bestand aufbereiten -- nach Rate absteigend,
             # so wie der Server sie auch sortiert schickt.
             data = compress_projected(idx, sorted(rows.values(),
                                                   key=lambda r: -(r[4] or 0)))
+            data["full"] = True
+            data["seq"] = seq
             data["changedAt"] = round(feed.projected_at.get(idx, 0), 2)
             return json.dumps(data, separators=(",", ":")), None
 
@@ -1289,6 +1333,66 @@ def compress_projected(index, rows):
     }
 
 
+def compress_rows(rows):
+    """Kachelziffern und Angaben fuer eine Handvoll Transaktionen, ohne
+    Ausduennen -- fuer die Aenderungsmeldung."""
+    tiles, details = [], []
+    for r in rows:
+        tiles.append("%d%d" % (tile_size(r[3]), fee_bucket(r[4])))
+        details.append([r[0], round(float(r[2] or 0), 2), int(r[1] or 0),
+                        int(r[3] or 0), round(float(r[4] or 0), 3)])
+    return "".join(tiles), details
+
+
+def projected_delta(feed, idx, base, count):
+    """Was sich seit Nummer `base` geaendert hat.
+
+    Gibt None zurueck, wenn sich das nicht sauber beantworten laesst -- dann
+    muss die Vollform her. Drei Faelle: die Liste ist ausgeduennt (dann passen
+    einzelne Aenderungen nicht mehr dazu), der Rueckstand ist groesser als das
+    Aenderungsbuch, oder die Aenderungen sind zusammen laenger als die
+    Vollform."""
+    if count > MAX_TILES:
+        return None
+    log = feed.projected_log.get(idx) or []
+    seq = feed.projected_seq.get(idx, 0)
+    if base > seq:
+        return None                       # Stand aus einem frueheren Lauf
+    if base < seq and (not log or log[0][0] > base + 1):
+        return None                       # Luecke im Aenderungsbuch
+
+    zugang, abgang, weg = {}, [], set()
+    for nr, a, r in log:
+        if nr <= base:
+            continue
+        for txid in r:
+            zugang.pop(txid, None)
+            if txid not in weg:
+                weg.add(txid)
+                abgang.append(txid)
+        for row in a:
+            zugang[row[0]] = row
+            if row[0] in weg:
+                weg.discard(row[0])
+                abgang.remove(row[0])
+
+    if len(zugang) + len(abgang) > count * 0.6:
+        return None
+
+    tiles, details = compress_rows(sorted(zugang.values(), key=lambda r: -(r[4] or 0)))
+    return {
+        "index": idx,
+        "seq": seq,
+        "full": False,
+        "count": count,
+        "tiles": tiles,
+        "txs": details,
+        "removed": abgang,
+        "changedAt": round(feed.projected_at.get(idx, 0), 2),
+        "ts": round(time.time(), 2),
+    }
+
+
 def handle(feed, msg):
     if "mempoolInfo" in msg:
         feed.set_mempool(msg["mempoolInfo"])
@@ -1334,6 +1438,10 @@ def handle_projected(feed, p):
     rows = p.get("blockTransactions")
     if rows:
         feed.projected_rows[idx] = {r[0]: r for r in rows if r}
+        # Die Vollform setzt das Aenderungsbuch zurueck: alles davor ist
+        # wertlos, wer einen aelteren Stand hat, bekommt wieder die Vollform.
+        feed.projected_seq[idx] = feed.projected_seq.get(idx, 0) + 1
+        feed.projected_log[idx] = []
         feed.projected_at[idx] = time.time()
         return True
 
@@ -1344,13 +1452,19 @@ def handle_projected(feed, p):
     if cur is None:
         # Ohne Vollform ist eine Aenderung nichts wert
         return False
+    zugang, abgang = [], []
     for txid in (d.get("removed") or []):
-        cur.pop(txid if isinstance(txid, str) else (txid[0] if txid else None), None)
+        t = txid if isinstance(txid, str) else (txid[0] if txid else None)
+        if t is not None and cur.pop(t, None) is not None:
+            abgang.append(t)
     for r in (d.get("added") or []):
         if r:
             cur[r[0]] = r
+            zugang.append(r)
     for r in (d.get("changed") or []):
-        # Bekannte Form: [txid, rate, ...] -- die Rate wird nachgezogen
+        # Bekannte Form: [txid, rate, ...] -- die Rate wird nachgezogen. Fuer
+        # die Oberflaeche ist das ein Zugang: die Kachel bleibt liegen, nur
+        # ihre Gebuehrenfarbe aendert sich.
         if not r:
             continue
         old = cur.get(r[0])
@@ -1358,6 +1472,13 @@ def handle_projected(feed, p):
             new = list(old)
             new[4] = r[1]
             cur[r[0]] = new
+            zugang.append(new)
+
+    feed.projected_seq[idx] = feed.projected_seq.get(idx, 0) + 1
+    log = feed.projected_log.setdefault(idx, [])
+    log.append((feed.projected_seq[idx], zugang, abgang))
+    if len(log) > PROJECTED_LOG_KEEP:
+        del log[:-PROJECTED_LOG_KEEP]
     feed.projected_at[idx] = time.time()
     return True
 

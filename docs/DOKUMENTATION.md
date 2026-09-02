@@ -1525,3 +1525,117 @@ Tag. Jetzt alle zwei Sekunden.
 **Merksatz:** in QML sagt `visible` nichts darueber, ob jemand wirklich
 hinsieht. Wer Zeitgeber oder Leinwaende daran haengt, muss die Sichtbarkeit des
 Fensters getrennt beschaffen.
+
+
+## Der geplante Block, lebendig (`ProjectedBlock.qml`)
+
+Auf der Startseite des Explorers steht jetzt der naechste Block als
+Kachelgrafik, und er veraendert sich mit dem Zulauf: neue Transaktionen blitzen
+weiss auf, verdraengte verschwinden, darueber steht, wie viele es waren.
+
+Drei Entscheidungen dahinter, jede aus einer Messung.
+
+### 1. Nicht neu packen, sondern nachfuehren
+
+Der erste Entwurf holte alle zwei Sekunden die Liste und packte sie neu. Das
+Ergebnis war Flimmern. Nachgemessen (`mondrian.js` in Python nachgebaut, zwei
+Abfragen im Abstand von 1,5 s):
+
+    neu 582, raus 617, geblieben 4242
+    davon an anderer Stelle: 4231 = 99,7 %
+
+**Fast jede Kachel wechselt ihren Platz**, weil die Liste nach Gebuehrenrate
+sortiert ist: eine eingefuegte Transaktion schiebt alles dahinter weiter. Bei
+den heutigen Gebuehren liegen tausende Transaktionen dicht beieinander, die
+Reihenfolge unter ihnen ist entsprechend unstet.
+
+Richtig ist deshalb: **bekannte Kacheln bleiben liegen**, Abgaenge geben ihre
+Flaeche zurueck (`MondrianLayout.remove`), Zugaenge fuellen die Luecken. Genau
+dafuer fuehrt `mondrian.js` eine exakte Belegungskarte statt der Slot-Liste des
+Originals. Ueber fuenf Aktualisierungen gemessen:
+
+    Start      Hoehe 91, freie Zellen 0,7 %
+    Runde 4    Hoehe 96, freie Zellen 3,0 %  -- fast alle in den obersten Zeilen
+
+Die Packung bleibt also dicht, und die Loecher sitzen an der Oberkante, wo sie
+nicht auffallen. Neu gepackt wird nur, wenn es sich lohnt: weniger als ein
+Viertel der Kacheln wiedererkannt (nach einem Blockfund) oder die Rasterbreite
+weicht um mehr als 15 % ab.
+
+**Der Preis dafuer ist sichtbar und gewollt:** nach der ersten Packung sagt die
+Lage einer Kachel nichts mehr ueber ihren Rang. Eine teure Transaktion, die
+spaeter hereinkommt, fuellt die naechste freie Luecke -- deshalb sitzen
+einzelne violette Kacheln mitten im tuerkisen Feld. Den Rang traegt die
+**Farbe**, nicht der Platz. Anders herum ginge es nur, indem bei jeder
+Aenderung alles verschoben wird, und genau das sind die 99,7 %.
+
+### 2. Nur die Aenderungen holen, nicht die Liste
+
+Die Vollform ist **634 kB**. Alle zwei Sekunden geholt und in QML durch
+`JSON.parse` geschickt kostete das allein **6 % CPU**.
+
+Der Daemon fuehrt deshalb ein **Aenderungsbuch** je Rang: jede `delta`-Nachricht
+vom Server bekommt eine laufende Nummer, Zu- und Abgaenge werden aufgehoben
+(`PROJECTED_LOG_KEEP = 200` Schritte). Die Abfrage kennt zwei Formen:
+
+    /lookup/projectedtiles/0         die Vollform, mit "seq"
+    /lookup/projectedtiles/0-1234    nur, was sich seit Nummer 1234 tat
+
+Gemessen an derselben Stelle:
+
+    Vollform            634 043 Bytes
+    Aenderung, ruhig            123 Bytes
+    Aenderung, lebhaft       86 058 Bytes
+
+Die Vollform kommt zurueck, wenn der Rueckstand groesser ist als das Buch, die
+Liste ausgeduennt ist (ueber `MAX_TILES`) oder die Aenderungen zusammen mehr als
+60 % der Vollform ausmachen wuerden. Die Oberflaeche merkt sich `seq` und faellt
+bei einem Fehlschlag von selbst auf die Vollform zurueck.
+
+### 3. Eine dauernde Animation kostet hier 5 % CPU
+
+Der erste Entwurf hatte einen pulsierenden Punkt neben der Ueberschrift --
+sechs Pixel Kantenlaenge, `SequentialAnimation on opacity` mit
+`loops: Animation.Infinite`. **Er kostete 5 % CPU.** Eine laufende Animation
+haelt die Bildwiederholung bei sechzig Bildern je Sekunde, und jedes Bild kostet
+in dieser Ansicht rund 0,8 ms. Der Punkt steht jetzt still.
+
+Dasselbe gilt fuer das Aufblitzen der neuen Kacheln. Es laeuft ueber einen
+Zeitgeber statt ueber eine `NumberAnimation`, in **fuenf Stufen ueber 750 ms**,
+und zeichnet nur den **Umriss der frischen Kacheln** neu (`markDirty` plus
+`clearRect` statt `ctx.reset()`). Ohne diese beiden Griffe kostete allein das
+Ausblenden 4 % -- eine 510x510 grosse Leinwand zwanzigmal je Aktualisierung
+abzuraeumen und zur Grafikkarte zu schieben.
+
+Die frischen Kacheln liegen auf einer **eigenen Leinwand** ueber der Grafik,
+dieselbe Aufteilung wie im Feed (Halde unten, fallende Kacheln darueber). Sonst
+muessten fuer jedes Bild des Ausblendens alle 6900 Rechtecke neu.
+
+Bilanz der Startseite mit laufender Verfolgung:
+
+    Grundlast der Seite                    5,0 %
+    erster Entwurf (Vollform + Puls)      16,0 %
+    jetzt                                  5,6 %
+
+### Nebenbei: die Zellzuordnung wird erst gebaut, wenn jemand hinsieht
+
+`cellIdx` ordnet jeder Rasterzelle ihre Kachel zu und traegt Tooltip und Klick
+-- rund 7000 Eintraege. Sie bei jeder Aktualisierung neu aufzubauen ist reine
+Vorratshaltung; jetzt setzt eine Aenderung nur `__idxDirty`, und `at()` baut sie
+beim ersten Mausdurchgang.
+
+### Was sonst noch daran haengt
+
+- Die **Kennzahlen** (Anzahl, mittlere Gebuehr, Groesse) kommen nicht mehr aus
+  einer eigenen REST-Abfrage, sondern aus dem Zustand: `set_next_block` legt
+  jetzt die ganze Reihe der geplanten Bloecke ab (`snap.projected`, acht
+  Stueck, rund 1,3 kB). Der WebSocket schickt sie ohnehin bei jeder Aenderung
+  mit. Damit lebt auch die **Leiste auf der Startseite** ohne Zutun, und die
+  Ansicht des einzelnen geplanten Blocks zeigt nicht mehr den Stand vom Klick.
+- **Nur solange jemand hinsieht.** Die Abfrage haelt das Abonnement beim Server
+  am Leben (`PROJECTED_LINGER`, 20 s). `ExplorerHome.live` haengt an
+  `visible && root.visible` der Explorer-Ansicht, und die haengt im
+  Dashboard-Tab an `dashVisible`. Nachgemessen: 18 Sekunden nach dem Beenden
+  der Anwendung meldet sich der Daemon von selbst ab.
+- **Gebuehren unter 10 sat/vB mit einer Nachkommastelle.** Gerundet stand in
+  ruhigen Zeiten an jedem Block "~0 sat/vB" und als Spanne "0 – 0".

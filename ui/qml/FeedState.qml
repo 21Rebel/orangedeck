@@ -47,6 +47,10 @@ Item {
     readonly property int vbps: snap.vbps || 0
     readonly property var tip: snap.tip || ({})
     readonly property var nextBlock: snap.nextBlock || ({})
+    // Die ganze Reihe der geplanten Bloecke, wie sie ueber den WebSocket
+    // hereinkommt -- dieselben Feldnamen wie in `/lookup/mempoolblocks/now`,
+    // nur ohne eigene Abfrage und damit im Takt des Zustands.
+    readonly property var projected: snap.projected || []
     readonly property var price: snap.price || ({})
     readonly property int tipHeight: tip.height || 0
     // Langsame Kennzahlen und der eigene Miner -- der Daemon holt sie nebenher

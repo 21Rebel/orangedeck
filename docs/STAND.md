@@ -1,5 +1,51 @@
 # Stand und offene Punkte
 
+## Stand 02.09.2026 -- der geplante Block lebt
+
+Punkt 1 der Liste ist erledigt. Auf der Startseite des Explorers steht der
+naechste Block als Kachelgrafik und veraendert sich mit dem Zulauf: neue
+Transaktionen blitzen weiss auf, verdraengte verschwinden, darueber steht
+"+178 hinzugekommen · -199 verdraengt". Dieselbe Darstellung traegt auch die
+Ansicht eines einzelnen geplanten Blocks (Klick auf eine gruene Kachel), dort
+ohne eigene Ueberschrift.
+
+Neu: `ui/qml/ProjectedBlock.qml`. Geaendert: `BlockTiles.qml` (lebendiger
+Betrieb), `daemon/btcfeed` (Aenderungsbuch, geplante Bloecke im Zustand),
+`BlockChain.qml`, `ExplorerHome.qml`, `ExplorerView.qml`, `FeedState.qml`,
+`colors.js`.
+
+**Drei Messungen haben die Bauform bestimmt** -- ausfuehrlich in
+`DOKUMENTATION.md`, Abschnitt "Der geplante Block, lebendig":
+
+    neu packen statt nachfuehren       99,7 % der Kacheln springen
+    Vollform statt Aenderungen         634 kB je 2 s, 6 % CPU allein fuers Zerlegen
+    ein pulsierender Punkt             5 % CPU
+
+    Grundlast der Seite                5,0 %
+    erster Entwurf                    16,0 %
+    jetzt                              5,6 %
+
+Gegenproben, die gelaufen sind: keine QML-Meldung in der eigenstaendigen
+Anwendung und in DMS, `dms ipc call dash toggle bitcoin` meldet
+`DASH_TOGGLE_SUCCESS`, und 18 Sekunden nach dem Beenden der Anwendung meldet
+sich der Daemon beim Server wieder ab (`tracking: null`).
+
+**Werkzeug, das dabei entstanden ist und sich wieder lohnt:** die Anwendung
+laesst sich in einem **unsichtbaren Compositor** pruefen, ohne den Bildschirm
+zu uebernehmen --
+
+    WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 WLR_HEADLESS_OUTPUTS=1 labwc &
+    WAYLAND_DISPLAY=wayland-0 ./build/btcfeed-app &
+    WAYLAND_DISPLAY=wayland-0 grim bild.png
+
+Der Schirm ist 1280x720 gross und laesst sich ohne `wlr-randr` nicht
+vergroessern -- alles darunter ist abgeschnitten. Das hat hier zweimal einen
+Fehlalarm ausgeloest ("das Aufblitzen kommt nicht an"), bevor klar war, dass es
+schlicht unterhalb der Fensterkante lag. Fuer die Registry-Screenshots
+(Veroeffentlichung) ist derselbe Weg brauchbar.
+
+---
+
 ## Stand 01.09.2026, Abend — Uebergabe
 
 58 Commits an diesem Tag. Arbeitsbaum sauber, `btcfeed.service` laeuft ohne
@@ -39,14 +85,12 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
 
 ## Offene Punkte, in der Reihenfolge, in der sie anzugehen sind
 
-1. **Lebendige Darstellung des geplanten Blocks auf der Startseite.**
-   Die Datenseite steht bereits: der Daemon fuehrt den Block ueber
-   `track-mempool-block` laufend mit (Aenderungen kosten 7,8 kB/s) und meldet
-   sich 20 Sekunden nach der letzten Abfrage von selbst ab
-   (`PROJECTED_LINGER`). Die Kachelgrafik gibt es. Offen ist nur die Ansicht,
-   die sich mit dem Zulauf veraendert.
+1. ~~Lebendige Darstellung des geplanten Blocks auf der Startseite.~~
+   **Erledigt am 02.09.2026**, siehe unten.
 2. **Mempool-Goggles** -- dieselben Kacheln nach Transaktionsart einfaerben.
    `ui/qml/txtype.js` ist fertig und an echten Daten geprueft.
+   Anschlussstelle ist jetzt `BlockTiles.colorMode` -- die Kachelfarbe kommt
+   aus einer einzigen Stelle (`Palette.bucketColor(s.b)` in beiden Leinwaenden).
 3. **Flatpak.** `flatpak` ist da, **`flatpak-builder` fehlt** und muesste
    installiert werden.
 4. **Layer-Shell** (`layer-shell-qt`, in den Paketquellen, nicht installiert)

@@ -25,8 +25,16 @@ Item {
     property real uiFont: 13
 
     property var blocks: []
+    // Rueckfallweg: die geplanten Bloecke ueber REST. Gebraucht wird er nur,
+    // solange der Zustand sie noch nicht mitfuehrt.
     property var projected: []
     property string error: ""
+
+    // Bevorzugt aus dem Zustand -- die kommen ueber den WebSocket herein und
+    // aendern sich damit im Takt des Feeds, ohne eigene Abfrage.
+    readonly property var projectedNow: (root.feed && root.feed.projected
+                                         && root.feed.projected.length)
+        ? root.feed.projected : root.projected
 
     signal blockPicked(string hash)
     // Ein geplanter Block hat keinen Hash -- er wird ueber seinen Rang
@@ -57,6 +65,15 @@ Item {
                 out = "." + out;
         }
         return out;
+    }
+
+    // Gebuehren unter 10 sat/vB brauchen eine Nachkommastelle. Gerundet steht
+    // sonst bei jedem Block "~0 sat/vB" und als Spanne "0 – 0" -- genau in den
+    // ruhigen Zeiten, in denen die Zahl interessant waere.
+    function fee(n) {
+        if (n === undefined || n === null)
+            return "–";
+        return n >= 10 ? String(Math.round(n)) : n.toFixed(1).replace(".", ",");
     }
 
     function ago(ts) {
@@ -92,10 +109,13 @@ Item {
             root.error = "";
             root.blocks = d || [];
         });
-        root.feed.lookup("mempoolblocks", "now", function (d, err) {
-            if (!err)
-                root.projected = d || [];
-        });
+        // Nur fragen, wenn der Zustand nichts liefert -- sonst ist die Abfrage
+        // eine Doppelung dessen, was ohnehin schon da ist.
+        if (!(root.feed.projected && root.feed.projected.length))
+            root.feed.lookup("mempoolblocks", "now", function (d, err) {
+                if (!err)
+                    root.projected = d || [];
+            });
     }
 
     Component.onCompleted: reload()
@@ -117,7 +137,7 @@ Item {
 
     // Der naechste Block steht rechts an der Grenze, die ferneren links davon
     readonly property var projectedShown: {
-        var p = (root.projected || []).slice(0, 8);
+        var p = (root.projectedNow || []).slice(0, 8);
         var out = [];
         // Umgedreht, damit der naechste rechts an der Grenze steht -- der
         // urspruengliche Rang wird dabei mitgefuehrt.
@@ -210,7 +230,7 @@ Item {
 
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    text: "~" + Math.round(pcell.modelData.medianFee) + " sat/vB"
+                                    text: "~" + root.fee(pcell.modelData.medianFee) + " sat/vB"
                                     color: "#ffffff"
                                     font.pixelSize: root.uiFont
                                     font.bold: true
@@ -219,8 +239,8 @@ Item {
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: (pcell.modelData.feeRange && pcell.modelData.feeRange.length)
-                                        ? Math.round(pcell.modelData.feeRange[0]) + " – "
-                                          + Math.round(pcell.modelData.feeRange[pcell.modelData.feeRange.length - 1])
+                                        ? root.fee(pcell.modelData.feeRange[0]) + " – "
+                                          + root.fee(pcell.modelData.feeRange[pcell.modelData.feeRange.length - 1])
                                         : ""
                                     color: Qt.rgba(1, 1, 1, 0.72)
                                     font.pixelSize: root.uiFont * 0.72
@@ -245,6 +265,44 @@ Item {
                                     text: (pcell.modelData.totalFees / 1e8).toFixed(3).replace(".", ",") + " BTC"
                                     color: Qt.rgba(1, 1, 1, 0.74)
                                     font.pixelSize: root.uiFont * 0.72
+                                }
+                            }
+
+                            // Fuellstand. Er ist das Einzige an der Kachel, das
+                            // sich sichtbar bewegt, und zeigt, dass die Reihe
+                            // lebt -- der letzte Block ist der Sammelposten und
+                            // deshalb immer randvoll.
+                            Item {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                anchors.margins: root.uiFont * 0.4
+                                height: root.uiFont * 0.28
+                                // Nur zeigen, wenn er etwas zu sagen hat: ein
+                                // randvoller Block ist der Normalfall, und ein
+                                // immer voller Balken ist eine Zierlinie.
+                                visible: pcell.modelData.blockVSize !== undefined
+                                         && pcell.modelData.blockVSize < 0.99e6
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: height / 2
+                                    color: Qt.rgba(0, 0, 0, 0.28)
+                                }
+
+                                Rectangle {
+                                    width: parent.width * Math.max(0, Math.min(1,
+                                        (pcell.modelData.blockVSize || 0) / 1e6))
+                                    height: parent.height
+                                    radius: height / 2
+                                    color: Qt.rgba(1, 1, 1, 0.7)
+
+                                    Behavior on width {
+                                        NumberAnimation {
+                                            duration: 600
+                                            easing.type: Easing.OutQuad
+                                        }
+                                    }
                                 }
                             }
 
@@ -323,7 +381,7 @@ Item {
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: cell.ex.medianFee !== undefined
-                                    ? "~" + Math.round(cell.ex.medianFee) + " sat/vB" : ""
+                                    ? "~" + root.fee(cell.ex.medianFee) + " sat/vB" : ""
                                 color: Qt.rgba(1, 1, 1, 0.75)
                                 font.pixelSize: root.uiFont * 0.75
                             }

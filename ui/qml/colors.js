@@ -160,3 +160,15 @@ function iceMid() {
         ICE_MID = hclToCss(ORANGE.h, 0.78);
     return ICE_MID;
 }
+
+// Zwei Farben mischen, t = 0 gibt a, t = 1 gibt b. Bewusst im sRGB-Raum: das
+// ist hier kein Farbverlauf zwischen weit auseinanderliegenden Toenen (dafuer
+// waere HCL richtig, siehe DOKUMENTATION), sondern ein Ausblenden nach Weiss.
+function blendHex(a, b, t) {
+    var f = Math.max(0, Math.min(1, t));
+    var ar = parseInt(a.substr(1, 2), 16), ag = parseInt(a.substr(3, 2), 16), ab = parseInt(a.substr(5, 2), 16);
+    var br = parseInt(b.substr(1, 2), 16), bg = parseInt(b.substr(3, 2), 16), bb = parseInt(b.substr(5, 2), 16);
+    return "#" + hex2(Math.round(ar + (br - ar) * f))
+        + hex2(Math.round(ag + (bg - ag) * f))
+        + hex2(Math.round(ab + (bb - ab) * f));
+}

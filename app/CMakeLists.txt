@@ -31,6 +31,7 @@ set(SHARED_QML
     ../ui/qml/BlockChain.qml
     ../ui/qml/BlockCard.qml
     ../ui/qml/BlockTiles.qml
+    ../ui/qml/ProjectedBlock.qml
     ../ui/qml/ExplorerHome.qml
     ../ui/qml/MainPanels.qml
     ../ui/qml/search.js

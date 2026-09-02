@@ -193,14 +193,9 @@ Item {
         root.tiles = null;
         root.status = "";
         root.currentArg = "";
-        // Die Kacheln kommen ueber den WebSocket und brauchen ein paar
-        // Sekunden -- der Daemon holt sie auf Zuruf.
-        root.tilesBusy = true;
-        root.feed.lookup("projectedtiles", String(rank), function (t, err) {
-            root.tilesBusy = false;
-            if (!err && root.kind === "projected" && root.projRank === rank)
-                root.tiles = t;
-        });
+        // Die Kacheln holt `ProjectedBlock` selbst und fuehrt sie nach, solange
+        // die Ansicht offen ist -- ein einmaliges Holen waere hier falsch: der
+        // geplante Block aendert sich im Sekundentakt.
     }
 
     function fail(msg) {
@@ -450,6 +445,10 @@ Item {
             ExplorerHome {
                 width: parent.width
                 visible: root.kind === "" && root.status.length === 0
+                // Nur mitverfolgen, wenn die Startseite auch wirklich zu sehen
+                // ist -- `visible` allein reicht nicht, das Fenster kann zu
+                // sein (siehe DOKUMENTATION).
+                live: visible && root.visible
                 feed: root.feed
                 textColor: root.textColor
                 dimColor: root.dimColor
@@ -907,7 +906,12 @@ Item {
 
             spacing: root.scaleUnit * 0.45
 
-            readonly property var d: root.result
+            // Nicht `root.result`: das ist der Stand vom Klick. Der Zustand
+            // fuehrt die geplanten Bloecke laufend mit, also von dort -- und
+            // nur wenn es den Rang dort noch gibt.
+            readonly property var d: (root.feed && root.feed.projected
+                                      && root.feed.projected.length > root.projRank)
+                ? root.feed.projected[root.projRank] : root.result
             readonly property var range: projBox.d.feeRange || []
 
             Text {
@@ -917,7 +921,11 @@ Item {
             }
 
             Text {
-                text: "~" + Math.round(projBox.d.medianFee) + " sat/vB"
+                // Unter 10 sat/vB mit Nachkommastelle -- sonst steht dort in
+                // ruhigen Zeiten eine grosse "~0".
+                text: "~" + (projBox.d.medianFee >= 10
+                    ? Math.round(projBox.d.medianFee)
+                    : projBox.d.medianFee.toFixed(1).replace(".", ",")) + " sat/vB"
                 color: root.accentColor
                 font.pixelSize: root.scaleUnit * 1.8
                 font.bold: true
@@ -1004,20 +1012,22 @@ Item {
             }
 
             Text {
-                text: root.tilesBusy
-                    ? "Transaktionen werden geholt …"
-                    : "Diese Transaktionen würden hineinpassen"
+                text: "Diese Transaktionen würden hineinpassen"
                 color: root.dimColor
                 font.pixelSize: root.uiFont * 0.9
             }
 
-            BlockTiles {
+            ProjectedBlock {
                 width: flick.width
-                height: Math.min(flick.width, root.scaleUnit * 34)
-                visible: root.tiles !== null
-                block: root.tiles
+                tileHeight: Math.min(flick.width, root.scaleUnit * 34)
+                rank: root.projRank
+                live: root.visible && root.kind === "projected"
+                showHeader: false
+                feed: root.feed
+                textColor: root.textColor
                 dimColor: root.dimColor
-                labelSize: root.uiFont * 0.85
+                accentColor: root.accentColor
+                uiFont: root.uiFont
                 onTxPicked: function (txid) {
                     root.go("tx", txid);
                 }
