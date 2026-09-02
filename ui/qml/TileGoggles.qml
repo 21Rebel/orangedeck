@@ -28,6 +28,8 @@ Column {
     ]
     // Zusatzzeile unter der Legende, wenn die Art nicht ueberall gilt
     property string note: ""
+    // Im Feed sitzt der Umschalter unter der Legende am rechten Rand
+    property bool alignRight: false
     // Anzahl je Art, Index wie in TxType.KINDS
     property var counts: []
     property int total: 0
@@ -42,6 +44,7 @@ Column {
 
     // ------------------------------------------------------- Umschalter
     Row {
+        anchors.right: root.alignRight ? parent.right : undefined
         spacing: root.uiFont * 0.9
 
         Text {
@@ -161,7 +164,10 @@ Column {
     Text {
         width: parent.width
         wrapMode: Text.WordWrap
+        // Nur dort, wo auch die Farbtafel steht. Im Feed sagt die Legende
+        // rechts dasselbe schon -- zweimal waere es nur Rauschen.
         visible: root.mode === "type"
+                 && (root.note.length > 0 || (root.counts || []).length > 0)
         text: (root.note.length ? root.note + " " : "")
               + "Bitcoin kennt keine Transaktionsarten. Was hier steht, ist aus der "
               + "Form der Transaktion gedeutet — nützlich, aber nie sicher."

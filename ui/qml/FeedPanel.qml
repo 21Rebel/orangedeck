@@ -482,10 +482,13 @@ Item {
         id: goggles
 
         z: 6
-        anchors.left: canvasView.left
-        anchors.bottom: canvasView.bottom
-        anchors.bottomMargin: root.baseFont * 0.5
-        width: Math.min(canvasView.width * 0.6, root.baseFont * 26)
+        // Unter der Legende am rechten Rand. Unten links lag er in der Halde
+        // und war ueber den Kacheln nicht mehr zu lesen.
+        anchors.right: legend.right
+        anchors.top: legend.bottom
+        anchors.topMargin: root.baseFont * 0.8
+        width: root.baseFont * 14
+        alignRight: true
         visible: root.showLegend && root.width >= 420
         mode: root.colorMode
         modes: [
