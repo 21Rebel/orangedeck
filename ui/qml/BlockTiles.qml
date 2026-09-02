@@ -23,6 +23,7 @@
 import QtQuick
 import "mondrian.js" as Mondrian
 import "colors.js" as Palette
+import "txtype.js" as TxType
 
 pragma ComponentBehavior: Bound
 
@@ -33,11 +34,13 @@ Item {
     // /lookup/projectedtiles/<rang>
     property var block: null
     property bool live: false
-    property string colorMode: "fee"      // fee | age
+    // fee  -- Gebuehrenrate, teal bis violett (die Farben des Originals)
+    // type -- Transaktionsart aus dem Bitfeld `flags` (Mempool-Goggles)
+    property string colorMode: "fee"
     property color dimColor: "#9a94a6"
     property real labelSize: 11
 
-    // Je Kachel: { sq: {x,y,r}, b: Gebuehrenklasse, d: Angaben fuer den Tooltip }
+    // Je Kachel: { sq: {x,y,r}, b: Gebuehrenklasse, k: Art, d: Tooltip-Angaben }
     property var squares: []
     property int gridUnits: 0
     property int rowsUsed: 0
@@ -49,6 +52,8 @@ Item {
     // schreibt es hin, und die frischen Kacheln blitzen kurz weiss auf.
     property int addedCount: 0
     property int removedCount: 0
+    // Anzahl je Transaktionsart, Index wie TxType.KINDS -- traegt die Legende
+    property var typeCounts: []
     property var freshIdx: []
     property real flashPhase: 0
     // Umriss der frischen Kacheln. Ohne ihn raeumt jedes Bild des Ausblendens
@@ -76,6 +81,7 @@ Item {
     }
 
     onBlockChanged: rebuild()
+    onColorModeChanged: repaintAll()
     onWidthChanged: repaintAll()
     onHeightChanged: repaintAll()
     onLiveChanged: {
@@ -98,6 +104,9 @@ Item {
         var tiles = b.tiles;
         var n = Math.floor(tiles.length / 2);
         var txs = b.txs || [];
+        // Eine Ziffer je Kachel, dieselbe Reihenfolge. Aeltere Antworten ohne
+        // dieses Feld gelten als "Zahlung".
+        var types = b.types || "";
         var out = [];
         for (var i = 0; i < n; i++) {
             var d = txs[i];
@@ -105,10 +114,28 @@ Item {
                 "id": (d && d[0]) ? String(d[0]) : ("#" + i),
                 "r": parseInt(tiles.charAt(i * 2), 10) || 1,
                 "b": parseInt(tiles.charAt(i * 2 + 1), 10) || 0,
+                "k": i < types.length ? (parseInt(types.charAt(i), 10) || 0) : 0,
                 "d": d || null
             });
         }
         return out;
+    }
+
+    // Wie oft kommt welche Art vor. Ein Durchgang ueber die Kacheln, einmal je
+    // Aktualisierung -- daraus lebt die Legende.
+    function countTypes() {
+        var c = [0, 0, 0, 0, 0, 0, 0, 0];
+        for (var i = 0; i < root.squares.length; i++)
+            c[root.squares[i].k || 0]++;
+        root.typeCounts = c;
+    }
+
+    // Die Farbe einer Kachel -- die eine Stelle, an der die Betriebsart
+    // entschieden wird. Beide Leinwaende fragen hier.
+    function tileColor(s) {
+        if (root.colorMode === "type")
+            return TxType.info(TxType.kindAt(s.k)).color;
+        return Palette.bucketColor(s.b);
     }
 
     function gridFor(recs) {
@@ -137,6 +164,7 @@ Item {
 
     function clear() {
         root.squares = [];
+        root.typeCounts = [];
         root.cellIdx = ({});
         root.__idxDirty = true;
         root.freshIdx = [];
@@ -181,11 +209,13 @@ Item {
         var lay = new Mondrian.MondrianLayout(gw);
         var out = [], byId = {};
         for (var i = 0; i < recs.length; i++) {
-            var e = { "sq": lay.place(recs[i].r), "b": recs[i].b, "d": recs[i].d };
+            var e = { "sq": lay.place(recs[i].r), "b": recs[i].b,
+                      "k": recs[i].k, "d": recs[i].d };
             out.push(e);
             byId[recs[i].id] = e;
         }
         root.squares = out;
+        root.countTypes();
         root.gridUnits = gw;
         root.rowsUsed = Math.max(gw, lay.height());
         root.__lay = lay;
@@ -224,9 +254,10 @@ Item {
                 // Bekannt: Platz behalten, aber Gebuehrenklasse und Angaben
                 // nachziehen -- die Rate einer Transaktion kann sich aendern.
                 e.b = r.b;
+                e.k = r.k;
                 e.d = r.d;
             } else {
-                e = { "sq": lay.place(r.r), "b": r.b, "d": r.d };
+                e = { "sq": lay.place(r.r), "b": r.b, "k": r.k, "d": r.d };
                 fresh.push(out.length);
                 dazu++;
             }
@@ -236,6 +267,7 @@ Item {
 
         root.squares = out;
         root.__byId = neu;
+        root.countTypes();
         root.rowsUsed = Math.max(root.gridUnits, lay.height());
         root.addedCount = dazu;
         root.removedCount = raus;
@@ -280,12 +312,13 @@ Item {
             var r = recs[i];
             var e = byId[r.id];
             if (e) {
-                // Schon da: nur die Gebuehrenklasse zieht nach, der Platz
+                // Schon da: nur Gebuehrenklasse und Art ziehen nach, der Platz
                 // bleibt. Genau das ist der Sinn der Uebung.
                 e.b = r.b;
+                e.k = r.k;
                 e.d = r.d;
             } else {
-                byId[r.id] = { "sq": lay.place(r.r), "b": r.b, "d": r.d };
+                byId[r.id] = { "sq": lay.place(r.r), "b": r.b, "k": r.k, "d": r.d };
                 frisch[r.id] = true;
                 dazu++;
             }
@@ -302,6 +335,7 @@ Item {
 
         root.squares = out;
         root.__byId = byId;
+        root.countTypes();
         root.rowsUsed = Math.max(root.gridUnits, lay.height());
         root.addedCount = dazu;
         root.removedCount = raus;
@@ -411,7 +445,7 @@ Item {
             var groups = {}, i, s, c;
             for (i = 0; i < root.squares.length; i++) {
                 s = root.squares[i];
-                c = Palette.bucketColor(s.b);
+                c = root.tileColor(s);
                 if (!groups[c])
                     groups[c] = [];
                 groups[c].push(s);
@@ -463,7 +497,7 @@ Item {
                 if (!s)
                     continue;
                 var t = root.rectFor(s.sq, g, bx, by, p);
-                ctx.fillStyle = Palette.blendHex(Palette.bucketColor(s.b), weiss, root.flashPhase);
+                ctx.fillStyle = Palette.blendHex(root.tileColor(s), weiss, root.flashPhase);
                 ctx.fillRect(t.x, t.y, t.w, t.h);
             }
         }

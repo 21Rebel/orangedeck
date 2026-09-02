@@ -30,6 +30,30 @@ Anwendung und in DMS, `dms ipc call dash toggle bitcoin` meldet
 `DASH_TOGGLE_SUCCESS`, und 18 Sekunden nach dem Beenden der Anwendung meldet
 sich der Daemon beim Server wieder ab (`tracking: null`).
 
+## Dazu am 02.09.2026: die Mempool-Goggles
+
+Ueber jeder Kachelgrafik im Explorer steht jetzt "Farbe: Gebuehr | Art". In der
+Betriebsart *Art* faerben sich die Kacheln nach dem, was die Transaktion tut,
+mit Legende und Anteilen darunter.
+
+Die Deutung kommt aus dem Bitfeld `flags`, das mempool.space in beiden Quellen
+mitliefert. Die Bitlage ist aus dem Quelltext von mempool.space geholt und an
+echten Daten gegengeprueft, nicht geraten. Neu: `ui/qml/TileGoggles.qml`,
+`types` in den Kacheldaten, `fromFlags()` in `txtype.js`.
+
+**Falle, die dabei fast zugeschlagen haette:** `>>` rechnet in JavaScript mit
+32 Bit, die Flags reichen bis 2^44.
+
+**Nebenbei einen echten Fehler gefunden und behoben:** die Suche nach einer
+**Blockhoehe** war unbrauchbar ("Antwort nicht lesbar"). `/api/block-height/<n>`
+antwortet mit dem blanken Hash, der Daemon reichte ihn als
+`application/json` durch, und `JSON.parse` scheiterte.
+
+**Zum Messen gelernt:** `top`-Momentaufnahmen taugen zum Vergleichen zweier
+Bauformen, nicht als absolute Zahl. Ueber 60 Sekunden aus `/proc/<pid>/stat`
+gemessen kostet die Startseite 6,3 % ohne und 6,9 bis 7,6 % mit laufendem
+Mitverfolgen; die Goggles selbst kosten nichts Messbares.
+
 **Werkzeug, das dabei entstanden ist und sich wieder lohnt:** die Anwendung
 laesst sich in einem **unsichtbaren Compositor** pruefen, ohne den Bildschirm
 zu uebernehmen --
@@ -87,10 +111,11 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
 
 1. ~~Lebendige Darstellung des geplanten Blocks auf der Startseite.~~
    **Erledigt am 02.09.2026**, siehe unten.
-2. **Mempool-Goggles** -- dieselben Kacheln nach Transaktionsart einfaerben.
-   `ui/qml/txtype.js` ist fertig und an echten Daten geprueft.
-   Anschlussstelle ist jetzt `BlockTiles.colorMode` -- die Kachelfarbe kommt
-   aus einer einzigen Stelle (`Palette.bucketColor(s.b)` in beiden Leinwaenden).
+2. ~~Mempool-Goggles.~~ **Erledigt am 02.09.2026**, siehe unten.
+   Offen geblieben: die **Halde** im Feed kann nicht mit -- die
+   `transactions`-Nachrichten des WebSocket fuehren kein `flags` mit
+   (nachgesehen). Fuer den Block im Feed waere es moeglich, aber zwei
+   Farblogiken in einem Bild waeren irrefuehrend.
 3. **Flatpak.** `flatpak` ist da, **`flatpak-builder` fehlt** und muesste
    installiert werden.
 4. **Layer-Shell** (`layer-shell-qt`, in den Paketquellen, nicht installiert)

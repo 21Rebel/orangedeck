@@ -199,6 +199,45 @@ def tile_size(value_sats):
     """Kantenlaenge in Rastereinheiten -- identisch zu logTxSize() in bitfeed."""
     v = max(1, int(value_sats or 1))
     return min(5, max(1, math.ceil(math.log10(v)) - 5))
+
+
+# --------------------------------------------------------------------------
+# Transaktionsarten aus dem Bitfeld `flags`
+# --------------------------------------------------------------------------
+# Die Bitlage stammt aus mempool.space selbst
+# (frontend/src/app/shared/filters.utils.ts, TransactionFlags) und ist am
+# 02.09.2026 an echten Daten gegengeprueft: eine Transaktion mit gesetztem
+# Bit 24 hatte tatsaechlich einen OP_RETURN-Ausgang, eine ohne nicht.
+#
+# **Diese Reihenfolge muss mit KINDS in ui/qml/txtype.js uebereinstimmen** --
+# die Oberflaeche liest die Ziffer ueber `kindAt()` zurueck.
+TX_KINDS = ["payment", "consolidation", "batch", "coinjoin",
+            "data", "inscription", "coinbase", "sweep"]
+
+FLAG_COINJOIN = 1 << 32
+FLAG_CONSOLIDATION = 1 << 33
+FLAG_BATCH = 1 << 34
+FLAG_OP_RETURN = 1 << 24
+FLAG_INSCRIPTION = 1 << 26
+
+
+def tx_kind(flags, coinbase=False):
+    """Ziffer der Transaktionsart. Rangfolge: was seltener und
+    aussagekraeftiger ist, geht vor."""
+    if coinbase:
+        return 6
+    f = int(flags or 0)
+    if f & FLAG_COINJOIN:
+        return 3
+    if f & FLAG_INSCRIPTION:
+        return 5
+    if f & FLAG_OP_RETURN:
+        return 4
+    if f & FLAG_CONSOLIDATION:
+        return 1
+    if f & FLAG_BATCH:
+        return 2
+    return 0
 UA = "btcfeed/1.0 (+https://mempool.space)"
 
 
@@ -339,8 +378,13 @@ def summarize_block(bid, base=None):
     # Kacheln (zwei Ziffern je Transaktion) und die Angaben fuer den Tooltip.
     # Beide werden mit demselben Schritt abgetastet, damit die Indizes passen.
     details = []
-    for t in txs[::step]:
+    kinds = []
+    for i in range(0, len(txs), step):
+        t = txs[i]
         tiles.append("%d%d" % (tile_size(t.get("value")), fee_bucket(t.get("rate"))))
+        # Die erste Transaktion eines Blocks ist die Blockbelohnung. Am
+        # Bitfeld ist sie nicht zu erkennen -- an ihrer Lage schon.
+        kinds.append("%d" % tx_kind(t.get("flags"), coinbase=(i == 0)))
         details.append([
             t.get("txid") or "",
             round(float(t.get("vsize") or 0), 2),
@@ -356,6 +400,7 @@ def summarize_block(bid, base=None):
         "avgFeeRate": round(total_fee / total_vsize, 3) if total_vsize else 0,
         "tileStep": step,
         "tiles": "".join(tiles),
+        "types": "".join(kinds),
         "txs": details,
     })
     return data
@@ -703,6 +748,13 @@ def lookup(kind, arg):
                 body = r.read().decode()
         except Exception as e:
             return None, (str(e), 502)
+        # `/block-height/<n>` antwortet mit dem blanken Hash, nicht mit JSON.
+        # Weitergereicht scheiterte die Oberflaeche daran ("Antwort nicht
+        # lesbar") -- die Suche nach einer Blockhoehe war damit unbrauchbar.
+        # Die Schnittstelle sagt application/json zu, also wird auch JSON
+        # geliefert: eine Zeichenkette.
+        if kind == "blockheight":
+            body = json.dumps(body.strip())
         # Unbestaetigtes aendert sich schnell, Bestaetigtes so gut wie nie
         ttl = LOOKUP_TTL_MEMPOOL if '"confirmed":false' in body else LOOKUP_TTL
         with _lookup_lock:
@@ -1316,8 +1368,11 @@ def compress_projected(index, rows):
         total_fee += int(r[1] or 0)
         total_vsize += float(r[2] or 0)
         total_value += int(r[3] or 0)
+    kinds = []
     for r in rows[::step]:
         tiles.append("%d%d" % (tile_size(r[3]), fee_bucket(r[4])))
+        # Die Kurzform ist [txid, fee, vsize, value, rate, flags, time]
+        kinds.append("%d" % tx_kind(r[5] if len(r) > 5 else 0))
         details.append([r[0], round(float(r[2] or 0), 2), int(r[1] or 0),
                         int(r[3] or 0), round(float(r[4] or 0), 3)])
     return {
@@ -1328,6 +1383,7 @@ def compress_projected(index, rows):
         "avgFeeRate": round(total_fee / total_vsize, 3) if total_vsize else 0,
         "tileStep": step,
         "tiles": "".join(tiles),
+        "types": "".join(kinds),
         "txs": details,
         "ts": round(time.time(), 2),
     }
@@ -1336,12 +1392,13 @@ def compress_projected(index, rows):
 def compress_rows(rows):
     """Kachelziffern und Angaben fuer eine Handvoll Transaktionen, ohne
     Ausduennen -- fuer die Aenderungsmeldung."""
-    tiles, details = [], []
+    tiles, kinds, details = [], [], []
     for r in rows:
         tiles.append("%d%d" % (tile_size(r[3]), fee_bucket(r[4])))
+        kinds.append("%d" % tx_kind(r[5] if len(r) > 5 else 0))
         details.append([r[0], round(float(r[2] or 0), 2), int(r[1] or 0),
                         int(r[3] or 0), round(float(r[4] or 0), 3)])
-    return "".join(tiles), details
+    return "".join(tiles), "".join(kinds), details
 
 
 def projected_delta(feed, idx, base, count):
@@ -1379,13 +1436,15 @@ def projected_delta(feed, idx, base, count):
     if len(zugang) + len(abgang) > count * 0.6:
         return None
 
-    tiles, details = compress_rows(sorted(zugang.values(), key=lambda r: -(r[4] or 0)))
+    tiles, kinds, details = compress_rows(sorted(zugang.values(),
+                                                 key=lambda r: -(r[4] or 0)))
     return {
         "index": idx,
         "seq": seq,
         "full": False,
         "count": count,
         "tiles": tiles,
+        "types": kinds,
         "txs": details,
         "removed": abgang,
         "changedAt": round(feed.projected_at.get(idx, 0), 2),

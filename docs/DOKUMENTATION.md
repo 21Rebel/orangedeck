@@ -1611,11 +1611,23 @@ Die frischen Kacheln liegen auf einer **eigenen Leinwand** ueber der Grafik,
 dieselbe Aufteilung wie im Feed (Halde unten, fallende Kacheln darueber). Sonst
 muessten fuer jedes Bild des Ausblendens alle 6900 Rechtecke neu.
 
-Bilanz der Startseite mit laufender Verfolgung:
+Bilanz der Startseite mit laufender Verfolgung. Die Zwischenstaende sind mit
+`top` gemessen -- untereinander vergleichbar, aber grob:
 
     Grundlast der Seite                    5,0 %
     erster Entwurf (Vollform + Puls)      16,0 %
-    jetzt                                  5,6 %
+    nach den drei Griffen                  5,6 %
+
+Genauer nachgemessen ueber je 60 Sekunden aus `/proc/<pid>/stat` (utime+stime)
+statt aus Momentaufnahmen -- deshalb liegen die Werte etwas hoeher:
+
+    Grundlast ohne Mitverfolgen            6,3 %
+    mit Mitverfolgen                       6,9 %  und  7,6 % im zweiten Lauf
+
+Das Mitverfolgen kostet also weniger als einen Prozentpunkt und geht im
+Rauschen der Mempool-Aktivitaet fast unter. **Merksatz zum Messen:
+`top`-Momentaufnahmen taugen zum Vergleichen zweier Bauformen, nicht als
+absolute Zahl** -- dafuer die Rechenzeit ueber eine Minute aus `/proc` holen.
 
 ### Nebenbei: die Zellzuordnung wird erst gebaut, wenn jemand hinsieht
 
@@ -1639,3 +1651,98 @@ beim ersten Mausdurchgang.
   der Anwendung meldet sich der Daemon von selbst ab.
 - **Gebuehren unter 10 sat/vB mit einer Nachkommastelle.** Gerundet stand in
   ruhigen Zeiten an jedem Block "~0 sat/vB" und als Spanne "0 – 0".
+
+
+## Mempool-Goggles: dieselben Kacheln nach Art (`TileGoggles.qml`)
+
+Ueber jeder Kachelgrafik im Explorer steht jetzt ein Umschalter:
+
+    Gebuehr   teal bis violett nach sat/vB -- die Farben des Originals
+    Art       was die Transaktion tut
+
+Dazu eine Legende mit den Anteilen, und darunter der Satz, dass eine Deutung
+eine Deutung bleibt.
+
+### Woher die Art kommt: das Bitfeld `flags`
+
+`txtype.js` konnte Arten bisher nur aus Ein- und Ausgaengen bestimmen
+(`classify`), und die hat die Kachelgrafik nicht -- sie kennt je Transaktion
+nur zwei Ziffern. **mempool.space liefert aber ein Bitfeld mit**, in beiden
+Quellen:
+
+    /api/v1/block/<hash>/summary     Feld "flags"
+    projected-block-transactions     Stelle 5 der Kurzform
+                                     [txid, fee, vsize, value, rate, flags, time]
+
+Die Bitlage steht in `frontend/src/app/shared/filters.utils.ts`
+(`TransactionFlags`) und ist **nicht geraten, sondern geholt und
+gegengeprueft**: Bit 24 (`op_return`) war bei einer Stichprobe gesetzt, die
+tatsaechlich einen OP_RETURN-Ausgang hatte, und bei einer ohne nicht.
+
+    rbf 0   no_rbf 1   v1 2   v2 3   v3 4   nonstandard 5
+    p2pk 8  p2ms 9  p2pkh 10  p2sh 11  p2wpkh 12  p2wsh 13  p2tr 14
+    cpfp_parent 16  cpfp_child 17  replacement 18  acceleration 19
+    op_return 24  fake_pubkey 25  inscription 26  fake_scripthash 27  annex 28
+    coinjoin 32  consolidation 33  batch_payout 34
+    sighash_all 40 ... sighash_acp 44
+
+**Falle: `>>` rechnet in JavaScript mit 32 Bit.** Die Flags reichen bis 2^44 --
+mit `flags >> 40 & 1` kommt Unsinn heraus. `hasFlag()` teilt deshalb durch
+Zweierpotenzen.
+
+### Eine Ziffer je Kachel
+
+Der Daemon legt die Art als **eigene Zeichenkette** neben die Kacheln:
+
+    "tiles":  zwei Ziffern je Kachel  (Kantenlaenge, Gebuehrenklasse)
+    "types":  eine Ziffer je Kachel   (Art)
+
+Bewusst getrennt und nicht als dritte Ziffer in `tiles`: `FeedCanvas` liest
+dieselbe Datei (`block.json`) und haette sonst nichts mehr davon verstanden.
+Wer `types` nicht kennt, ignoriert es.
+
+Die Rangfolge bei mehreren gesetzten Bits -- seltener und aussagekraeftiger
+geht vor: Blockbelohnung, CoinJoin, Inschrift, Datenablage, Konsolidierung,
+Sammelzahlung, Zahlung. **Die Blockbelohnung steht in keinem Bit**; sie ist an
+ihrer Lage erkennbar, als erste Transaktion des Blocks.
+
+`TX_KINDS` im Daemon und `KINDS` in `txtype.js` **muessen dieselbe Reihenfolge
+haben** -- die Ziffer ist der Index in diese Liste.
+
+### Was dabei herauskommt
+
+Ein geplanter Block am 02.09.2026:
+
+    Zahlung          58,4 %
+    Datenablage      37,3 %
+    Sammelzahlung     2,6 %
+    Konsolidierung    1,5 %
+    Inschrift         0,2 %
+
+Und ein bestaetigter Block wenige Minuten spaeter mit umgekehrtem Verhaeltnis
+(67,9 % Datenablage). Dass jede dritte bis zweite Transaktion einen
+OP_RETURN-Ausgang traegt, ist keine Fehldeutung -- eine Stichprobe daraus hatte
+den Ausgang wirklich. Genau dafuer sind die Goggles da.
+
+Kleinigkeit mit Wirkung: was vorkommt, aber unter ein halbes Prozent faellt,
+steht als "<1 %" da und nicht als "0 %". Die seltenen Arten sind der Grund,
+ueberhaupt umzuschalten.
+
+### Wo es (noch) nicht geht: die Halde
+
+Die Halde im Feed lebt aus den `transactions`-Nachrichten des WebSocket, und
+**die fuehren kein `flags` mit** (am 02.09.2026 nachgesehen: nur `txid`, `fee`,
+`vsize`, `value`, `rate`, `time`). Die Goggles gelten deshalb fuer die
+Kachelgrafiken im Explorer -- geplanter wie bestaetigter Block --, nicht fuer
+die Halde. Fuer den **Block** im Feed waeren sie moeglich (`block.json` traegt
+jetzt `types`), aber ein Bild mit zwei Farblogiken gleichzeitig waere
+irrefuehrend.
+
+### Nebenbei behoben: die Suche nach einer Blockhoehe
+
+Beim Gegenpruefen der Blockansicht aufgefallen: eine Blockhoehe einzugeben
+endete immer in "Antwort nicht lesbar". `/api/block-height/<n>` antwortet mit
+dem **blanken Hash**, nicht mit JSON; der Daemon reichte ihn unveraendert
+durch, deklarierte ihn aber als `application/json`, und `JSON.parse` in
+`FeedState.lookup` scheiterte. Der Daemon verpackt ihn jetzt als
+JSON-Zeichenkette.

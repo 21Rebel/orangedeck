@@ -22,8 +22,61 @@ var TYPES = {
     "coinbase":      { "label": "Blockbelohnung",  "color": "#d8b84a",
                        "help": "Die erste Transaktion eines Blocks — hier entstehen neue Bitcoin und die Gebühren des Blocks gehen an den Finder." },
     "sweep":         { "label": "Umschichtung",    "color": "#6f7fd0",
-                       "help": "Alles fließt auf einen einzigen Ausgang, ohne Rückgeld — typisch beim Leeren einer Adresse oder Wallet." }
+                       "help": "Alles fließt auf einen einzigen Ausgang, ohne Rückgeld — typisch beim Leeren einer Adresse oder Wallet." },
+    "inscription":   { "label": "Inschrift",       "color": "#e0578f",
+                       "help": "Trägt Daten im Zeugnisteil (Witness) — Ordinals und Verwandtes. Die Daten zahlen dort weniger Gebühr als in einem OP_RETURN." }
 };
+
+// --- Deutung aus den `flags` von mempool.space ---------------------------
+//
+// Die Kachelgrafik kennt keine Ein- und Ausgaenge, nur die Kurzform. Darin
+// steckt aber ein Bitfeld, das mempool.space selbst berechnet. Die Bitlage ist
+// aus `frontend/src/app/shared/filters.utils.ts` (TransactionFlags) uebernommen
+// und am 02.09.2026 an echten Daten gegengeprueft: eine Transaktion mit
+// gesetztem Bit 24 hatte tatsaechlich einen OP_RETURN-Ausgang, eine ohne nicht.
+var FLAG = {
+    "rbf": 0, "no_rbf": 1, "v1": 2, "v2": 3, "v3": 4, "nonstandard": 5,
+    "p2pk": 8, "p2ms": 9, "p2pkh": 10, "p2sh": 11, "p2wpkh": 12, "p2wsh": 13, "p2tr": 14,
+    "cpfp_parent": 16, "cpfp_child": 17, "replacement": 18, "acceleration": 19,
+    "op_return": 24, "fake_pubkey": 25, "inscription": 26, "fake_scripthash": 27, "annex": 28,
+    "coinjoin": 32, "consolidation": 33, "batch_payout": 34
+};
+
+// Vorsicht: `>>` rechnet in JavaScript mit 32 Bit, die Flags reichen bis 2^44.
+// Also durch Zweierpotenzen teilen statt schieben.
+function hasFlag(flags, name) {
+    var b = FLAG[name];
+    if (b === undefined || !flags)
+        return false;
+    return Math.floor(flags / Math.pow(2, b)) % 2 === 1;
+}
+
+// Reihenfolge der Arten in der Kachelgrafik. Der Daemon legt genau diese
+// Ziffer je Kachel ab -- **beide Listen muessen gleich bleiben.**
+var KINDS = ["payment", "consolidation", "batch", "coinjoin",
+             "data", "inscription", "coinbase", "sweep"];
+
+function kindAt(i) {
+    return KINDS[i] || "payment";
+}
+
+// Aus dem Bitfeld die Art bestimmen. Die Reihenfolge ist die Rangfolge:
+// was seltener und aussagekraeftiger ist, geht vor.
+function fromFlags(flags, isCoinbase) {
+    if (isCoinbase)
+        return "coinbase";
+    if (hasFlag(flags, "coinjoin"))
+        return "coinjoin";
+    if (hasFlag(flags, "inscription"))
+        return "inscription";
+    if (hasFlag(flags, "op_return"))
+        return "data";
+    if (hasFlag(flags, "consolidation"))
+        return "consolidation";
+    if (hasFlag(flags, "batch_payout"))
+        return "batch";
+    return "payment";
+}
 
 function classify(tx) {
     if (!tx)

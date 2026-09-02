@@ -28,6 +28,9 @@ Column {
     property int refreshMs: 2000
     property bool showHeader: true
     property real tileHeight: 0
+    // Kachelfarbe: "fee" oder "type" (Mempool-Goggles). Wird von aussen
+    // gehalten, damit die Wahl beim Blaettern durch den Explorer bleibt.
+    property string colorMode: "fee"
 
     property color textColor: "#f2eef8"
     property color dimColor: "#9a94a6"
@@ -35,6 +38,7 @@ Column {
     property real uiFont: 13
 
     signal txPicked(string txid)
+    signal colorModeRequested(string mode)
 
     // Die Kennzahlen kommen aus dem Zustand und aendern sich damit laufend.
     readonly property var info: (feed && feed.projected && feed.projected.length > rank)
@@ -203,6 +207,21 @@ Column {
         font.pixelSize: root.uiFont * 0.8
     }
 
+    TileGoggles {
+        width: parent.width
+        visible: root.tiles !== null
+        mode: root.colorMode
+        counts: tileView.typeCounts
+        total: tileView.squares.length
+        textColor: root.textColor
+        dimColor: root.dimColor
+        accentColor: root.accentColor
+        uiFont: root.uiFont
+        onPicked: function (m) {
+            root.colorModeRequested(m);
+        }
+    }
+
     BlockTiles {
         id: tileView
 
@@ -210,6 +229,7 @@ Column {
         height: root.tileHeight > 0 ? root.tileHeight : Math.min(parent.width, root.uiFont * 34)
         visible: root.tiles !== null
         live: true
+        colorMode: root.colorMode
         block: root.tiles
         dimColor: root.dimColor
         labelSize: root.uiFont * 0.85

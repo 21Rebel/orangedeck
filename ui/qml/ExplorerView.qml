@@ -179,6 +179,10 @@ Item {
 
     property string currentArg: ""
 
+    // Kachelfarbe fuer alle Kachelgrafiken dieser Ansicht: "fee" oder "type".
+    // Sie liegt hier, damit die Wahl beim Blaettern erhalten bleibt.
+    property string tileColorMode: "fee"
+
     // Ein geplanter Block hat keinen Hash und keine abrufbaren Inhalte -- er
     // wird deshalb nicht ueber `go()` geladen, sondern direkt gesetzt.
     property int projRank: 0
@@ -449,6 +453,10 @@ Item {
                 // ist -- `visible` allein reicht nicht, das Fenster kann zu
                 // sein (siehe DOKUMENTATION).
                 live: visible && root.visible
+                colorMode: root.tileColorMode
+                onColorModeRequested: function (m) {
+                    root.tileColorMode = m;
+                }
                 feed: root.feed
                 textColor: root.textColor
                 dimColor: root.dimColor
@@ -1023,6 +1031,10 @@ Item {
                 rank: root.projRank
                 live: root.visible && root.kind === "projected"
                 showHeader: false
+                colorMode: root.tileColorMode
+                onColorModeRequested: function (m) {
+                    root.tileColorMode = m;
+                }
                 feed: root.feed
                 textColor: root.textColor
                 dimColor: root.dimColor
@@ -1201,11 +1213,29 @@ Item {
                 font.pixelSize: root.uiFont * 0.9
             }
 
+            TileGoggles {
+                width: flick.width
+                visible: root.tiles !== null
+                mode: root.tileColorMode
+                counts: blockTiles.typeCounts
+                total: blockTiles.squares.length
+                textColor: root.textColor
+                dimColor: root.dimColor
+                accentColor: root.accentColor
+                uiFont: root.uiFont
+                onPicked: function (m) {
+                    root.tileColorMode = m;
+                }
+            }
+
             BlockTiles {
+                id: blockTiles
+
                 width: flick.width
                 height: Math.min(flick.width, root.scaleUnit * 34)
                 visible: root.tiles !== null
                 block: root.tiles
+                colorMode: root.tileColorMode
                 dimColor: root.dimColor
                 labelSize: root.uiFont * 0.85
                 onTxPicked: function (txid) {

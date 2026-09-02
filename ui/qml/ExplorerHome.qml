@@ -14,6 +14,7 @@ Column {
     // Sieht jemand auf die Startseite? Nur dann wird der geplante Block
     // mitverfolgt -- er kostet 7,8 kB/s, solange er laeuft.
     property bool live: true
+    property string colorMode: "fee"
     property color textColor: "#f2eef8"
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
@@ -22,6 +23,7 @@ Column {
     signal blockPicked(string hash)
     signal txPicked(string txid)
     signal projectedPicked(int rank, var data)
+    signal colorModeRequested(string mode)
 
     spacing: uiFont * 1.4
 
@@ -100,6 +102,10 @@ Column {
         width: parent.width
         feed: root.feed
         live: root.live
+        colorMode: root.colorMode
+        onColorModeRequested: function (m) {
+            root.colorModeRequested(m);
+        }
         textColor: root.textColor
         dimColor: root.dimColor
         accentColor: root.accentColor
