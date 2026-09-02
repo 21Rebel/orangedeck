@@ -2035,13 +2035,19 @@ werden. Ein Singleton ginge nicht ohne Weiteres, weil dieselben Dateien in drei
 Wirten laufen und ein `qmldir` nur im CMake-Modul entsteht.
 
 
-## Zehn Sprachen (`strings.js`)
+## Dreizehn Sprachen (`strings.js`)
 
-Die Oberflaeche spricht jetzt Deutsch, Englisch, Spanisch, Franzoesisch,
-Italienisch, Portugiesisch, Niederlaendisch, Russisch, Japanisch und
-Chinesisch -- dieselbe Auswahl, die auch mempool.space fuehrt, und dieselbe
-Wortwahl: "Mempool", "Hashrate", "Coinbase" und "RBF" bleiben ueberall stehen,
-weil sie in jeder Sprache so heissen.
+Die Oberflaeche spricht Deutsch, Englisch, Spanisch, Franzoesisch,
+Italienisch, Niederlaendisch, Polnisch, Portugiesisch (Portugal **und**
+Brasilien getrennt), Tschechisch, Russisch, Japanisch und Chinesisch --
+dieselbe Auswahl, die auch mempool.space fuehrt, und dieselbe Wortwahl:
+"Mempool", "Hashrate", "Coinbase" und "RBF" bleiben ueberall stehen, weil sie
+in jeder Sprache so heissen.
+
+**Portugiesisch ist zweigeteilt**, weil sich die beiden Fassungen dort
+unterscheiden, wo diese Oberflaeche redet: "Definições" gegen "Configurações",
+"a carregar" gegen "carregando", "deteta" gegen "detecta". Eine gemeinsame
+Spalte haette in einem der beiden Laender falsch geklungen.
 
 ### Aufbau
 
@@ -2052,6 +2058,11 @@ in der Reihenfolge von `LANGS`:
 
 Kompakter als geschachtelte Objekte, und eine neue Sprache ist eine Spalte
 statt dreihundert neuer Zeilen. Rund 300 Schluessel.
+
+**Neue Sprachen kommen hinten dazu**, nicht an ihren alphabetischen Platz --
+sonst muesste jede der dreihundert Zeilen umgeschrieben werden. Wie sie in den
+Einstellungen erscheinen, steht getrennt in `LANG_ORDER`: dort stehen sie so,
+wie man sie sucht, und die beiden portugiesischen Fassungen nebeneinander.
 
 ### Warum eine Funktion und kein Singleton
 
@@ -2068,8 +2079,14 @@ wie `textColor` und `uiFont` auch.
 
 Das ist keine Kosmetik: **"1.234" heisst je nach Sprache tausendzweihundert
 oder eins Komma zwei.** `Tr.group(n, lang)` und `Tr.fixed(n, stellen, lang)`
-setzen Tausender- und Dezimaltrenner nach Sprache -- Punkt im Deutschen,
-Komma im Englischen, schmales Leerzeichen im Franzoesischen und Russischen.
+setzen Tausender- und Dezimaltrenner nach Sprache -- Punkt im Deutschen und
+im Portugiesischen, Komma im Englischen, **schmales Leerzeichen** im
+Franzoesischen, Russischen, Polnischen und Tschechischen.
+
+Falle dabei: das schmale Leerzeichen ist U+202F, kein gewoehnliches. Wer die
+Bedingung spaeter erweitert und dabei ein normales Leerzeichen tippt, trifft
+die Zeile nicht -- genau das ist beim Nachtragen von Polnisch passiert, und
+der Fehler faellt erst am Bildschirm auf.
 
 Vorher stand `.toFixed(2).replace(".", ",")` an vierzig Stellen im Quelltext.
 

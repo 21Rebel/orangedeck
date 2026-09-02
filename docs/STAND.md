@@ -30,11 +30,11 @@ Anwendung und in DMS, `dms ipc call dash toggle bitcoin` meldet
 `DASH_TOGGLE_SUCCESS`, und 18 Sekunden nach dem Beenden der Anwendung meldet
 sich der Daemon beim Server wieder ab (`tracking: null`).
 
-## Stand 02.09.2026, Abend -- zehn Sprachen
+## Stand 02.09.2026, Abend -- dreizehn Sprachen
 
 Die Oberflaeche spricht Deutsch, Englisch, Spanisch, Franzoesisch,
-Italienisch, Portugiesisch, Niederlaendisch, Russisch, Japanisch und
-Chinesisch. Umgeschaltet wird in den Einstellungen unter "Allgemein", die
+Italienisch, Niederlaendisch, Polnisch, Portugiesisch (Portugal und Brasilien
+getrennt), Tschechisch, Russisch, Japanisch und Chinesisch. Umgeschaltet wird in den Einstellungen unter "Allgemein", die
 Umstellung greift sofort und ohne Neustart.
 
 `ui/qml/strings.js`: rund 300 Schluessel, je Schluessel eine Zeile mit einem

@@ -119,8 +119,8 @@ Item {
         if (d > 0)
             return Tr.t("duration.dayHour", root.lang, d, h);
         if (h > 0)
-            return h + " Std " + m + " Min";
-        return m + " Min";
+            return Tr.t("duration.hourMin", root.lang, h, m);
+        return Tr.t("duration.min", root.lang, m);
     }
 
     // Zu den Einstellungen geht es in der Weboberflaeche des Geraets -- die

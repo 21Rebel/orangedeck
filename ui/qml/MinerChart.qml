@@ -158,7 +158,8 @@ Item {
             }
             ctx.fillStyle = root.dimColor;
             ctx.textAlign = "center";
-            ctx.fillText(Math.round(s.length * 5 / 60) + " Min", padL + w / 2, height - 2);
+            ctx.fillText(Tr.t("duration.min", root.lang, Math.round(s.length * 5 / 60)),
+                         padL + w / 2, height - 2);
         }
     }
 }

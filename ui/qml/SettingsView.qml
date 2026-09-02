@@ -144,8 +144,12 @@ Item {
         }
     }
 
-    component Wahl: Row {
+    component Wahl: Flow {
         id: wahlRoot
+
+        // `Flow` statt `Row`: dreizehn Sprachen passen in keine Zeile mehr,
+        // und abgeschnittene Knoepfe sind schlimmer als zwei Zeilen.
+        width: parent ? parent.width : 0
 
         property var eintraege: []      // [{ k, l }]
         property string gewaehlt: ""
@@ -268,8 +272,10 @@ Item {
     }
 
     // Kaestchen zum An- und Abwaehlen, fuer Mehrfachauswahl
-    component Haken: Row {
+    component Haken: Flow {
         id: hakenRoot
+
+        width: parent ? parent.width : 0
 
         property var alle: []
         property string schluessel: ""

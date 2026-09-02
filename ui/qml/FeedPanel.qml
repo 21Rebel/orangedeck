@@ -52,23 +52,15 @@ Item {
     readonly property var nextBlock: feed ? feed.nextBlock : ({})
     readonly property var block: feed ? feed.block : ({})
 
+    // Tausender- und Dezimaltrenner haengen an der Sprache -- Deutsch nimmt
+    // den Punkt, Englisch das Komma, Polnisch und Tschechisch ein schmales
+    // Leerzeichen.
     function grp(n) {
-        if (n === undefined || n === null || isNaN(n))
-            return "–";
-        var s = String(Math.round(n)), out = "", c = 0;
-        for (var i = s.length - 1; i >= 0; i--) {
-            out = s[i] + out;
-            if (++c % 3 === 0 && i > 0)
-                out = "." + out;
-        }
-        return out;
+        return Tr.group(n, root.lang);
     }
 
     function dec(n, digits) {
-        if (n === undefined || n === null || isNaN(n))
-            return "–";
-        var parts = n.toFixed(digits).split(".");
-        return grp(parseInt(parts[0], 10)) + (parts.length > 1 ? "," + parts[1] : "");
+        return Tr.fixed(n, digits, root.lang);
     }
 
     function fee(v) {
@@ -82,8 +74,8 @@ Item {
             return "";
         var s = Math.max(0, Math.round(Date.now() / 1000 - ts));
         if (s < 60)
-            return "vor " + s + " s";
-        return "vor " + Math.floor(s / 60) + " min";
+            return Tr.t("ago.sec", root.lang, s);
+        return Tr.t("ago.min", root.lang, Math.floor(s / 60));
     }
 
     function stamp(ts) {

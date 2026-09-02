@@ -94,8 +94,8 @@ Item {
         var avg = (root.feed && root.feed.difficulty.timeAvg) || 600000;
         var min = Math.round((rank + 1) * avg / 60000);
         if (min < 60)
-            return "in ~" + min + " Min";
-        return "in ~" + Math.floor(min / 60) + " Std " + (min % 60) + " Min";
+            return Tr.t("in.min", root.lang, min);
+        return Tr.t("in.hourMin", root.lang, Math.floor(min / 60), min % 60);
     }
 
     function ago(ts) {
@@ -106,10 +106,10 @@ Item {
             return "gerade eben";
         var m = Math.floor(s / 60);
         if (m < 90)
-            return "vor " + m + " Min";
+            return Tr.t("ago.min", root.lang, m);
         var h = Math.floor(m / 60);
         if (h < 48)
-            return "vor " + h + " Std";
+            return Tr.t("ago.hour", root.lang, h);
         return Tr.t("ago.day", root.lang, Math.floor(h / 24));
     }
 

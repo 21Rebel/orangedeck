@@ -69,8 +69,8 @@ Grid {
         if (d > 0)
             return Tr.t(d === 1 ? "in.day" : "in.days", root.lang, d);
         if (h > 0)
-            return "in ~" + h + " Std";
-        return "in ~" + min + " Min";
+            return Tr.t("in.hours", root.lang, h);
+        return Tr.t("in.min", root.lang, min);
     }
 
     function reload() {
