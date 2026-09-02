@@ -3,6 +3,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "strings.js" as Tr
 
 ShellRoot {
     FloatingWindow {
@@ -42,15 +43,21 @@ ShellRoot {
         property bool explorerLive: true
         property var explorerParts: []
         property var explorerPanels: []
+        property string lang: "de"
         // Aus, bis sie in den Einstellungen ausdruecklich eingeschaltet wird
         property bool walletEnabled: false
         // 0 Feed, 1 BlockClock, 2 Miner, 3 Explorer, 4 Wallet, 5 Einstellungen
         property int view: 0
 
         readonly property var tabViews: walletEnabled ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 5]
-        readonly property var tabLabels: walletEnabled
-            ? ["Feed", "BlockClock", "Miner", "Explorer", "Wallet", "Einstellungen"]
-            : ["Feed", "BlockClock", "Miner", "Explorer", "Einstellungen"]
+        readonly property var tabLabels: {
+            var l = [Tr.t("tab.feed", lang), Tr.t("tab.clock", lang),
+                     Tr.t("tab.miner", lang), Tr.t("tab.explorer", lang)];
+            if (walletEnabled)
+                l.push(Tr.t("tab.wallet", lang));
+            l.push(Tr.t("tab.settings", lang));
+            return l;
+        }
 
         readonly property var opts: ({
             "bgOpacity": bgOpacity,
@@ -78,6 +85,7 @@ ShellRoot {
             "explorerLive": explorerLive,
             "explorerParts": explorerParts,
             "explorerPanels": explorerPanels,
+            "lang": lang,
             "walletEnabled": walletEnabled
         })
 
@@ -132,6 +140,8 @@ ShellRoot {
                 explorerParts = value;
             else if (key === "explorerPanels")
                 explorerPanels = value;
+            else if (key === "lang")
+                lang = value;
             else if (key === "walletEnabled") {
                 walletEnabled = value;
                 if (!value && view === 4)
@@ -168,6 +178,7 @@ ShellRoot {
                 "explorerLive": explorerLive,
                 "explorerParts": explorerParts,
                 "explorerPanels": explorerPanels,
+                "lang": lang,
                 "walletEnabled": walletEnabled
             }));
             hint.flash();
@@ -232,6 +243,8 @@ ShellRoot {
                         win.explorerParts = v.explorerParts;
                     if (Array.isArray(v.explorerPanels))
                         win.explorerPanels = v.explorerPanels;
+                    if (v.lang)
+                        win.lang = v.lang;
                     if (typeof v.walletEnabled === "boolean")
                         win.walletEnabled = v.walletEnabled;
                     if (win.view === 4 && !win.walletEnabled)
@@ -272,6 +285,7 @@ ShellRoot {
             anchors.margins: 14
             anchors.topMargin: tabs.height + 14
             feed: feedState
+            lang: win.lang
             baseFont: 13
             colorMode: win.colorMode
             onColorModeRequested: function (m) {
@@ -301,6 +315,7 @@ ShellRoot {
             anchors.margins: 14
             anchors.topMargin: tabs.height + 14
             feed: feedState
+            lang: win.lang
             fields: win.clockFields
             currency: win.currency
             showBars: win.clockBars
@@ -314,6 +329,7 @@ ShellRoot {
             anchors.margins: 14
             anchors.topMargin: tabs.height + 14
             feed: feedState
+            lang: win.lang
             metricKeys: win.minerFields
             showChart: win.minerChart
             showDomains: win.minerDomains
@@ -328,6 +344,7 @@ ShellRoot {
             anchors.margins: 14
             anchors.topMargin: tabs.height + 14
             feed: feedState
+            lang: win.lang
             tileColorMode: win.tileColorMode
             currency: win.currency
             homeParts: win.explorerParts
@@ -345,6 +362,7 @@ ShellRoot {
             anchors.margins: 14
             anchors.topMargin: tabs.height + 14
             opts: win.opts
+            lang: win.lang
             onChanged: function (key, value) {
                 win.setOpt(key, value);
             }
@@ -357,6 +375,7 @@ ShellRoot {
             anchors.margins: 14
             anchors.topMargin: tabs.height + 14
             feed: feedState
+            lang: win.lang
             currency: win.currency
             onTxPicked: function (txid) {
                 win.view = 3;

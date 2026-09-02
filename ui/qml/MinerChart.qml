@@ -6,9 +6,12 @@
 // auf, wenn `statsFrequency` gesetzt ist, und die cgminer-Schnittstelle kennt
 // gar keinen Verlauf.
 import QtQuick
+import "strings.js" as Tr
 
 Item {
     id: root
+
+    property string lang: "de"
 
     property var hist: ({})
     property color lineColor: "#f7931a"
@@ -23,8 +26,8 @@ Item {
     // Der Verlauf liegt in GH/s vor.
     function fmtRate(gh, withUnit) {
         if (gh >= root.teraFrom)
-            return (gh / 1000).toFixed(2).replace(".", ",") + (withUnit ? " TH/s" : "");
-        return gh.toFixed(0) + (withUnit ? " GH/s" : "");
+            return Tr.fixed(gh / 1000, 2, root.lang) + (withUnit ? " TH/s" : "");
+        return Tr.fixed(gh, 0, root.lang) + (withUnit ? " GH/s" : "");
     }
 
     readonly property var hr: (hist && hist.hr) || []

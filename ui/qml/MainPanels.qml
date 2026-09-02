@@ -7,6 +7,7 @@
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -20,6 +21,7 @@ Grid {
     property color goodColor: "#57b894"
     property color badColor: "#d9534f"
     property real uiFont: 13
+    property string lang: "de"
     property var replacements: []
     // Welche Tafeln gezeigt werden. Leer heisst alle. `Grid` laesst
     // unsichtbare Kinder aus, es bleibt also keine Luecke stehen.
@@ -48,20 +50,15 @@ Grid {
     readonly property var diff: feed ? feed.difficulty : ({})
     readonly property var stats: (feed && feed.snap.stats) || ({})
 
+    // Tausendertrennung in der Schreibweise der Sprache -- Deutsch nimmt den
+    // Punkt, Englisch das Komma. Das ist keine Kosmetik: "1.234" heisst je
+    // nach Sprache tausendzweihundert oder eins Komma zwei.
     function grp(n) {
-        if (n === undefined || n === null)
-            return "–";
-        var t = String(Math.round(n)), out = "", c = 0;
-        for (var i = t.length - 1; i >= 0; i--) {
-            out = t[i] + out;
-            if (++c % 3 === 0 && i > 0)
-                out = "." + out;
-        }
-        return out;
+        return Tr.group(n, root.lang);
     }
 
     function sat(v) {
-        return (v === undefined || v === null) ? "–" : v.toFixed(2).replace(".", ",");
+        return (v === undefined || v === null) ? "–" : Tr.fixed(v, 2, root.lang);
     }
 
     function span(ms) {
@@ -70,7 +67,7 @@ Grid {
         var min = Math.floor(ms / 60000);
         var d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60);
         if (d > 0)
-            return "in ~" + d + (d === 1 ? " Tag" : " Tagen");
+            return Tr.t(d === 1 ? "in.day" : "in.days", root.lang, d);
         if (h > 0)
             return "in ~" + h + " Std";
         return "in ~" + min + " Min";
@@ -124,7 +121,7 @@ Grid {
     Panel {
         height: root.uiFont * 8.4
         visible: root.zeigt("fees")
-        title: "TRANSAKTIONSGEBÜHR"
+        title: Tr.t("panel.fees", root.lang)
 
         Row {
             id: feeRow
@@ -136,10 +133,10 @@ Grid {
 
             Repeater {
                 model: [
-                    { "k": "Keine Priorität", "v": root.fees.economy },
-                    { "k": "Niedrige", "v": root.fees.hour },
-                    { "k": "Mittlere", "v": root.fees.halfHour },
-                    { "k": "Hohe", "v": root.fees.fastest }
+                    { "k": Tr.t("fee.none", root.lang), "v": root.fees.economy },
+                    { "k": Tr.t("fee.low", root.lang), "v": root.fees.hour },
+                    { "k": Tr.t("fee.medium", root.lang), "v": root.fees.halfHour },
+                    { "k": Tr.t("fee.high", root.lang), "v": root.fees.fastest }
                 ]
 
                 Column {
@@ -197,7 +194,7 @@ Grid {
     Panel {
         height: root.uiFont * 8.4
         visible: root.zeigt("difficulty")
-        title: "SCHWIERIGKEITSANPASSUNG"
+        title: Tr.t("panel.difficulty", root.lang)
 
         Column {
             anchors.left: parent.left
@@ -243,15 +240,19 @@ Grid {
 
                 Repeater {
                     model: [
-                        { "k": "Durchschnittliche Blockzeit",
+                        { "k": Tr.t("diff.avgBlockTime", root.lang),
                           "v": root.diff.timeAvg
-                              ? "~" + (root.diff.timeAvg / 60000).toFixed(1).replace(".", ",") + " Minuten" : "–",
+                              ? "~" + Tr.t("duration.min", root.lang,
+                                            Tr.fixed(root.diff.timeAvg / 60000, 1, root.lang))
+                              : "–",
                           "c": root.textColor },
-                        { "k": "Änderung",
+                        { "k": Tr.t("diff.change", root.lang),
                           "v": root.diff.change !== undefined
                               ? (root.diff.change >= 0 ? "▲ +" : "▼ ") + root.sat(root.diff.change) + " %" : "–",
                           "c": (root.diff.change || 0) >= 0 ? root.goodColor : root.badColor },
-                        { "k": root.diff.nextHeight ? "Ziel bei " + root.grp(root.diff.nextHeight) : "Nächste Anpassung",
+                        { "k": root.diff.nextHeight
+                            ? Tr.t("diff.targetAt", root.lang, root.grp(root.diff.nextHeight))
+                            : Tr.t("diff.next", root.lang),
                           "v": root.span(root.diff.remainingTime),
                           "c": root.textColor }
                     ]
@@ -290,7 +291,7 @@ Grid {
     Panel {
         height: root.lowerHeight
         visible: root.zeigt("mempool")
-        title: "MEMPOOL"
+        title: Tr.t("panel.mempool", root.lang)
 
         Column {
             anchors.left: parent.left
@@ -306,10 +307,10 @@ Grid {
 
                 Repeater {
                     model: [
-                        { "k": "Mindestgebühr", "v": root.sat(root.fees.minimum) + " sat/vB" },
-                        { "k": "Belegung", "v": (root.feed && root.feed.mempoolVsize)
+                        { "k": Tr.t("mempool.minFee", root.lang), "v": root.sat(root.fees.minimum) + " sat/vB" },
+                        { "k": Tr.t("mempool.usage", root.lang), "v": (root.feed && root.feed.mempoolVsize)
                             ? Math.round(root.feed.mempoolVsize / 1e6) + " MB" : "–" },
-                        { "k": "Unbestätigt", "v": root.feed ? root.grp(root.feed.mempoolCount) : "–" }
+                        { "k": Tr.t("mempool.unconfirmed", root.lang), "v": root.feed ? root.grp(root.feed.mempoolCount) : "–" }
                     ]
 
                     Column {
@@ -338,7 +339,7 @@ Grid {
             }
 
             Text {
-                text: "Eingehende Transaktionen"
+                text: Tr.t("mempool.incoming", root.lang)
                 color: root.dimColor
                 font.pixelSize: root.uiFont * 0.78
             }
@@ -389,7 +390,7 @@ Grid {
                         ctx.stroke();
                         // Beschriftet wird der **echte** Hoechstwert, nicht der
                         // um die Luft erhoehte
-                        ctx.fillText((peak * (1 - g / 2)).toFixed(1).replace(".", ","),
+                        ctx.fillText(Tr.fixed(peak * (1 - g / 2), 1, root.lang),
                                      padL - root.uiFont * 0.4, gy + root.uiFont * 0.25);
                     }
 
@@ -426,8 +427,9 @@ Grid {
 
                     ctx.textAlign = "left";
                     ctx.fillStyle = root.dimColor;
-                    ctx.fillText(Math.round(s.length * 5 / 60) + " Min · Ø "
-                                 + avg.toFixed(1).replace(".", ",") + " tx/s",
+                    ctx.fillText(Tr.t("mempool.perMin", root.lang,
+                                      Math.round(s.length * 5 / 60),
+                                      Tr.fixed(avg, 1, root.lang) + " tx/s"),
                                  padL, height - root.uiFont * 0.15);
                 }
             }
@@ -438,7 +440,7 @@ Grid {
     Panel {
         height: root.lowerHeight
         visible: root.zeigt("rbf")
-        title: "ERSETZTE TRANSAKTIONEN (RBF)"
+        title: Tr.t("panel.rbf", root.lang)
 
         Column {
             id: rbfCol

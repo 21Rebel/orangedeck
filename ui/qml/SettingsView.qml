@@ -10,6 +10,7 @@
 // dieselben Dateien laufen im Fenster, im DMS-Plugin und spaeter unter Android.
 import QtQuick
 import "money.js" as Money
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -22,6 +23,7 @@ Item {
     property color accentColor: "#f7931a"
     property color goodColor: "#57b894"
     property real uiFont: 13
+    property string lang: "de"
 
     signal changed(string key, var value)
 
@@ -257,7 +259,8 @@ Item {
         Text {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            text: (Math.round(reglerRoot.wert * 100) / 100).toString().replace(".", ",")
+            text: Tr.fixed(Math.round(reglerRoot.wert * 100) / 100, 2, root.lang)
+                        .replace(/[.,]00$/, "")
                   + reglerRoot.einheit
             color: root.dimColor
             font.pixelSize: root.uiFont * 0.8
@@ -331,7 +334,9 @@ Item {
 
         anchors.left: parent.left
         anchors.top: parent.top
-        labels: ["Allgemein", "Feed", "BlockClock", "Miner", "Explorer", "Wallet"]
+        labels: [Tr.t("set.general", root.lang), Tr.t("tab.feed", root.lang),
+                 Tr.t("tab.clock", root.lang), Tr.t("tab.miner", root.lang),
+                 Tr.t("tab.explorer", root.lang), Tr.t("tab.wallet", root.lang)]
         current: ["allgemein", "feed", "clock", "miner", "explorer", "wallet"].indexOf(root.tab)
         fontSize: root.uiFont
         textColor: root.textColor
@@ -364,8 +369,8 @@ Item {
                 visible: root.tab === "allgemein"
 
                 Zeile {
-                    label: "Währung"
-                    help: "Gilt überall, wo ein Gegenwert steht — Feed, BlockClock, Explorer und Wallet. Die Kurse kommen alle in derselben Nachricht mit, es kostet also nichts, umzustellen."
+                    label: Tr.t("set.currency", root.lang)
+                    help: Tr.t("set.currencyHelp", root.lang)
 
                     Wahl {
                         gewaehlt: root.val("currency", "eur")
@@ -384,21 +389,21 @@ Item {
                 }
 
                 Zeile {
-                    label: "Sprache"
-                    help: "Zurzeit nur Deutsch. Eine Umschaltung müsste rund 300 Textstellen in fünfzehn Dateien erfassen — das ist ein eigener Arbeitsgang und keine Einstellung, die man nebenbei einbaut."
+                    label: Tr.t("set.language", root.lang)
+                    help: Tr.t("set.languageHelp", root.lang)
 
                     Wahl {
-                        gewaehlt: "de"
-                        eintraege: [
-                            { "k": "de", "l": "Deutsch" }
-                        ]
-                        onPicked: function (k) {}
+                        gewaehlt: root.lang
+                        eintraege: Tr.languages()
+                        onPicked: function (k) {
+                            root.changed("lang", k);
+                        }
                     }
                 }
 
                 Zeile {
-                    label: "Deckkraft des Fensters"
-                    help: "Wie durchsichtig der Hintergrund ist. Ob dahinter weichgezeichnet wird, entscheidet der Compositor."
+                    label: Tr.t("set.opacity", root.lang)
+                    help: Tr.t("set.opacityHelp", root.lang)
 
                     Regler {
                         von: 0.15
@@ -412,8 +417,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Kachelgröße"
-                    help: "Größer heißt weniger Kacheln nebeneinander, aber besser zu treffen."
+                    label: Tr.t("set.tileSize", root.lang)
+                    help: Tr.t("set.tileSizeHelp", root.lang)
 
                     Regler {
                         von: 0.6
@@ -427,16 +432,16 @@ Item {
                 }
 
                 Zeile {
-                    label: "Startansicht"
-                    help: "Womit das Fenster aufgeht — für ein Tablet an der Wand meist die BlockClock."
+                    label: Tr.t("set.startView", root.lang)
+                    help: Tr.t("set.startViewHelp", root.lang)
 
                     Wahl {
                         gewaehlt: String(root.val("startView", 0))
                         eintraege: [
-                            { "k": "0", "l": "Feed" },
-                            { "k": "1", "l": "BlockClock" },
-                            { "k": "2", "l": "Miner" },
-                            { "k": "3", "l": "Explorer" }
+                            { "k": "0", "l": Tr.t("tab.feed", root.lang) },
+                            { "k": "1", "l": Tr.t("tab.clock", root.lang) },
+                            { "k": "2", "l": Tr.t("tab.miner", root.lang) },
+                            { "k": "3", "l": Tr.t("tab.explorer", root.lang) }
                         ]
                         onPicked: function (k) {
                             root.changed("startView", parseInt(k, 10));
@@ -451,15 +456,15 @@ Item {
                 visible: root.tab === "feed"
 
                 Zeile {
-                    label: "Farbe der Kacheln"
-                    help: "Alter: orange bis blau in einer Minute. Gebühr: nach sat/vB. Art: die gedeutete Transaktionsart — die gilt nur für den Block."
+                    label: Tr.t("set.tileColor", root.lang)
+                    help: Tr.t("set.tileColorHelp", root.lang)
 
                     Wahl {
                         gewaehlt: root.val("colorMode", "age")
                         eintraege: [
-                            { "k": "age", "l": "Alter" },
-                            { "k": "fee", "l": "Gebühr" },
-                            { "k": "type", "l": "Art" }
+                            { "k": "age", "l": Tr.t("color.age", root.lang) },
+                            { "k": "fee", "l": Tr.t("color.fee", root.lang) },
+                            { "k": "type", "l": Tr.t("color.type", root.lang) }
                         ]
                         onPicked: function (k) {
                             root.changed("colorMode", k);
@@ -468,13 +473,13 @@ Item {
                 }
 
                 Zeile {
-                    label: "Größe der Kacheln"
-                    help: "Wonach sich die Kantenlänge richtet."
+                    label: Tr.t("set.tileMetric", root.lang)
+                    help: Tr.t("set.tileMetricHelp", root.lang)
 
                     Wahl {
                         gewaehlt: root.val("sizeMode", "value")
                         eintraege: [
-                            { "k": "value", "l": "Ausgabewert" },
+                            { "k": "value", "l": Tr.t("feed.sizeValue", root.lang) },
                             { "k": "vbytes", "l": "vBytes" }
                         ]
                         onPicked: function (k) {
@@ -484,8 +489,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Kopfzeile"
-                    help: "Die Zeile ganz oben mit Blockhöhe, Alter und Mempool."
+                    label: Tr.t("set.header", root.lang)
+                    help: Tr.t("set.headerHelp", root.lang)
 
                     Schalter {
                         an: root.val("showHeader", true)
@@ -494,8 +499,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Fußzeile"
-                    help: "Unten: nächster Block, mittlere Gebühr und Kurs."
+                    label: Tr.t("set.footer", root.lang)
+                    help: Tr.t("set.footerHelp", root.lang)
 
                     Schalter {
                         an: root.val("showFooter", true)
@@ -504,8 +509,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Blockangaben"
-                    help: "Das Feld links mit Höhe, Wert und Pool."
+                    label: Tr.t("set.blockInfo", root.lang)
+                    help: Tr.t("set.blockInfoHelp", root.lang)
 
                     Schalter {
                         an: root.val("showInfo", true)
@@ -514,8 +519,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Letzter Block als Kachelgrafik"
-                    help: "Das Quadrat in der Mitte. Ohne es bleibt nur die Halde — auf einem schmalen Widget oft genau richtig."
+                    label: Tr.t("set.blockTiles", root.lang)
+                    help: Tr.t("set.blockTilesHelp", root.lang)
 
                     Schalter {
                         an: root.val("showBlock", true)
@@ -524,8 +529,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Legende"
-                    help: "Größen- und Farbtafel rechts, dazu der Umschalter unten."
+                    label: Tr.t("set.legend", root.lang)
+                    help: Tr.t("set.legendHelp", root.lang)
 
                     Schalter {
                         an: root.val("showLegend", true)
@@ -534,8 +539,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Trennlinie über der Halde"
-                    help: "Die gestrichelte Linie markiert die Oberkante des Mempools."
+                    label: Tr.t("set.ruler", root.lang)
+                    help: Tr.t("set.rulerHelp", root.lang)
 
                     Schalter {
                         an: root.val("showRuler", true)
@@ -544,8 +549,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Weichzeichnung hinter der Schrift"
-                    help: "Kostet etwas Rechenzeit, macht die Angaben über hellen Kacheln aber lesbar."
+                    label: Tr.t("set.blur", root.lang)
+                    help: Tr.t("set.blurHelp", root.lang)
 
                     Schalter {
                         an: root.val("frosted", true)
@@ -560,25 +565,25 @@ Item {
                 visible: root.tab === "clock"
 
                 Zeile {
-                    label: "Kennzahlen"
-                    help: "Was unter der Blockhöhe steht. Nichts ausgewählt heißt: alles."
+                    label: Tr.t("set.metrics", root.lang)
+                    help: Tr.t("set.metricsClockHelp", root.lang)
 
                     Haken {
                         schluessel: "clockFields"
                         alle: ["fee", "price", "moscow", "mempool", "hashrate"]
                         eintraege: [
-                            { "id": "fee", "l": "Gebühr" },
-                            { "id": "price", "l": "Kurs" },
-                            { "id": "moscow", "l": "Moscow Time" },
-                            { "id": "mempool", "l": "Mempool" },
-                            { "id": "hashrate", "l": "Hashrate" }
+                            { "id": "fee", "l": Tr.t("fee", root.lang) },
+                            { "id": "price", "l": Tr.t("price", root.lang) },
+                            { "id": "moscow", "l": Tr.t("clock.moscow", root.lang) },
+                            { "id": "mempool", "l": Tr.t("mempool", root.lang) },
+                            { "id": "hashrate", "l": Tr.t("hashrate", root.lang) }
                         ]
                     }
                 }
 
                 Zeile {
-                    label: "Schwierigkeit und Halving"
-                    help: "Die beiden Zeilen mit Fortschrittsbalken am unteren Rand."
+                    label: Tr.t("set.diffBars", root.lang)
+                    help: Tr.t("set.diffBarsHelp", root.lang)
 
                     Schalter {
                         an: root.val("clockBars", true)
@@ -587,8 +592,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Hashrate-Kurve"
-                    help: "Der schmale Verlauf ganz unten, drei Tage."
+                    label: Tr.t("set.hashChart", root.lang)
+                    help: Tr.t("set.hashChartHelp", root.lang)
 
                     Schalter {
                         an: root.val("clockSpark", true)
@@ -597,8 +602,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Uhrzeit"
-                    help: "Für ein Tablet an der Wand — dann ist es auch eine Uhr."
+                    label: Tr.t("set.clockTime", root.lang)
+                    help: Tr.t("set.clockTimeHelp", root.lang)
 
                     Schalter {
                         an: root.val("clockTime", false)
@@ -613,26 +618,26 @@ Item {
                 visible: root.tab === "miner"
 
                 Zeile {
-                    label: "Kennzahlen"
-                    help: "Ab sechs Stück verteilen sie sich auf Zeilen zu je drei."
+                    label: Tr.t("set.metrics", root.lang)
+                    help: Tr.t("set.metricsMinerHelp", root.lang)
 
                     Haken {
                         schluessel: "minerFields"
                         alle: ["temp", "power", "fan", "error", "shares", "uptime"]
                         eintraege: [
-                            { "id": "temp", "l": "Temperatur" },
-                            { "id": "power", "l": "Leistung" },
-                            { "id": "fan", "l": "Lüfter" },
-                            { "id": "error", "l": "Fehlerquote" },
-                            { "id": "shares", "l": "Freigaben" },
-                            { "id": "uptime", "l": "Laufzeit" }
+                            { "id": "temp", "l": Tr.t("miner.temp", root.lang) },
+                            { "id": "power", "l": Tr.t("miner.power", root.lang) },
+                            { "id": "fan", "l": Tr.t("miner.fan", root.lang) },
+                            { "id": "error", "l": Tr.t("miner.errorRate", root.lang) },
+                            { "id": "shares", "l": Tr.t("miner.shares", root.lang) },
+                            { "id": "uptime", "l": Tr.t("miner.uptime", root.lang) }
                         ]
                     }
                 }
 
                 Zeile {
-                    label: "Verlaufskurve"
-                    help: "Hashrate und Temperatur der letzten Viertelstunde."
+                    label: Tr.t("set.minerChart", root.lang)
+                    help: Tr.t("set.minerChartHelp", root.lang)
 
                     Schalter {
                         an: root.val("minerChart", true)
@@ -641,8 +646,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Rechenwerke einzeln"
-                    help: "Die Balken je ASIC-Kern — zeigt, ob einer schwächelt."
+                    label: Tr.t("set.minerDomains", root.lang)
+                    help: Tr.t("set.minerDomainsHelp", root.lang)
 
                     Schalter {
                         an: root.val("minerDomains", true)
@@ -651,8 +656,8 @@ Item {
                 }
 
                 Zeile {
-                    label: "Bestenliste"
-                    help: "Die höchsten erreichten Schwierigkeiten."
+                    label: Tr.t("set.minerBoard", root.lang)
+                    help: Tr.t("set.minerBoardHelp", root.lang)
 
                     Schalter {
                         an: root.val("minerBoard", true)
@@ -667,14 +672,14 @@ Item {
                 visible: root.tab === "explorer"
 
                 Zeile {
-                    label: "Farbe der Kachelgrafiken"
-                    help: "Gilt für Blöcke und den geplanten Block im Explorer."
+                    label: Tr.t("set.explorerColor", root.lang)
+                    help: Tr.t("set.explorerColorHelp", root.lang)
 
                     Wahl {
                         gewaehlt: root.val("tileColorMode", "fee")
                         eintraege: [
-                            { "k": "fee", "l": "Gebühr" },
-                            { "k": "type", "l": "Art" }
+                            { "k": "fee", "l": Tr.t("color.fee", root.lang) },
+                            { "k": "type", "l": Tr.t("color.type", root.lang) }
                         ]
                         onPicked: function (k) {
                             root.changed("tileColorMode", k);
@@ -683,41 +688,41 @@ Item {
                 }
 
                 Zeile {
-                    label: "Abschnitte der Startseite"
-                    help: "Was auf der Explorer-Startseite untereinander steht. Nichts ausgewählt heißt: alles."
+                    label: Tr.t("set.homeParts", root.lang)
+                    help: Tr.t("set.homePartsHelp", root.lang)
 
                     Haken {
                         schluessel: "explorerParts"
                         alle: ["stats", "chain", "next", "panels", "recent"]
                         eintraege: [
-                            { "id": "stats", "l": "Kennzahlenzeile" },
-                            { "id": "chain", "l": "Blockleiste" },
-                            { "id": "next", "l": "Nächster Block" },
-                            { "id": "panels", "l": "Tafeln" },
-                            { "id": "recent", "l": "Letzte Transaktionen" }
+                            { "id": "stats", "l": Tr.t("set.metrics", root.lang) },
+                            { "id": "chain", "l": Tr.t("chain.label", root.lang) },
+                            { "id": "next", "l": Tr.t("nextBlock", root.lang) },
+                            { "id": "panels", "l": Tr.t("set.whichPanels", root.lang) },
+                            { "id": "recent", "l": Tr.t("addr.lastTxs", root.lang) }
                         ]
                     }
                 }
 
                 Zeile {
-                    label: "Welche Tafeln"
-                    help: "Die vier Kästchen unter der Blockleiste."
+                    label: Tr.t("set.whichPanels", root.lang)
+                    help: Tr.t("set.whichPanelsHelp", root.lang)
 
                     Haken {
                         schluessel: "explorerPanels"
                         alle: ["fees", "difficulty", "mempool", "rbf"]
                         eintraege: [
-                            { "id": "fees", "l": "Gebühren" },
-                            { "id": "difficulty", "l": "Schwierigkeit" },
-                            { "id": "mempool", "l": "Mempool" },
+                            { "id": "fees", "l": Tr.t("fees", root.lang) },
+                            { "id": "difficulty", "l": Tr.t("difficulty", root.lang) },
+                            { "id": "mempool", "l": Tr.t("mempool", root.lang) },
                             { "id": "rbf", "l": "RBF" }
                         ]
                     }
                 }
 
                 Zeile {
-                    label: "Geplanten Block mitverfolgen"
-                    help: "Hält die Kachelgrafik des nächsten Blocks aktuell. Kostet rund 8 kB/s, solange die Seite offen ist."
+                    label: Tr.t("set.trackProjected", root.lang)
+                    help: Tr.t("set.trackProjectedHelp", root.lang)
 
                     Schalter {
                         an: root.val("explorerLive", true)
@@ -735,7 +740,7 @@ Item {
                 Text {
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Wallet-Ansicht"
+                    text: Tr.t("set.walletTitle", root.lang)
                     color: root.textColor
                     font.pixelSize: root.uiFont * 1.15
                 }
@@ -765,7 +770,7 @@ Item {
                         Text {
                             width: parent.width
                             wrapMode: Text.WordWrap
-                            text: "Bevor Sie das einschalten"
+                            text: Tr.t("set.walletWarnTitle", root.lang)
                             color: root.accentColor
                             font.pixelSize: root.uiFont
                             font.bold: true
@@ -774,17 +779,7 @@ Item {
                         Text {
                             width: parent.width
                             wrapMode: Text.WordWrap
-                            text: "Ihr Guthaben ist nicht in Gefahr: hier liegt nur ein öffentlicher "
-                                  + "Schlüssel, das Programm kann nicht signieren und nimmt keinen "
-                                  + "privaten Schlüssel entgegen. Der Schlüssel verlässt das Gerät nie.\n\n"
-                                  + "Was Sie aufgeben, ist Privatsphäre. Die Adressen werden hier "
-                                  + "abgeleitet und einzeln bei mempool.space abgefragt — wer viele "
-                                  + "Adressen kurz nacheinander von derselben Stelle abfragt, zeigt "
-                                  + "dem Betreiber, dass sie zusammengehören. Er sieht damit Ihre "
-                                  + "Wallet, ohne sie je bekommen zu haben.\n\n"
-                                  + "Vollständig lösen lässt sich das nur mit einem eigenen Knoten "
-                                  + "(electrs). Auf einem fremden oder geteilten Rechner sollten Sie "
-                                  + "diese Ansicht ausgelassen lassen."
+                            text: Tr.t("set.walletWarn", root.lang)
                             color: root.textColor
                             font.pixelSize: root.uiFont * 0.85
                         }
@@ -808,9 +803,8 @@ Item {
                             id: zusage
 
                             anchors.centerIn: parent
-                            text: root.val("walletEnabled", false)
-                                ? "Wallet-Ansicht wieder ausblenden"
-                                : "Verstanden — Wallet-Ansicht einschalten"
+                            text: Tr.t(root.val("walletEnabled", false)
+                                       ? "set.walletDisable" : "set.walletEnable", root.lang)
                             color: root.val("walletEnabled", false) ? root.dimColor : "#0b0b12"
                             font.pixelSize: root.uiFont * 0.9
                             font.bold: !root.val("walletEnabled", false)
@@ -829,9 +823,8 @@ Item {
                     width: parent.width
                     wrapMode: Text.WordWrap
                     visible: root.val("walletEnabled", false)
-                    text: "Eingetragen wird auf der Kommandozeile — der Dienst im Hintergrund "
-                          + "nimmt nichts entgegen:\n"
-                          + "    btcfeed --watch-add <xpub|ypub|zpub> \"Name\""
+                    text: Tr.t("set.walletCli", root.lang)
+                          + "\n    btcfeed --watch-add <xpub|ypub|zpub> \"Name\""
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.85
                     font.family: "monospace"

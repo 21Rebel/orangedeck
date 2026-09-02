@@ -5,6 +5,7 @@
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "money.js" as Money
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -31,6 +32,7 @@ Column {
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
     property real uiFont: 13
+    property string lang: "de"
 
     signal blockPicked(string hash)
     signal txPicked(string txid)
@@ -40,16 +42,11 @@ Column {
 
     spacing: uiFont * 1.4
 
+    // Tausendertrennung in der Schreibweise der Sprache -- Deutsch nimmt den
+    // Punkt, Englisch das Komma. Das ist keine Kosmetik: "1.234" heisst je
+    // nach Sprache tausendzweihundert oder eins Komma zwei.
     function grp(n) {
-        if (n === undefined || n === null)
-            return "–";
-        var t = String(Math.round(n)), out = "", c = 0;
-        for (var i = t.length - 1; i >= 0; i--) {
-            out = t[i] + out;
-            if (++c % 3 === 0 && i > 0)
-                out = "." + out;
-        }
-        return out;
+        return Tr.group(n, root.lang);
     }
 
     // ------------------------------------------------------- Kennzahlen
@@ -60,17 +57,19 @@ Column {
 
         Repeater {
             model: [
-                { "k": "Blockhöhe", "v": root.feed ? root.grp(root.feed.tipHeight) : "–" },
-                { "k": "Im Mempool", "v": root.feed ? root.grp(root.feed.mempoolCount) : "–" },
-                { "k": "Gebühr", "v": root.feed && root.feed.feeFastest
-                    ? root.feed.feeFastest.toFixed(1).replace(".", ",") + " sat/vB" : "–" },
-                { "k": "Hashrate", "v": (root.feed && root.feed.hashrate.current)
+                { "k": Tr.t("blockHeight", root.lang), "v": root.feed ? root.grp(root.feed.tipHeight) : "–" },
+                { "k": Tr.t("explorer.inMempool", root.lang), "v": root.feed ? root.grp(root.feed.mempoolCount) : "–" },
+                { "k": Tr.t("fee", root.lang), "v": root.feed && root.feed.feeFastest
+                    ? Tr.fixed(root.feed.feeFastest, 1, root.lang) + " sat/vB" : "–" },
+                { "k": Tr.t("hashrate", root.lang), "v": (root.feed && root.feed.hashrate.current)
                     ? Math.round(root.feed.hashrate.current / 1e18) + " EH/s" : "–" },
-                { "k": "Schwierigkeit", "v": (root.feed && root.feed.difficulty.change !== undefined)
+                { "k": Tr.t("difficulty", root.lang), "v": (root.feed && root.feed.difficulty.change !== undefined)
                     ? (root.feed.difficulty.change >= 0 ? "+" : "")
-                      + root.feed.difficulty.change.toFixed(2).replace(".", ",") + " %" : "–" },
-                { "k": "Kurs", "v": root.feed
-                    ? Money.price1(root.feed.price, root.currency) : "–" }
+                      + Tr.fixed(root.feed.difficulty.change, 2, root.lang) + " %" : "–" },
+                { "k": Tr.t("price", root.lang), "v": root.feed
+                    ? Tr.price1(Money.rate(root.feed.price, root.currency),
+                                Money.symbol(Money.actual(root.feed.price, root.currency)),
+                                root.lang) : "–" }
             ]
 
             Column {
@@ -100,6 +99,7 @@ Column {
         width: parent.width
         visible: root.zeigt("chain")
         feed: root.feed
+        lang: root.lang
         textColor: root.textColor
         dimColor: root.dimColor
         accentColor: root.accentColor
@@ -117,7 +117,7 @@ Column {
         id: historieLink
 
         visible: root.zeigt("chain")
-        text: "Alle Blöcke durchblättern ›"
+        text: Tr.t("explorer.browseAll", root.lang)
         color: historieMaus.containsMouse ? root.accentColor : root.dimColor
         font.pixelSize: root.uiFont * 0.85
 
@@ -139,6 +139,7 @@ Column {
         feed: root.feed
         live: root.live && root.zeigt("next")
         colorMode: root.colorMode
+        lang: root.lang
         onColorModeRequested: function (m) {
             root.colorModeRequested(m);
         }
@@ -156,6 +157,7 @@ Column {
         width: parent.width
         visible: root.zeigt("panels")
         panels: root.panelIds
+        lang: root.lang
         feed: root.feed
         textColor: root.textColor
         dimColor: root.dimColor
@@ -174,7 +176,7 @@ Column {
                  && (root.feed.snap.recent || []).length > 0
 
         Text {
-            text: "Zuletzt im Mempool gesehen"
+            text: Tr.t("explorer.recent", root.lang)
             color: root.dimColor
             font.pixelSize: root.uiFont * 0.85
         }
@@ -214,7 +216,7 @@ Column {
                     Text {
                         width: root.uiFont * 6
                         text: trow.modelData.r !== undefined
-                            ? trow.modelData.r.toFixed(2).replace(".", ",") + " sat/vB" : ""
+                            ? Tr.fixed(trow.modelData.r, 2, root.lang) + " sat/vB" : ""
                         color: root.dimColor
                         font.pixelSize: root.uiFont * 0.85
                     }
@@ -222,7 +224,7 @@ Column {
                     Text {
                         // `a` ist der Betrag in sat, `v` die virtuelle Groesse
                         text: trow.modelData.a !== undefined
-                            ? "₿ " + (trow.modelData.a / 1e8).toFixed(8).replace(".", ",") : ""
+                            ? "₿ " + Tr.fixed(trow.modelData.a / 1e8, 8, root.lang) : ""
                         color: root.dimColor
                         font.pixelSize: root.uiFont * 0.85
                     }

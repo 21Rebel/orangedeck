@@ -36,6 +36,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Widgets
+import "strings.js" as Tr
 
 Item {
     id: root
@@ -64,10 +65,15 @@ Item {
     // erscheint. Die uebrigen Einstellungen bleiben im Dashboard auf den
     // Vorgaben: der Tab ist eine Kurzfassung, keine zweite Anwendung.
     property string currency: SettingsData.getPluginSetting(pid, "currency", "eur")
+    property string lang: SettingsData.getPluginSetting(pid, "lang", "de")
     readonly property var tabViews: walletEnabled ? [0, 1, 2, 3, 4] : [0, 1, 2, 3]
-    readonly property var tabLabels: walletEnabled
-        ? ["Feed", "BlockClock", "Miner", "Explorer", "Wallet"]
-        : ["Feed", "BlockClock", "Miner", "Explorer"]
+    readonly property var tabLabels: {
+        var l = [Tr.t("tab.feed", lang), Tr.t("tab.clock", lang),
+                 Tr.t("tab.miner", lang), Tr.t("tab.explorer", lang)];
+        if (walletEnabled)
+            l.push(Tr.t("tab.wallet", lang));
+        return l;
+    }
     property string sizeMode: SettingsData.getPluginSetting(pid, "sizeMode", "value")
     property bool showInfo: SettingsData.getPluginSetting(pid, "showInfo", true)
     property bool showLegend: SettingsData.getPluginSetting(pid, "showLegend", true)
@@ -128,6 +134,7 @@ Item {
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
         feed: feedState
+        lang: root.lang
         currency: root.currency
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
@@ -142,6 +149,7 @@ Item {
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
         feed: feedState
+        lang: root.lang
         currency: root.currency
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
@@ -156,6 +164,7 @@ Item {
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
         feed: feedState
+        lang: root.lang
         currency: root.currency
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
@@ -181,6 +190,7 @@ Item {
         // nichts ueberdecken.
         showActions: false
         feed: feedState
+        lang: root.lang
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
         accentColor: Theme.primary
@@ -192,6 +202,7 @@ Item {
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
         feed: feedState
+        lang: root.lang
         headerVisible: false
         onTxActivated: function (txid) {
             root.put("view", 3);

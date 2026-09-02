@@ -14,6 +14,7 @@
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -36,6 +37,7 @@ Column {
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
     property real uiFont: 13
+    property string lang: "de"
 
     signal txPicked(string txid)
     signal colorModeRequested(string mode)
@@ -58,16 +60,11 @@ Column {
 
     spacing: uiFont * 0.5
 
+    // Tausendertrennung in der Schreibweise der Sprache -- Deutsch nimmt den
+    // Punkt, Englisch das Komma. Das ist keine Kosmetik: "1.234" heisst je
+    // nach Sprache tausendzweihundert oder eins Komma zwei.
     function grp(n) {
-        if (n === undefined || n === null)
-            return "–";
-        var t = String(Math.round(n)), out = "", c = 0;
-        for (var i = t.length - 1; i >= 0; i--) {
-            out = t[i] + out;
-            if (++c % 3 === 0 && i > 0)
-                out = "." + out;
-        }
-        return out;
+        return Tr.group(n, root.lang);
     }
 
     function refresh() {
@@ -143,7 +140,8 @@ Column {
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: root.rank === 0 ? "Der nächste Block" : (root.rank + 1) + ". Block voraus"
+                text: root.rank === 0 ? Tr.t("nextBlock", root.lang)
+                                      : Tr.t("proj.nth", root.lang, root.rank + 1)
                 color: root.textColor
                 font.pixelSize: root.uiFont * 1.05
             }
@@ -164,8 +162,8 @@ Column {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.info
-                    ? root.grp(root.info.nTx) + " Transaktionen · ~"
-                      + root.info.medianFee.toFixed(1).replace(".", ",") + " sat/vB"
+                    ? Tr.t("proj.summary", root.lang, root.grp(root.info.nTx),Tr.fixed(
+                           root.info.medianFee, 1, root.lang))
                     : ""
                 color: root.dimColor
                 font.pixelSize: root.uiFont * 0.85
@@ -177,8 +175,7 @@ Column {
         width: parent.width
         visible: root.sammelposten && root.info !== null
         text: root.info
-            ? "Sammelposten: der ganze übrige Mempool, rund "
-              + Math.round(root.info.blockVSize / 1e6) + " Blöcke voll"
+            ? Tr.t("proj.overflow", root.lang, Math.round(root.info.blockVSize / 1e6))
             : ""
         color: root.dimColor
         font.pixelSize: root.uiFont * 0.8
@@ -191,16 +188,16 @@ Column {
             if (root.error.length)
                 return root.error;
             if (root.busy)
-                return "Transaktionen werden geholt …";
+                return Tr.t("proj.fetching", root.lang);
             if (!root.tiles)
                 return "";
             if (root.unveraendert || (tileView.addedCount === 0 && tileView.removedCount === 0))
-                return "unverändert";
+                return Tr.t("proj.unchanged", root.lang);
             var s = [];
             if (tileView.addedCount > 0)
-                s.push("+" + tileView.addedCount + " hinzugekommen");
+                s.push(Tr.t("proj.changed", root.lang, tileView.addedCount));
             if (tileView.removedCount > 0)
-                s.push("−" + tileView.removedCount + " verdrängt");
+                s.push(Tr.t("proj.dropped", root.lang, tileView.removedCount));
             return s.join("  ·  ");
         }
         color: root.error.length ? "#e06c6c" : root.dimColor
@@ -211,6 +208,7 @@ Column {
         width: parent.width
         visible: root.tiles !== null
         mode: root.colorMode
+        lang: root.lang
         counts: tileView.typeCounts
         total: tileView.squares.length
         textColor: root.textColor

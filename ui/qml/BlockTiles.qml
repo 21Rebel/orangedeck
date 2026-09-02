@@ -24,6 +24,7 @@ import QtQuick
 import "mondrian.js" as Mondrian
 import "colors.js" as Palette
 import "txtype.js" as TxType
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -39,6 +40,7 @@ Item {
     property string colorMode: "fee"
     property color dimColor: "#9a94a6"
     property real labelSize: 11
+    property string lang: "de"
 
     // Je Kachel: { sq: {x,y,r}, b: Gebuehrenklasse, k: Art, d: Tooltip-Angaben }
     property var squares: []
@@ -570,8 +572,8 @@ Item {
             Text {
                 visible: tipCol.d !== null && tipCol.d !== undefined
                 text: tipCol.d
-                    ? (tipCol.d[1] + " vByte · " + tipCol.d[4] + " sat/vB · "
-                       + (tipCol.d[3] / 1e8).toFixed(8).replace(".", ",") + " ₿")
+                    ? Tr.t("tile.tooltip", root.lang, tipCol.d[1], tipCol.d[4],Tr.fixed(
+                           (tipCol.d[3] / 1e8), 8, root.lang))
                     : ""
                 color: root.dimColor
                 font.pixelSize: root.labelSize * 0.92

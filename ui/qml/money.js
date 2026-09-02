@@ -58,34 +58,9 @@ function actual(price, cur) {
     return cur;
 }
 
-function group(n) {
-    if (n === undefined || n === null || isNaN(n))
-        return "–";
-    var t = String(Math.round(n)), out = "", c = 0;
-    for (var i = t.length - 1; i >= 0; i--) {
-        out = t[i] + out;
-        if (++c % 3 === 0 && i > 0)
-            out = "." + out;
-    }
-    return out;
-}
-
-// Satoshi -> Betrag in der gewaehlten Waehrung, mit Zeichen
-function fiat(sats, price, cur) {
-    var r = rate(price, cur);
-    if (!r || !sats)
-        return "";
-    var v = sats / 1e8 * r;
-    var z = symbol(actual(price, cur));
-    if (v >= 1e9)
-        return "≈ " + (v / 1e9).toFixed(2).replace(".", ",") + " Mrd " + z;
-    if (v >= 1e6)
-        return "≈ " + Math.round(v / 1e6) + " Mio " + z;
-    return "≈ " + group(v) + " " + z;
-}
-
-// Der Kurs selbst, also der Preis eines ganzen Bitcoin
-function price1(price, cur) {
-    var r = rate(price, cur);
-    return r ? group(r) + " " + symbol(actual(price, cur)) : "–";
-}
+// **Kein Formatieren hier.** Zahlen schreibt `strings.js`, denn die
+// Schreibweise haengt an der Sprache und nicht an der Waehrung. Ein
+// `.import` von dort waere der naheliegende Weg gewesen -- er traegt aber
+// nicht: eine `.pragma library` kann kein anderes Skript einbinden, das
+// Laden scheitert stumm ("Script ... unavailable"). Also andersherum: hier
+// nur Kurs und Zeichen, formatiert wird beim Aufrufer.

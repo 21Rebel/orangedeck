@@ -8,6 +8,7 @@
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "money.js" as Money
+import "strings.js" as Tr
 
 // Der Repeater unten greift auf `root` zu. Ohne diese Zeile warnt qmllint,
 // dass IDs aus dem umgebenden Bauteil in geschachtelten Bauteilen nicht
@@ -29,6 +30,7 @@ Item {
     property bool showBars: true
     property bool showSpark: true
     property bool showTime: false
+    property string lang: "de"
 
     readonly property real kurs: Money.rate(price, currency)
     readonly property string waehrung: Money.symbol(Money.actual(price, currency))
@@ -55,22 +57,17 @@ Item {
     }
     readonly property int halvingLeft: halvingHeight > 0 ? halvingHeight - feed.tipHeight : 0
 
+    // Tausendertrennung in der Schreibweise der Sprache -- Deutsch nimmt den
+    // Punkt, Englisch das Komma. Das ist keine Kosmetik: "1.234" heisst je
+    // nach Sprache tausendzweihundert oder eins Komma zwei.
     function grp(n) {
-        if (n === undefined || n === null)
-            return "–";
-        var t = String(Math.round(n)), out = "", c = 0;
-        for (var i = t.length - 1; i >= 0; i--) {
-            out = t[i] + out;
-            if (++c % 3 === 0 && i > 0)
-                out = "." + out;
-        }
-        return out;
+        return Tr.group(n, root.lang);
     }
 
     function comma(v, digits) {
         if (v === undefined || v === null)
             return "–";
-        return v.toFixed(digits === undefined ? 1 : digits).replace(".", ",");
+        return Tr.fixed(v, digits === undefined ? 1 : digits, root.lang);
     }
 
     // "noch 3 Tage 4 Std" -- ohne Sekunden, das flackert nur
@@ -80,10 +77,10 @@ Item {
         var min = Math.floor(ms / 60000);
         var d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60), m = min % 60;
         if (d > 0)
-            return d + (d === 1 ? " Tag " : " Tage ") + h + " Std";
+            return Tr.t("duration.dayHour", root.lang, d, h);
         if (h > 0)
-            return h + " Std " + m + " Min";
-        return m + " Min";
+            return Tr.t("duration.hourMin", root.lang, h, m);
+        return Tr.t("duration.min", root.lang, m);
     }
 
     // Auch hier kann es eng werden -- im Dashboard-Tab und auf einem hochkant
@@ -136,7 +133,7 @@ Item {
         // ---------------------------------------------------- Blockhoehe
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Blockhöhe"
+            text: Tr.t("blockHeight", root.lang)
             color: root.dimColor
             font.pixelSize: root.scaleUnit * 0.8
             font.letterSpacing: root.scaleUnit * 0.08
@@ -165,12 +162,12 @@ Item {
                     var alle = [
                         {
                             "id": "fee",
-                            "k": "Gebühr",
+                            "k": Tr.t("fee", root.lang),
                             "v": root.comma(root.fees.fastest) + " sat/vB"
                         },
                         {
                             "id": "price",
-                            "k": "Kurs",
+                            "k": Tr.t("price", root.lang),
                             "v": root.kurs ? root.grp(root.kurs) + " " + root.waehrung : "–"
                         },
                         {
@@ -179,17 +176,17 @@ Item {
                             // faellt -- sie misst Bitcoin in Geld statt Geld
                             // in Bitcoin, und genau darum geht es dabei.
                             "id": "moscow",
-                            "k": "Moscow Time",
+                            "k": Tr.t("clock.moscow", root.lang),
                             "v": root.kurs ? root.grp(1e8 / root.kurs) + " sat" : "–"
                         },
                         {
                             "id": "mempool",
-                            "k": "Mempool",
+                            "k": Tr.t("mempool", root.lang),
                             "v": root.feed ? root.grp(root.feed.mempoolCount) : "–"
                         },
                         {
                             "id": "hashrate",
-                            "k": "Hashrate",
+                            "k": Tr.t("hashrate", root.lang),
                             "v": root.hr.current ? root.comma(root.hr.current / 1e18, 0) + " EH/s" : "–"
                         }
                     ];
@@ -237,8 +234,10 @@ Item {
                 width: parent.width
 
                 Text {
-                    text: "Schwierigkeit " + (root.diff.change !== undefined
-                        ? (root.diff.change >= 0 ? "+" : "") + root.comma(root.diff.change, 2) + " %" : "")
+                    text: Tr.t("clock.diffLine", root.lang,
+                               root.diff.change !== undefined
+                                   ? (root.diff.change >= 0 ? "+" : "")
+                                     + root.comma(root.diff.change, 2) + " %" : "")
                     color: root.dimColor
                     font.pixelSize: root.scaleUnit * 0.62
                 }
@@ -250,7 +249,9 @@ Item {
 
                 Text {
                     text: root.diff.remainingBlocks !== undefined
-                        ? "noch " + root.grp(root.diff.remainingBlocks) + " Blöcke · " + root.span(root.diff.remainingTime)
+                        ? Tr.t("clock.remaining", root.lang,
+                               root.grp(root.diff.remainingBlocks),
+                               root.span(root.diff.remainingTime))
                         : ""
                     color: root.dimColor
                     font.pixelSize: root.scaleUnit * 0.62
@@ -279,9 +280,9 @@ Item {
 
             Text {
                 text: root.halvingLeft > 0
-                    ? "Halving bei " + root.grp(root.halvingHeight) + " · noch "
-                      + root.grp(root.halvingLeft) + " Blöcke · rund "
-                      + root.span(root.halvingLeft * 600000)
+                    ? Tr.t("clock.halving", root.lang, root.grp(root.halvingHeight),
+                           root.grp(root.halvingLeft),
+                           root.span(root.halvingLeft * 600000))
                     : ""
                 color: root.dimColor
                 font.pixelSize: root.scaleUnit * 0.62
@@ -334,7 +335,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: root.scaleUnit * 0.6
         visible: root.feed && !root.feed.online
-        text: "keine Verbindung"
+        text: Tr.t("offline", root.lang)
         color: "#d9534f"
         font.pixelSize: root.scaleUnit * 0.62
     }

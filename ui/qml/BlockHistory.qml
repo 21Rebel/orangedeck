@@ -8,6 +8,7 @@
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -19,6 +20,7 @@ Column {
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
     property real uiFont: 13
+    property string lang: "de"
 
     signal blockPicked(string hash)
 
@@ -35,16 +37,11 @@ Column {
     readonly property int unterste: blocks.length
         ? (blocks[blocks.length - 1].height || 0) : 0
 
+    // Tausendertrennung in der Schreibweise der Sprache -- Deutsch nimmt den
+    // Punkt, Englisch das Komma. Das ist keine Kosmetik: "1.234" heisst je
+    // nach Sprache tausendzweihundert oder eins Komma zwei.
     function grp(n) {
-        if (n === undefined || n === null)
-            return "–";
-        var t = String(Math.round(n)), out = "", c = 0;
-        for (var i = t.length - 1; i >= 0; i--) {
-            out = t[i] + out;
-            if (++c % 3 === 0 && i > 0)
-                out = "." + out;
-        }
-        return out;
+        return Tr.group(n, root.lang);
     }
 
     function ago(ts) {
@@ -52,11 +49,11 @@ Column {
             return "";
         var m = Math.floor(Math.max(0, Date.now() / 1000 - ts) / 60);
         if (m < 60)
-            return "vor " + m + " Min";
+            return Tr.t("ago.min", root.lang, m);
         var h = Math.floor(m / 60);
         if (h < 48)
-            return "vor " + h + " Std";
-        return "vor " + Math.floor(h / 24) + " Tagen";
+            return Tr.t("ago.hour", root.lang, h);
+        return Tr.t("ago.day", root.lang, Math.floor(h / 24));
     }
 
     function laden() {
@@ -85,7 +82,7 @@ Column {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: "Blockhistorie"
+            text: Tr.t("history.title", root.lang)
             color: root.textColor
             font.pixelSize: root.uiFont * 1.2
         }
@@ -93,8 +90,9 @@ Column {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: root.blocks.length
-                ? root.grp(root.unterste) + " bis " + root.grp(root.oberste)
-                : (root.busy ? "lädt …" : "")
+                ? Tr.t("history.range", root.lang, root.grp(root.unterste),
+                       root.grp(root.oberste))
+                : (root.busy ? Tr.t("loading", root.lang) : "")
             color: root.dimColor
             font.pixelSize: root.uiFont * 0.85
         }
@@ -159,7 +157,7 @@ Column {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     width: root.uiFont * 4.5
-                    text: (zeile.modelData.size / 1024 / 1024).toFixed(2).replace(".", ",") + " MB"
+                    text: Tr.fixed((zeile.modelData.size / 1024 / 1024), 2, root.lang) + " MB"
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.85
                 }
@@ -170,7 +168,7 @@ Column {
                     text: zeile.ex.medianFee !== undefined
                         ? "~" + (zeile.ex.medianFee >= 10
                             ? Math.round(zeile.ex.medianFee)
-                            : zeile.ex.medianFee.toFixed(1).replace(".", ",")) + " sat/vB"
+                            : Tr.fixed(zeile.ex.medianFee, 1, root.lang)) + " sat/vB"
                         : ""
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.85
@@ -180,7 +178,7 @@ Column {
                     anchors.verticalCenter: parent.verticalCenter
                     width: root.uiFont * 6
                     text: zeile.ex.reward
-                        ? "₿ " + (zeile.ex.reward / 1e8).toFixed(3).replace(".", ",") : ""
+                        ? "₿ " + Tr.fixed(zeile.ex.reward / 1e8, 3, root.lang) : ""
                     color: root.textColor
                     font.pixelSize: root.uiFont * 0.85
                 }
@@ -212,9 +210,9 @@ Column {
 
         Repeater {
             model: [
-                { "k": "neueste", "l": "‹‹ neueste" },
-                { "k": "neuer", "l": "‹ neuer" },
-                { "k": "aelter", "l": "älter ›" }
+                { "k": "neueste", "l": Tr.t("history.newest", root.lang) },
+                { "k": "neuer", "l": Tr.t("history.newer", root.lang) },
+                { "k": "aelter", "l": Tr.t("history.older", root.lang) }
             ]
 
             Rectangle {
@@ -273,9 +271,7 @@ Column {
     Text {
         width: parent.width
         wrapMode: Text.WordWrap
-        text: "Die Zeitangabe ist der Zeitstempel des Blocks, nicht die Uhrzeit "
-              + "des Fundes — er darf um bis zu zwei Stunden abweichen und muss "
-              + "nur über dem Mittel der elf vorherigen Blöcke liegen."
+        text: Tr.t("history.timeNote", root.lang)
         color: root.dimColor
         font.pixelSize: root.uiFont * 0.75
     }

@@ -4,6 +4,7 @@
 import QtQuick
 import "colors.js" as Palette
 import "money.js" as Money
+import "strings.js" as Tr
 import "txtype.js" as TxType
 
 Item {
@@ -38,6 +39,7 @@ Item {
     property color accentColor: "#c9a227"
     property color lineColor: "#2a2a38"
     property int baseFont: 12
+    property string lang: "de"
 
     readonly property bool showHeader: headerVisible && height >= 108
     readonly property bool showFooter: footerVisible && height >= 168
@@ -92,7 +94,9 @@ Item {
     }
 
     function fiat(sats) {
-        return Money.fiat(sats, root.feed ? root.feed.price : null, root.currency);
+        var pr = root.feed ? root.feed.price : null;
+        return Tr.fiat(sats, Money.rate(pr, root.currency),
+                       Money.symbol(Money.actual(pr, root.currency)), root.lang);
     }
 
     // Blockanimation von Hand ausloesen (Taste b im eigenen Fenster) -- zum
@@ -162,7 +166,7 @@ Item {
                 }
 
                 Text {
-                    text: "Block " + root.grp(root.tip.height)
+                    text: Tr.t("block", root.lang) + " " + root.grp(root.tip.height)
                     color: root.textColor
                     font.pixelSize: root.baseFont + 2
                     font.weight: Font.DemiBold
@@ -185,7 +189,8 @@ Item {
 
             Text {
                 anchors.right: parent.right
-                text: root.grp(root.feed ? root.feed.mempoolCount : 0) + " im Mempool"
+                text: Tr.t("feed.inMempool", root.lang,
+                           root.grp(root.feed ? root.feed.mempoolCount : 0))
                 color: root.textColor
                 font.pixelSize: root.baseFont
             }
@@ -214,6 +219,7 @@ Item {
         paused: root.paused
         density: root.density
         colorMode: root.colorMode
+        lang: root.lang
         sizeMode: root.sizeMode
         showBlock: root.blockVisible && height > 130
         showRuler: root.rulerVisible
@@ -236,7 +242,7 @@ Item {
         visible: root.showInfo && root.block.height !== undefined
 
         Text {
-            text: "Letzter Block"
+            text: Tr.t("lastBlock", root.lang)
             color: root.dimColor
             font.pixelSize: root.baseFont - 1
         }
@@ -262,7 +268,7 @@ Item {
         // geflossen ist.
         Text {
             visible: !root.infoCompact
-            text: "Bewegter Wert"
+            text: Tr.t("feed.movedValue", root.lang)
             color: root.dimColor
             font.pixelSize: root.baseFont - 2
         }
@@ -283,13 +289,13 @@ Item {
 
         Text {
             visible: !root.infoCompact
-            text: root.grp(root.block.size) + " Bytes"
+            text: Tr.t("feed.bytes", root.lang, root.grp(root.block.size))
             color: root.dimColor
             font.pixelSize: root.baseFont - 1
         }
 
         Text {
-            text: root.grp(root.block.nTx) + " Transaktionen"
+            text: Tr.t("txlist.count", root.lang, root.grp(root.block.nTx))
             color: root.dimColor
             font.pixelSize: root.baseFont - 1
             bottomPadding: 6
@@ -297,7 +303,7 @@ Item {
 
         Text {
             visible: !root.infoCompact
-            text: "Ø Gebühr"
+            text: Tr.t("feed.avgFee", root.lang)
             color: root.dimColor
             font.pixelSize: root.baseFont - 2
         }
@@ -331,7 +337,7 @@ Item {
 
         Text {
             anchors.right: parent.right
-            text: root.sizeMode === "vbytes" ? "Größe (vByte)" : "Ausgabewert"
+            text: Tr.t(root.sizeMode === "vbytes" ? "feed.sizeVbytes" : "feed.sizeValue", root.lang)
             color: root.dimColor
             font.pixelSize: root.baseFont - 2
         }
@@ -367,8 +373,8 @@ Item {
 
         Text {
             anchors.right: parent.right
-            text: root.colorMode === "type" ? "Art (nur im Block)"
-                : (root.colorMode === "fee" ? "Gebühr sat/vB" : "Alter in Sekunden")
+            text: Tr.t(root.colorMode === "type" ? "feed.typeScale"
+                : (root.colorMode === "fee" ? "feed.feeScale" : "feed.ageScale"), root.lang)
             color: root.dimColor
             font.pixelSize: root.baseFont - 2
             topPadding: 4
@@ -403,7 +409,7 @@ Item {
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: artZeile.meta.label
+                    text: Tr.t(TxType.labelKey(TxType.kindAt(artZeile.modelData.i)), root.lang)
                     color: root.dimColor
                     font.pixelSize: root.baseFont - 2
                 }
@@ -422,7 +428,7 @@ Item {
             anchors.right: parent.right
             horizontalAlignment: Text.AlignRight
             visible: root.colorMode === "type"
-            text: "Mempool: keine Art verfügbar\nDie Art ist gedeutet, nicht sicher"
+            text: Tr.t("feed.noTypeMempool", root.lang)
             color: root.dimColor
             font.pixelSize: root.baseFont - 3
             topPadding: 2
@@ -489,10 +495,11 @@ Item {
         alignRight: true
         visible: root.showLegend && root.width >= 420
         mode: root.colorMode
+        lang: root.lang
         modes: [
-            { "k": "age", "l": "Alter" },
-            { "k": "fee", "l": "Gebühr" },
-            { "k": "type", "l": "Art" }
+            { "k": "age", "l": Tr.t("color.age", root.lang) },
+            { "k": "fee", "l": Tr.t("color.fee", root.lang) },
+            { "k": "type", "l": Tr.t("color.type", root.lang) }
         ]
         // Die Farbtafel steht schon in der Legende rechts -- zweimal dasselbe
         // waere nur Rauschen. Hier bleibt der blosse Umschalter.
@@ -531,13 +538,9 @@ Item {
             spacing: 10
 
             Text {
-                text: "nächster Block ~" + root.grp(root.nextBlock.nTx) + " tx"
-                color: root.dimColor
-                font.pixelSize: root.baseFont - 2
-            }
-
-            Text {
-                text: "· median " + root.fee(root.nextBlock.medianFee)
+                text: Tr.t("feed.nextBlockLine", root.lang,
+                           root.grp(root.nextBlock.nTx),
+                           root.fee(root.nextBlock.medianFee).replace(" sat/vB", ""))
                 color: root.dimColor
                 font.pixelSize: root.baseFont - 2
             }
@@ -546,7 +549,11 @@ Item {
         Text {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            text: root.feed ? "₿ " + Money.price1(root.feed.price, root.currency) : ""
+            text: root.feed
+                ? "₿ " + Tr.price1(Money.rate(root.feed.price, root.currency),
+                                   Money.symbol(Money.actual(root.feed.price, root.currency)),
+                                   root.lang)
+                : ""
             color: root.dimColor
             font.pixelSize: root.baseFont - 2
         }
@@ -580,7 +587,9 @@ Item {
                 try {
                     var d = JSON.parse(req.responseText);
                     var ni = (d.vin || []).length, no = (d.vout || []).length;
-                    out = ni + (ni === 1 ? " Eingang" : " Eingänge") + "  ⟶  " + no + (no === 1 ? " Ausgang" : " Ausgänge");
+                    out = Tr.t("tip.inOut", root.lang, ni,
+                               Tr.t(ni === 1 ? "in.one" : "in.many", root.lang), no,
+                               Tr.t(no === 1 ? "out.one" : "out.many", root.lang));
                 } catch (e) {}
             }
             root.inOutCache[txid] = out;
@@ -653,7 +662,8 @@ Item {
             spacing: 3
 
             Text {
-                text: tip.tx && tip.tx.t ? "TxID: " + String(tip.tx.t).substring(0, 20) + "…" : ""
+                text: tip.tx && tip.tx.t
+                    ? Tr.t("tip.txid", root.lang, String(tip.tx.t).substring(0, 20) + "…") : ""
                 color: root.textColor
                 font.pixelSize: root.baseFont - 1
                 font.family: "monospace"
@@ -663,7 +673,7 @@ Item {
             // die wichtigste Angabe an ihr -- also nach oben.
             Text {
                 visible: tip.tx && tip.tx.m === 1
-                text: "● gehört zu einer beobachteten Wallet"
+                text: Tr.t("feed.ownWallet", root.lang)
                 color: root.accentColor
                 font.pixelSize: root.baseFont - 2
             }
@@ -676,25 +686,27 @@ Item {
             }
 
             Text {
-                text: tip.tx ? "Größe: " + root.dec(tip.tx.v, 2) + " vBytes" : ""
+                text: tip.tx ? Tr.t("tip.size", root.lang, root.dec(tip.tx.v, 2)) : ""
                 color: root.dimColor
                 font.pixelSize: root.baseFont - 2
             }
 
             Text {
-                text: tip.tx ? "Gebührenrate: " + root.dec(tip.tx.r, 2) + " sat/vByte" : ""
+                text: tip.tx ? Tr.t("tip.rate", root.lang, root.dec(tip.tx.r, 2)) : ""
                 color: root.dimColor
                 font.pixelSize: root.baseFont - 2
             }
 
             Text {
-                text: tip.tx ? "Gebühr: " + root.grp(tip.tx.f) + " sats" : ""
+                text: tip.tx ? Tr.t("tip.fee", root.lang, root.grp(tip.tx.f)) : ""
                 color: root.dimColor
                 font.pixelSize: root.baseFont - 2
             }
 
             Text {
-                text: tip.tx ? "Gesamtwert: ₿ " + (tip.tx.a / 1e8).toFixed(8).replace(".", ",") + "  " + root.fiat(tip.tx.a) : ""
+                text: tip.tx ? Tr.t("tip.total", root.lang,Tr.fixed(
+                                    (tip.tx.a / 1e8), 8, root.lang))
+                               + "  " + root.fiat(tip.tx.a) : ""
                 color: root.textColor
                 font.pixelSize: root.baseFont - 2
             }
@@ -704,7 +716,7 @@ Item {
     Text {
         anchors.centerIn: parent
         visible: root.feed !== null && !root.feed.online
-        text: "keine Verbindung zum Feed"
+        text: Tr.t("feed.noConnection", root.lang)
         color: root.dimColor
         font.pixelSize: root.baseFont
     }

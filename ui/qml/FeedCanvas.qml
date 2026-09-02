@@ -10,6 +10,7 @@ import QtQuick
 import "mondrian.js" as Mondrian
 import "colors.js" as Palette
 import "txtype.js" as TxType
+import "strings.js" as Tr
 
 Item {
     id: root
@@ -33,6 +34,7 @@ Item {
     property color rulerColor: "#7d8a8a"
     property int labelFont: 11
     property bool showRuler: true
+    property string lang: "de"
 
     // --- Raster und Aufteilung, Formeln aus bitfeed ----------------------
     // TxPoolScene.resize: heightLimit = Hoehe/4 (bei schmalen Fenstern /4,5).
@@ -1295,14 +1297,8 @@ Item {
         text: {
             var n = root.feed ? root.feed.mempoolCount : 0;
             if (!n)
-                return "Mempool";
-            var t = String(n), out = "", c = 0;
-            for (var i = t.length - 1; i >= 0; i--) {
-                out = t[i] + out;
-                if (++c % 3 === 0 && i > 0)
-                    out = "." + out;
-            }
-            return "Mempool: " + out + " unbestätigt";
+                return Tr.t("mempool", root.lang);
+            return Tr.t("feed.mempoolLine", root.lang, Tr.group(n, root.lang));
         }
     }
 

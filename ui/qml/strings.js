@@ -1,0 +1,607 @@
+// Alle Texte der Oberflaeche, an einer Stelle.
+//
+// Aufbau: ein Schluessel je Textstelle, dahinter eine Zeile mit einem Eintrag
+// je Sprache -- in der Reihenfolge von `LANGS`. Kompakter als geschachtelte
+// Objekte und beim Nachtragen einer Sprache eine Spalte statt hundert Zeilen.
+//
+// **Warum eine Funktion statt eines Singletons:** dieselben Dateien laufen in
+// drei Wirten (Anwendung, Quickshell-Fenster, DMS-Plugin). Ein QML-Singleton
+// braucht ein `qmldir`, und das entsteht nur im CMake-Modul. `t(key, lang)`
+// ist dagegen eine reine Funktion: gibt man `lang` mit, haengt die Bindung
+// daran und wird beim Umschalten von selbst neu gerechnet.
+//
+// Wortwahl nach den ueblichen Bitcoin-Explorern (mempool.space): "Mempool",
+// "Hashrate", "Coinbase" und "RBF" bleiben in allen Sprachen stehen, weil sie
+// ueberall so heissen.
+.pragma library
+
+var LANGS = ["de", "en", "es", "fr", "it", "pt", "nl", "ru", "ja", "zh"];
+
+var NAMES = {
+    "de": "Deutsch",
+    "en": "English",
+    "es": "Español",
+    "fr": "Français",
+    "it": "Italiano",
+    "pt": "Português",
+    "nl": "Nederlands",
+    "ru": "Русский",
+    "ja": "日本語",
+    "zh": "中文"
+};
+
+// Platzhalter sind {0}, {1} ... und werden von `t` eingesetzt.
+var S = {
+    // ---------------------------------------------------------- Ansichten
+    "tab.feed": ["Feed", "Feed", "Feed", "Flux", "Feed", "Feed", "Feed", "Лента", "フィード", "动态"],
+    "tab.clock": ["BlockClock", "BlockClock", "BlockClock", "BlockClock", "BlockClock", "BlockClock", "BlockClock", "BlockClock", "BlockClock", "BlockClock"],
+    "tab.miner": ["Miner", "Miner", "Minero", "Mineur", "Miner", "Minerador", "Miner", "Майнер", "マイナー", "矿机"],
+    "tab.explorer": ["Explorer", "Explorer", "Explorador", "Explorateur", "Explorer", "Explorador", "Verkenner", "Обозреватель", "エクスプローラ", "浏览器"],
+    "tab.wallet": ["Wallet", "Wallet", "Cartera", "Portefeuille", "Portafoglio", "Carteira", "Wallet", "Кошелёк", "ウォレット", "钱包"],
+    "tab.settings": ["Einstellungen", "Settings", "Ajustes", "Paramètres", "Impostazioni", "Definições", "Instellingen", "Настройки", "設定", "设置"],
+
+    // ------------------------------------------------------- Grundbegriffe
+    "block": ["Block", "Block", "Bloque", "Bloc", "Blocco", "Bloco", "Blok", "Блок", "ブロック", "区块"],
+    "blocks": ["Blöcke", "blocks", "bloques", "blocs", "blocchi", "blocos", "blokken", "блоков", "ブロック", "个区块"],
+    "blockHeight": ["Blockhöhe", "Block height", "Altura del bloque", "Hauteur de bloc", "Altezza blocco", "Altura do bloco", "Blokhoogte", "Высота блока", "ブロック高", "区块高度"],
+    "lastBlock": ["Letzter Block", "Latest block", "Último bloque", "Dernier bloc", "Ultimo blocco", "Último bloco", "Laatste blok", "Последний блок", "最新ブロック", "最新区块"],
+    "nextBlock": ["Nächster Block", "Next block", "Próximo bloque", "Prochain bloc", "Prossimo blocco", "Próximo bloco", "Volgend blok", "Следующий блок", "次のブロック", "下一个区块"],
+    "transaction": ["Transaktion", "Transaction", "Transacción", "Transaction", "Transazione", "Transação", "Transactie", "Транзакция", "トランザクション", "交易"],
+    "transactions": ["Transaktionen", "Transactions", "Transacciones", "Transactions", "Transazioni", "Transações", "Transacties", "Транзакции", "トランザクション", "交易"],
+    "fee": ["Gebühr", "Fee", "Comisión", "Frais", "Commissione", "Taxa", "Kosten", "Комиссия", "手数料", "手续费"],
+    "fees": ["Gebühren", "Fees", "Comisiones", "Frais", "Commissioni", "Taxas", "Kosten", "Комиссии", "手数料", "手续费"],
+    "feeRate": ["Gebührenrate", "Fee rate", "Tasa de comisión", "Taux de frais", "Tasso di commissione", "Taxa", "Tarief", "Ставка комиссии", "手数料率", "费率"],
+    "size": ["Größe", "Size", "Tamaño", "Taille", "Dimensione", "Tamanho", "Grootte", "Размер", "サイズ", "大小"],
+    "weight": ["Gewicht", "Weight", "Peso", "Poids", "Peso", "Peso", "Gewicht", "Вес", "重量", "重量"],
+    "value": ["Wert", "Value", "Valor", "Valeur", "Valore", "Valor", "Waarde", "Сумма", "額", "金额"],
+    "hashrate": ["Hashrate", "Hashrate", "Tasa de hash", "Taux de hachage", "Hashrate", "Hashrate", "Hashrate", "Хешрейт", "ハッシュレート", "算力"],
+    "difficulty": ["Schwierigkeit", "Difficulty", "Dificultad", "Difficulté", "Difficoltà", "Dificuldade", "Moeilijkheid", "Сложность", "難易度", "难度"],
+    "mempool": ["Mempool", "Mempool", "Mempool", "Mempool", "Mempool", "Mempool", "Mempool", "Мемпул", "メンプール", "内存池"],
+    "price": ["Kurs", "Price", "Precio", "Cours", "Prezzo", "Preço", "Koers", "Курс", "価格", "价格"],
+    "pool": ["Pool", "Pool", "Pool", "Pool", "Pool", "Pool", "Pool", "Пул", "プール", "矿池"],
+    "reward": ["Belohnung", "Reward", "Recompensa", "Récompense", "Ricompensa", "Recompensa", "Beloning", "Награда", "報酬", "奖励"],
+    "time": ["Zeit", "Time", "Hora", "Heure", "Ora", "Hora", "Tijd", "Время", "時刻", "时间"],
+    "address": ["Adresse", "Address", "Dirección", "Adresse", "Indirizzo", "Endereço", "Adres", "Адрес", "アドレス", "地址"],
+    "balance": ["Guthaben", "Balance", "Saldo", "Solde", "Saldo", "Saldo", "Saldo", "Баланс", "残高", "余额"],
+    "unconfirmed": ["unbestätigt", "unconfirmed", "sin confirmar", "non confirmé", "non confermata", "não confirmada", "onbevestigd", "не подтверждена", "未承認", "未确认"],
+    "loading": ["lädt …", "loading …", "cargando …", "chargement …", "caricamento …", "a carregar …", "laden …", "загрузка …", "読み込み中 …", "加载中 …"],
+    "offline": ["keine Verbindung", "no connection", "sin conexión", "pas de connexion", "nessuna connessione", "sem ligação", "geen verbinding", "нет соединения", "接続なし", "无连接"],
+    "none": ["–", "–", "–", "–", "–", "–", "–", "–", "–", "–"],
+
+    // --------------------------------------------------------------- Zeit
+    "ago.now": ["gerade eben", "just now", "ahora mismo", "à l’instant", "proprio ora", "agora mesmo", "zojuist", "только что", "たった今", "刚刚"],
+    "ago.min": ["vor {0} Min", "{0} min ago", "hace {0} min", "il y a {0} min", "{0} min fa", "há {0} min", "{0} min geleden", "{0} мин назад", "{0}分前", "{0} 分钟前"],
+    "ago.hour": ["vor {0} Std", "{0} h ago", "hace {0} h", "il y a {0} h", "{0} h fa", "há {0} h", "{0} u geleden", "{0} ч назад", "{0}時間前", "{0} 小时前"],
+    "ago.day": ["vor {0} Tagen", "{0} days ago", "hace {0} días", "il y a {0} j", "{0} giorni fa", "há {0} dias", "{0} dagen geleden", "{0} дн назад", "{0}日前", "{0} 天前"],
+    "ago.month": ["vor {0} Monaten", "{0} months ago", "hace {0} meses", "il y a {0} mois", "{0} mesi fa", "há {0} meses", "{0} maanden geleden", "{0} мес назад", "{0}か月前", "{0} 个月前"],
+    "in.min": ["in ~{0} Min", "in ~{0} min", "en ~{0} min", "dans ~{0} min", "tra ~{0} min", "em ~{0} min", "over ~{0} min", "через ~{0} мин", "約{0}分後", "约 {0} 分钟后"],
+    "in.hourMin": ["in ~{0} Std {1} Min", "in ~{0} h {1} min", "en ~{0} h {1} min", "dans ~{0} h {1} min", "tra ~{0} h {1} min", "em ~{0} h {1} min", "over ~{0} u {1} min", "через ~{0} ч {1} мин", "約{0}時間{1}分後", "约 {0} 小时 {1} 分钟后"],
+    "in.days": ["in ~{0} Tagen", "in ~{0} days", "en ~{0} días", "dans ~{0} j", "tra ~{0} giorni", "em ~{0} dias", "over ~{0} dagen", "через ~{0} дн", "約{0}日後", "约 {0} 天后"],
+    "in.day": ["in ~{0} Tag", "in ~{0} day", "en ~{0} día", "dans ~{0} j", "tra ~{0} giorno", "em ~{0} dia", "over ~{0} dag", "через ~{0} дн", "約{0}日後", "约 {0} 天后"],
+    "in.hours": ["in ~{0} Std", "in ~{0} h", "en ~{0} h", "dans ~{0} h", "tra ~{0} h", "em ~{0} h", "over ~{0} u", "через ~{0} ч", "約{0}時間後", "约 {0} 小时后"],
+    "duration.dayHour": ["{0} Tage {1} Std", "{0}d {1}h", "{0} d {1} h", "{0} j {1} h", "{0} g {1} h", "{0} d {1} h", "{0} d {1} u", "{0} д {1} ч", "{0}日{1}時間", "{0} 天 {1} 小时"],
+    "duration.hourMin": ["{0} Std {1} Min", "{0}h {1}m", "{0} h {1} min", "{0} h {1} min", "{0} h {1} min", "{0} h {1} min", "{0} u {1} min", "{0} ч {1} мин", "{0}時間{1}分", "{0} 小时 {1} 分"],
+    "duration.min": ["{0} Min", "{0} min", "{0} min", "{0} min", "{0} min", "{0} min", "{0} min", "{0} мин", "{0}分", "{0} 分钟"],
+
+    // ------------------------------------------------- Umschalter Farben
+    "color.label": ["Farbe:", "Color:", "Color:", "Couleur :", "Colore:", "Cor:", "Kleur:", "Цвет:", "配色:", "配色："],
+    "color.age": ["Alter", "Age", "Antigüedad", "Âge", "Età", "Idade", "Leeftijd", "Возраст", "経過時間", "存在时长"],
+    "color.fee": ["Gebühr", "Fee", "Comisión", "Frais", "Commissione", "Taxa", "Kosten", "Комиссия", "手数料", "手续费"],
+    "color.type": ["Art", "Type", "Tipo", "Type", "Tipo", "Tipo", "Type", "Тип", "種別", "类型"],
+    "goggles.note": [
+        "Bitcoin kennt keine Transaktionsarten. Was hier steht, ist aus der Form der Transaktion gedeutet — nützlich, aber nie sicher.",
+        "Bitcoin has no transaction types. What you see here is inferred from the shape of the transaction — useful, but never certain.",
+        "Bitcoin no tiene tipos de transacción. Lo que se ve aquí se deduce de la forma de la transacción: útil, pero nunca seguro.",
+        "Bitcoin ne connaît pas de types de transaction. Ce qui figure ici est déduit de la forme de la transaction — utile, mais jamais certain.",
+        "Bitcoin non ha tipi di transazione. Quanto mostrato qui è dedotto dalla forma della transazione: utile, ma mai certo.",
+        "O Bitcoin não tem tipos de transação. O que se vê aqui é deduzido da forma da transação — útil, mas nunca certo.",
+        "Bitcoin kent geen transactietypes. Wat hier staat is afgeleid uit de vorm van de transactie — nuttig, maar nooit zeker.",
+        "В Bitcoin нет типов транзакций. То, что здесь показано, выведено из структуры транзакции — полезно, но не наверняка.",
+        "ビットコインにトランザクション種別はありません。ここに表示されるのは形状からの推定です。参考になりますが確実ではありません。",
+        "比特币没有交易类型。这里显示的是根据交易结构推断的结果——有参考价值，但并不确定。"
+    ],
+    "goggles.noteBlock": [
+        "Gilt für den Block; für den Mempool liefert die Quelle keine Art.",
+        "Applies to the block; the source provides no type for the mempool.",
+        "Se aplica al bloque; la fuente no ofrece tipo para el mempool.",
+        "S’applique au bloc ; la source ne fournit pas de type pour le mempool.",
+        "Vale per il blocco; la fonte non fornisce il tipo per il mempool.",
+        "Aplica-se ao bloco; a fonte não fornece tipo para o mempool.",
+        "Geldt voor het blok; voor de mempool levert de bron geen type.",
+        "Относится к блоку; для мемпула источник не даёт тип.",
+        "ブロックにのみ適用されます。メンプールについては種別が提供されません。",
+        "仅适用于区块；数据源不提供内存池的交易类型。"
+    ],
+    "pct.lessThanOne": ["<1 %", "<1%", "<1 %", "< 1 %", "<1 %", "<1 %", "<1 %", "<1 %", "1 %未満", "<1%"],
+
+    // ------------------------------------------------ Transaktionsliste
+    "txlist.tiles": ["{0} Kacheln", "{0} tiles", "{0} celdas", "{0} tuiles", "{0} caselle", "{0} blocos", "{0} tegels", "{0} плиток", "{0} 個のタイル", "{0} 个方块"],
+    "txlist.count": ["{0} Transaktionen", "{0} transactions", "{0} transacciones", "{0} transactions", "{0} transazioni", "{0} transações", "{0} transacties", "{0} транзакций", "{0} 件のトランザクション", "{0} 笔交易"],
+    "txlist.sampled": ["jede {0}. Transaktion", "every {0}th transaction", "cada {0}ª transacción", "une transaction sur {0}", "una transazione ogni {0}", "cada {0}.ª transação", "elke {0}e transactie", "каждая {0}-я транзакция", "{0} 件ごとに 1 件", "每 {0} 笔取 1 笔"],
+    "txlist.page": ["Seite {0} von {1}", "Page {0} of {1}", "Página {0} de {1}", "Page {0} sur {1}", "Pagina {0} di {1}", "Página {0} de {1}", "Pagina {0} van {1}", "Страница {0} из {1}", "{1} ページ中 {0} ページ", "第 {0} 页，共 {1} 页"],
+    "txlist.noFee": ["keine Gebühr", "no fee", "sin comisión", "sans frais", "nessuna commissione", "sem taxa", "geen kosten", "без комиссии", "手数料なし", "无手续费"],
+    "page.first": ["‹‹ Anfang", "‹‹ First", "‹‹ Primera", "‹‹ Début", "‹‹ Inizio", "‹‹ Início", "‹‹ Begin", "‹‹ Начало", "‹‹ 最初", "‹‹ 首页"],
+    "page.prev": ["‹ zurück", "‹ Back", "‹ Atrás", "‹ Précédent", "‹ Indietro", "‹ Anterior", "‹ Terug", "‹ Назад", "‹ 前へ", "‹ 上一页"],
+    "page.next": ["weiter ›", "Next ›", "Siguiente ›", "Suivant ›", "Avanti ›", "Seguinte ›", "Verder ›", "Вперёд ›", "次へ ›", "下一页 ›"],
+    "page.last": ["Ende ››", "Last ››", "Última ››", "Fin ››", "Fine ››", "Fim ››", "Einde ››", "Конец ››", "最後 ››", "末页 ››"],
+
+    // -------------------------------------------------- Blockhistorie
+    "history.title": ["Blockhistorie", "Block history", "Historial de bloques", "Historique des blocs", "Storico dei blocchi", "Histórico de blocos", "Blokgeschiedenis", "История блоков", "ブロック履歴", "区块历史"],
+    "history.range": ["{0} bis {1}", "{0} to {1}", "{0} a {1}", "{0} à {1}", "da {0} a {1}", "{0} a {1}", "{0} tot {1}", "{0} — {1}", "{0} 〜 {1}", "{0} 至 {1}"],
+    "history.newest": ["‹‹ neueste", "‹‹ Newest", "‹‹ Más nuevos", "‹‹ Plus récents", "‹‹ Più recenti", "‹‹ Mais recentes", "‹‹ Nieuwste", "‹‹ Новейшие", "‹‹ 最新", "‹‹ 最新"],
+    "history.newer": ["‹ neuer", "‹ Newer", "‹ Más nuevos", "‹ Plus récent", "‹ Più recenti", "‹ Mais recentes", "‹ Nieuwer", "‹ Новее", "‹ 新しい", "‹ 更新"],
+    "history.older": ["älter ›", "Older ›", "Más antiguos ›", "Plus anciens ›", "Più vecchi ›", "Mais antigos ›", "Ouder ›", "Старее ›", "古い ›", "更早 ›"],
+    "history.timeNote": [
+        "Die Zeitangabe ist der Zeitstempel des Blocks, nicht die Uhrzeit des Fundes — er darf um bis zu zwei Stunden abweichen und muss nur über dem Mittel der elf vorherigen Blöcke liegen.",
+        "The time shown is the block’s timestamp, not when it was found — it may be off by up to two hours and only has to exceed the median of the previous eleven blocks.",
+        "La hora mostrada es la marca de tiempo del bloque, no el momento en que se encontró: puede desviarse hasta dos horas y sólo debe superar la mediana de los once bloques anteriores.",
+        "L’heure indiquée est l’horodatage du bloc, pas le moment où il a été trouvé — il peut s’écarter de deux heures et doit seulement dépasser la médiane des onze blocs précédents.",
+        "L’ora mostrata è il timestamp del blocco, non il momento del ritrovamento: può discostarsi fino a due ore e deve solo superare la mediana degli undici blocchi precedenti.",
+        "A hora indicada é a marca temporal do bloco, não o momento em que foi encontrado — pode desviar-se até duas horas e só tem de exceder a mediana dos onze blocos anteriores.",
+        "De getoonde tijd is de tijdstempel van het blok, niet het moment van vinden — hij mag tot twee uur afwijken en hoeft alleen boven de mediaan van de elf vorige blokken te liggen.",
+        "Показано время из заголовка блока, а не момент его нахождения — оно может отличаться на два часа и должно лишь превышать медиану одиннадцати предыдущих блоков.",
+        "表示される時刻はブロックのタイムスタンプであり、発見時刻ではありません。最大 2 時間ずれることがあり、直前 11 ブロックの中央値を超えていればよいだけです。",
+        "此处显示的是区块时间戳，而非实际出块时刻——它可能偏差两小时，只需大于前十一个区块的中位数即可。"
+    ],
+
+    // ------------------------------------------------- Geplanter Block
+    "chain.label": ["Geplant  ·  bestätigt", "Projected  ·  confirmed", "Previstos  ·  confirmados", "Prévus  ·  confirmés", "Previsti  ·  confermati", "Previstos  ·  confirmados", "Verwacht  ·  bevestigd", "Ожидаемые  ·  подтверждённые", "予測  ·  確定", "预计  ·  已确认"],
+    "proj.nth": ["{0}. Block voraus", "{0} blocks ahead", "{0}.º bloque por delante", "{0}e bloc à venir", "{0}° blocco più avanti", "{0}.º bloco à frente", "{0}e blok verderop", "{0}-й блок впереди", "{0} ブロック先", "第 {0} 个区块之后"],
+    "proj.changed": ["+{0} hinzugekommen", "+{0} added", "+{0} añadidas", "+{0} ajoutées", "+{0} aggiunte", "+{0} adicionadas", "+{0} bijgekomen", "+{0} добавлено", "+{0} 件追加", "新增 {0} 笔"],
+    "proj.dropped": ["−{0} verdrängt", "−{0} dropped", "−{0} desplazadas", "−{0} évincées", "−{0} escluse", "−{0} removidas", "−{0} verdrongen", "−{0} вытеснено", "−{0} 件除外", "移出 {0} 笔"],
+    "proj.unchanged": ["unverändert", "unchanged", "sin cambios", "inchangé", "invariato", "sem alterações", "ongewijzigd", "без изменений", "変化なし", "无变化"],
+    "proj.fetching": ["Transaktionen werden geholt …", "Fetching transactions …", "Obteniendo transacciones …", "Récupération des transactions …", "Recupero delle transazioni …", "A obter transações …", "Transacties ophalen …", "Загрузка транзакций …", "トランザクションを取得中 …", "正在获取交易 …"],
+    "proj.overflow": ["Sammelposten: der ganze übrige Mempool, rund {0} Blöcke voll", "Overflow: the rest of the mempool, about {0} blocks’ worth", "Excedente: el resto del mempool, unos {0} bloques", "Reliquat : le reste du mempool, environ {0} blocs", "Eccedenza: il resto del mempool, circa {0} blocchi", "Excedente: o resto do mempool, cerca de {0} blocos", "Restant: de rest van de mempool, ongeveer {0} blokken", "Остаток: весь оставшийся мемпул, примерно {0} блоков", "残り: メンプール全体、およそ {0} ブロック分", "余量：内存池的其余部分，约 {0} 个区块"],
+    "proj.summary": ["{0} Transaktionen · ~{1} sat/vB", "{0} transactions · ~{1} sat/vB", "{0} transacciones · ~{1} sat/vB", "{0} transactions · ~{1} sat/vB", "{0} transazioni · ~{1} sat/vB", "{0} transações · ~{1} sat/vB", "{0} transacties · ~{1} sat/vB", "{0} транзакций · ~{1} sat/vB", "{0} 件 · ~{1} sat/vB", "{0} 笔 · ~{1} sat/vB"],
+    "proj.fits": ["Diese Transaktionen würden hineinpassen", "These transactions would fit", "Estas transacciones cabrían", "Ces transactions y tiendraient", "Queste transazioni ci starebbero", "Estas transações caberiam", "Deze transacties zouden erin passen", "Эти транзакции поместились бы", "これらのトランザクションが入ります", "以下交易可以放入"],
+    "proj.forecast": [
+        "Die Aufteilung ist eine Vorhersage: sie ändert sich mit jeder neuen Transaktion. Wer mehr zahlt, drängt andere in einen späteren Block — der Miner entscheidet am Ende selbst.",
+        "This layout is a forecast: it changes with every new transaction. Paying more pushes others into a later block — and the miner decides in the end.",
+        "Este reparto es una previsión: cambia con cada nueva transacción. Quien paga más desplaza a otros a un bloque posterior; al final decide el minero.",
+        "Cette répartition est une prévision : elle change à chaque nouvelle transaction. Payer plus repousse les autres dans un bloc ultérieur — au final, c’est le mineur qui décide.",
+        "Questa suddivisione è una previsione: cambia a ogni nuova transazione. Chi paga di più spinge gli altri in un blocco successivo — alla fine decide il miner.",
+        "Esta distribuição é uma previsão: muda a cada nova transação. Quem paga mais empurra os outros para um bloco posterior — no fim decide o minerador.",
+        "Deze indeling is een voorspelling: ze verandert bij elke nieuwe transactie. Wie meer betaalt duwt anderen naar een later blok — uiteindelijk beslist de miner.",
+        "Это распределение — прогноз: оно меняется с каждой новой транзакцией. Кто платит больше, вытесняет других в следующий блок — а решает в итоге майнер.",
+        "この配置は予測です。新しいトランザクションごとに変わります。多く払えば他を後のブロックへ押しやります。最終的に決めるのはマイナーです。",
+        "此排布是预测：每有新交易就会变化。出价更高者会把其他交易挤到后面的区块——最终由矿工决定。"
+    ],
+    "proj.minFee": ["Wer hier hinein will, zahlt mindestens {0} sat/vB", "To get in here you pay at least {0} sat/vB", "Para entrar aquí se pagan al menos {0} sat/vB", "Pour y entrer, il faut payer au moins {0} sat/vB", "Per entrare qui si pagano almeno {0} sat/vB", "Para entrar aqui paga-se pelo menos {0} sat/vB", "Wie hierin wil betaalt minstens {0} sat/vB", "Чтобы попасть сюда, платят не менее {0} sat/vB", "ここに入るには最低 {0} sat/vB", "要进入这里，至少支付 {0} sat/vB"],
+    "proj.range": [
+        "Die Gebühren in diesem Block reichen von {0} bis {1} sat/vB. Miner nehmen die teuersten zuerst — wer weniger zahlt, rutscht in einen späteren Block.",
+        "Fees in this block range from {0} to {1} sat/vB. Miners take the highest first — pay less and you slip into a later block.",
+        "Las comisiones de este bloque van de {0} a {1} sat/vB. Los mineros toman primero las más altas: quien paga menos pasa a un bloque posterior.",
+        "Les frais de ce bloc vont de {0} à {1} sat/vB. Les mineurs prennent les plus élevés d’abord — payer moins vous renvoie dans un bloc ultérieur.",
+        "Le commissioni in questo blocco vanno da {0} a {1} sat/vB. I miner prendono prima le più alte: chi paga meno scivola in un blocco successivo.",
+        "As taxas neste bloco vão de {0} a {1} sat/vB. Os mineradores levam primeiro as mais altas — quem paga menos passa para um bloco posterior.",
+        "De kosten in dit blok lopen van {0} tot {1} sat/vB. Miners nemen de hoogste eerst — wie minder betaalt schuift door naar een later blok.",
+        "Комиссии в этом блоке — от {0} до {1} sat/vB. Майнеры берут сначала самые дорогие: кто платит меньше, попадёт в следующий блок.",
+        "このブロックの手数料は {0} 〜 {1} sat/vB です。マイナーは高いものから取るため、安いと後のブロックに回されます。",
+        "此区块的手续费在 {0} 到 {1} sat/vB 之间。矿工优先打包出价高的——出价低就会被推到后面的区块。"
+    ],
+
+    // -------------------------------------------------------- Kacheldaten
+    "tile.tooltip": ["{0} vByte · {1} sat/vB · {2} ₿", "{0} vByte · {1} sat/vB · {2} ₿", "{0} vByte · {1} sat/vB · {2} ₿", "{0} vByte · {1} sat/vB · {2} ₿", "{0} vByte · {1} sat/vB · {2} ₿", "{0} vByte · {1} sat/vB · {2} ₿", "{0} vByte · {1} sat/vB · {2} ₿", "{0} vByte · {1} sat/vB · {2} ₿", "{0} vByte · {1} sat/vB · {2} ₿", "{0} vByte · {1} sat/vB · {2} ₿"],
+    "legend": ["Legende", "Legend", "Leyenda", "Légende", "Legenda", "Legenda", "Legenda", "Легенда", "凡例", "图例"],
+    "explorer.browseAll": ["Alle Blöcke durchblättern ›", "Browse all blocks ›", "Ver todos los bloques ›", "Parcourir tous les blocs ›", "Sfoglia tutti i blocchi ›", "Ver todos os blocos ›", "Alle blokken doorbladeren ›", "Просмотреть все блоки ›", "すべてのブロックを見る ›", "浏览全部区块 ›"],
+    "explorer.inMempool": ["Im Mempool", "In mempool", "En el mempool", "Dans le mempool", "Nel mempool", "No mempool", "In mempool", "В мемпуле", "メンプール内", "内存池中"],
+    "explorer.recent": ["Zuletzt im Mempool gesehen", "Recently seen in the mempool", "Vistas hace poco en el mempool", "Vues récemment dans le mempool", "Viste di recente nel mempool", "Vistas recentemente no mempool", "Onlangs gezien in de mempool", "Недавно замечены в мемпуле", "メンプールで最近見られたもの", "内存池中最近出现"],
+
+    // ------------------------------------------------------ Vier Tafeln
+    "panel.fees": ["TRANSAKTIONSGEBÜHR", "TRANSACTION FEE", "COMISIÓN DE TRANSACCIÓN", "FRAIS DE TRANSACTION", "COMMISSIONE DI TRANSAZIONE", "TAXA DE TRANSAÇÃO", "TRANSACTIEKOSTEN", "КОМИССИЯ ЗА ТРАНЗАКЦИЮ", "トランザクション手数料", "交易手续费"],
+    "panel.difficulty": ["SCHWIERIGKEITSANPASSUNG", "DIFFICULTY ADJUSTMENT", "AJUSTE DE DIFICULTAD", "AJUSTEMENT DE DIFFICULTÉ", "AGGIUSTAMENTO DIFFICOLTÀ", "AJUSTE DE DIFICULDADE", "MOEILIJKHEIDSAANPASSING", "КОРРЕКТИРОВКА СЛОЖНОСТИ", "難易度調整", "难度调整"],
+    "panel.mempool": ["MEMPOOL", "MEMPOOL", "MEMPOOL", "MEMPOOL", "MEMPOOL", "MEMPOOL", "MEMPOOL", "МЕМПУЛ", "メンプール", "内存池"],
+    "panel.rbf": ["ERSETZTE TRANSAKTIONEN (RBF)", "REPLACED TRANSACTIONS (RBF)", "TRANSACCIONES REEMPLAZADAS (RBF)", "TRANSACTIONS REMPLACÉES (RBF)", "TRANSAZIONI SOSTITUITE (RBF)", "TRANSAÇÕES SUBSTITUÍDAS (RBF)", "VERVANGEN TRANSACTIES (RBF)", "ЗАМЕНЁННЫЕ ТРАНЗАКЦИИ (RBF)", "置換されたトランザクション (RBF)", "被替换的交易 (RBF)"],
+    "fee.none": ["Keine Priorität", "No priority", "Sin prioridad", "Sans priorité", "Nessuna priorità", "Sem prioridade", "Geen prioriteit", "Без приоритета", "優先度なし", "无优先级"],
+    "fee.low": ["Niedrige", "Low", "Baja", "Faible", "Bassa", "Baixa", "Laag", "Низкая", "低", "低"],
+    "fee.medium": ["Mittlere", "Medium", "Media", "Moyenne", "Media", "Média", "Gemiddeld", "Средняя", "中", "中"],
+    "fee.high": ["Hohe", "High", "Alta", "Élevée", "Alta", "Alta", "Hoog", "Высокая", "高", "高"],
+    "diff.change": ["Änderung", "Change", "Cambio", "Variation", "Variazione", "Variação", "Verandering", "Изменение", "変化", "变化"],
+    "diff.next": ["Nächste Anpassung", "Next adjustment", "Próximo ajuste", "Prochain ajustement", "Prossimo aggiustamento", "Próximo ajuste", "Volgende aanpassing", "Следующая корректировка", "次の調整", "下次调整"],
+    "diff.avgBlockTime": ["Durchschnittliche Blockzeit", "Average block time", "Tiempo medio por bloque", "Temps moyen par bloc", "Tempo medio dei blocchi", "Tempo médio por bloco", "Gemiddelde bloktijd", "Среднее время блока", "平均ブロック時間", "平均出块时间"],
+    "diff.targetAt": ["Ziel bei {0}", "Target at {0}", "Objetivo en {0}", "Cible à {0}", "Obiettivo a {0}", "Alvo em {0}", "Doel bij {0}", "Цель на {0}", "目標 {0}", "目标 {0}"],
+    "mempool.unconfirmed": ["Unbestätigt", "Unconfirmed", "Sin confirmar", "Non confirmées", "Non confermate", "Não confirmadas", "Onbevestigd", "Не подтверждено", "未承認", "未确认"],
+    "mempool.usage": ["Belegung", "Usage", "Ocupación", "Occupation", "Occupazione", "Ocupação", "Bezetting", "Заполнение", "使用量", "占用"],
+    "mempool.minFee": ["Mindestgebühr", "Minimum fee", "Comisión mínima", "Frais minimum", "Commissione minima", "Taxa mínima", "Minimumkosten", "Мин. комиссия", "最低手数料", "最低手续费"],
+    "mempool.incoming": ["Eingehende Transaktionen", "Incoming transactions", "Transacciones entrantes", "Transactions entrantes", "Transazioni in arrivo", "Transações a chegar", "Binnenkomende transacties", "Входящие транзакции", "流入トランザクション", "流入交易"],
+    "mempool.perMin": ["{0} Min · Ø {1}", "{0} min · avg {1}", "{0} min · med. {1}", "{0} min · moy. {1}", "{0} min · media {1}", "{0} min · méd. {1}", "{0} min · gem. {1}", "{0} мин · сред. {1}", "{0} 分 · 平均 {1}", "{0} 分钟 · 平均 {1}"],
+
+    // ---------------------------------------------------------- Feed
+    "feed.movedValue": ["Bewegter Wert", "Value moved", "Valor movido", "Valeur déplacée", "Valore movimentato", "Valor movimentado", "Verplaatste waarde", "Перемещённая сумма", "移動額", "转移金额"],
+    "feed.avgFee": ["Ø Gebühr", "Avg fee", "Comisión media", "Frais moyens", "Commissione media", "Taxa média", "Gem. kosten", "Сред. комиссия", "平均手数料", "平均手续费"],
+    "feed.bytes": ["{0} Bytes", "{0} bytes", "{0} bytes", "{0} octets", "{0} byte", "{0} bytes", "{0} bytes", "{0} байт", "{0} バイト", "{0} 字节"],
+    "feed.inMempool": ["{0} im Mempool", "{0} in mempool", "{0} en el mempool", "{0} dans le mempool", "{0} nel mempool", "{0} no mempool", "{0} in mempool", "{0} в мемпуле", "メンプール {0} 件", "内存池 {0} 笔"],
+    "feed.mempoolLine": ["Mempool: {0} unbestätigt", "Mempool: {0} unconfirmed", "Mempool: {0} sin confirmar", "Mempool : {0} non confirmées", "Mempool: {0} non confermate", "Mempool: {0} não confirmadas", "Mempool: {0} onbevestigd", "Мемпул: {0} не подтверждено", "メンプール: 未承認 {0} 件", "内存池：{0} 笔未确认"],
+    "feed.nextBlockLine": ["nächster Block ~{0} tx  ·  median {1} sat/vB", "next block ~{0} tx  ·  median {1} sat/vB", "próximo bloque ~{0} tx  ·  mediana {1} sat/vB", "prochain bloc ~{0} tx  ·  médiane {1} sat/vB", "prossimo blocco ~{0} tx  ·  mediana {1} sat/vB", "próximo bloco ~{0} tx  ·  mediana {1} sat/vB", "volgend blok ~{0} tx  ·  mediaan {1} sat/vB", "следующий блок ~{0} tx  ·  медиана {1} sat/vB", "次のブロック ~{0} 件  ·  中央値 {1} sat/vB", "下一个区块 ~{0} 笔  ·  中位数 {1} sat/vB"],
+    "feed.noConnection": ["keine Verbindung zum Feed", "no connection to the feed", "sin conexión con el feed", "pas de connexion au flux", "nessuna connessione al feed", "sem ligação ao feed", "geen verbinding met de feed", "нет соединения с лентой", "フィードに接続できません", "无法连接到数据源"],
+    "feed.sizeValue": ["Ausgabewert", "Output value", "Valor de salida", "Valeur de sortie", "Valore in uscita", "Valor de saída", "Uitvoerwaarde", "Сумма выхода", "出力額", "输出金额"],
+    "feed.sizeVbytes": ["Größe (vByte)", "Size (vByte)", "Tamaño (vByte)", "Taille (vOctet)", "Dimensione (vByte)", "Tamanho (vByte)", "Grootte (vByte)", "Размер (vByte)", "サイズ (vByte)", "大小 (vByte)"],
+    "feed.ageScale": ["Alter in Sekunden", "Age in seconds", "Antigüedad en segundos", "Âge en secondes", "Età in secondi", "Idade em segundos", "Leeftijd in seconden", "Возраст в секундах", "経過秒数", "存在秒数"],
+    "feed.feeScale": ["Gebühr sat/vB", "Fee sat/vB", "Comisión sat/vB", "Frais sat/vB", "Commissione sat/vB", "Taxa sat/vB", "Kosten sat/vB", "Комиссия sat/vB", "手数料 sat/vB", "手续费 sat/vB"],
+    "feed.typeScale": ["Art (nur im Block)", "Type (block only)", "Tipo (sólo en el bloque)", "Type (bloc uniquement)", "Tipo (solo nel blocco)", "Tipo (só no bloco)", "Type (alleen in blok)", "Тип (только в блоке)", "種別 (ブロックのみ)", "类型（仅区块）"],
+    "feed.noTypeMempool": ["Mempool: keine Art verfügbar\nDie Art ist gedeutet, nicht sicher", "Mempool: no type available\nThe type is inferred, not certain", "Mempool: sin tipo disponible\nEl tipo es deducido, no seguro", "Mempool : type indisponible\nLe type est déduit, non certain", "Mempool: tipo non disponibile\nIl tipo è dedotto, non certo", "Mempool: tipo indisponível\nO tipo é deduzido, não certo", "Mempool: geen type beschikbaar\nHet type is afgeleid, niet zeker", "Мемпул: тип недоступен\nТип выведен, не точен", "メンプール: 種別なし\n種別は推定です", "内存池：无类型\n类型为推断，非确定"],
+    "feed.ownWallet": ["● gehört zu einer beobachteten Wallet", "● belongs to a watched wallet", "● pertenece a una cartera vigilada", "● appartient à un portefeuille suivi", "● appartiene a un portafoglio osservato", "● pertence a uma carteira observada", "● hoort bij een gevolgde wallet", "● принадлежит отслеживаемому кошельку", "● 監視中のウォレットのもの", "● 属于被监视的钱包"],
+    "tip.txid": ["TxID: {0}", "TxID: {0}", "TxID: {0}", "TxID : {0}", "TxID: {0}", "TxID: {0}", "TxID: {0}", "TxID: {0}", "TxID: {0}", "TxID: {0}"],
+    "tip.size": ["Größe: {0} vBytes", "Size: {0} vBytes", "Tamaño: {0} vBytes", "Taille : {0} vOctets", "Dimensione: {0} vByte", "Tamanho: {0} vBytes", "Grootte: {0} vBytes", "Размер: {0} vBytes", "サイズ: {0} vBytes", "大小：{0} vBytes"],
+    "tip.rate": ["Gebührenrate: {0} sat/vByte", "Fee rate: {0} sat/vByte", "Tasa: {0} sat/vByte", "Taux : {0} sat/vOctet", "Tasso: {0} sat/vByte", "Taxa: {0} sat/vByte", "Tarief: {0} sat/vByte", "Ставка: {0} sat/vByte", "手数料率: {0} sat/vByte", "费率：{0} sat/vByte"],
+    "tip.fee": ["Gebühr: {0} sats", "Fee: {0} sats", "Comisión: {0} sats", "Frais : {0} sats", "Commissione: {0} sats", "Taxa: {0} sats", "Kosten: {0} sats", "Комиссия: {0} sats", "手数料: {0} sats", "手续费：{0} sats"],
+    "tip.total": ["Gesamtwert: ₿ {0}", "Total value: ₿ {0}", "Valor total: ₿ {0}", "Valeur totale : ₿ {0}", "Valore totale: ₿ {0}", "Valor total: ₿ {0}", "Totale waarde: ₿ {0}", "Общая сумма: ₿ {0}", "合計額: ₿ {0}", "总额：₿ {0}"],
+    "tip.inOut": ["{0} {1}  ⟶  {2} {3}", "{0} {1}  ⟶  {2} {3}", "{0} {1}  ⟶  {2} {3}", "{0} {1}  ⟶  {2} {3}", "{0} {1}  ⟶  {2} {3}", "{0} {1}  ⟶  {2} {3}", "{0} {1}  ⟶  {2} {3}", "{0} {1}  ⟶  {2} {3}", "{0} {1}  ⟶  {2} {3}", "{0} {1}  ⟶  {2} {3}"],
+    "in.one": ["Eingang", "input", "entrada", "entrée", "ingresso", "entrada", "invoer", "вход", "入力", "输入"],
+    "in.many": ["Eingänge", "inputs", "entradas", "entrées", "ingressi", "entradas", "invoeren", "входов", "入力", "输入"],
+    "out.one": ["Ausgang", "output", "salida", "sortie", "uscita", "saída", "uitvoer", "выход", "出力", "输出"],
+    "out.many": ["Ausgänge", "outputs", "salidas", "sorties", "uscite", "saídas", "uitvoeren", "выходов", "出力", "输出"],
+
+    // --------------------------------------------------------- BlockClock
+    "clock.moscow": ["Moscow Time", "Moscow Time", "Moscow Time", "Moscow Time", "Moscow Time", "Moscow Time", "Moscow Time", "Moscow Time", "モスクワタイム", "莫斯科时间"],
+    "clock.diffLine": ["Schwierigkeit {0}", "Difficulty {0}", "Dificultad {0}", "Difficulté {0}", "Difficoltà {0}", "Dificuldade {0}", "Moeilijkheid {0}", "Сложность {0}", "難易度 {0}", "难度 {0}"],
+    "clock.remaining": ["noch {0} Blöcke · {1}", "{0} blocks left · {1}", "faltan {0} bloques · {1}", "encore {0} blocs · {1}", "mancano {0} blocchi · {1}", "faltam {0} blocos · {1}", "nog {0} blokken · {1}", "осталось {0} блоков · {1}", "残り {0} ブロック · {1}", "还剩 {0} 个区块 · {1}"],
+    "clock.halving": ["Halving bei {0} · noch {1} Blöcke · rund {2}", "Halving at {0} · {1} blocks left · about {2}", "Halving en {0} · faltan {1} bloques · unos {2}", "Halving à {0} · encore {1} blocs · environ {2}", "Halving a {0} · mancano {1} blocchi · circa {2}", "Halving em {0} · faltam {1} blocos · cerca de {2}", "Halving bij {0} · nog {1} blokken · ongeveer {2}", "Халвинг на {0} · осталось {1} блоков · примерно {2}", "半減期 {0} · 残り {1} ブロック · 約 {2}", "减半于 {0} · 还剩 {1} 个区块 · 约 {2}"],
+
+    // ------------------------------------------------------------- Miner
+    "miner.title": ["Miner", "Miner", "Minero", "Mineur", "Miner", "Minerador", "Miner", "Майнер", "マイナー", "矿机"],
+    "miner.none": ["Kein Miner eingetragen", "No miner configured", "Ningún minero configurado", "Aucun mineur configuré", "Nessun miner configurato", "Nenhum minerador configurado", "Geen miner ingesteld", "Майнер не настроен", "マイナー未設定", "未配置矿机"],
+    "miner.unreachable": ["Kein Miner erreichbar", "No miner reachable", "Ningún minero accesible", "Aucun mineur joignable", "Nessun miner raggiungibile", "Nenhum minerador acessível", "Geen miner bereikbaar", "Майнер недоступен", "マイナーに接続できません", "无法连接矿机"],
+    "miner.offNote": ["Die Geräte sind vermutlich aus.", "The devices are probably off.", "Los equipos probablemente estén apagados.", "Les appareils sont probablement éteints.", "I dispositivi sono probabilmente spenti.", "Os equipamentos estão provavelmente desligados.", "De apparaten staan waarschijnlijk uit.", "Устройства, вероятно, выключены.", "機器の電源が入っていない可能性があります。", "设备可能已关闭。"],
+    "miner.discover": [
+        "Die Geräte hängen meist im WLAN und bekommen ihre Adresse per DHCP. Deshalb suchen statt eintragen:",
+        "The devices usually sit on Wi-Fi and get their address by DHCP. So search instead of configuring:",
+        "Los equipos suelen estar en la wifi y reciben su dirección por DHCP. Por eso conviene buscarlos en lugar de configurarlos:",
+        "Les appareils sont en général en Wi-Fi et reçoivent leur adresse par DHCP. Mieux vaut donc les chercher que les saisir :",
+        "I dispositivi stanno di solito sul Wi-Fi e ricevono l’indirizzo via DHCP. Meglio cercarli che inserirli:",
+        "Os equipamentos costumam estar no Wi-Fi e recebem o endereço por DHCP. Por isso, procure em vez de configurar:",
+        "De apparaten hangen meestal aan wifi en krijgen hun adres via DHCP. Zoek ze daarom in plaats van ze in te stellen:",
+        "Устройства обычно в Wi-Fi и получают адрес по DHCP. Поэтому лучше искать, чем настраивать вручную:",
+        "機器はたいてい Wi-Fi 上にあり、DHCP でアドレスを取得します。手入力ではなく検索してください:",
+        "设备通常连在 Wi-Fi 上并通过 DHCP 获取地址。因此建议搜索而不是手动填写："
+    ],
+    "miner.detects": [
+        "Erkannt werden AxeOS-Geräte (Bitaxe, NerdAxe …) und alles, was die cgminer-Schnittstelle spricht (Antminer, Avalon, Whatsminer …).",
+        "It detects AxeOS devices (Bitaxe, NerdAxe …) and anything speaking the cgminer API (Antminer, Avalon, Whatsminer …).",
+        "Detecta equipos AxeOS (Bitaxe, NerdAxe …) y todo lo que hable la interfaz cgminer (Antminer, Avalon, Whatsminer …).",
+        "Sont détectés les appareils AxeOS (Bitaxe, NerdAxe …) et tout ce qui parle l’interface cgminer (Antminer, Avalon, Whatsminer …).",
+        "Riconosce i dispositivi AxeOS (Bitaxe, NerdAxe …) e tutto ciò che parla l’interfaccia cgminer (Antminer, Avalon, Whatsminer …).",
+        "Deteta equipamentos AxeOS (Bitaxe, NerdAxe …) e tudo o que fale a interface cgminer (Antminer, Avalon, Whatsminer …).",
+        "Herkent AxeOS-apparaten (Bitaxe, NerdAxe …) en alles dat de cgminer-interface spreekt (Antminer, Avalon, Whatsminer …).",
+        "Распознаются устройства AxeOS (Bitaxe, NerdAxe …) и всё, что говорит по интерфейсу cgminer (Antminer, Avalon, Whatsminer …).",
+        "AxeOS 機器 (Bitaxe、NerdAxe …) と cgminer インターフェースを持つ機器 (Antminer、Avalon、Whatsminer …) を検出します。",
+        "可识别 AxeOS 设备（Bitaxe、NerdAxe …）以及所有支持 cgminer 接口的设备（Antminer、Avalon、Whatsminer …）。"
+    ],
+    "miner.temp": ["Temperatur", "Temperature", "Temperatura", "Température", "Temperatura", "Temperatura", "Temperatuur", "Температура", "温度", "温度"],
+    "miner.power": ["Leistung", "Power", "Potencia", "Puissance", "Potenza", "Potência", "Vermogen", "Мощность", "電力", "功率"],
+    "miner.fan": ["Lüfter", "Fan", "Ventilador", "Ventilateur", "Ventola", "Ventoinha", "Ventilator", "Вентилятор", "ファン", "风扇"],
+    "miner.errorRate": ["Fehlerquote", "Error rate", "Tasa de error", "Taux d’erreur", "Tasso di errore", "Taxa de erro", "Foutpercentage", "Доля ошибок", "エラー率", "错误率"],
+    "miner.shares": ["Freigaben", "Shares", "Shares", "Parts", "Share", "Shares", "Shares", "Шары", "シェア", "份额"],
+    "miner.uptime": ["Laufzeit", "Uptime", "Tiempo activo", "Durée de fonctionnement", "Tempo di attività", "Tempo ativo", "Bedrijfstijd", "Время работы", "稼働時間", "运行时间"],
+    "miner.rpm": ["{0} U/min", "{0} RPM", "{0} RPM", "{0} tr/min", "{0} RPM", "{0} RPM", "{0} RPM", "{0} об/мин", "{0} RPM", "{0} 转/分"],
+    "miner.rejected": ["{0} ({1} abgelehnt)", "{0} ({1} rejected)", "{0} ({1} rechazadas)", "{0} ({1} rejetées)", "{0} ({1} rifiutate)", "{0} ({1} rejeitadas)", "{0} ({1} afgewezen)", "{0} ({1} отклонено)", "{0} ({1} 拒否)", "{0}（拒绝 {1}）"],
+    "miner.devices": ["{0} Geräte", "{0} devices", "{0} equipos", "{0} appareils", "{0} dispositivi", "{0} equipamentos", "{0} apparaten", "{0} устройств", "{0} 台", "{0} 台设备"],
+    "miner.bestShare": ["Beste Freigabe gegen Netzschwierigkeit", "Best share vs. network difficulty", "Mejor share frente a la dificultad de la red", "Meilleure part face à la difficulté du réseau", "Miglior share rispetto alla difficoltà di rete", "Melhor share face à dificuldade da rede", "Beste share t.o.v. netwerkmoeilijkheid", "Лучший шар против сложности сети", "ネットワーク難易度に対する最高シェア", "最佳份额与全网难度对比"],
+    "miner.bestList": ["Beste Freigaben", "Best shares", "Mejores shares", "Meilleures parts", "Migliori share", "Melhores shares", "Beste shares", "Лучшие шары", "最高シェア", "最佳份额"],
+    "miner.oneToN": ["Beste Freigabe · „1 zu N“", "Best share · “1 in N”", "Mejor share · «1 entre N»", "Meilleure part · « 1 sur N »", "Miglior share · «1 su N»", "Melhor share · «1 em N»", "Beste share · ‘1 op N’", "Лучший шар · «1 к N»", "最高シェア · 「N 分の 1」", "最佳份额 ·「N 分之一」"],
+    "miner.domains": ["Rechenwerke", "Compute domains", "Dominios de cálculo", "Domaines de calcul", "Domini di calcolo", "Domínios de cálculo", "Rekendomeinen", "Вычислительные домены", "演算ドメイン", "运算域"],
+    "miner.domainsAvg": ["Rechenwerke · Mittel über {0} Min", "Compute domains · average over {0} min", "Dominios · media de {0} min", "Domaines · moyenne sur {0} min", "Domini · media su {0} min", "Domínios · média de {0} min", "Rekendomeinen · gemiddelde over {0} min", "Домены · среднее за {0} мин", "演算ドメイン · {0} 分平均", "运算域 · {0} 分钟平均"],
+    "miner.blocksFound": ["{0} Blöcke gefunden", "{0} blocks found", "{0} bloques encontrados", "{0} blocs trouvés", "{0} blocchi trovati", "{0} blocos encontrados", "{0} blokken gevonden", "Найдено блоков: {0}", "{0} ブロック発見", "已找到 {0} 个区块"],
+    "miner.oneBlockFound": ["1 Block gefunden", "1 block found", "1 bloque encontrado", "1 bloc trouvé", "1 blocco trovato", "1 bloco encontrado", "1 blok gevonden", "Найден 1 блок", "1 ブロック発見", "已找到 1 个区块"],
+    "miner.enoughForBlock": ["das reicht für einen Block", "that is enough for a block", "eso basta para un bloque", "cela suffit pour un bloc", "questo basta per un blocco", "isso chega para um bloco", "dat is genoeg voor een blok", "этого хватает на блок", "これでブロックに十分です", "这足以出一个区块"],
+    "miner.notReachable": ["Miner nicht erreichbar", "Miner not reachable", "Minero no accesible", "Mineur injoignable", "Miner non raggiungibile", "Minerador inacessível", "Miner niet bereikbaar", "Майнер недоступен", "マイナーに接続できません", "无法连接矿机"],
+    "miner.whatIsThis": ["Was zeigt diese Ansicht?", "What does this view show?", "¿Qué muestra esta vista?", "Que montre cette vue ?", "Cosa mostra questa vista?", "O que mostra esta vista?", "Wat toont deze weergave?", "Что показывает этот вид?", "この画面について", "此视图显示什么？"],
+    "miner.smoothed": ["geglättet über 10 min · erwartet {0}", "smoothed over 10 min · expected {0}", "suavizado en 10 min · esperado {0}", "lissé sur 10 min · attendu {0}", "livellato su 10 min · atteso {0}", "suavizado em 10 min · esperado {0}", "afgevlakt over 10 min · verwacht {0}", "сглажено за 10 мин · ожидается {0}", "10 分平滑 · 期待値 {0}", "10 分钟平滑 · 预期 {0}"],
+    "miner.hashNow": ["Hashrate, Momentanwert", "Hashrate, instantaneous", "Tasa de hash, instantánea", "Taux de hachage, instantané", "Hashrate, istantaneo", "Hashrate, instantânea", "Hashrate, momentaan", "Хешрейт, мгновенный", "ハッシュレート (瞬時値)", "算力（瞬时）"],
+    "miner.hashAvg": ["Hashrate, Mittel über 10 Minuten", "Hashrate, 10-minute average", "Tasa de hash, media de 10 minutos", "Taux de hachage, moyenne sur 10 minutes", "Hashrate, media su 10 minuti", "Hashrate, média de 10 minutos", "Hashrate, gemiddelde over 10 minuten", "Хешрейт, среднее за 10 минут", "ハッシュレート (10 分平均)", "算力（10 分钟平均）"],
+    "miner.hashNowHelp": [
+        "Was das Gerät gerade meldet. Schwankt stark — die Rechenleistung wird aus gefundenen Nonces geschätzt, das ist ein Zufallsprozess.",
+        "What the device reports right now. It fluctuates a lot — hashrate is estimated from found nonces, which is a random process.",
+        "Lo que el equipo informa en este momento. Fluctúa mucho: la potencia se estima a partir de los nonces encontrados, un proceso aleatorio.",
+        "Ce que l’appareil rapporte à l’instant. Cela fluctue beaucoup — la puissance est estimée à partir des nonces trouvés, un processus aléatoire.",
+        "Quello che il dispositivo riporta ora. Oscilla molto: la potenza è stimata dai nonce trovati, un processo casuale.",
+        "O que o equipamento reporta agora. Oscila muito — a potência é estimada a partir dos nonces encontrados, um processo aleatório.",
+        "Wat het apparaat nu meldt. Sterk wisselend — de hashrate wordt geschat uit gevonden nonces, een toevalsproces.",
+        "Что устройство сообщает прямо сейчас. Сильно колеблется — хешрейт оценивается по найденным nonce, а это случайный процесс.",
+        "機器が今報告している値です。大きく変動します。ハッシュレートは見つかった nonce からの推定で、確率的な過程です。",
+        "设备当前报告的值。波动很大——算力是根据找到的 nonce 估算的，这是一个随机过程。"
+    ],
+    "miner.hashAvgHelp": [
+        "Der belastbare Wert. Er steht auch groß oben und wird mit dem verglichen, was das Gerät bei seiner Taktung erwarten lässt.",
+        "The reliable figure. It is also shown large at the top and compared with what the device should deliver at its clock speed.",
+        "El valor fiable. Aparece también en grande arriba y se compara con lo que cabe esperar del equipo a su frecuencia.",
+        "La valeur fiable. Elle figure aussi en grand en haut et est comparée à ce que l’appareil devrait fournir à sa fréquence.",
+        "Il valore attendibile. Compare anche in grande in alto ed è confrontato con quanto ci si attende alla sua frequenza.",
+        "O valor fiável. Aparece também em grande no topo e é comparado com o esperado para a sua frequência.",
+        "De betrouwbare waarde. Staat ook groot bovenaan en wordt vergeleken met wat het apparaat bij zijn kloksnelheid zou moeten halen.",
+        "Надёжное значение. Оно же показано крупно вверху и сравнивается с ожидаемым при текущей частоте.",
+        "信頼できる値です。上部に大きく表示され、そのクロックで期待される値と比較されます。",
+        "可靠的数值。也显示在顶部大字处，并与该频率下的预期值比较。"
+    ],
+    "miner.tempHelp": [
+        "Rechte Achse. Wirkt oft treppenartig, weil der Fühler in 0,1-Grad-Schritten misst und die Achse auf die tatsächliche Spanne von oft nur einem Grad skaliert.",
+        "Right-hand axis. Often looks stepped because the sensor measures in 0.1-degree steps and the axis scales to the actual range, often just one degree.",
+        "Eje derecho. Suele verse escalonado porque el sensor mide en pasos de 0,1 grados y el eje se ajusta al rango real, a menudo de un solo grado.",
+        "Axe de droite. Il paraît souvent en escalier car le capteur mesure par pas de 0,1 degré et l’axe s’adapte à la plage réelle, souvent d’un seul degré.",
+        "Asse destro. Spesso appare a gradini perché il sensore misura a passi di 0,1 gradi e l’asse si adatta all’intervallo reale, spesso di un solo grado.",
+        "Eixo direito. Parece muitas vezes em degraus porque o sensor mede em passos de 0,1 grau e o eixo ajusta-se ao intervalo real, muitas vezes de um só grau.",
+        "Rechteras. Ziet er vaak trapsgewijs uit omdat de sensor in stappen van 0,1 graad meet en de as op het werkelijke bereik schaalt, vaak maar één graad.",
+        "Правая ось. Часто выглядит ступенчатой: датчик измеряет с шагом 0,1 градуса, а ось масштабируется под реальный диапазон, нередко всего в градус.",
+        "右軸です。センサーが 0.1 度刻みで測定し、軸が実際の幅（多くは 1 度程度）に合わせるため階段状に見えます。",
+        "右侧坐标轴。常呈阶梯状，因为传感器以 0.1 度为步进测量，而坐标轴按实际范围（往往只有一度）缩放。"
+    ],
+    "miner.oneToNHelp": [
+        "Die höchste Schwierigkeit, die dieses Gerät je erreicht hat, geteilt durch die des Netzes. „1 zu 426 k“ heißt: es fehlte noch der Faktor 426 000 zu einem Block.",
+        "The highest difficulty this device has ever hit, divided by the network’s. “1 in 426 k” means it was still a factor of 426,000 short of a block.",
+        "La dificultad más alta que ha alcanzado este equipo, dividida por la de la red. «1 entre 426 k» significa que faltaba un factor de 426 000 para un bloque.",
+        "La difficulté la plus élevée jamais atteinte par cet appareil, divisée par celle du réseau. « 1 sur 426 k » signifie qu’il manquait un facteur 426 000 pour un bloc.",
+        "La difficoltà più alta mai raggiunta da questo dispositivo, divisa per quella della rete. «1 su 426 k» significa che mancava un fattore 426 000 per un blocco.",
+        "A dificuldade mais alta que este equipamento já alcançou, dividida pela da rede. «1 em 426 k» significa que faltava um fator de 426 000 para um bloco.",
+        "De hoogste moeilijkheid die dit apparaat ooit haalde, gedeeld door die van het netwerk. ‘1 op 426 k’ betekent dat er nog een factor 426 000 ontbrak voor een blok.",
+        "Наибольшая сложность, достигнутая этим устройством, делённая на сложность сети. «1 к 426 k» значит, что до блока не хватало множителя 426 000.",
+        "この機器がこれまでに達成した最高難易度をネットワーク難易度で割った値です。「426 k 分の 1」はブロックまで 426 000 倍足りなかったという意味です。",
+        "该设备曾达到的最高难度除以全网难度。「426 k 分之一」表示距离出块还差 426 000 倍。"
+    ],
+    "miner.domainsHelp": [
+        "Der Chip rechnet in mehreren getrennten Bereichen mit eigener Spannung und Taktung. Liegen sie gleichauf, ist alles in Ordnung; fällt einer dauerhaft ab, ist dieser Teil instabil. Einzelmessungen schwanken über 10 %, deshalb der Mittelwert.",
+        "The chip computes in several separate domains, each with its own voltage and clock. If they run level, all is well; if one lags persistently, that part is unstable. Single readings vary by over 10 %, hence the average.",
+        "El chip calcula en varios dominios separados, cada uno con su tensión y frecuencia. Si van parejos, todo está bien; si uno se queda atrás de forma persistente, esa parte es inestable. Las lecturas sueltas varían más del 10 %, de ahí la media.",
+        "La puce calcule dans plusieurs domaines séparés, chacun avec sa tension et sa fréquence. S’ils sont au même niveau, tout va bien ; si l’un décroche durablement, cette partie est instable. Les mesures isolées varient de plus de 10 %, d’où la moyenne.",
+        "Il chip calcola in più domini separati, ciascuno con tensione e frequenza proprie. Se procedono alla pari va tutto bene; se uno resta indietro stabilmente, quella parte è instabile. Le singole misure variano oltre il 10 %, da qui la media.",
+        "O chip calcula em vários domínios separados, cada um com a sua tensão e frequência. Se andarem a par, está tudo bem; se um ficar sistematicamente atrás, essa parte está instável. As leituras isoladas variam mais de 10 %, daí a média.",
+        "De chip rekent in meerdere gescheiden domeinen, elk met eigen spanning en klok. Lopen ze gelijk, dan is alles in orde; blijft er één structureel achter, dan is dat deel instabiel. Losse metingen wisselen meer dan 10 %, vandaar het gemiddelde.",
+        "Чип считает в нескольких отдельных доменах, у каждого своё напряжение и частота. Если они идут вровень — всё в порядке; если один стабильно отстаёт, эта часть нестабильна. Отдельные замеры пляшут более чем на 10 %, поэтому берётся среднее.",
+        "チップは電圧とクロックが独立した複数の領域で計算します。横並びなら正常、ひとつだけ継続的に低ければその部分が不安定です。単発の測定は 10 % 以上ぶれるため平均値を使います。",
+        "芯片在多个独立的运算域中计算，各有自己的电压和频率。若齐平则一切正常；若某个持续偏低，则该部分不稳定。单次测量波动超过 10 %，因此取平均值。"
+    ],
+    "miner.errorHelp": [
+        "Anteil verworfener Ergebnisse des Chips. Ein paar Prozent sind normal; steigt sie deutlich, ist die Taktung zu hoch oder die Spannung zu niedrig.",
+        "Share of results the chip discards. A few percent is normal; a clear rise means the clock is too high or the voltage too low.",
+        "Proporción de resultados descartados por el chip. Un pequeño porcentaje es normal; si sube claramente, la frecuencia es demasiado alta o la tensión demasiado baja.",
+        "Part des résultats rejetés par la puce. Quelques pour cent sont normaux ; une hausse nette signifie une fréquence trop élevée ou une tension trop basse.",
+        "Quota di risultati scartati dal chip. Qualche punto percentuale è normale; se sale nettamente, la frequenza è troppo alta o la tensione troppo bassa.",
+        "Percentagem de resultados descartados pelo chip. Alguns por cento são normais; se subir claramente, a frequência é demasiado alta ou a tensão demasiado baixa.",
+        "Aandeel resultaten dat de chip verwerpt. Enkele procenten zijn normaal; een duidelijke stijging betekent te hoge klok of te lage spanning.",
+        "Доля результатов, отбракованных чипом. Несколько процентов — норма; заметный рост означает слишком высокую частоту или слишком низкое напряжение.",
+        "チップが破棄した結果の割合です。数パーセントは正常。明らかに上がる場合はクロックが高すぎるか電圧が低すぎます。",
+        "芯片丢弃结果的比例。百分之几属正常；明显上升说明频率过高或电压过低。"
+    ],
+    "miner.oneInN": ["das ist 1 zu {0}", "that is 1 in {0}", "eso es 1 entre {0}", "c’est 1 sur {0}", "è 1 su {0}", "isso é 1 em {0}", "dat is 1 op {0}", "это 1 к {0}", "{0} 分の 1 です", "即 {0} 分之一"],
+
+    // ---------------------------------------------------------- Explorer
+    "search.placeholder": ["Blockhöhe, Blockhash, TxID oder Adresse …", "Block height, block hash, TxID or address …", "Altura, hash de bloque, TxID o dirección …", "Hauteur, hash de bloc, TxID ou adresse …", "Altezza, hash del blocco, TxID o indirizzo …", "Altura, hash do bloco, TxID ou endereço …", "Blokhoogte, blokhash, TxID of adres …", "Высота, хеш блока, TxID или адрес …", "ブロック高・ブロックハッシュ・TxID・アドレス …", "区块高度、区块哈希、TxID 或地址 …"],
+    "search.searching": ["sucht …", "searching …", "buscando …", "recherche …", "ricerca …", "a procurar …", "zoeken …", "поиск …", "検索中 …", "搜索中 …"],
+    "search.invalid": ["Keine gültige Eingabe.", "Not a valid input.", "Entrada no válida.", "Saisie non valide.", "Voce non valida.", "Entrada inválida.", "Geen geldige invoer.", "Недопустимый ввод.", "入力が正しくありません。", "输入无效。"],
+    "search.xpub": ["Erweiterte Schlüssel gehören in die Wallet-Ansicht — sie kommen später.", "Extended keys belong in the wallet view — they go there instead.", "Las claves extendidas van en la vista de cartera.", "Les clés étendues vont dans la vue portefeuille.", "Le chiavi estese vanno nella vista portafoglio.", "As chaves estendidas pertencem à vista da carteira.", "Uitgebreide sleutels horen in de walletweergave.", "Расширенные ключи — во вкладке кошелька.", "拡張鍵はウォレット画面で扱います。", "扩展公钥请在钱包视图中使用。"],
+    "search.noFormat": ["(kein Adressformat)", "(not an address format)", "(no es un formato de dirección)", "(pas un format d’adresse)", "(non è un formato di indirizzo)", "(não é um formato de endereço)", "(geen adresformaat)", "(не формат адреса)", "(アドレス形式ではありません)", "（非地址格式）"],
+    "block.prev": ["‹ vorheriger Block", "‹ Previous block", "‹ Bloque anterior", "‹ Bloc précédent", "‹ Blocco precedente", "‹ Bloco anterior", "‹ Vorig blok", "‹ Предыдущий блок", "‹ 前のブロック", "‹ 上一个区块"],
+    "block.next": ["nächster Block ›", "Next block ›", "Bloque siguiente ›", "Bloc suivant ›", "Blocco successivo ›", "Bloco seguinte ›", "Volgend blok ›", "Следующий блок ›", "次のブロック ›", "下一个区块 ›"],
+    "block.txsIn": ["Transaktionen im Block", "Transactions in the block", "Transacciones del bloque", "Transactions du bloc", "Transazioni nel blocco", "Transações no bloco", "Transacties in het blok", "Транзакции в блоке", "ブロック内のトランザクション", "区块内的交易"],
+    "block.tilesLoading": ["Kacheln werden geholt …", "Fetching tiles …", "Obteniendo celdas …", "Récupération des tuiles …", "Recupero delle caselle …", "A obter blocos …", "Tegels ophalen …", "Загрузка плиток …", "タイルを取得中 …", "正在获取方块 …"],
+    "block.totalFees": ["Gebühren gesamt", "Total fees", "Comisiones totales", "Frais totaux", "Commissioni totali", "Taxas totais", "Totale kosten", "Всего комиссий", "手数料合計", "手续费合计"],
+    "block.avgRate": ["mittlere Rate", "Median rate", "Tasa media", "Taux médian", "Tasso medio", "Taxa média", "Mediaan tarief", "Средняя ставка", "中央値レート", "中位费率"],
+    "block.feeRange": ["Gebührenspanne", "Fee range", "Rango de comisiones", "Fourchette de frais", "Intervallo commissioni", "Intervalo de taxas", "Kostenbereik", "Диапазон комиссий", "手数料の範囲", "手续费区间"],
+    "block.utxoDelta": ["UTXO-Änderung", "UTXO change", "Cambio de UTXO", "Variation d’UTXO", "Variazione UTXO", "Variação de UTXO", "UTXO-verandering", "Изменение UTXO", "UTXO 変化", "UTXO 变化"],
+    "block.avgTx": ["Ø Transaktion", "Avg transaction", "Transacción media", "Transaction moyenne", "Transazione media", "Transação média", "Gem. transactie", "Средняя транзакция", "平均トランザクション", "平均交易"],
+    "block.merkle": ["Merkle-Wurzel", "Merkle root", "Raíz de Merkle", "Racine de Merkle", "Radice di Merkle", "Raiz de Merkle", "Merkle-wortel", "Корень Меркла", "マークルルート", "默克尔根"],
+    "block.nonce": ["Nonce", "Nonce", "Nonce", "Nonce", "Nonce", "Nonce", "Nonce", "Nonce", "ノンス", "随机数"],
+    "block.version": ["Version", "Version", "Versión", "Version", "Versione", "Versão", "Versie", "Версия", "バージョン", "版本"],
+    "block.pool": ["Mining-Pool", "Mining pool", "Pool de minería", "Pool de minage", "Mining pool", "Pool de mineração", "Miningpool", "Майнинг-пул", "マイニングプール", "矿池"],
+    "tx.title": ["Transaktion", "Transaction", "Transacción", "Transaction", "Transazione", "Transação", "Transactie", "Транзакция", "トランザクション", "交易"],
+    "tx.status": ["Status", "Status", "Estado", "Statut", "Stato", "Estado", "Status", "Статус", "状態", "状态"],
+    "tx.inBlock": ["in Block {0}", "in block {0}", "en el bloque {0}", "dans le bloc {0}", "nel blocco {0}", "no bloco {0}", "in blok {0}", "в блоке {0}", "ブロック {0} 内", "位于区块 {0}"],
+    "tx.inMempool": ["im Mempool", "in the mempool", "en el mempool", "dans le mempool", "nel mempool", "no mempool", "in de mempool", "в мемпуле", "メンプール内", "在内存池中"],
+    "tx.vsize": ["Virtuelle Größe", "Virtual size", "Tamaño virtual", "Taille virtuelle", "Dimensione virtuale", "Tamanho virtual", "Virtuele grootte", "Виртуальный размер", "仮想サイズ", "虚拟大小"],
+    "tx.locktime": ["Sperrzeit", "Locktime", "Locktime", "Locktime", "Locktime", "Locktime", "Locktime", "Locktime", "ロックタイム", "锁定时间"],
+    "tx.sigops": ["Sigops", "Sigops", "Sigops", "Sigops", "Sigops", "Sigops", "Sigops", "Sigops", "Sigops", "Sigops"],
+    "tx.flow": ["Fluss", "Flow", "Flujo", "Flux", "Flusso", "Fluxo", "Stroom", "Поток", "フロー", "资金流"],
+    "tx.coinbase": ["Coinbase — neu erzeugt", "Coinbase — newly created", "Coinbase — recién creados", "Coinbase — nouvellement créés", "Coinbase — appena creati", "Coinbase — recém-criados", "Coinbase — nieuw aangemaakt", "Coinbase — вновь созданные", "コインベース — 新規発行", "Coinbase — 新产出"],
+    "tx.spent": ["ausgegeben ›", "spent ›", "gastado ›", "dépensé ›", "speso ›", "gasto ›", "uitgegeven ›", "потрачено ›", "使用済み ›", "已花费 ›"],
+    "addr.received": ["Empfangen", "Received", "Recibido", "Reçu", "Ricevuto", "Recebido", "Ontvangen", "Получено", "受取", "已接收"],
+    "addr.sent": ["Gesendet", "Sent", "Enviado", "Envoyé", "Inviato", "Enviado", "Verzonden", "Отправлено", "送金", "已发送"],
+    "addr.lastTxs": ["Letzte Transaktionen", "Latest transactions", "Últimas transacciones", "Dernières transactions", "Ultime transazioni", "Últimas transações", "Laatste transacties", "Последние транзакции", "最近のトランザクション", "最近的交易"],
+    "flow.in": ["Eingang {0}", "Input {0}", "Entrada {0}", "Entrée {0}", "Ingresso {0}", "Entrada {0}", "Invoer {0}", "Вход {0}", "入力 {0}", "输入 {0}"],
+    "flow.out": ["Ausgang {0}", "Output {0}", "Salida {0}", "Sortie {0}", "Uscita {0}", "Saída {0}", "Uitvoer {0}", "Выход {0}", "出力 {0}", "输出 {0}"],
+    "flow.fee": ["Gebühr {0} sat", "Fee {0} sat", "Comisión {0} sat", "Frais {0} sat", "Commissione {0} sat", "Taxa {0} sat", "Kosten {0} sat", "Комиссия {0} sat", "手数料 {0} sat", "手续费 {0} sat"],
+
+    // ------------------------------------------------ Transaktionsarten
+    "type.payment": ["Zahlung", "Payment", "Pago", "Paiement", "Pagamento", "Pagamento", "Betaling", "Платёж", "支払い", "支付"],
+    "type.consolidation": ["Konsolidierung", "Consolidation", "Consolidación", "Consolidation", "Consolidamento", "Consolidação", "Consolidatie", "Консолидация", "統合", "整合"],
+    "type.batch": ["Sammelzahlung", "Batch payment", "Pago por lotes", "Paiement groupé", "Pagamento in blocco", "Pagamento em lote", "Batchbetaling", "Пакетный платёж", "一括送金", "批量支付"],
+    "type.coinjoin": ["CoinJoin", "CoinJoin", "CoinJoin", "CoinJoin", "CoinJoin", "CoinJoin", "CoinJoin", "CoinJoin", "CoinJoin", "CoinJoin"],
+    "type.data": ["Datenablage", "Data", "Datos", "Données", "Dati", "Dados", "Data", "Данные", "データ", "数据"],
+    "type.inscription": ["Inschrift", "Inscription", "Inscripción", "Inscription", "Iscrizione", "Inscrição", "Inscriptie", "Инскрипция", "インスクリプション", "铭文"],
+    "type.coinbase": ["Blockbelohnung", "Coinbase", "Recompensa de bloque", "Récompense de bloc", "Ricompensa del blocco", "Recompensa de bloco", "Blokbeloning", "Награда за блок", "ブロック報酬", "区块奖励"],
+    "type.sweep": ["Umschichtung", "Sweep", "Barrido", "Balayage", "Sweep", "Varrimento", "Sweep", "Свип", "スイープ", "清扫"],
+    "type.payment.help": ["Ein bis zwei Eingänge, ein Ziel und meist ein Rückgeld — die alltägliche Überweisung.", "One or two inputs, one destination and usually change — the everyday payment.", "Una o dos entradas, un destino y normalmente cambio: el pago cotidiano.", "Une ou deux entrées, une destination et généralement de la monnaie — le paiement courant.", "Uno o due ingressi, una destinazione e di solito il resto — il pagamento di tutti i giorni.", "Uma ou duas entradas, um destino e normalmente troco — o pagamento do dia a dia.", "Een of twee invoeren, één bestemming en meestal wisselgeld — de alledaagse betaling.", "Один-два входа, один получатель и обычно сдача — обычный платёж.", "入力 1〜2、宛先 1 つ、多くはお釣り付き — 日常的な送金です。", "一到两个输入、一个目标地址，通常还有找零——日常支付。"],
+    "type.consolidation.help": ["Viele Eingänge auf wenige Ausgänge: jemand räumt sein Guthaben zusammen, meist wenn die Gebühren niedrig sind.", "Many inputs into few outputs: someone is tidying up their coins, usually while fees are low.", "Muchas entradas hacia pocas salidas: alguien reúne sus fondos, normalmente con comisiones bajas.", "Beaucoup d’entrées vers peu de sorties : quelqu’un regroupe ses fonds, en général quand les frais sont bas.", "Molti ingressi verso poche uscite: qualcuno accorpa i propri fondi, di solito quando le commissioni sono basse.", "Muitas entradas para poucas saídas: alguém junta os seus fundos, normalmente com taxas baixas.", "Veel invoeren naar weinig uitvoeren: iemand voegt zijn saldo samen, meestal bij lage kosten.", "Много входов в несколько выходов: кто-то собирает свои монеты, обычно при низких комиссиях.", "多数の入力を少数の出力へ。手数料が安いうちに残高をまとめています。", "多个输入合并为少数输出：有人在手续费低时整合余额。"],
+    "type.batch.help": ["Wenige Eingänge auf viele Ausgänge — Börsen und Pools zahlen so an viele Empfänger auf einmal.", "Few inputs into many outputs — exchanges and pools pay many recipients at once this way.", "Pocas entradas hacia muchas salidas: así pagan las casas de cambio y los pools a muchos a la vez.", "Peu d’entrées vers beaucoup de sorties — les plateformes et les pools paient ainsi plusieurs destinataires d’un coup.", "Pochi ingressi verso molte uscite — così exchange e pool pagano molti destinatari insieme.", "Poucas entradas para muitas saídas — assim pagam as exchanges e os pools a muitos de uma vez.", "Weinig invoeren naar veel uitvoeren — beurzen en pools betalen zo veel ontvangers tegelijk.", "Мало входов, много выходов — так биржи и пулы платят многим сразу.", "少数の入力から多数の出力へ。取引所やプールがまとめて支払う形です。", "少数输入对应多个输出——交易所和矿池以此一次性支付给多人。"],
+    "type.coinjoin.help": ["Viele Beteiligte zahlen gemeinsam und erhalten gleich große Ausgänge zurück. Verwischt die Zuordnung, wer wem zahlt.", "Many participants pay together and get equally sized outputs back. It blurs who pays whom.", "Muchos participantes pagan juntos y reciben salidas del mismo tamaño. Difumina quién paga a quién.", "Plusieurs participants paient ensemble et reçoivent des sorties de même taille. Cela brouille qui paie qui.", "Molti partecipanti pagano insieme e ricevono uscite di uguale importo. Confonde chi paga chi.", "Vários participantes pagam em conjunto e recebem saídas do mesmo tamanho. Confunde quem paga a quem.", "Veel deelnemers betalen samen en krijgen even grote uitvoeren terug. Dat vertroebelt wie wie betaalt.", "Много участников платят вместе и получают одинаковые выходы. Это скрывает, кто кому платит.", "多数の参加者が共同で支払い、同額の出力を受け取ります。誰が誰に払ったかを分かりにくくします。", "多方共同支付并获得等额输出，模糊了谁付给谁。"],
+    "type.data.help": ["Enthält einen OP_RETURN-Ausgang: hier wird nicht Geld bewegt, sondern etwas in die Kette geschrieben.", "Contains an OP_RETURN output: this does not move money, it writes something into the chain.", "Contiene una salida OP_RETURN: no mueve dinero, escribe algo en la cadena.", "Contient une sortie OP_RETURN : cela ne déplace pas d’argent, cela inscrit quelque chose dans la chaîne.", "Contiene un’uscita OP_RETURN: non muove denaro, scrive qualcosa nella catena.", "Contém uma saída OP_RETURN: não move dinheiro, escreve algo na cadeia.", "Bevat een OP_RETURN-uitvoer: dit verplaatst geen geld, het schrijft iets in de keten.", "Содержит выход OP_RETURN: это не перевод денег, а запись в цепочку.", "OP_RETURN 出力を含みます。送金ではなくチェーンへの書き込みです。", "包含 OP_RETURN 输出：不是转账，而是向链上写入数据。"],
+    "type.coinbase.help": ["Die erste Transaktion eines Blocks — hier entstehen neue Bitcoin und die Gebühren des Blocks gehen an den Finder.", "The first transaction of a block — new bitcoin is created here and the block’s fees go to the finder.", "La primera transacción de un bloque: aquí nacen nuevos bitcoin y las comisiones van al minero.", "La première transaction d’un bloc — de nouveaux bitcoins y naissent et les frais du bloc vont au mineur.", "La prima transazione di un blocco: qui nascono nuovi bitcoin e le commissioni vanno a chi lo trova.", "A primeira transação de um bloco — aqui nascem novos bitcoin e as taxas vão para quem o encontrou.", "De eerste transactie van een blok — hier ontstaan nieuwe bitcoin en gaan de kosten naar de vinder.", "Первая транзакция блока — здесь создаются новые биткоины, а комиссии достаются нашедшему.", "ブロックの最初のトランザクション。新規ビットコインが生まれ、手数料は発見者へ渡ります。", "区块的第一笔交易——这里产生新比特币，手续费归出块者。"],
+    "type.sweep.help": ["Alles fließt auf einen einzigen Ausgang, ohne Rückgeld — typisch beim Leeren einer Adresse oder Wallet.", "Everything flows into a single output, no change — typical when emptying an address or wallet.", "Todo va a una única salida, sin cambio: típico al vaciar una dirección o cartera.", "Tout part vers une seule sortie, sans monnaie — typique du vidage d’une adresse ou d’un portefeuille.", "Tutto confluisce in un’unica uscita, senza resto — tipico dello svuotamento di un indirizzo o portafoglio.", "Tudo vai para uma única saída, sem troco — típico ao esvaziar um endereço ou carteira.", "Alles gaat naar één uitvoer, zonder wisselgeld — typisch bij het legen van een adres of wallet.", "Всё уходит на один выход, без сдачи — типично при опустошении адреса или кошелька.", "すべてが単一の出力へ、お釣りなし。アドレスやウォレットを空にするときの形です。", "全部流向单一输出、没有找零——通常是清空某个地址或钱包。"],
+    "tx.unspent": ["noch nicht ausgegeben", "not yet spent", "aún no gastado", "pas encore dépensé", "non ancora speso", "ainda não gasto", "nog niet uitgegeven", "ещё не потрачено", "未使用", "尚未花费"],
+    "block.expected": ["voraussichtlich", "expected", "previsto", "prévu", "previsto", "previsto", "verwacht", "ожидается", "予測", "预计"],
+    "tx.confirmedIn": ["in Block {0}", "in block {0}", "en el bloque {0}", "dans le bloc {0}", "nel blocco {0}", "no bloco {0}", "in blok {0}", "в блоке {0}", "ブロック {0}", "区块 {0}"],
+    "type.inscription.help": ["Trägt Daten im Zeugnisteil (Witness) — Ordinals und Verwandtes. Die Daten zahlen dort weniger Gebühr als in einem OP_RETURN.", "Carries data in the witness — Ordinals and the like. Data pays less fee there than in an OP_RETURN.", "Lleva datos en el witness — Ordinals y similares. Ahí los datos pagan menos comisión que en un OP_RETURN.", "Porte des données dans le témoin (witness) — Ordinals et apparentés. Les données y coûtent moins qu’en OP_RETURN.", "Porta dati nel witness — Ordinals e simili. Lì i dati pagano meno commissione che in un OP_RETURN.", "Leva dados no witness — Ordinals e afins. Aí os dados pagam menos taxa do que num OP_RETURN.", "Draagt data in de witness — Ordinals en verwanten. Data betaalt daar minder kosten dan in een OP_RETURN.", "Несёт данные в witness — Ordinals и подобное. Там данные обходятся дешевле, чем в OP_RETURN.", "witness にデータを載せます (Ordinals など)。OP_RETURN より手数料が安く済みます。", "在见证数据(witness)中携带数据——Ordinals 之类。那里的数据比 OP_RETURN 便宜。"]
+,
+
+    // ------------------------------------------------------------ Wallet
+    "wallet.none": ["Keine Wallet eingetragen", "No wallet configured", "Ninguna cartera configurada", "Aucun portefeuille configuré", "Nessun portafoglio configurato", "Nenhuma carteira configurada", "Geen wallet ingesteld", "Кошелёк не настроен", "ウォレット未設定", "未配置钱包"],
+    "wallet.intro": ["Diese Ansicht zeigt Guthaben und Verlauf einer Wallet, ohne sie anzufassen. Dafür genügt der erweiterte öffentliche Schlüssel — xpub, ypub oder zpub. Ein privater Schlüssel wird nicht entgegengenommen und wäre hier auch nutzlos: das Programm kann nicht signieren.", "This view shows a wallet’s balance and history without touching it. The extended public key is enough — xpub, ypub or zpub. A private key is not accepted and would be useless here: the program cannot sign.", "Esta vista muestra el saldo y el historial de una cartera sin tocarla. Basta con la clave pública extendida: xpub, ypub o zpub. No se acepta una clave privada y aquí sería inútil: el programa no puede firmar.", "Cette vue affiche le solde et l’historique d’un portefeuille sans y toucher. La clé publique étendue suffit — xpub, ypub ou zpub. Une clé privée n’est pas acceptée et serait inutile ici : le programme ne sait pas signer.", "Questa vista mostra saldo e cronologia di un portafoglio senza toccarlo. Basta la chiave pubblica estesa — xpub, ypub o zpub. Una chiave privata non viene accettata e sarebbe inutile: il programma non può firmare.", "Esta vista mostra o saldo e o histórico de uma carteira sem lhe tocar. Basta a chave pública estendida — xpub, ypub ou zpub. Uma chave privada não é aceite e seria inútil: o programa não consegue assinar.", "Deze weergave toont saldo en historie van een wallet zonder die aan te raken. De uitgebreide publieke sleutel volstaat — xpub, ypub of zpub. Een privésleutel wordt niet geaccepteerd en zou hier nutteloos zijn: het programma kan niet ondertekenen.", "Здесь показаны баланс и история кошелька, не касаясь его. Достаточно расширенного публичного ключа — xpub, ypub или zpub. Приватный ключ не принимается и был бы бесполезен: программа не умеет подписывать.", "この画面はウォレットに触れずに残高と履歴を表示します。拡張公開鍵 (xpub / ypub / zpub) だけで十分です。秘密鍵は受け付けませんし、署名できないので無意味です。", "此视图在不触碰钱包的前提下显示余额与历史。只需扩展公钥——xpub、ypub 或 zpub。程序不接受私钥，也无法签名，私钥在这里毫无用处。"],
+    "wallet.cliNote": ["Eingetragen wird bewusst auf der Kommandozeile: der Dienst im Hintergrund antwortet nur, er nimmt nichts entgegen. Der Schlüssel liegt danach in ~/.config/btcfeed/sources.json, für niemanden sonst lesbar.", "Deliberately configured on the command line: the background service only answers, it accepts nothing. The key then sits in ~/.config/btcfeed/sources.json, readable by no one else.", "Se configura a propósito en la línea de órdenes: el servicio en segundo plano sólo responde, no acepta nada. La clave queda en ~/.config/btcfeed/sources.json, ilegible para los demás.", "La configuration se fait volontairement en ligne de commande : le service en arrière-plan ne fait que répondre, il n’accepte rien. La clé se trouve ensuite dans ~/.config/btcfeed/sources.json, illisible pour les autres.", "Si configura di proposito da riga di comando: il servizio in background risponde soltanto, non accetta nulla. La chiave resta in ~/.config/btcfeed/sources.json, illeggibile per gli altri.", "É configurado propositadamente na linha de comandos: o serviço em segundo plano apenas responde, não aceita nada. A chave fica em ~/.config/btcfeed/sources.json, ilegível para os outros.", "Bewust via de opdrachtregel ingesteld: de achtergronddienst antwoordt alleen, hij neemt niets aan. De sleutel staat daarna in ~/.config/btcfeed/sources.json, voor niemand anders leesbaar.", "Настройка намеренно через командную строку: фоновая служба только отвечает и ничего не принимает. Ключ потом лежит в ~/.config/btcfeed/sources.json, недоступный другим.", "設定は意図的にコマンドラインで行います。バックグラウンドのサービスは応答するだけで、何も受け付けません。鍵は ~/.config/btcfeed/sources.json に置かれ、他者からは読めません。", "刻意通过命令行配置：后台服务只应答、不接收任何输入。密钥随后保存在 ~/.config/btcfeed/sources.json，他人无法读取。"],
+    "wallet.scanning": ["wird abgetastet …", "scanning …", "escaneando …", "analyse …", "scansione …", "a analisar …", "scannen …", "сканирование …", "スキャン中 …", "扫描中 …"],
+    "wallet.received": ["erhalten", "received", "recibido", "reçu", "ricevuto", "recebido", "ontvangen", "получено", "受取", "已接收"],
+    "wallet.spent": ["ausgegeben", "spent", "gastado", "dépensé", "speso", "gasto", "uitgegeven", "потрачено", "送金", "已花费"],
+    "wallet.usedAddresses": ["benutzte Adressen", "used addresses", "direcciones usadas", "adresses utilisées", "indirizzi usati", "endereços usados", "gebruikte adressen", "использованных адресов", "使用済みアドレス", "已用地址"],
+    "wallet.fingerprint": ["Fingerabdruck", "Fingerprint", "Huella", "Empreinte", "Impronta", "Impressão digital", "Vingerafdruk", "Отпечаток", "フィンガープリント", "指纹"],
+    "wallet.nextRecv": ["Nächste unbenutzte Empfangsadresse", "Next unused receiving address", "Próxima dirección de recepción sin usar", "Prochaine adresse de réception inutilisée", "Prossimo indirizzo di ricezione inutilizzato", "Próximo endereço de receção não usado", "Volgend ongebruikt ontvangstadres", "Следующий неиспользованный адрес получения", "次の未使用の受取アドレス", "下一个未使用的收款地址"],
+    "wallet.pending": ["{0} noch unbestätigt", "{0} still unconfirmed", "{0} aún sin confirmar", "{0} encore non confirmé", "{0} ancora non confermato", "{0} ainda não confirmado", "{0} nog onbevestigd", "{0} ещё не подтверждено", "{0} 未承認", "{0} 尚未确认"],
+    "wallet.tabAddrs": ["Adressen", "Addresses", "Direcciones", "Adresses", "Indirizzi", "Endereços", "Adressen", "Адреса", "アドレス", "地址"],
+    "wallet.recvN": ["Empfang {0}", "Receive {0}", "Recepción {0}", "Réception {0}", "Ricezione {0}", "Receção {0}", "Ontvangst {0}", "Приём {0}", "受取 {0}", "接收 {0}"],
+    "wallet.changeN": ["Wechsel {0}", "Change {0}", "Cambio {0}", "Monnaie {0}", "Resto {0}", "Troco {0}", "Wissel {0}", "Сдача {0}", "お釣り {0}", "找零 {0}"],
+    "wallet.kindP2wpkh": ["SegWit (bc1…, BIP84)", "SegWit (bc1…, BIP84)", "SegWit (bc1…, BIP84)", "SegWit (bc1…, BIP84)", "SegWit (bc1…, BIP84)", "SegWit (bc1…, BIP84)", "SegWit (bc1…, BIP84)", "SegWit (bc1…, BIP84)", "SegWit (bc1…, BIP84)", "SegWit (bc1…, BIP84)"],
+    "wallet.kindP2sh": ["SegWit in P2SH (3…, BIP49)", "SegWit in P2SH (3…, BIP49)", "SegWit en P2SH (3…, BIP49)", "SegWit dans P2SH (3…, BIP49)", "SegWit in P2SH (3…, BIP49)", "SegWit em P2SH (3…, BIP49)", "SegWit in P2SH (3…, BIP49)", "SegWit в P2SH (3…, BIP49)", "P2SH 内 SegWit (3…, BIP49)", "P2SH 中的 SegWit (3…, BIP49)"],
+    "wallet.kindP2pkh": ["Legacy (1…, BIP44)", "Legacy (1…, BIP44)", "Legacy (1…, BIP44)", "Legacy (1…, BIP44)", "Legacy (1…, BIP44)", "Legacy (1…, BIP44)", "Legacy (1…, BIP44)", "Legacy (1…, BIP44)", "レガシー (1…, BIP44)", "传统 (1…, BIP44)"],
+    "wallet.footnote": ["Nur betrachtend: hier liegt ein öffentlicher Schlüssel, kein privater. Er verlässt das Gerät nicht — die Adressen werden hier abgeleitet und einzeln abgefragt. Was bleibt, ist ein Verkettungsproblem: wer viele Adressen nacheinander von derselben Stelle abfragt, zeigt dem Betreiber, dass sie zusammengehören. Ganz lösen lässt sich das nur mit einem eigenen Knoten.", "Watch-only: what is stored here is a public key, not a private one. It never leaves the device — addresses are derived here and queried one by one. What remains is a linkage problem: querying many addresses in a row from the same place shows the operator that they belong together. Only your own node solves that fully.", "Sólo lectura: aquí hay una clave pública, no privada. No sale del equipo: las direcciones se derivan aquí y se consultan una a una. Queda un problema de enlace: consultar muchas direcciones seguidas desde el mismo sitio le muestra al operador que van juntas. Sólo un nodo propio lo resuelve del todo.", "En lecture seule : ici se trouve une clé publique, pas une clé privée. Elle ne quitte pas l’appareil — les adresses sont dérivées ici et interrogées une à une. Reste un problème de corrélation : interroger beaucoup d’adresses d’affilée depuis le même endroit montre à l’opérateur qu’elles vont ensemble. Seul un nœud personnel règle cela complètement.", "Sola lettura: qui c’è una chiave pubblica, non privata. Non lascia il dispositivo — gli indirizzi sono derivati qui e interrogati uno per uno. Resta un problema di collegamento: interrogare molti indirizzi di fila dallo stesso punto mostra al gestore che stanno insieme. Solo un nodo proprio lo risolve del tutto.", "Apenas observação: aqui está uma chave pública, não privada. Não sai do dispositivo — os endereços são derivados aqui e consultados um a um. Resta um problema de ligação: consultar muitos endereços seguidos do mesmo sítio mostra ao operador que pertencem juntos. Só um nó próprio resolve isso por completo.", "Alleen bekijken: hier ligt een publieke sleutel, geen privésleutel. Hij verlaat het apparaat niet — adressen worden hier afgeleid en één voor één opgevraagd. Wat blijft is een koppelingsprobleem: veel adressen achter elkaar vanaf dezelfde plek opvragen toont de beheerder dat ze bij elkaar horen. Alleen een eigen node lost dat volledig op.", "Только просмотр: здесь публичный ключ, не приватный. Он не покидает устройство — адреса выводятся здесь и запрашиваются по одному. Остаётся проблема связывания: запрос многих адресов подряд с одного места показывает оператору, что они связаны. Полностью это решает только собственный узел.", "閲覧専用です。ここにあるのは公開鍵で、秘密鍵ではありません。鍵は端末から出ず、アドレスはここで導出して個別に問い合わせます。残る問題は関連付けです。同じ場所から多数のアドレスを続けて問い合わせると、事業者にそれらが同一のものだと分かります。完全な解決は自前ノードだけです。", "只读：这里保存的是公钥，不是私钥。它不会离开本机——地址在本地推导并逐个查询。剩下的是关联问题：从同一处连续查询大量地址，会让服务方看出它们属于同一钱包。只有自建节点才能彻底解决。"]
+,
+
+    // ------------------------------------------------------ Einstellungen
+    "set.general": ["Allgemein", "General", "General", "Général", "Generale", "Geral", "Algemeen", "Общие", "全般", "通用"],
+    "set.currency": ["Währung", "Currency", "Moneda", "Devise", "Valuta", "Moeda", "Valuta", "Валюта", "通貨", "货币"],
+    "set.currencyHelp": ["Gilt überall, wo ein Gegenwert steht. Die Kurse kommen alle in derselben Nachricht mit, es kostet also nichts, umzustellen.", "Applies everywhere a fiat value is shown. All rates arrive in the same message, so switching costs nothing.", "Se aplica en todo lugar donde aparezca un contravalor. Todas las cotizaciones llegan en el mismo mensaje, cambiar no cuesta nada.", "S’applique partout où une contre-valeur est affichée. Tous les cours arrivent dans le même message, changer ne coûte rien.", "Vale ovunque compaia un controvalore. Tutti i cambi arrivano nello stesso messaggio, cambiare non costa nulla.", "Aplica-se onde quer que apareça um contravalor. Todas as cotações chegam na mesma mensagem, mudar não custa nada.", "Geldt overal waar een tegenwaarde staat. Alle koersen komen in hetzelfde bericht mee, omschakelen kost niets.", "Действует везде, где показан эквивалент. Все курсы приходят в одном сообщении, переключение ничего не стоит.", "換算額が表示されるすべての場所に適用されます。すべてのレートは同じメッセージで届くため、切り替えに費用はかかりません。", "适用于所有显示法币金额之处。所有汇率都在同一条消息中送达，切换不产生额外开销。"],
+    "set.language": ["Sprache", "Language", "Idioma", "Langue", "Lingua", "Idioma", "Taal", "Язык", "言語", "语言"],
+    "set.languageHelp": ["Gilt sofort für alle Ansichten.", "Applies to all views immediately.", "Se aplica de inmediato a todas las vistas.", "S’applique immédiatement à toutes les vues.", "Si applica subito a tutte le viste.", "Aplica-se de imediato a todas as vistas.", "Geldt direct voor alle weergaven.", "Применяется сразу ко всем видам.", "すべての画面にすぐ適用されます。", "立即应用于所有视图。"],
+    "set.opacity": ["Deckkraft des Fensters", "Window opacity", "Opacidad de la ventana", "Opacité de la fenêtre", "Opacità della finestra", "Opacidade da janela", "Vensterdekking", "Непрозрачность окна", "ウィンドウの不透明度", "窗口不透明度"],
+    "set.opacityHelp": ["Wie durchsichtig der Hintergrund ist. Ob dahinter weichgezeichnet wird, entscheidet der Compositor.", "How transparent the background is. Whether it is blurred behind is up to the compositor.", "Cuán transparente es el fondo. Si se difumina detrás lo decide el compositor.", "Transparence de l’arrière-plan. Le flou éventuel dépend du compositeur.", "Quanto è trasparente lo sfondo. Se dietro venga sfocato lo decide il compositor.", "Quão transparente é o fundo. Se é desfocado por trás decide o compositor.", "Hoe doorzichtig de achtergrond is. Of erachter wordt vervaagd bepaalt de compositor.", "Насколько прозрачен фон. Размывается ли он позади — решает композитор.", "背景の透明度です。背後をぼかすかはコンポジタが決めます。", "背景的透明程度。是否在其后模糊由合成器决定。"],
+    "set.tileSize": ["Kachelgröße", "Tile size", "Tamaño de celda", "Taille des tuiles", "Dimensione delle caselle", "Tamanho dos blocos", "Tegelgrootte", "Размер плиток", "タイルの大きさ", "方块大小"],
+    "set.tileSizeHelp": ["Größer heißt weniger Kacheln nebeneinander, aber besser zu treffen.", "Larger means fewer tiles side by side, but easier to hit.", "Más grande significa menos celdas seguidas, pero más fáciles de acertar.", "Plus grand signifie moins de tuiles côte à côte, mais plus faciles à viser.", "Più grande significa meno caselle affiancate, ma più facili da colpire.", "Maior significa menos blocos lado a lado, mas mais fáceis de acertar.", "Groter betekent minder tegels naast elkaar, maar makkelijker te raken.", "Больше — меньше плиток в ряд, но легче попасть.", "大きくすると横に並ぶ数は減りますが、押しやすくなります。", "更大意味着并排的方块更少，但更容易点中。"],
+    "set.startView": ["Startansicht", "Start view", "Vista inicial", "Vue de départ", "Vista iniziale", "Vista inicial", "Startweergave", "Начальный вид", "起動時の画面", "启动视图"],
+    "set.startViewHelp": ["Womit das Fenster aufgeht — für ein Tablet an der Wand meist die BlockClock.", "What the window opens with — for a tablet on the wall usually the BlockClock.", "Con qué se abre la ventana; para una tablet en la pared suele ser la BlockClock.", "Ce par quoi la fenêtre s’ouvre — pour une tablette murale, souvent la BlockClock.", "Con cosa si apre la finestra — per un tablet a parete di solito la BlockClock.", "Com o que a janela abre — para um tablet na parede normalmente a BlockClock.", "Waarmee het venster opent — voor een tablet aan de muur meestal de BlockClock.", "С чего открывается окно — для планшета на стене обычно BlockClock.", "ウィンドウを開いたときの画面です。壁掛けタブレットなら BlockClock が定番です。", "窗口打开时显示的视图——挂墙平板通常选 BlockClock。"],
+    "set.tileColor": ["Farbe der Kacheln", "Tile colour", "Color de las celdas", "Couleur des tuiles", "Colore delle caselle", "Cor dos blocos", "Kleur van de tegels", "Цвет плиток", "タイルの配色", "方块配色"],
+    "set.tileColorHelp": ["Alter: orange bis blau in einer Minute. Gebühr: nach sat/vB. Art: die gedeutete Transaktionsart — die gilt nur für den Block.", "Age: orange to blue within a minute. Fee: by sat/vB. Type: the inferred transaction type — block only.", "Antigüedad: de naranja a azul en un minuto. Comisión: por sat/vB. Tipo: el tipo deducido, sólo para el bloque.", "Âge : d’orange à bleu en une minute. Frais : selon sat/vB. Type : le type déduit — bloc uniquement.", "Età: da arancione a blu in un minuto. Commissione: per sat/vB. Tipo: il tipo dedotto — solo per il blocco.", "Idade: de laranja a azul num minuto. Taxa: por sat/vB. Tipo: o tipo deduzido — só no bloco.", "Leeftijd: oranje naar blauw in een minuut. Kosten: per sat/vB. Type: het afgeleide type — alleen het blok.", "Возраст: от оранжевого к синему за минуту. Комиссия: по sat/vB. Тип: выведенный тип — только для блока.", "経過時間: 1 分でオレンジから青へ。手数料: sat/vB 別。種別: 推定した種別（ブロックのみ）。", "存在时长：一分钟内由橙变蓝。手续费：按 sat/vB。类型：推断的交易类型（仅区块）。"],
+    "set.tileMetric": ["Größe der Kacheln", "Tile size metric", "Criterio de tamaño", "Critère de taille", "Criterio di dimensione", "Critério de tamanho", "Groottecriterium", "Критерий размера", "大きさの基準", "大小依据"],
+    "set.tileMetricHelp": ["Wonach sich die Kantenlänge richtet.", "What the edge length follows.", "En qué se basa la longitud del lado.", "Ce qui détermine la longueur du côté.", "Da cosa dipende il lato.", "Em que se baseia o lado.", "Waar de zijde zich naar richt.", "От чего зависит длина стороны.", "一辺の長さの基準です。", "边长依据的指标。"],
+    "set.header": ["Kopfzeile", "Header", "Encabezado", "En-tête", "Intestazione", "Cabeçalho", "Kopregel", "Заголовок", "ヘッダー", "标题栏"],
+    "set.headerHelp": ["Die Zeile ganz oben mit Blockhöhe, Alter und Mempool.", "The top line with block height, age and mempool.", "La línea superior con altura, antigüedad y mempool.", "La ligne du haut avec hauteur, âge et mempool.", "La riga in alto con altezza, età e mempool.", "A linha do topo com altura, idade e mempool.", "De bovenste regel met blokhoogte, leeftijd en mempool.", "Верхняя строка с высотой, возрастом и мемпулом.", "上部のブロック高・経過時間・メンプールの行です。", "顶部显示区块高度、时长和内存池的一行。"],
+    "set.footer": ["Fußzeile", "Footer", "Pie", "Pied de page", "Piè di pagina", "Rodapé", "Voettekst", "Нижняя строка", "フッター", "底栏"],
+    "set.footerHelp": ["Unten: nächster Block, mittlere Gebühr und Kurs.", "Bottom: next block, median fee and price.", "Abajo: próximo bloque, comisión mediana y precio.", "En bas : prochain bloc, frais médians et cours.", "In basso: prossimo blocco, commissione mediana e prezzo.", "Em baixo: próximo bloco, taxa mediana e preço.", "Onderaan: volgend blok, mediaan tarief en koers.", "Внизу: следующий блок, медианная комиссия и курс.", "下部: 次のブロック・中央値手数料・価格。", "底部：下一个区块、中位费率和价格。"],
+    "set.blockInfo": ["Blockangaben", "Block details", "Datos del bloque", "Détails du bloc", "Dati del blocco", "Dados do bloco", "Blokgegevens", "Данные блока", "ブロック情報", "区块信息"],
+    "set.blockInfoHelp": ["Das Feld links mit Höhe, Wert und Pool.", "The panel on the left with height, value and pool.", "El panel de la izquierda con altura, valor y pool.", "Le panneau de gauche avec hauteur, valeur et pool.", "Il riquadro a sinistra con altezza, valore e pool.", "O painel à esquerda com altura, valor e pool.", "Het paneel links met hoogte, waarde en pool.", "Панель слева с высотой, суммой и пулом.", "左のブロック高・金額・プールのパネルです。", "左侧显示高度、金额和矿池的面板。"],
+    "set.blockTiles": ["Letzter Block als Kachelgrafik", "Latest block as tile graphic", "Último bloque como mosaico", "Dernier bloc en mosaïque", "Ultimo blocco come mosaico", "Último bloco como mosaico", "Laatste blok als tegelbeeld", "Последний блок плитками", "最新ブロックのタイル表示", "最新区块方块图"],
+    "set.blockTilesHelp": ["Das Quadrat in der Mitte. Ohne es bleibt nur die Halde — auf einem schmalen Widget oft genau richtig.", "The square in the middle. Without it only the pile remains — often just right on a narrow widget.", "El cuadrado del centro. Sin él sólo queda el montón: a menudo lo ideal en un widget estrecho.", "Le carré au centre. Sans lui, il ne reste que le tas — souvent parfait sur un widget étroit.", "Il quadrato al centro. Senza di esso resta solo il mucchio — spesso ideale su un widget stretto.", "O quadrado ao centro. Sem ele fica só a pilha — muitas vezes ideal num widget estreito.", "Het vierkant in het midden. Zonder blijft alleen de stapel — vaak precies goed op een smalle widget.", "Квадрат посередине. Без него остаётся только куча — часто в самый раз для узкого виджета.", "中央の正方形です。無い場合は山だけになります。細いウィジェットにはこちらが好適です。", "中间的方形。关闭后只剩堆积区——在窄部件上往往正合适。"],
+    "set.legend": ["Legende", "Legend", "Leyenda", "Légende", "Legenda", "Legenda", "Legenda", "Легенда", "凡例", "图例"],
+    "set.legendHelp": ["Größen- und Farbtafel rechts, dazu der Umschalter darunter.", "Size and colour key on the right, plus the switch below it.", "Tabla de tamaños y colores a la derecha, con el selector debajo.", "Table des tailles et couleurs à droite, avec le sélecteur en dessous.", "Tabella di dimensioni e colori a destra, con il selettore sotto.", "Tabela de tamanhos e cores à direita, com o seletor por baixo.", "Grootte- en kleurentabel rechts, met de schakelaar eronder.", "Таблица размеров и цветов справа и переключатель под ней.", "右側のサイズと配色の凡例、その下の切り替えです。", "右侧的大小与配色对照表，及其下方的切换按钮。"],
+    "set.ruler": ["Trennlinie über der Halde", "Divider above the pile", "Línea sobre el montón", "Ligne au-dessus du tas", "Linea sopra il mucchio", "Linha sobre a pilha", "Scheidingslijn boven de stapel", "Линия над кучей", "山の上の区切り線", "堆积区上方的分隔线"],
+    "set.rulerHelp": ["Die gestrichelte Linie markiert die Oberkante des Mempools.", "The dashed line marks the top edge of the mempool.", "La línea de puntos marca el borde superior del mempool.", "La ligne pointillée marque le haut du mempool.", "La linea tratteggiata segna il bordo superiore del mempool.", "A linha tracejada marca o topo do mempool.", "De stippellijn markeert de bovenrand van de mempool.", "Пунктирная линия отмечает верх мемпула.", "破線はメンプールの上端を示します。", "虚线标示内存池的上边缘。"],
+    "set.blur": ["Weichzeichnung hinter der Schrift", "Blur behind text", "Desenfoque tras el texto", "Flou derrière le texte", "Sfocatura dietro il testo", "Desfoque atrás do texto", "Vervaging achter de tekst", "Размытие за текстом", "文字の背後をぼかす", "文字背后模糊"],
+    "set.blurHelp": ["Kostet etwas Rechenzeit, macht die Angaben über hellen Kacheln aber lesbar.", "Costs a little CPU, but keeps the text readable over bright tiles.", "Cuesta algo de CPU, pero hace legible el texto sobre celdas claras.", "Coûte un peu de CPU, mais rend le texte lisible sur des tuiles claires.", "Costa un po’ di CPU, ma rende leggibile il testo su caselle chiare.", "Custa algum CPU, mas torna o texto legível sobre blocos claros.", "Kost wat rekentijd, maar houdt tekst leesbaar boven lichte tegels.", "Немного нагружает процессор, зато текст читается поверх ярких плиток.", "わずかに CPU を使いますが、明るいタイル上でも文字が読めます。", "会占用少量算力，但能让文字在亮色方块上保持可读。"],
+    "set.metrics": ["Kennzahlen", "Metrics", "Indicadores", "Indicateurs", "Indicatori", "Indicadores", "Kengetallen", "Показатели", "指標", "指标"],
+    "set.metricsClockHelp": ["Was unter der Blockhöhe steht. Nichts ausgewählt heißt: alles.", "What appears under the block height. Nothing selected means all.", "Lo que aparece bajo la altura del bloque. Nada seleccionado significa todo.", "Ce qui figure sous la hauteur de bloc. Rien de coché signifie tout.", "Cosa compare sotto l’altezza del blocco. Niente selezionato significa tutto.", "O que aparece sob a altura do bloco. Nada selecionado significa tudo.", "Wat onder de blokhoogte staat. Niets geselecteerd betekent alles.", "Что показано под высотой блока. Ничего не выбрано — значит всё.", "ブロック高の下に表示する項目です。未選択はすべて表示。", "显示在区块高度下方的内容。不勾选表示全部显示。"],
+    "set.metricsMinerHelp": ["Ab sechs Stück verteilen sie sich auf Zeilen zu je drei.", "From six on they spread over rows of three.", "A partir de seis se reparten en filas de tres.", "À partir de six, ils se répartissent en lignes de trois.", "Da sei in poi si dispongono su righe di tre.", "A partir de seis distribuem-se em linhas de três.", "Vanaf zes verdelen ze zich over rijen van drie.", "От шести штук они располагаются рядами по три.", "6 個以上は 3 個ずつの行に分かれます。", "达到六个后按每行三个分行显示。"],
+    "set.diffBars": ["Schwierigkeit und Halving", "Difficulty and halving", "Dificultad y halving", "Difficulté et halving", "Difficoltà e halving", "Dificuldade e halving", "Moeilijkheid en halving", "Сложность и халвинг", "難易度と半減期", "难度与减半"],
+    "set.diffBarsHelp": ["Die beiden Zeilen mit Fortschrittsbalken am unteren Rand.", "The two lines with progress bars at the bottom.", "Las dos líneas con barras de progreso abajo.", "Les deux lignes avec barres de progression en bas.", "Le due righe con barre di avanzamento in basso.", "As duas linhas com barras de progresso em baixo.", "De twee regels met voortgangsbalken onderaan.", "Две строки с индикаторами внизу.", "下部にある進捗バー付きの 2 行です。", "底部带进度条的两行。"],
+    "set.hashChart": ["Hashrate-Kurve", "Hashrate chart", "Gráfico de hashrate", "Courbe de hashrate", "Grafico dell’hashrate", "Gráfico de hashrate", "Hashrategrafiek", "График хешрейта", "ハッシュレート推移", "算力曲线"],
+    "set.hashChartHelp": ["Der schmale Verlauf ganz unten, drei Tage.", "The slim chart at the very bottom, three days.", "La curva estrecha del fondo, tres días.", "La courbe étroite tout en bas, trois jours.", "Il grafico stretto in fondo, tre giorni.", "O gráfico estreito no fundo, três dias.", "De smalle grafiek onderaan, drie dagen.", "Узкий график внизу, три дня.", "最下部の細いグラフ、3 日分です。", "最底部的细曲线，三天。"],
+    "set.clockTime": ["Uhrzeit", "Clock", "Hora", "Heure", "Ora", "Hora", "Klok", "Часы", "時刻", "时钟"],
+    "set.clockTimeHelp": ["Für ein Tablet an der Wand — dann ist es auch eine Uhr.", "For a tablet on the wall — then it is a clock too.", "Para una tablet en la pared: así también es un reloj.", "Pour une tablette murale — cela devient aussi une horloge.", "Per un tablet a parete — così è anche un orologio.", "Para um tablet na parede — assim também é um relógio.", "Voor een tablet aan de muur — dan is het ook een klok.", "Для планшета на стене — тогда это ещё и часы.", "壁掛けタブレット向け。時計としても使えます。", "适合挂墙平板——这样它同时也是一个时钟。"],
+    "set.minerChart": ["Verlaufskurve", "History chart", "Gráfico de evolución", "Courbe d’évolution", "Grafico storico", "Gráfico de evolução", "Verloopgrafiek", "График хода", "推移グラフ", "历史曲线"],
+    "set.minerChartHelp": ["Hashrate und Temperatur der letzten Viertelstunde.", "Hashrate and temperature over the last quarter hour.", "Hashrate y temperatura del último cuarto de hora.", "Hashrate et température du dernier quart d’heure.", "Hashrate e temperatura dell’ultimo quarto d’ora.", "Hashrate e temperatura do último quarto de hora.", "Hashrate en temperatuur van het laatste kwartier.", "Хешрейт и температура за последние 15 минут.", "直近 15 分のハッシュレートと温度です。", "最近一刻钟的算力与温度。"],
+    "set.minerDomains": ["Rechenwerke einzeln", "Compute domains", "Dominios de cálculo", "Domaines de calcul", "Domini di calcolo", "Domínios de cálculo", "Rekendomeinen", "Вычислительные домены", "演算ドメイン", "各运算域"],
+    "set.minerDomainsHelp": ["Die Balken je ASIC-Kern — zeigt, ob einer schwächelt.", "The bars per ASIC core — shows whether one is weakening.", "Las barras por núcleo ASIC: muestran si alguno flaquea.", "Les barres par cœur ASIC — montrent si l’un faiblit.", "Le barre per core ASIC — mostrano se uno cede.", "As barras por núcleo ASIC — mostram se algum enfraquece.", "De balken per ASIC-kern — laat zien of er één verzwakt.", "Полосы по ядрам ASIC — видно, если одно слабеет.", "ASIC コアごとのバー。弱っているコアが分かります。", "每个 ASIC 核心的柱状图——可看出哪个变弱。"],
+    "set.minerBoard": ["Bestenliste", "Best shares", "Mejores shares", "Meilleures parts", "Migliori share", "Melhores shares", "Beste shares", "Лучшие шары", "最高シェア", "最佳份额"],
+    "set.minerBoardHelp": ["Die höchsten erreichten Schwierigkeiten.", "The highest difficulties reached.", "Las dificultades más altas alcanzadas.", "Les difficultés les plus élevées atteintes.", "Le difficoltà più alte raggiunte.", "As dificuldades mais altas alcançadas.", "De hoogst bereikte moeilijkheden.", "Наибольшие достигнутые сложности.", "達成した最高難易度です。", "已达到的最高难度。"],
+    "set.explorerColor": ["Farbe der Kachelgrafiken", "Tile graphic colour", "Color de los mosaicos", "Couleur des mosaïques", "Colore dei mosaici", "Cor dos mosaicos", "Kleur van de tegelbeelden", "Цвет плиточных схем", "タイル図の配色", "方块图配色"],
+    "set.explorerColorHelp": ["Gilt für Blöcke und den geplanten Block im Explorer.", "Applies to blocks and the projected block in the explorer.", "Se aplica a los bloques y al bloque previsto en el explorador.", "S’applique aux blocs et au bloc prévu dans l’explorateur.", "Vale per i blocchi e per il blocco previsto nell’explorer.", "Aplica-se aos blocos e ao bloco previsto no explorador.", "Geldt voor blokken en het verwachte blok in de verkenner.", "Относится к блокам и ожидаемому блоку в обозревателе.", "エクスプローラのブロックと予測ブロックに適用されます。", "适用于浏览器中的区块和预计区块。"],
+    "set.homeParts": ["Abschnitte der Startseite", "Sections of the start page", "Secciones de la página inicial", "Sections de la page d’accueil", "Sezioni della pagina iniziale", "Secções da página inicial", "Onderdelen van de startpagina", "Разделы стартовой страницы", "トップページの区画", "首页板块"],
+    "set.homePartsHelp": ["Was auf der Explorer-Startseite untereinander steht. Nichts ausgewählt heißt: alles.", "What is stacked on the explorer start page. Nothing selected means all.", "Lo que se apila en la página inicial del explorador. Nada seleccionado significa todo.", "Ce qui s’empile sur la page d’accueil de l’explorateur. Rien de coché signifie tout.", "Cosa si impila nella pagina iniziale dell’explorer. Niente selezionato significa tutto.", "O que fica empilhado na página inicial do explorador. Nada selecionado significa tudo.", "Wat op de startpagina van de verkenner onder elkaar staat. Niets geselecteerd betekent alles.", "Что идёт друг под другом на стартовой странице. Ничего не выбрано — значит всё.", "エクスプローラのトップページに縦に並ぶ内容です。未選択はすべて。", "浏览器首页自上而下的内容。不勾选表示全部。"],
+    "set.whichPanels": ["Welche Tafeln", "Which panels", "Qué paneles", "Quels panneaux", "Quali riquadri", "Que painéis", "Welke panelen", "Какие панели", "どのパネル", "显示哪些面板"],
+    "set.whichPanelsHelp": ["Die vier Kästchen unter der Blockleiste.", "The four boxes below the block strip.", "Las cuatro cajas bajo la tira de bloques.", "Les quatre encadrés sous la bande de blocs.", "I quattro riquadri sotto la striscia dei blocchi.", "As quatro caixas sob a faixa de blocos.", "De vier vakjes onder de blokkenbalk.", "Четыре блока под лентой блоков.", "ブロック帯の下にある 4 つの枠です。", "区块条下方的四个方框。"],
+    "set.trackProjected": ["Geplanten Block mitverfolgen", "Track the projected block", "Seguir el bloque previsto", "Suivre le bloc prévu", "Seguire il blocco previsto", "Acompanhar o bloco previsto", "Verwacht blok volgen", "Следить за ожидаемым блоком", "予測ブロックを追跡", "跟踪预计区块"],
+    "set.trackProjectedHelp": ["Hält die Kachelgrafik des nächsten Blocks aktuell. Kostet rund 8 kB/s, solange die Seite offen ist.", "Keeps the next block’s tile graphic current. Costs about 8 kB/s while the page is open.", "Mantiene actualizado el mosaico del próximo bloque. Cuesta unos 8 kB/s mientras la página esté abierta.", "Maintient à jour la mosaïque du prochain bloc. Coûte environ 8 ko/s tant que la page est ouverte.", "Mantiene aggiornato il mosaico del prossimo blocco. Costa circa 8 kB/s finché la pagina è aperta.", "Mantém atualizado o mosaico do próximo bloco. Custa cerca de 8 kB/s enquanto a página estiver aberta.", "Houdt het tegelbeeld van het volgende blok actueel. Kost ongeveer 8 kB/s zolang de pagina open is.", "Держит плиточную схему следующего блока актуальной. Стоит около 8 кБ/с, пока страница открыта.", "次のブロックのタイル図を最新に保ちます。ページを開いている間、約 8 kB/s かかります。", "保持下一个区块方块图为最新。页面打开期间约占 8 kB/s。"],
+    "set.walletTitle": ["Wallet-Ansicht", "Wallet view", "Vista de cartera", "Vue portefeuille", "Vista portafoglio", "Vista da carteira", "Walletweergave", "Вид кошелька", "ウォレット画面", "钱包视图"],
+    "set.walletWarnTitle": ["Bevor Sie das einschalten", "Before you turn this on", "Antes de activarlo", "Avant d’activer ceci", "Prima di attivarlo", "Antes de ativar isto", "Voordat u dit inschakelt", "Прежде чем включить", "有効にする前に", "开启之前"],
+    "set.walletWarn": ["Ihr Guthaben ist nicht in Gefahr: hier liegt nur ein öffentlicher Schlüssel, das Programm kann nicht signieren und nimmt keinen privaten Schlüssel entgegen. Der Schlüssel verlässt das Gerät nie.\n\nWas Sie aufgeben, ist Privatsphäre. Die Adressen werden hier abgeleitet und einzeln bei mempool.space abgefragt — wer viele Adressen kurz nacheinander von derselben Stelle abfragt, zeigt dem Betreiber, dass sie zusammengehören. Er sieht damit Ihre Wallet, ohne sie je bekommen zu haben.\n\nVollständig lösen lässt sich das nur mit einem eigenen Knoten (electrs). Auf einem fremden oder geteilten Rechner sollten Sie diese Ansicht ausgelassen lassen.",
+        "Your funds are not at risk: only a public key is stored here, the program cannot sign and accepts no private key. The key never leaves the device.\n\nWhat you give up is privacy. Addresses are derived here and queried one by one at mempool.space — querying many addresses in quick succession from the same place shows the operator that they belong together. They see your wallet without ever receiving it.\n\nOnly your own node (electrs) solves this fully. On a foreign or shared computer, leave this view off.",
+        "Sus fondos no corren peligro: aquí sólo hay una clave pública, el programa no puede firmar ni acepta claves privadas. La clave nunca sale del equipo.\n\nLo que cede es privacidad. Las direcciones se derivan aquí y se consultan una a una en mempool.space; consultar muchas seguidas desde el mismo sitio le muestra al operador que van juntas. Ve su cartera sin haberla recibido nunca.\n\nSólo un nodo propio (electrs) lo resuelve del todo. En un ordenador ajeno o compartido, deje esta vista desactivada.",
+        "Vos fonds ne risquent rien : seule une clé publique est stockée ici, le programme ne sait pas signer et n’accepte aucune clé privée. La clé ne quitte jamais l’appareil.\n\nCe que vous cédez, c’est la confidentialité. Les adresses sont dérivées ici et interrogées une à une auprès de mempool.space — en interroger beaucoup coup sur coup depuis le même endroit montre à l’opérateur qu’elles vont ensemble. Il voit votre portefeuille sans l’avoir jamais reçu.\n\nSeul un nœud personnel (electrs) règle cela complètement. Sur un ordinateur étranger ou partagé, laissez cette vue désactivée.",
+        "I tuoi fondi non sono a rischio: qui c’è solo una chiave pubblica, il programma non può firmare e non accetta chiavi private. La chiave non lascia mai il dispositivo.\n\nQuello che cedi è la privacy. Gli indirizzi sono derivati qui e interrogati uno per uno su mempool.space: interrogarne molti di seguito dallo stesso punto mostra al gestore che stanno insieme. Vede il tuo portafoglio senza averlo mai ricevuto.\n\nSolo un nodo proprio (electrs) risolve del tutto. Su un computer altrui o condiviso, lascia questa vista disattivata.",
+        "Os seus fundos não correm perigo: aqui só está uma chave pública, o programa não consegue assinar nem aceita chaves privadas. A chave nunca sai do dispositivo.\n\nO que cede é privacidade. Os endereços são derivados aqui e consultados um a um no mempool.space — consultar muitos seguidos do mesmo sítio mostra ao operador que pertencem juntos. Ele vê a sua carteira sem nunca a ter recebido.\n\nSó um nó próprio (electrs) resolve isto por completo. Num computador alheio ou partilhado, deixe esta vista desligada.",
+        "Uw tegoed loopt geen gevaar: hier ligt alleen een publieke sleutel, het programma kan niet ondertekenen en accepteert geen privésleutel. De sleutel verlaat het apparaat nooit.\n\nWat u opgeeft is privacy. Adressen worden hier afgeleid en één voor één bij mempool.space opgevraagd — veel adressen kort na elkaar vanaf dezelfde plek opvragen toont de beheerder dat ze bij elkaar horen. Hij ziet uw wallet zonder die ooit te hebben gekregen.\n\nAlleen een eigen node (electrs) lost dit volledig op. Laat deze weergave uit op een vreemde of gedeelde computer.",
+        "Вашим средствам ничего не грозит: здесь только публичный ключ, программа не умеет подписывать и не принимает приватных ключей. Ключ никогда не покидает устройство.\n\nВы жертвуете приватностью. Адреса выводятся здесь и запрашиваются по одному в mempool.space — запрос многих адресов подряд с одного места показывает оператору, что они связаны. Он видит ваш кошелёк, ни разу его не получив.\n\nПолностью решает только собственный узел (electrs). На чужом или общем компьютере оставьте этот вид выключенным.",
+        "資産が危険にさらされることはありません。ここにあるのは公開鍵だけで、プログラムは署名できず、秘密鍵も受け付けません。鍵は端末から出ません。\n\n差し出すのはプライバシーです。アドレスはここで導出し、mempool.space に個別に問い合わせます。同じ場所から短時間に多数を問い合わせると、事業者にそれらが同一のものだと分かります。ウォレットを渡さずとも見られてしまうわけです。\n\n完全な解決は自前ノード (electrs) だけです。他人の、あるいは共用の端末ではこの画面を無効のままにしてください。",
+        "您的资金没有风险：这里只保存公钥，程序无法签名，也不接受私钥。密钥永远不会离开本机。\n\n您放弃的是隐私。地址在本地推导，并逐个向 mempool.space 查询——从同一处短时间内查询大量地址，会让服务方看出它们属于同一钱包。他们无需拿到您的钱包就能看到它。\n\n只有自建节点（electrs）才能彻底解决。在他人或共用的电脑上，请让此视图保持关闭。"],
+    "set.walletEnable": ["Verstanden — Wallet-Ansicht einschalten", "Understood — enable wallet view", "Entendido — activar vista de cartera", "Compris — activer la vue portefeuille", "Capito — attiva la vista portafoglio", "Compreendido — ativar vista da carteira", "Begrepen — walletweergave inschakelen", "Понятно — включить вид кошелька", "理解しました — ウォレット画面を有効にする", "已了解——启用钱包视图"],
+    "set.walletDisable": ["Wallet-Ansicht wieder ausblenden", "Hide the wallet view again", "Ocultar de nuevo la vista de cartera", "Masquer à nouveau la vue portefeuille", "Nascondi di nuovo la vista portafoglio", "Ocultar novamente a vista da carteira", "Walletweergave weer verbergen", "Снова скрыть вид кошелька", "ウォレット画面を再び隠す", "重新隐藏钱包视图"],
+    "set.walletCli": ["Eingetragen wird auf der Kommandozeile — der Dienst im Hintergrund nimmt nichts entgegen:", "Configured on the command line — the background service accepts nothing:", "Se configura en la línea de órdenes; el servicio en segundo plano no acepta nada:", "La configuration se fait en ligne de commande — le service en arrière-plan n’accepte rien :", "Si configura da riga di comando — il servizio in background non accetta nulla:", "Configura-se na linha de comandos — o serviço em segundo plano não aceita nada:", "Instellen via de opdrachtregel — de achtergronddienst neemt niets aan:", "Настраивается в командной строке — фоновая служба ничего не принимает:", "コマンドラインで設定します。バックグラウンドのサービスは何も受け付けません:", "通过命令行配置——后台服务不接收任何输入："]
+,
+    "unit.million": ["Mio", "M", "M", "M", "Mln", "M", "mln", "млн", "百万", "百万"],
+    "unit.billion": ["Mrd", "bn", "mil M", "Md", "Mld", "mil M", "mld", "млрд", "十億", "十亿"]
+,
+    "unit.byte": ["{0} Byte", "{0} bytes", "{0} bytes", "{0} octets", "{0} byte", "{0} bytes", "{0} bytes", "{0} байт", "{0} バイト", "{0} 字节"],
+    "tx.nIn": ["{0} Eingänge", "{0} inputs", "{0} entradas", "{0} entrées", "{0} ingressi", "{0} entradas", "{0} invoeren", "{0} входов", "入力 {0} 件", "{0} 个输入"],
+    "tx.nOut": ["{0} Ausgänge", "{0} outputs", "{0} salidas", "{0} sorties", "{0} uscite", "{0} saídas", "{0} uitvoeren", "{0} выходов", "出力 {0} 件", "{0} 个输出"],
+    "err.unreadable": ["Antwort nicht lesbar", "Response not readable", "Respuesta ilegible", "Réponse illisible", "Risposta illeggibile", "Resposta ilegível", "Antwoord onleesbaar", "Ответ нечитаем", "応答を解釈できません", "响应无法解析"],
+    "err.unreachable": ["nicht erreichbar", "not reachable", "no accesible", "injoignable", "non raggiungibile", "inacessível", "niet bereikbaar", "недоступно", "接続できません", "无法连接"],
+    "wallet.cmdList": ["btcfeed --watch-list       zeigt, was eingetragen ist", "btcfeed --watch-list       shows what is configured", "btcfeed --watch-list       muestra lo configurado", "btcfeed --watch-list       montre la configuration", "btcfeed --watch-list       mostra la configurazione", "btcfeed --watch-list       mostra o que está configurado", "btcfeed --watch-list       toont wat is ingesteld", "btcfeed --watch-list       показывает настроенное", "btcfeed --watch-list       設定内容を表示", "btcfeed --watch-list       显示已配置内容"],
+    "wallet.cmdRemove": ["btcfeed --watch-remove 1  nimmt einen Eintrag heraus", "btcfeed --watch-remove 1  removes an entry", "btcfeed --watch-remove 1  elimina una entrada", "btcfeed --watch-remove 1  supprime une entrée", "btcfeed --watch-remove 1  rimuove una voce", "btcfeed --watch-remove 1  remove uma entrada", "btcfeed --watch-remove 1  verwijdert een item", "btcfeed --watch-remove 1  удаляет запись", "btcfeed --watch-remove 1  項目を削除", "btcfeed --watch-remove 1  移除一条记录"],
+    "wallet.cmdRestart": ["systemctl --user restart btcfeed   übernimmt die Änderung", "systemctl --user restart btcfeed   applies the change", "systemctl --user restart btcfeed   aplica el cambio", "systemctl --user restart btcfeed   applique la modification", "systemctl --user restart btcfeed   applica la modifica", "systemctl --user restart btcfeed   aplica a alteração", "systemctl --user restart btcfeed   past de wijziging toe", "systemctl --user restart btcfeed   применяет изменение", "systemctl --user restart btcfeed   変更を反映", "systemctl --user restart btcfeed   应用更改"],
+    "wallet.cmdAdd": ["btcfeed --watch-add <zpub…> \"Mein Sparbuch\"", "btcfeed --watch-add <zpub…> \"My savings\"", "btcfeed --watch-add <zpub…> \"Mis ahorros\"", "btcfeed --watch-add <zpub…> \"Mon épargne\"", "btcfeed --watch-add <zpub…> \"I miei risparmi\"", "btcfeed --watch-add <zpub…> \"As minhas poupanças\"", "btcfeed --watch-add <zpub…> \"Mijn spaargeld\"", "btcfeed --watch-add <zpub…> \"Мои сбережения\"", "btcfeed --watch-add <zpub…> \"貯金\"", "btcfeed --watch-add <zpub…> \"我的储蓄\""]
+};
+
+// Text holen. `lang` bestimmt die Spalte; fehlt der Schluessel oder die
+// Sprache, wird auf Englisch und zuletzt auf den Schluessel selbst
+// zurueckgefallen -- sichtbar, aber nie leer.
+function t(key, lang, a0, a1, a2) {
+    var row = S[key];
+    if (!row)
+        return key;
+    var i = LANGS.indexOf(lang || "de");
+    var s = (i >= 0 && row[i]) ? row[i] : (row[1] || row[0] || key);
+    if (a0 !== undefined)
+        s = s.replace("{0}", a0);
+    if (a1 !== undefined)
+        s = s.replace("{1}", a1);
+    if (a2 !== undefined)
+        s = s.replace("{2}", a2);
+    return s;
+}
+
+// Fuer die Sprachwahl in den Einstellungen
+function languages() {
+    var out = [];
+    for (var i = 0; i < LANGS.length; i++)
+        out.push({ "k": LANGS[i], "l": NAMES[LANGS[i]] });
+    return out;
+}
+
+// Zahlen mit Tausendertrennung. Deutsch und die romanischen Sprachen nehmen
+// den Punkt, Englisch das Komma, Franzoesisch und Russisch ein schmales
+// Leerzeichen. Das ist keine Kosmetik: "1.234" heisst je nach Sprache
+// tausendzweihundert oder eins Komma zwei.
+function sep(lang) {
+    if (lang === "en" || lang === "ja" || lang === "zh")
+        return ",";
+    if (lang === "fr" || lang === "ru")
+        return " ";
+    return ".";
+}
+
+function decimal(lang) {
+    return (lang === "en" || lang === "ja" || lang === "zh") ? "." : ",";
+}
+
+function group(n, lang) {
+    if (n === undefined || n === null || isNaN(n))
+        return "–";
+    var s = sep(lang);
+    var t0 = String(Math.round(n)), out = "", c = 0;
+    for (var i = t0.length - 1; i >= 0; i--) {
+        out = t0[i] + out;
+        if (++c % 3 === 0 && i > 0)
+            out = s + out;
+    }
+    return out;
+}
+
+// Betrag in Landeswaehrung. Kurs und Zeichen kommen von `money.js` --
+// dort steht, welche Waehrung es ist, hier, wie sie geschrieben wird.
+function fiat(sats, rate, sym, lang) {
+    if (!rate || !sats)
+        return "";
+    var v = sats / 1e8 * rate;
+    if (v >= 1e9)
+        return "≈ " + fixed(v / 1e9, 2, lang) + " " + t("unit.billion", lang) + " " + sym;
+    if (v >= 1e6)
+        return "≈ " + group(v / 1e6, lang) + " " + t("unit.million", lang) + " " + sym;
+    return "≈ " + group(v, lang) + " " + sym;
+}
+
+// Der Kurs selbst, also der Preis eines ganzen Bitcoin
+function price1(rate, sym, lang) {
+    return rate ? group(rate, lang) + " " + sym : "–";
+}
+
+// Nachkommastellen in der Schreibweise der Sprache
+function fixed(n, digits, lang) {
+    if (n === undefined || n === null || isNaN(n))
+        return "–";
+    var parts = n.toFixed(digits).split(".");
+    var ganz = group(parseInt(parts[0], 10), lang);
+    return parts.length > 1 ? ganz + decimal(lang) + parts[1] : ganz;
+}

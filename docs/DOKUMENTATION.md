@@ -2033,3 +2033,65 @@ Der Weg dafuer stuende fest: eine `strings.js` mit `t(key, lang)` und ein
 `lang` an jeder Ansicht, so wie schon `textColor` und `uiFont` durchgereicht
 werden. Ein Singleton ginge nicht ohne Weiteres, weil dieselben Dateien in drei
 Wirten laufen und ein `qmldir` nur im CMake-Modul entsteht.
+
+
+## Zehn Sprachen (`strings.js`)
+
+Die Oberflaeche spricht jetzt Deutsch, Englisch, Spanisch, Franzoesisch,
+Italienisch, Portugiesisch, Niederlaendisch, Russisch, Japanisch und
+Chinesisch -- dieselbe Auswahl, die auch mempool.space fuehrt, und dieselbe
+Wortwahl: "Mempool", "Hashrate", "Coinbase" und "RBF" bleiben ueberall stehen,
+weil sie in jeder Sprache so heissen.
+
+### Aufbau
+
+Ein Schluessel je Textstelle, dahinter eine Zeile mit einem Eintrag je Sprache
+in der Reihenfolge von `LANGS`:
+
+    "blockHeight": ["Blockhöhe", "Block height", "Altura del bloque", …]
+
+Kompakter als geschachtelte Objekte, und eine neue Sprache ist eine Spalte
+statt dreihundert neuer Zeilen. Rund 300 Schluessel.
+
+### Warum eine Funktion und kein Singleton
+
+`t(key, lang)` ist eine **reine Funktion**. Gibt man `lang` mit, haengt die
+Bindung daran und wird beim Umschalten von selbst neu gerechnet -- ohne
+Neustart, ohne Signal.
+
+Ein QML-Singleton waere der uebliche Weg, geht hier aber nicht: dieselben
+Dateien laufen in drei Wirten, und ein Singleton braucht ein `qmldir`, das nur
+im CMake-Modul entsteht. Also bekommt jede Ansicht `lang` durchgereicht, genau
+wie `textColor` und `uiFont` auch.
+
+### Zahlen gehoeren zur Sprache
+
+Das ist keine Kosmetik: **"1.234" heisst je nach Sprache tausendzweihundert
+oder eins Komma zwei.** `Tr.group(n, lang)` und `Tr.fixed(n, stellen, lang)`
+setzen Tausender- und Dezimaltrenner nach Sprache -- Punkt im Deutschen,
+Komma im Englischen, schmales Leerzeichen im Franzoesischen und Russischen.
+
+Vorher stand `.toFixed(2).replace(".", ",")` an vierzig Stellen im Quelltext.
+
+### Zwei Fallen
+
+**Ein `.import` in einer `.pragma library` traegt nicht.** `money.js` sollte
+`strings.js` einbinden, um Betraege zu schreiben -- das Laden scheitert dann
+**stumm**: die Datei meldet nur "Script … unavailable", und zwar erst zur
+Laufzeit, nicht beim Uebersetzen. Aufgeloest, indem die Abhaengigkeit umgedreht
+wurde: `money.js` kennt nur noch Kurs und Zeichen, geschrieben wird in
+`strings.js`.
+
+**Reguläre Ausdruecke taugen nicht zum Umbauen von Quelltext.** Der Versuch,
+`x.toFixed(2).replace(".", ",")` maschinell durch `Tr.fixed(x, 2, lang)` zu
+ersetzen, hat in acht Dateien Ausdruecke zerrissen -- der Ausdruck vor
+`.toFixed` laesst sich mit einem Muster nicht zuverlaessig abgrenzen. Acht
+Stellen mussten von Hand zurechtgerueckt werden. Beim naechsten Mal: die
+Fundstellen auflisten und einzeln ersetzen.
+
+### Was nicht uebersetzt wird
+
+Einheiten und Eigennamen: `sat/vB`, `vByte`, `MB`, `BTC`, `₿`, `EH/s`, `°C`,
+`Mempool`, `Hashrate`, `Coinbase`, `RBF`, `SegWit`, `Nonce`, `Sigops`,
+`CoinJoin`. Ausnahme sind Umdrehungen je Minute: im Deutschen `U/min`, sonst
+`RPM`.

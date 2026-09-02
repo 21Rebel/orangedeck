@@ -21,11 +21,14 @@
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
 Item {
     id: root
+
+    property string lang: "de"
 
     property var vin: []
     property var vout: []
@@ -435,7 +438,7 @@ Item {
                 var ty = fb.edgeY - root.labelSize * 0.45;
                 if (ty < root.labelSize)
                     ty = fb.edgeY + fb.hEdge + root.labelSize;
-                ctx.fillText("Gebühr " + root.fee + " sat", w - root.edgeMargin, ty);
+                ctx.fillText(Tr.t("flow.fee", root.lang, root.fee), w - root.edgeMargin, ty);
             }
         }
     }
@@ -504,13 +507,14 @@ Item {
                 var hv = root.hovered;
                 if (!hv)
                     return "";
-                var v = "₿ " + (hv.value / 1e8).toFixed(8).replace(".", ",");
+                var v = "₿ " + Tr.fixed(hv.value / 1e8, 8, root.lang);
                 if (hv.side === "fee")
-                    return "Gebühr " + v + " · " + root.fee + " sat";
+                    return Tr.t("flow.fee", root.lang, root.fee) + " · " + v;
                 if (hv.more)
                     return "weitere " + hv.more + " · " + v;
                 var n = hv.index + (hv.side === "out" && root.fee > 0 ? 0 : 1);
-                return (hv.side === "in" ? "Eingang " : "Ausgang ") + n + " · " + v;
+                return Tr.t(hv.side === "in" ? "flow.in" : "flow.out", root.lang, n)
+                       + " · " + v;
             }
         }
     }

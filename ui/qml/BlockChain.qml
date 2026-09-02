@@ -9,6 +9,7 @@
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -23,6 +24,7 @@ Item {
     property color pendingColor: "#2f9e63"
     property color minedColor: "#7b5cd6"
     property real uiFont: 13
+    property string lang: "de"
 
     property var blocks: []
     // Rueckfallweg: die geplanten Bloecke ueber REST. Gebraucht wird er nur,
@@ -48,9 +50,9 @@ Item {
         var avg = (root.feed && root.feed.difficulty.timeAvg) || 600000;
         var min = Math.round((rank + 1) * avg / 60000);
         if (min < 60)
-            return "in ~" + min + " Min";
+            return Tr.t("in.min", root.lang, min);
         var h = Math.floor(min / 60);
-        return "in ~" + h + " Std " + (min % 60) + " Min";
+        return Tr.t("in.hourMin", root.lang, h, min % 60);
     }
 
     implicitHeight: uiFont * 13.5
@@ -63,16 +65,11 @@ Item {
     readonly property real cardSide: Math.max(uiFont * 4,
         Math.min(cellWidth, implicitHeight - uiFont * 3.2))
 
+    // Tausendertrennung in der Schreibweise der Sprache -- Deutsch nimmt den
+    // Punkt, Englisch das Komma. Das ist keine Kosmetik: "1.234" heisst je
+    // nach Sprache tausendzweihundert oder eins Komma zwei.
     function grp(n) {
-        if (n === undefined || n === null)
-            return "–";
-        var t = String(Math.round(n)), out = "", c = 0;
-        for (var i = t.length - 1; i >= 0; i--) {
-            out = t[i] + out;
-            if (++c % 3 === 0 && i > 0)
-                out = "." + out;
-        }
-        return out;
+        return Tr.group(n, root.lang);
     }
 
     // Gebuehren unter 10 sat/vB brauchen eine Nachkommastelle. Gerundet steht
@@ -81,7 +78,7 @@ Item {
     function fee(n) {
         if (n === undefined || n === null)
             return "–";
-        return n >= 10 ? String(Math.round(n)) : n.toFixed(1).replace(".", ",");
+        return n >= 10 ? String(Math.round(n)) : Tr.fixed(n, 1, root.lang);
     }
 
     function ago(ts) {
@@ -90,13 +87,13 @@ Item {
         var s = Math.max(0, Math.floor(Date.now() / 1000 - ts));
         var m = Math.floor(s / 60);
         if (m < 1)
-            return "gerade eben";
+            return Tr.t("ago.now", root.lang);
         if (m < 60)
-            return "vor " + m + " Min";
+            return Tr.t("ago.min", root.lang, m);
         var h = Math.floor(m / 60);
         if (h < 48)
-            return "vor " + h + " Std";
-        return "vor " + Math.floor(h / 24) + " Tagen";
+            return Tr.t("ago.hour", root.lang, h);
+        return Tr.t("ago.day", root.lang, Math.floor(h / 24));
     }
 
     // Abgestuft nach Gebuehr, im selben Gruen -- der naechste Block traegt die
@@ -164,7 +161,7 @@ Item {
 
         anchors.left: parent.left
         anchors.top: parent.top
-        text: "Geplant  ·  bestätigt"
+        text: Tr.t("chain.label", root.lang)
         color: root.dimColor
         font.pixelSize: root.uiFont * 0.85
     }
@@ -255,21 +252,21 @@ Item {
 
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    text: root.grp(pcell.modelData.nTx) + " Transaktionen"
+                                    text: Tr.t("txlist.count", root.lang, root.grp(pcell.modelData.nTx))
                                     color: Qt.rgba(1, 1, 1, 0.74)
                                     font.pixelSize: root.uiFont * 0.72
                                 }
 
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    text: (pcell.modelData.blockSize / 1e6).toFixed(2).replace(".", ",") + " MB"
+                                    text: Tr.fixed((pcell.modelData.blockSize / 1e6), 2, root.lang) + " MB"
                                     color: Qt.rgba(1, 1, 1, 0.74)
                                     font.pixelSize: root.uiFont * 0.72
                                 }
 
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    text: (pcell.modelData.totalFees / 1e8).toFixed(3).replace(".", ",") + " BTC"
+                                    text: Tr.fixed((pcell.modelData.totalFees / 1e8), 3, root.lang) + " BTC"
                                     color: Qt.rgba(1, 1, 1, 0.74)
                                     font.pixelSize: root.uiFont * 0.72
                                 }
@@ -395,7 +392,7 @@ Item {
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: cell.ex.reward
-                                    ? (cell.ex.reward / 1e8).toFixed(3).replace(".", ",") + " BTC" : ""
+                                    ? Tr.fixed((cell.ex.reward / 1e8), 3, root.lang) + " BTC" : ""
                                 color: "#ffffff"
                                 font.pixelSize: root.uiFont * 0.95
                                 font.bold: true
@@ -403,14 +400,14 @@ Item {
 
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: root.grp(cell.modelData.tx_count) + " Transaktionen"
+                                text: Tr.t("txlist.count", root.lang, root.grp(cell.modelData.tx_count))
                                 color: Qt.rgba(1, 1, 1, 0.72)
                                 font.pixelSize: root.uiFont * 0.72
                             }
 
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: (cell.modelData.size / 1024 / 1024).toFixed(2).replace(".", ",") + " MB"
+                                text: Tr.fixed((cell.modelData.size / 1024 / 1024), 2, root.lang) + " MB"
                                 color: Qt.rgba(1, 1, 1, 0.72)
                                 font.pixelSize: root.uiFont * 0.72
                             }
@@ -450,7 +447,7 @@ Item {
     Text {
         anchors.centerIn: parent
         visible: root.blocks.length === 0
-        text: root.error.length ? root.error : "lädt …"
+        text: root.error.length ? root.error : Tr.t("loading", root.lang)
         color: root.dimColor
         font.pixelSize: root.uiFont * 0.85
     }

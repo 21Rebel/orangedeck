@@ -8,23 +8,17 @@
 
 // Farben passend zum uebrigen Bild: warme Toene fuer alltaegliche Zahlungen,
 // kuehle fuer Umschichtungen, ein eigener Ton fuer Datenablage.
+// Farbe und Erklaerung je Art. Die **Bezeichnung** steht in strings.js unter
+// "type.<key>" -- sie ist uebersetzt, die Farbe nicht.
 var TYPES = {
-    "payment":       { "label": "Zahlung",         "color": "#f7931a",
-                       "help": "Ein bis zwei Eingänge, ein Ziel und meist ein Rückgeld — die alltägliche Überweisung." },
-    "consolidation": { "label": "Konsolidierung",  "color": "#3fb3a3",
-                       "help": "Viele Eingänge auf wenige Ausgänge: jemand räumt sein Guthaben zusammen, meist wenn die Gebühren niedrig sind." },
-    "batch":         { "label": "Sammelzahlung",   "color": "#4a86d8",
-                       "help": "Wenige Eingänge auf viele Ausgänge — Börsen und Pools zahlen so an viele Empfänger auf einmal." },
-    "coinjoin":      { "label": "CoinJoin",        "color": "#c065c9",
-                       "help": "Viele Beteiligte zahlen gemeinsam und erhalten gleich große Ausgänge zurück. Verwischt die Zuordnung, wer wem zahlt." },
-    "data":          { "label": "Datenablage",     "color": "#8a7f9c",
-                       "help": "Enthält einen OP_RETURN-Ausgang: hier wird nicht Geld bewegt, sondern etwas in die Kette geschrieben." },
-    "coinbase":      { "label": "Blockbelohnung",  "color": "#d8b84a",
-                       "help": "Die erste Transaktion eines Blocks — hier entstehen neue Bitcoin und die Gebühren des Blocks gehen an den Finder." },
-    "sweep":         { "label": "Umschichtung",    "color": "#6f7fd0",
-                       "help": "Alles fließt auf einen einzigen Ausgang, ohne Rückgeld — typisch beim Leeren einer Adresse oder Wallet." },
-    "inscription":   { "label": "Inschrift",       "color": "#e0578f",
-                       "help": "Trägt Daten im Zeugnisteil (Witness) — Ordinals und Verwandtes. Die Daten zahlen dort weniger Gebühr als in einem OP_RETURN." }
+    "payment":       { "color": "#f7931a" },
+    "consolidation": { "color": "#3fb3a3" },
+    "batch":         { "color": "#4a86d8" },
+    "coinjoin":      { "color": "#c065c9" },
+    "data":          { "color": "#8a7f9c" },
+    "coinbase":      { "color": "#d8b84a" },
+    "sweep":         { "color": "#6f7fd0" },
+    "inscription":   { "color": "#e0578f" }
 };
 
 // --- Deutung aus den `flags` von mempool.space ---------------------------
@@ -117,4 +111,9 @@ function classify(tx) {
 
 function info(kind) {
     return TYPES[kind] || TYPES["payment"];
+}
+
+// Uebersetzte Bezeichnung. Der Schluessel in strings.js heisst "type.<kind>".
+function labelKey(kind) {
+    return "type." + (TYPES[kind] ? kind : "payment");
 }

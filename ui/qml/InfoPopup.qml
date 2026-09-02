@@ -7,16 +7,19 @@
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
 Item {
     id: root
 
+    property string lang: "de"
+
     // Je Eintrag: { k: Ueberschrift, v: Text, color: optionale Farbe fuer den
     // Strich davor, thin: duenner Strich statt kraeftigem }
     property var entries: []
-    property string title: "Legende"
+    property string title: Tr.t("legend", root.lang)
     property color textColor: "#f2eef8"
     property color dimColor: "#9a94a6"
     property color panelColor: "#12121b"

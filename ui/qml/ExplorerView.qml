@@ -8,6 +8,7 @@
 import QtQuick
 import "search.js" as Search
 import "txtype.js" as TxType
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -66,22 +67,17 @@ Item {
         onTriggered: root.copied = ""
     }
 
+    // Tausendertrennung in der Schreibweise der Sprache -- Deutsch nimmt den
+    // Punkt, Englisch das Komma. Das ist keine Kosmetik: "1.234" heisst je
+    // nach Sprache tausendzweihundert oder eins Komma zwei.
     function grp(n) {
-        if (n === undefined || n === null)
-            return "–";
-        var t = String(Math.round(n)), out = "", c = 0;
-        for (var i = t.length - 1; i >= 0; i--) {
-            out = t[i] + out;
-            if (++c % 3 === 0 && i > 0)
-                out = "." + out;
-        }
-        return out;
+        return Tr.group(n, root.lang);
     }
 
     function btc(sats) {
         if (sats === undefined || sats === null)
             return "–";
-        return "₿ " + (sats / 1e8).toFixed(8).replace(".", ",");
+        return "₿ " + Tr.fixed(sats / 1e8, 8, root.lang);
     }
 
     function shortId(id, n) {
@@ -114,7 +110,7 @@ Item {
         var h = Math.floor(m / 60);
         if (h < 48)
             return "vor " + h + " Std";
-        return "vor " + Math.floor(h / 24) + " Tagen";
+        return Tr.t("ago.day", root.lang, Math.floor(h / 24));
     }
 
     // --- Abfragen --------------------------------------------------------
@@ -183,6 +179,7 @@ Item {
     // Sie liegt hier, damit die Wahl beim Blaettern erhalten bleibt.
     property string tileColorMode: "fee"
     property string currency: "eur"
+    property string lang: "de"
     // Abschnitte und Tafeln der Startseite, beides leer = alles
     property var homeParts: []
     property var homePanels: []
@@ -220,11 +217,11 @@ Item {
     function submit(text) {
         var m = Search.matchQuery(text);
         if (!m) {
-            root.fail("Keine gültige Eingabe.");
+            root.fail(Tr.t("search.invalid", root.lang));
             return;
         }
         if (m.kind === "xpub") {
-            root.fail("Erweiterte Schlüssel gehören in die Wallet-Ansicht — sie kommen später.");
+            root.fail(Tr.t("search.xpub", root.lang));
             return;
         }
         var k = m.kind === "input" || m.kind === "output" ? "tx" : m.kind;
@@ -410,7 +407,7 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: field.text.length === 0
-                    text: "Blockhöhe, Blockhash, TxID oder Adresse …"
+                    text: Tr.t("search.placeholder", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.uiFont
                 }
@@ -424,7 +421,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 // Bei leerem Feld stuende hier dasselbe wie im Platzhalter --
                 // also nichts.
-                text: root.busy ? "sucht …"
+                text: root.busy ? Tr.t("search.searching", root.lang)
                                 : (field.text.length ? Search.hintFor(field.text) : "")
                 color: root.busy ? root.accentColor : root.dimColor
                 font.pixelSize: root.uiFont * 0.82
@@ -484,6 +481,7 @@ Item {
                 // ist -- `visible` allein reicht nicht, das Fenster kann zu
                 // sein (siehe DOKUMENTATION).
                 live: visible && root.visible && root.trackProjected
+                lang: root.lang
                 colorMode: root.tileColorMode
                 currency: root.currency
                 parts: root.homeParts
@@ -548,6 +546,7 @@ Item {
                 width: parent.width
                 visible: root.kind === "history"
                 feed: root.feed
+                lang: root.lang
                 textColor: root.textColor
                 dimColor: root.dimColor
                 accentColor: root.accentColor
@@ -576,7 +575,7 @@ Item {
 
                 Text {
                     anchors.verticalCenter: kindBadge.verticalCenter
-                    text: "Transaktion"
+                    text: Tr.t("tx.title", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.scaleUnit * 0.62
                 }
@@ -615,7 +614,7 @@ Item {
                         id: kindLabel
 
                         anchors.centerIn: parent
-                        text: kindBadge.meta.label
+                        text: Tr.t(TxType.labelKey(kindBadge.kind), root.lang)
                         color: kindBadge.meta.color
                         font.pixelSize: root.uiFont * 0.85
                         font.bold: true
@@ -626,7 +625,7 @@ Item {
                     anchors.verticalCenter: kindBadge.verticalCenter
                     width: Math.min(flick.width - kindBadge.width - root.uiFont * 10, implicitWidth)
                     elide: Text.ElideRight
-                    text: kindBadge.meta.help
+                    text: Tr.t(TxType.labelKey(kindBadge.kind) + ".help", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.8
                 }
@@ -669,13 +668,14 @@ Item {
 
                 Repeater {
                     model: [
-                        { "k": "Status", "v": txBox.confirmed
-                            ? "in Block " + root.grp(root.result.status.block_height) : "im Mempool" },
-                        { "k": "Größe", "v": root.grp(root.result.size) + " Byte" },
-                        { "k": "Gewicht", "v": root.grp(root.result.weight) + " WU" },
-                        { "k": "Gebühr", "v": root.grp(root.result.fee) + " sat" },
-                        { "k": "Rate", "v": root.result.weight
-                            ? (root.result.fee / (root.result.weight / 4)).toFixed(2).replace(".", ",") + " sat/vB" : "–" }
+                        { "k": Tr.t("tx.status", root.lang), "v": txBox.confirmed
+                            ? Tr.t("tx.inBlock", root.lang, root.grp(root.result.status.block_height))
+                            : Tr.t("tx.inMempool", root.lang) },
+                        { "k": Tr.t("size", root.lang), "v": Tr.t("unit.byte", root.lang, root.grp(root.result.size)) },
+                        { "k": Tr.t("weight", root.lang), "v": root.grp(root.result.weight) + " WU" },
+                        { "k": Tr.t("fee", root.lang), "v": root.grp(root.result.fee) + " sat" },
+                        { "k": Tr.t("feeRate", root.lang), "v": root.result.weight
+                            ? Tr.fixed((root.result.fee / (root.result.weight / 4)), 2, root.lang) + " sat/vB" : "–" }
                     ]
 
                     Column {
@@ -708,15 +708,15 @@ Item {
 
                 Repeater {
                     model: [
-                        { "k": "Virtuelle Größe", "v": root.result.weight
-                            ? (root.result.weight / 4 / 1000).toFixed(2).replace(".", ",") + " kvB" : "–" },
-                        { "k": "Version", "v": String(root.result.version !== undefined ? root.result.version : "–") },
-                        { "k": "Gewicht", "v": root.result.weight
-                            ? (root.result.weight / 1000).toFixed(2).replace(".", ",") + " kWU" : "–" },
-                        { "k": "Sperrzeit", "v": String(root.result.locktime !== undefined ? root.result.locktime : "–") },
-                        { "k": "Größe", "v": root.result.size
-                            ? (root.result.size / 1000).toFixed(2).replace(".", ",") + " kB" : "–" },
-                        { "k": "Sigops", "v": String(root.result.sigops !== undefined ? root.result.sigops : "–") }
+                        { "k": Tr.t("tx.vsize", root.lang), "v": root.result.weight
+                            ? Tr.fixed((root.result.weight / 4 / 1000), 2, root.lang) + " kvB" : "–" },
+                        { "k": Tr.t("block.version", root.lang), "v": String(root.result.version !== undefined ? root.result.version : "–") },
+                        { "k": Tr.t("weight", root.lang), "v": root.result.weight
+                            ? Tr.fixed((root.result.weight / 1000), 2, root.lang) + " kWU" : "–" },
+                        { "k": Tr.t("tx.locktime", root.lang), "v": String(root.result.locktime !== undefined ? root.result.locktime : "–") },
+                        { "k": Tr.t("size", root.lang), "v": root.result.size
+                            ? Tr.fixed((root.result.size / 1000), 2, root.lang) + " kB" : "–" },
+                        { "k": Tr.t("tx.sigops", root.lang), "v": String(root.result.sigops !== undefined ? root.result.sigops : "–") }
                     ]
 
                     Row {
@@ -749,13 +749,14 @@ Item {
 
             // Der Fluss: Betraege als Baender, links hinein, rechts hinaus
             Text {
-                text: "Fluss"
+                text: Tr.t("tx.flow", root.lang)
                 color: root.dimColor
                 font.pixelSize: root.scaleUnit * 0.6
             }
 
             TxFlow {
                 width: flick.width
+                lang: root.lang
                 // Die Rundung lebt vom Verhaeltnis senkrecht zu waagerecht.
                 // Das Original zeichnet 1200 x 600; hier ist die Flaeche viel
                 // flacher, deshalb bekommt sie mit jedem Band mehr Hoehe --
@@ -809,7 +810,7 @@ Item {
                     spacing: root.scaleUnit * 0.2
 
                     Text {
-                        text: (root.result.vin || []).length + " Eingänge"
+                        text: Tr.t("tx.nIn", root.lang, (root.result.vin || []).length)
                         color: root.dimColor
                         font.pixelSize: root.scaleUnit * 0.6
                     }
@@ -840,8 +841,9 @@ Item {
                                     width: parent.width
                                     elide: Text.ElideMiddle
                                     text: vinRow.modelData.prevout
-                                        ? (vinRow.modelData.prevout.scriptpubkey_address || "(kein Adressformat)")
-                                        : "Coinbase — neu erzeugt"
+                                        ? (vinRow.modelData.prevout.scriptpubkey_address
+                                           || Tr.t("search.noFormat", root.lang))
+                                        : Tr.t("tx.coinbase", root.lang)
                                     color: root.textColor
                                     font.pixelSize: root.scaleUnit * 0.6
                                     font.family: "monospace"
@@ -882,7 +884,7 @@ Item {
                     spacing: root.scaleUnit * 0.2
 
                     Text {
-                        text: (root.result.vout || []).length + " Ausgänge"
+                        text: Tr.t("tx.nOut", root.lang, (root.result.vout || []).length)
                         color: root.dimColor
                         font.pixelSize: root.scaleUnit * 0.6
                     }
@@ -934,7 +936,8 @@ Item {
                                     Text {
                                         visible: voutRow.spend !== null
                                         text: voutRow.spend && voutRow.spend.spent
-                                            ? "ausgegeben ›" : "noch nicht ausgegeben"
+                                            ? Tr.t("tx.spent", root.lang)
+                                            : Tr.t("tx.unspent", root.lang)
                                         color: voutRow.spend && voutRow.spend.spent
                                             ? root.accentColor : root.goodColor
                                         font.pixelSize: root.scaleUnit * 0.55
@@ -982,7 +985,8 @@ Item {
             readonly property var range: projBox.d.feeRange || []
 
             Text {
-                text: root.projRank === 0 ? "Nächster Block" : (root.projRank + 1) + ". Block voraus"
+                text: root.projRank === 0 ? Tr.t("nextBlock", root.lang)
+                                          : Tr.t("proj.nth", root.lang, root.projRank + 1)
                 color: root.dimColor
                 font.pixelSize: root.scaleUnit * 0.62
             }
@@ -992,7 +996,7 @@ Item {
                 // ruhigen Zeiten eine grosse "~0".
                 text: "~" + (projBox.d.medianFee >= 10
                     ? Math.round(projBox.d.medianFee)
-                    : projBox.d.medianFee.toFixed(1).replace(".", ",")) + " sat/vB"
+                    : Tr.fixed(projBox.d.medianFee, 1, root.lang)) + " sat/vB"
                 color: root.accentColor
                 font.pixelSize: root.scaleUnit * 1.8
                 font.bold: true
@@ -1003,10 +1007,10 @@ Item {
 
                 Repeater {
                     model: [
-                        { "k": "Transaktionen", "v": root.grp(projBox.d.nTx) },
-                        { "k": "Größe", "v": (projBox.d.blockSize / 1e6).toFixed(2).replace(".", ",") + " MB" },
-                        { "k": "Gebühren", "v": root.btc(projBox.d.totalFees) },
-                        { "k": "voraussichtlich", "v": root.etaFor(root.projRank) }
+                        { "k": Tr.t("transactions", root.lang), "v": root.grp(projBox.d.nTx) },
+                        { "k": Tr.t("size", root.lang), "v": Tr.fixed((projBox.d.blockSize / 1e6), 2, root.lang) + " MB" },
+                        { "k": Tr.t("fees", root.lang), "v": root.btc(projBox.d.totalFees) },
+                        { "k": Tr.t("block.expected", root.lang), "v": root.etaFor(root.projRank) }
                     ]
 
                     Column {
@@ -1056,8 +1060,8 @@ Item {
 
                     Text {
                         text: projBox.range.length
-                            ? "Wer hier hinein will, zahlt mindestens "
-                              + projBox.range[0].toFixed(2).replace(".", ",") + " sat/vB"
+                            ? Tr.t("proj.minFee", root.lang,Tr.fixed(
+                                   projBox.range[0], 2, root.lang))
                             : ""
                         color: root.textColor
                         font.pixelSize: root.uiFont * 1.05
@@ -1067,10 +1071,9 @@ Item {
                         width: parent.width
                         wrapMode: Text.WordWrap
                         text: projBox.range.length
-                            ? "Die Gebühren in diesem Block reichen von "
-                              + projBox.range[0].toFixed(2).replace(".", ",") + " bis "
-                              + projBox.range[projBox.range.length - 1].toFixed(2).replace(".", ",")
-                              + " sat/vB. Miner nehmen die teuersten zuerst — wer weniger zahlt, rutscht in einen späteren Block."
+                            ? Tr.t("proj.range", root.lang,Tr.fixed(
+                                   projBox.range[0], 2, root.lang),Tr.fixed(
+                                   projBox.range[projBox.range.length - 1], 2, root.lang))
                             : ""
                         color: root.dimColor
                         font.pixelSize: root.uiFont * 0.85
@@ -1079,7 +1082,7 @@ Item {
             }
 
             Text {
-                text: "Diese Transaktionen würden hineinpassen"
+                text: Tr.t("proj.fits", root.lang)
                 color: root.dimColor
                 font.pixelSize: root.uiFont * 0.9
             }
@@ -1090,6 +1093,7 @@ Item {
                 rank: root.projRank
                 live: root.visible && root.kind === "projected"
                 showHeader: false
+                lang: root.lang
                 colorMode: root.tileColorMode
                 onColorModeRequested: function (m) {
                     root.tileColorModeRequested(m);
@@ -1108,9 +1112,7 @@ Item {
                 width: flick.width
                 wrapMode: Text.WordWrap
                 // Der Unterschied zu einem bestaetigten Block gehoert dazu
-                text: "Die Aufteilung ist eine Vorhersage: sie ändert sich mit jeder "
-                      + "neuen Transaktion. Wer mehr zahlt, drängt andere in einen "
-                      + "späteren Block — der Miner entscheidet am Ende selbst."
+                text: Tr.t("proj.forecast", root.lang)
                 color: root.dimColor
                 font.pixelSize: root.uiFont * 0.85
             }
@@ -1129,7 +1131,7 @@ Item {
             readonly property var d: root.result
 
             Text {
-                text: "Block"
+                text: Tr.t("block", root.lang)
                 color: root.dimColor
                 font.pixelSize: root.scaleUnit * 0.62
             }
@@ -1180,12 +1182,12 @@ Item {
 
                 Repeater {
                     model: [
-                        { "k": "Zeit", "v": root.ago(root.result.timestamp) },
-                        { "k": "Transaktionen", "v": root.grp(root.result.tx_count) },
-                        { "k": "Größe", "v": root.grp(Math.round(root.result.size / 1024)) + " kB" },
-                        { "k": "Gewicht", "v": root.grp(Math.round(root.result.weight / 1000)) + " kWU" },
-                        { "k": "Mining-Pool", "v": ((root.result.extras || {}).pool || {}).name || "–" },
-                        { "k": "Belohnung", "v": (root.result.extras || {}).reward
+                        { "k": Tr.t("time", root.lang), "v": root.ago(root.result.timestamp) },
+                        { "k": Tr.t("transactions", root.lang), "v": root.grp(root.result.tx_count) },
+                        { "k": Tr.t("size", root.lang), "v": root.grp(Math.round(root.result.size / 1024)) + " kB" },
+                        { "k": Tr.t("weight", root.lang), "v": root.grp(Math.round(root.result.weight / 1000)) + " kWU" },
+                        { "k": Tr.t("block.pool", root.lang), "v": ((root.result.extras || {}).pool || {}).name || "–" },
+                        { "k": Tr.t("reward", root.lang), "v": (root.result.extras || {}).reward
                             ? root.btc((root.result.extras || {}).reward) : "–" }
                     ]
 
@@ -1221,23 +1223,23 @@ Item {
                     model: {
                         var e = root.result.extras || {};
                         return [
-                            { "k": "Gebühren gesamt", "v": e.totalFees ? root.btc(e.totalFees) : "–" },
-                            { "k": "Schwierigkeit", "v": root.result.difficulty
-                                ? (root.result.difficulty / 1e12).toFixed(2).replace(".", ",") + " T" : "–" },
-                            { "k": "mittlere Rate", "v": e.medianFee !== undefined
-                                ? e.medianFee.toFixed(2).replace(".", ",") + " sat/vB" : "–" },
-                            { "k": "Version", "v": root.result.version !== undefined
+                            { "k": Tr.t("block.totalFees", root.lang), "v": e.totalFees ? root.btc(e.totalFees) : "–" },
+                            { "k": Tr.t("difficulty", root.lang), "v": root.result.difficulty
+                                ? Tr.fixed((root.result.difficulty / 1e12), 2, root.lang) + " T" : "–" },
+                            { "k": Tr.t("block.avgRate", root.lang), "v": e.medianFee !== undefined
+                                ? Tr.fixed(e.medianFee, 2, root.lang) + " sat/vB" : "–" },
+                            { "k": Tr.t("block.version", root.lang), "v": root.result.version !== undefined
                                 ? "0x" + Number(root.result.version).toString(16) : "–" },
-                            { "k": "Gebührenspanne", "v": (e.feeRange && e.feeRange.length)
+                            { "k": Tr.t("block.feeRange", root.lang), "v": (e.feeRange && e.feeRange.length)
                                 ? Math.round(e.feeRange[0]) + " – " + Math.round(e.feeRange[e.feeRange.length - 1]) + " sat/vB" : "–" },
-                            { "k": "Nonce", "v": root.grp(root.result.nonce) },
-                            { "k": "UTXO-Änderung", "v": e.utxoSetChange !== undefined
+                            { "k": Tr.t("block.nonce", root.lang), "v": root.grp(root.result.nonce) },
+                            { "k": Tr.t("block.utxoDelta", root.lang), "v": e.utxoSetChange !== undefined
                                 ? (e.utxoSetChange >= 0 ? "+" : "") + root.grp(e.utxoSetChange) : "–" },
                             { "k": "SegWit", "v": (e.segwitTotalTxs && root.result.tx_count)
                                 ? Math.round(100 * e.segwitTotalTxs / root.result.tx_count) + " %" : "–" },
-                            { "k": "Ø Transaktion", "v": e.avgTxSize !== undefined
-                                ? Math.round(e.avgTxSize) + " Byte" : "–" },
-                            { "k": "Merkle-Wurzel", "v": root.result.merkle_root
+                            { "k": Tr.t("block.avgTx", root.lang), "v": e.avgTxSize !== undefined
+                                ? Tr.t("unit.byte", root.lang, Math.round(e.avgTxSize)) : "–" },
+                            { "k": Tr.t("block.merkle", root.lang), "v": root.result.merkle_root
                                 ? root.shortId(root.result.merkle_root, 8) : "–" }
                         ];
                     }
@@ -1267,7 +1269,7 @@ Item {
 
             // Die Kachelgrafik des Blocks -- dieselbe Optik wie im Feed
             Text {
-                text: root.tilesBusy ? "Kacheln werden geholt …" : "Transaktionen im Block"
+                text: Tr.t(root.tilesBusy ? "block.tilesLoading" : "block.txsIn", root.lang)
                 color: root.dimColor
                 font.pixelSize: root.uiFont * 0.9
             }
@@ -1276,6 +1278,7 @@ Item {
                 width: flick.width
                 visible: root.tiles !== null
                 mode: root.tileColorMode
+                lang: root.lang
                 counts: blockTiles.typeCounts
                 total: blockTiles.squares.length
                 textColor: root.textColor
@@ -1295,6 +1298,7 @@ Item {
                 visible: root.tiles !== null
                 block: root.tiles
                 colorMode: root.tileColorMode
+                lang: root.lang
                 dimColor: root.dimColor
                 labelSize: root.uiFont * 0.85
                 onTxPicked: function (txid) {
@@ -1308,6 +1312,7 @@ Item {
                 visible: root.tiles !== null
                 block: root.tiles
                 colorMode: root.tileColorMode
+                lang: root.lang
                 textColor: root.textColor
                 dimColor: root.dimColor
                 accentColor: root.accentColor
@@ -1330,7 +1335,7 @@ Item {
                         id: prevLabel
 
                         anchors.centerIn: parent
-                        text: "‹ vorheriger Block"
+                        text: Tr.t("block.prev", root.lang)
                         color: root.textColor
                         font.pixelSize: root.scaleUnit * 0.6
                     }
@@ -1356,7 +1361,7 @@ Item {
                         id: nextLabel
 
                         anchors.centerIn: parent
-                        text: "nächster Block ›"
+                        text: Tr.t("block.next", root.lang)
                         color: root.textColor
                         font.pixelSize: root.scaleUnit * 0.6
                     }
@@ -1390,7 +1395,7 @@ Item {
                                             + (ms.funded_txo_sum || 0) - (ms.spent_txo_sum || 0)
 
             Text {
-                text: "Adresse"
+                text: Tr.t("address", root.lang)
                 color: root.dimColor
                 font.pixelSize: root.scaleUnit * 0.62
             }
@@ -1432,11 +1437,11 @@ Item {
 
                 Repeater {
                     model: [
-                        { "k": "Guthaben", "v": root.btc(addrBox.balance) },
-                        { "k": "Transaktionen", "v": root.grp((addrBox.cs.tx_count || 0)
+                        { "k": Tr.t("balance", root.lang), "v": root.btc(addrBox.balance) },
+                        { "k": Tr.t("transactions", root.lang), "v": root.grp((addrBox.cs.tx_count || 0)
                                                               + (addrBox.ms.tx_count || 0)) },
-                        { "k": "Empfangen", "v": root.btc(addrBox.cs.funded_txo_sum) },
-                        { "k": "Gesendet", "v": root.btc(addrBox.cs.spent_txo_sum) }
+                        { "k": Tr.t("addr.received", root.lang), "v": root.btc(addrBox.cs.funded_txo_sum) },
+                        { "k": Tr.t("addr.sent", root.lang), "v": root.btc(addrBox.cs.spent_txo_sum) }
                     ]
 
                     Column {
@@ -1463,7 +1468,7 @@ Item {
 
             Text {
                 visible: (root.extra || []).length > 0
-                text: "Letzte Transaktionen"
+                text: Tr.t("addr.lastTxs", root.lang)
                 color: root.dimColor
                 font.pixelSize: root.scaleUnit * 0.6
             }
@@ -1499,7 +1504,8 @@ Item {
 
                         Text {
                             text: atxRow.modelData.status && atxRow.modelData.status.confirmed
-                                ? root.ago(atxRow.modelData.status.block_time) : "im Mempool"
+                                ? root.ago(atxRow.modelData.status.block_time)
+                                : Tr.t("tx.inMempool", root.lang)
                             color: root.dimColor
                             font.pixelSize: root.scaleUnit * 0.6
                         }

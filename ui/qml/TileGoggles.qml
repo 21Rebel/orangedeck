@@ -12,6 +12,7 @@
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "txtype.js" as TxType
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -23,8 +24,8 @@ Column {
     // drei -- dort gibt es zusaetzlich das Alter, weil die Halde staendig
     // nachwaechst und ein fertiger Block nicht.
     property var modes: [
-        { "k": "fee", "l": "Gebühr" },
-        { "k": "type", "l": "Art" }
+        { "k": "fee", "l": Tr.t("color.fee", lang) },
+        { "k": "type", "l": Tr.t("color.type", lang) }
     ]
     // Zusatzzeile unter der Legende, wenn die Art nicht ueberall gilt
     property string note: ""
@@ -37,6 +38,7 @@ Column {
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
     property real uiFont: 13
+    property string lang: "de"
 
     signal picked(string mode)
 
@@ -49,7 +51,7 @@ Column {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: "Farbe:"
+            text: Tr.t("color.label", root.lang)
             color: root.dimColor
             font.pixelSize: root.uiFont * 0.8
         }
@@ -137,7 +139,7 @@ Column {
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: eintrag.meta.label
+                    text: Tr.t(TxType.labelKey(TxType.kindAt(eintrag.modelData.i)), root.lang)
                     color: root.textColor
                     font.pixelSize: root.uiFont * 0.8
                 }
@@ -151,7 +153,8 @@ Column {
                         if (root.total <= 0)
                             return "";
                         var p = 100 * eintrag.modelData.n / root.total;
-                        return p < 0.5 ? "<1 %" : Math.round(p) + " %";
+                        return p < 0.5 ? Tr.t("pct.lessThanOne", root.lang)
+                                       : Math.round(p) + " %";
                     }
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.8
@@ -168,9 +171,7 @@ Column {
         // rechts dasselbe schon -- zweimal waere es nur Rauschen.
         visible: root.mode === "type"
                  && (root.note.length > 0 || (root.counts || []).length > 0)
-        text: (root.note.length ? root.note + " " : "")
-              + "Bitcoin kennt keine Transaktionsarten. Was hier steht, ist aus der "
-              + "Form der Transaktion gedeutet — nützlich, aber nie sicher."
+        text: (root.note.length ? root.note + " " : "") + Tr.t("goggles.note", root.lang)
         color: root.dimColor
         font.pixelSize: root.uiFont * 0.75
     }

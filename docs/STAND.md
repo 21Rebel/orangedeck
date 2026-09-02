@@ -30,6 +30,32 @@ Anwendung und in DMS, `dms ipc call dash toggle bitcoin` meldet
 `DASH_TOGGLE_SUCCESS`, und 18 Sekunden nach dem Beenden der Anwendung meldet
 sich der Daemon beim Server wieder ab (`tracking: null`).
 
+## Stand 02.09.2026, Abend -- zehn Sprachen
+
+Die Oberflaeche spricht Deutsch, Englisch, Spanisch, Franzoesisch,
+Italienisch, Portugiesisch, Niederlaendisch, Russisch, Japanisch und
+Chinesisch. Umgeschaltet wird in den Einstellungen unter "Allgemein", die
+Umstellung greift sofort und ohne Neustart.
+
+`ui/qml/strings.js`: rund 300 Schluessel, je Schluessel eine Zeile mit einem
+Eintrag pro Sprache. `t(key, lang)` ist eine reine Funktion -- gibt man `lang`
+mit, haengt die Bindung daran. Ein Singleton ginge nicht, weil dieselben
+Dateien in drei Wirten laufen und ein `qmldir` nur im CMake-Modul entsteht.
+
+**Zahlen gehoeren zur Sprache.** "1.234" heisst je nach Sprache
+tausendzweihundert oder eins Komma zwei. `Tr.group` und `Tr.fixed` setzen die
+Trennzeichen jetzt nach Sprache; vorher stand `.replace(".", ",")` an vierzig
+Stellen.
+
+**Zwei Fallen dabei:**
+1. **Ein `.import` in einer `.pragma library` traegt nicht** -- das Laden
+   scheitert stumm zur Laufzeit ("Script … unavailable"). `money.js` kennt
+   deshalb nur noch Kurs und Zeichen, geschrieben wird in `strings.js`.
+2. **Regulaere Ausdruecke taugen nicht zum Umbauen von Quelltext.** Der
+   Versuch, `x.toFixed(2).replace(".", ",")` maschinell zu ersetzen, hat in
+   acht Dateien Ausdruecke zerrissen. Fundstellen auflisten und einzeln
+   ersetzen.
+
 ## Stand 02.09.2026, spaeter Nachmittag -- Einstellungen ausgebaut
 
 Jeder Reiter hat jetzt seine eigenen Einstellungen, dazu "Allgemein" fuer alles

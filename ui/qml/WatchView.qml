@@ -13,6 +13,7 @@
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "money.js" as Money
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -70,47 +71,46 @@ Item {
 
     readonly property var one: (wallets.length > shown) ? wallets[shown] : null
     property string currency: "eur"
+    property string lang: "de"
 
+    // Tausendertrennung in der Schreibweise der Sprache -- Deutsch nimmt den
+    // Punkt, Englisch das Komma. Das ist keine Kosmetik: "1.234" heisst je
+    // nach Sprache tausendzweihundert oder eins Komma zwei.
     function grp(n) {
-        if (n === undefined || n === null || isNaN(n))
-            return "–";
-        var t = String(Math.round(n)), out = "", c = 0;
-        for (var i = t.length - 1; i >= 0; i--) {
-            out = t[i] + out;
-            if (++c % 3 === 0 && i > 0)
-                out = "." + out;
-        }
-        return out;
+        return Tr.group(n, root.lang);
     }
 
     function btc(sats) {
-        return (sats / 1e8).toFixed(8).replace(".", ",");
+        return Tr.fixed(sats / 1e8, 8, root.lang);
     }
 
     function euro(sats) {
-        return Money.fiat(sats, root.feed ? root.feed.price : null, root.currency);
+        var pr = root.feed ? root.feed.price : null;
+        return Tr.fiat(sats, Money.rate(pr, root.currency),
+                       Money.symbol(Money.actual(pr, root.currency)), root.lang);
     }
 
     function ago(ts) {
         if (!ts)
-            return "unbestätigt";
+            return Tr.t("unconfirmed", root.lang);
         var m = Math.floor(Math.max(0, Date.now() / 1000 - ts) / 60);
         if (m < 60)
-            return "vor " + m + " Min";
+            return Tr.t("ago.min", root.lang, m);
         var h = Math.floor(m / 60);
         if (h < 48)
-            return "vor " + h + " Std";
+            return Tr.t("ago.hour", root.lang, h);
         var t = Math.floor(h / 24);
-        return t < 60 ? "vor " + t + " Tagen" : "vor " + Math.floor(t / 30) + " Monaten";
+        return t < 60 ? Tr.t("ago.day", root.lang, t)
+                      : Tr.t("ago.month", root.lang, Math.floor(t / 30));
     }
 
     function kindLabel(k) {
         if (k === "p2wpkh")
-            return "SegWit (bc1…, BIP84)";
+            return Tr.t("wallet.kindP2wpkh", root.lang);
         if (k === "p2sh-p2wpkh")
-            return "SegWit in P2SH (3…, BIP49)";
+            return Tr.t("wallet.kindP2sh", root.lang);
         if (k === "p2pkh")
-            return "Legacy (1…, BIP44)";
+            return Tr.t("wallet.kindP2pkh", root.lang);
         return k || "";
     }
 
@@ -171,7 +171,7 @@ Item {
                 visible: root.wallets.length === 0
 
                 Text {
-                    text: "Keine Wallet eingetragen"
+                    text: Tr.t("wallet.none", root.lang)
                     color: root.textColor
                     font.pixelSize: root.scaleUnit * 0.95
                 }
@@ -179,11 +179,7 @@ Item {
                 Text {
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Diese Ansicht zeigt Guthaben und Verlauf einer Wallet, ohne "
-                          + "sie anzufassen. Dafür genügt der erweiterte öffentliche "
-                          + "Schlüssel — xpub, ypub oder zpub. Ein privater Schlüssel "
-                          + "wird nicht entgegengenommen und wäre hier auch nutzlos: "
-                          + "das Programm kann nicht signieren."
+                    text: Tr.t("wallet.intro", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.95
                 }
@@ -206,16 +202,16 @@ Item {
                         spacing: root.uiFont * 0.3
 
                         Text {
-                            text: "btcfeed --watch-add <zpub…> \"Mein Sparbuch\""
+                            text: Tr.t("wallet.cmdAdd", root.lang)
                             color: root.accentColor
                             font.pixelSize: root.uiFont
                             font.family: "monospace"
                         }
 
                         Text {
-                            text: "btcfeed --watch-list       zeigt, was eingetragen ist\n"
-                                  + "btcfeed --watch-remove 1  nimmt einen Eintrag heraus\n"
-                                  + "systemctl --user restart btcfeed   übernimmt die Änderung"
+                            text: Tr.t("wallet.cmdList", root.lang) + "\n"
+                                  + Tr.t("wallet.cmdRemove", root.lang) + "\n"
+                                  + Tr.t("wallet.cmdRestart", root.lang)
                             color: root.dimColor
                             font.pixelSize: root.uiFont * 0.9
                             font.family: "monospace"
@@ -226,10 +222,7 @@ Item {
                 Text {
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Eingetragen wird bewusst auf der Kommandozeile: der Dienst "
-                          + "im Hintergrund antwortet nur, er nimmt nichts entgegen. "
-                          + "Der Schlüssel liegt danach in ~/.config/btcfeed/sources.json, "
-                          + "für niemanden sonst lesbar."
+                    text: Tr.t("wallet.cliNote", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.85
                 }
@@ -301,7 +294,7 @@ Item {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: root.busy ? "wird abgetastet …" : ""
+                        text: root.busy ? Tr.t("wallet.scanning", root.lang) : ""
                         color: root.dimColor
                         font.pixelSize: root.uiFont * 0.85
                     }
@@ -323,8 +316,8 @@ Item {
                 Text {
                     visible: root.one && root.one.pending !== 0
                     text: root.one
-                        ? (root.one.pending > 0 ? "+" : "") + "₿ " + root.btc(root.one.pending)
-                          + " noch unbestätigt"
+                        ? Tr.t("wallet.pending", root.lang,
+                               (root.one.pending > 0 ? "+" : "") + "₿ " + root.btc(root.one.pending))
                         : ""
                     color: root.goodColor
                     font.pixelSize: root.uiFont * 0.9
@@ -352,11 +345,11 @@ Item {
                         if (!w)
                             return [];
                         return [
-                            { "k": "erhalten", "v": "₿ " + root.btc(w.received) },
-                            { "k": "ausgegeben", "v": "₿ " + root.btc(w.sent) },
-                            { "k": "Transaktionen", "v": root.grp(w.txCount) },
-                            { "k": "benutzte Adressen", "v": root.grp(w.used) },
-                            { "k": "Fingerabdruck", "v": w.fingerprint || "–" }
+                            { "k": Tr.t("wallet.received", root.lang), "v": "₿ " + root.btc(w.received) },
+                            { "k": Tr.t("wallet.spent", root.lang), "v": "₿ " + root.btc(w.sent) },
+                            { "k": Tr.t("transactions", root.lang), "v": root.grp(w.txCount) },
+                            { "k": Tr.t("wallet.usedAddresses", root.lang), "v": root.grp(w.used) },
+                            { "k": Tr.t("wallet.fingerprint", root.lang), "v": w.fingerprint || "–" }
                         ];
                     }
 
@@ -389,7 +382,7 @@ Item {
                 visible: root.one !== null && root.one.nextRecv
 
                 Text {
-                    text: "Nächste unbenutzte Empfangsadresse"
+                    text: Tr.t("wallet.nextRecv", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.85
                 }
@@ -431,8 +424,8 @@ Item {
 
                 Repeater {
                     model: [
-                        { "k": "txs", "l": "Transaktionen" },
-                        { "k": "addr", "l": "Adressen" }
+                        { "k": "txs", "l": Tr.t("transactions", root.lang) },
+                        { "k": "addr", "l": Tr.t("wallet.tabAddrs", root.lang) }
                     ]
 
                     Item {
@@ -531,7 +524,8 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: root.uiFont * 7
                                 text: zeile.modelData.ok
-                                    ? root.ago(zeile.modelData.ts) : "unbestätigt"
+                                    ? root.ago(zeile.modelData.ts)
+                                    : Tr.t("unconfirmed", root.lang)
                                 color: zeile.modelData.ok ? root.dimColor : root.accentColor
                                 font.pixelSize: root.uiFont * 0.85
                             }
@@ -539,7 +533,8 @@ Item {
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: zeile.modelData.h
-                                    ? "Block " + root.grp(zeile.modelData.h) : ""
+                                    ? Tr.t("block", root.lang) + " " + root.grp(zeile.modelData.h)
+                                    : ""
                                 color: root.dimColor
                                 font.pixelSize: root.uiFont * 0.85
                             }
@@ -589,8 +584,9 @@ Item {
                                 width: root.uiFont * 4
                                 // Wechselgeld gehoert der Wallet selbst -- das
                                 // sieht man den Adressen sonst nicht an.
-                                text: (adrZeile.modelData.c === 1 ? "Wechsel " : "Empfang ")
-                                      + adrZeile.modelData.i
+                                text: Tr.t(adrZeile.modelData.c === 1 ? "wallet.changeN"
+                                                                      : "wallet.recvN",
+                                           root.lang, adrZeile.modelData.i)
                                 color: root.dimColor
                                 font.pixelSize: root.uiFont * 0.8
                             }
@@ -639,13 +635,7 @@ Item {
                 width: parent.width
                 wrapMode: Text.WordWrap
                 visible: root.one !== null
-                text: "Nur betrachtend: hier liegt ein öffentlicher Schlüssel, kein "
-                      + "privater. Er verlässt das Gerät nicht — die Adressen werden "
-                      + "hier abgeleitet und einzeln abgefragt. Was bleibt, ist ein "
-                      + "Verkettungsproblem: wer viele Adressen nacheinander von "
-                      + "derselben Stelle abfragt, zeigt dem Betreiber, dass sie "
-                      + "zusammengehören. Ganz lösen lässt sich das nur mit einem "
-                      + "eigenen Knoten."
+                text: Tr.t("wallet.footnote", root.lang)
                 color: root.dimColor
                 font.pixelSize: root.uiFont * 0.8
             }

@@ -10,6 +10,7 @@
 // ins QML-Modul gepackt.
 import QtQuick
 import QtCore
+import "strings.js" as Tr
 
 Window {
     id: win
@@ -73,6 +74,7 @@ Window {
     // bekam dann weder eine Liste noch nichts.
     property string explorerPanelsRaw: ""
     readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split(",") : []
+    property string lang: "de"
     property bool walletEnabled: false
     // 0 = Feed, 1 = BlockClock, 2 = Miner, 3 = Explorer, 4 = Wallet. Wird
     // gemerkt, damit ein Tablet nach dem Einschalten gleich wieder als
@@ -110,6 +112,7 @@ Window {
         property alias explorerLive: win.explorerLive
         property alias explorerPartsRaw: win.explorerPartsRaw
         property alias explorerPanelsRaw: win.explorerPanelsRaw
+        property alias lang: win.lang
         property alias walletEnabled: win.walletEnabled
     }
 
@@ -126,9 +129,14 @@ Window {
 
     // Welche Reiter es gibt und welche Ansicht dahinter steckt
     readonly property var tabViews: win.walletEnabled ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 5]
-    readonly property var tabLabels: win.walletEnabled
-        ? ["Feed", "BlockClock", "Miner", "Explorer", "Wallet", "Einstellungen"]
-        : ["Feed", "BlockClock", "Miner", "Explorer", "Einstellungen"]
+    readonly property var tabLabels: {
+        var l = [Tr.t("tab.feed", win.lang), Tr.t("tab.clock", win.lang),
+                 Tr.t("tab.miner", win.lang), Tr.t("tab.explorer", win.lang)];
+        if (win.walletEnabled)
+            l.push(Tr.t("tab.wallet", win.lang));
+        l.push(Tr.t("tab.settings", win.lang));
+        return l;
+    }
 
     // Eine Einstellung setzen. Alles laeuft hier durch, damit es nur eine
     // Stelle gibt, an der etwas geaendert wird.
@@ -183,6 +191,8 @@ Window {
             win.explorerPartsRaw = (value || []).join(",");
         else if (key === "explorerPanels")
             win.explorerPanelsRaw = (value || []).join(",");
+        else if (key === "lang")
+            win.lang = value;
         else if (key === "walletEnabled") {
             win.walletEnabled = value;
             // Ausgeschaltet, waehrend die Ansicht offen war -> zurueck
@@ -217,6 +227,7 @@ Window {
         "explorerLive": win.explorerLive,
         "explorerParts": win.explorerParts,
         "explorerPanels": win.explorerPanels,
+        "lang": win.lang,
         "walletEnabled": win.walletEnabled
     })
 
@@ -248,6 +259,7 @@ Window {
         anchors.margins: 14
         anchors.topMargin: tabs.height + 14
         feed: feedState
+        lang: win.lang
         baseFont: 13
         // Klick auf eine Kachel fuehrt in den Explorer
         onTxActivated: function (txid) {
@@ -277,6 +289,7 @@ Window {
         anchors.margins: 14
         anchors.topMargin: tabs.height + 14
         feed: feedState
+        lang: win.lang
         fields: win.clockFields
         currency: win.currency
         showBars: win.clockBars
@@ -292,6 +305,7 @@ Window {
         anchors.margins: 14
         anchors.topMargin: tabs.height + 14
         feed: feedState
+        lang: win.lang
         tileColorMode: win.tileColorMode
         currency: win.currency
         homeParts: win.explorerParts
@@ -308,6 +322,7 @@ Window {
         anchors.margins: 14
         anchors.topMargin: tabs.height + 14
         feed: feedState
+        lang: win.lang
         metricKeys: win.minerFields
         showChart: win.minerChart
         showDomains: win.minerDomains
@@ -320,6 +335,7 @@ Window {
         anchors.margins: 14
         anchors.topMargin: tabs.height + 14
         opts: win.opts
+        lang: win.lang
         onChanged: function (key, value) {
             win.setOpt(key, value);
         }

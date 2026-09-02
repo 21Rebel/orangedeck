@@ -10,6 +10,7 @@
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -59,22 +60,24 @@ Item {
     property bool showChart: true
     property bool showDomains: true
     property bool showBoard: true
+    property string lang: "de"
 
     readonly property var metrics: {
         var m = root.one;
         if (!m)
             return [];
         var alle = [
-            { "id": "temp", "k": "Temperatur", "v": (m.temp !== undefined && m.temp !== null)
+            { "id": "temp", "k": Tr.t("miner.temp", root.lang), "v": (m.temp !== undefined && m.temp !== null)
                 ? Math.round(m.temp) + " °C" : "–" },
-            { "id": "power", "k": "Leistung", "v": m.power
-                ? m.power.toFixed(1).replace(".", ",") + " W" : "–" },
-            { "id": "fan", "k": "Lüfter", "v": m.fanRpm ? m.fanRpm + " U/min" : "–" },
-            { "id": "error", "k": "Fehlerquote", "v": (m.errorPct !== undefined && m.errorPct !== null)
-                ? m.errorPct.toFixed(1).replace(".", ",") + " %" : "–" },
-            { "id": "shares", "k": "Freigaben", "v": m.shares !== undefined
-                ? String(m.shares) + (m.rejected ? " (" + m.rejected + " abgelehnt)" : "") : "–" },
-            { "id": "uptime", "k": "Laufzeit", "v": root.span(m.uptime) }
+            { "id": "power", "k": Tr.t("miner.power", root.lang), "v": m.power
+                ? Tr.fixed(m.power, 1, root.lang) + " W" : "–" },
+            { "id": "fan", "k": Tr.t("miner.fan", root.lang), "v": m.fanRpm ? Tr.t("miner.rpm", root.lang, m.fanRpm) : "–" },
+            { "id": "error", "k": Tr.t("miner.errorRate", root.lang), "v": (m.errorPct !== undefined && m.errorPct !== null)
+                ? Tr.fixed(m.errorPct, 1, root.lang) + " %" : "–" },
+            { "id": "shares", "k": Tr.t("miner.shares", root.lang), "v": m.shares !== undefined
+                ? (m.rejected ? Tr.t("miner.rejected", root.lang, m.shares, m.rejected)
+                              : String(m.shares)) : "–" },
+            { "id": "uptime", "k": Tr.t("miner.uptime", root.lang), "v": root.span(m.uptime) }
         ];
         var mk = root.metricKeys;
         if (!mk || !mk.length || typeof mk.indexOf !== "function")
@@ -104,7 +107,7 @@ Item {
             n /= 1000;
             i++;
         }
-        return (n >= 100 ? n.toFixed(0) : n.toFixed(2)).replace(".", ",")
+        return Tr.fixed(n, n >= 100 ? 0 : 2, root.lang)
              + " " + u[i] + (unit || "");
     }
 
@@ -114,7 +117,7 @@ Item {
         var d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600),
             m = Math.floor((sec % 3600) / 60);
         if (d > 0)
-            return d + (d === 1 ? " Tag " : " Tage ") + h + " Std";
+            return Tr.t("duration.dayHour", root.lang, d, h);
         if (h > 0)
             return h + " Std " + m + " Min";
         return m + " Min";
@@ -133,35 +136,36 @@ Item {
         fontSize: root.scaleUnit * 0.72
         textColor: root.textColor
         dimColor: root.dimColor
-        title: "Was zeigt diese Ansicht?"
+        lang: root.lang
+        title: Tr.t("miner.whatIsThis", root.lang)
         entries: [
             {
                 "color": root.accentColor,
                 "thin": true,
-                "k": "Hashrate, Momentanwert",
-                "v": "Was das Gerät gerade meldet. Schwankt stark — die Rechenleistung wird aus gefundenen Nonces geschätzt, das ist ein Zufallsprozess."
+                "k": Tr.t("miner.hashNow", root.lang),
+                "v": Tr.t("miner.hashNowHelp", root.lang)
             },
             {
                 "color": root.accentColor,
-                "k": "Hashrate, Mittel über 10 Minuten",
-                "v": "Der belastbare Wert. Er steht auch groß oben und wird mit dem verglichen, was das Gerät bei seiner Taktung erwarten lässt."
+                "k": Tr.t("miner.hashAvg", root.lang),
+                "v": Tr.t("miner.hashAvgHelp", root.lang)
             },
             {
                 "color": root.textColor,
-                "k": "Temperatur",
-                "v": "Rechte Achse. Wirkt oft treppenartig, weil der Fühler in 0,1-Grad-Schritten misst und die Achse auf die tatsächliche Spanne von oft nur einem Grad skaliert."
+                "k": Tr.t("miner.temp", root.lang),
+                "v": Tr.t("miner.tempHelp", root.lang)
             },
             {
-                "k": "Beste Freigabe · „1 zu N“",
-                "v": "Die höchste Schwierigkeit, die dieses Gerät je erreicht hat, geteilt durch die des Netzes. „1 zu 426 k“ heißt: es fehlte noch der Faktor 426 000 zu einem Block."
+                "k": Tr.t("miner.oneToN", root.lang),
+                "v": Tr.t("miner.oneToNHelp", root.lang)
             },
             {
-                "k": "Rechenwerke",
-                "v": "Der Chip rechnet in mehreren getrennten Bereichen mit eigener Spannung und Taktung. Liegen sie gleichauf, ist alles in Ordnung; fällt einer dauerhaft ab, ist dieser Teil instabil. Einzelmessungen schwanken über 10 %, deshalb der Mittelwert."
+                "k": Tr.t("miner.domains", root.lang),
+                "v": Tr.t("miner.domainsHelp", root.lang)
             },
             {
-                "k": "Fehlerquote",
-                "v": "Anteil verworfener Ergebnisse des Chips. Ein paar Prozent sind normal; steigt sie deutlich, ist die Taktung zu hoch oder die Spannung zu niedrig."
+                "k": Tr.t("miner.errorRate", root.lang),
+                "v": Tr.t("miner.errorHelp", root.lang)
             }
         ]
         z: 40
@@ -208,7 +212,7 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Kein Miner eingetragen"
+            text: Tr.t("miner.none", root.lang)
             color: root.textColor
             font.pixelSize: root.scaleUnit * 1.1
         }
@@ -217,8 +221,7 @@ Item {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
-            text: "Die Geräte hängen meist im WLAN und bekommen ihre Adresse "
-                  + "per DHCP. Deshalb suchen statt eintragen:"
+            text: Tr.t("miner.discover", root.lang)
             color: root.dimColor
             font.pixelSize: root.scaleUnit * 0.62
         }
@@ -236,9 +239,7 @@ Item {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
-            text: "Erkannt werden AxeOS-Geräte (Bitaxe, NerdAxe …) und alles, "
-                  + "was die cgminer-Schnittstelle spricht (Antminer, Avalon, "
-                  + "Whatsminer …)."
+            text: Tr.t("miner.detects", root.lang)
             color: root.dimColor
             font.pixelSize: root.scaleUnit * 0.55
         }
@@ -252,15 +253,15 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: root.miners.length === 1 ? "Miner nicht erreichbar"
-                                           : "Kein Miner erreichbar"
+            text: Tr.t(root.miners.length === 1 ? "miner.notReachable"
+                                               : "miner.unreachable", root.lang)
             color: root.badColor
             font.pixelSize: root.scaleUnit * 1.1
         }
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Die Geräte sind vermutlich aus."
+            text: Tr.t("miner.offNote", root.lang)
             color: root.dimColor
             font.pixelSize: root.scaleUnit * 0.62
         }
@@ -307,7 +308,8 @@ Item {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: root.total.online > 1
-                    ? root.total.online + " Geräte" : (root.miners[0] ? root.miners[0].name : "Miner")
+                    ? Tr.t("miner.devices", root.lang, root.total.online)
+                    : (root.miners[0] ? root.miners[0].name : Tr.t("miner.title", root.lang))
                 color: root.dimColor
                 font.pixelSize: root.scaleUnit * 0.72
             }
@@ -327,7 +329,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: root.one && root.one.expected
                 text: root.one && root.one.expected
-                    ? "geglättet über 10 min · erwartet " + root.big(root.one.expected, "H/s")
+                    ? Tr.t("miner.smoothed", root.lang, root.big(root.one.expected, "H/s"))
                     : ""
                 color: root.dimColor
                 font.pixelSize: root.scaleUnit * 0.55
@@ -347,8 +349,9 @@ Item {
 
                     anchors.centerIn: parent
                     text: root.one && root.one.blockFound > 0
-                        ? (root.one.blockFound === 1 ? "1 Block gefunden"
-                                                     : root.one.blockFound + " Blöcke gefunden")
+                        ? (root.one.blockFound === 1
+                            ? Tr.t("miner.oneBlockFound", root.lang)
+                            : Tr.t("miner.blocksFound", root.lang, root.one.blockFound))
                         : ""
                     color: "#0b0b12"
                     font.pixelSize: root.scaleUnit * 0.62
@@ -363,7 +366,7 @@ Item {
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: "Beste Freigabe gegen Netzschwierigkeit"
+                    text: Tr.t("miner.bestShare", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.scaleUnit * 0.62
                 }
@@ -383,8 +386,8 @@ Item {
                     // Winzige Anteile -- "1 zu N" liest sich besser als eine
                     // Prozentzahl mit acht Nullen.
                     text: root.bestShare >= 1
-                        ? "das reicht für einen Block"
-                        : "das ist 1 zu " + root.big(1 / root.bestShare)
+                        ? Tr.t("miner.enoughForBlock", root.lang)
+                        : Tr.t("miner.oneInN", root.lang, root.big(1 / root.bestShare))
                     color: root.bestShare >= 1 ? root.goodColor : root.dimColor
                     font.pixelSize: root.scaleUnit * 0.62
                 }
@@ -488,8 +491,9 @@ Item {
                     // gezeigt wird deshalb der geglaettete Wert, sonst sieht
                     // Rauschen wie ein Defekt aus.
                     text: root.one && root.one.domainSamples
-                        ? "Rechenwerke · Mittel über " + Math.round(root.one.domainSamples * 5 / 60 * 10) / 10 + " Min"
-                        : "Rechenwerke"
+                        ? Tr.t("miner.domainsAvg", root.lang,
+                               Math.round(root.one.domainSamples * 5 / 60 * 10) / 10)
+                        : Tr.t("miner.domains", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.scaleUnit * 0.55
                 }
@@ -544,7 +548,7 @@ Item {
                          && (root.one.scoreboard || []).length > 0
 
                 Text {
-                    text: "Beste Freigaben"
+                    text: Tr.t("miner.bestList", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.scaleUnit * 0.55
                 }

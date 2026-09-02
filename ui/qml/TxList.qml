@@ -12,6 +12,7 @@
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "txtype.js" as TxType
+import "strings.js" as Tr
 
 pragma ComponentBehavior: Bound
 
@@ -27,6 +28,7 @@ Column {
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
     property real uiFont: 13
+    property string lang: "de"
 
     signal txPicked(string txid)
 
@@ -40,16 +42,11 @@ Column {
 
     spacing: uiFont * 0.3
 
+    // Tausendertrennung in der Schreibweise der Sprache -- Deutsch nimmt den
+    // Punkt, Englisch das Komma. Das ist keine Kosmetik: "1.234" heisst je
+    // nach Sprache tausendzweihundert oder eins Komma zwei.
     function grp(n) {
-        if (n === undefined || n === null)
-            return "–";
-        var t = String(Math.round(n)), out = "", c = 0;
-        for (var i = t.length - 1; i >= 0; i--) {
-            out = t[i] + out;
-            if (++c % 3 === 0 && i > 0)
-                out = "." + out;
-        }
-        return out;
+        return Tr.group(n, root.lang);
     }
 
     function seite() {
@@ -77,7 +74,8 @@ Column {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: root.grp(root.alle.length) + (root.step > 1 ? " Kacheln" : " Transaktionen")
+            text: Tr.t(root.step > 1 ? "txlist.tiles" : "txlist.count", root.lang,
+                       root.grp(root.alle.length))
             color: root.textColor
             font.pixelSize: root.uiFont * 0.95
         }
@@ -87,7 +85,7 @@ Column {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.step > 1
-            text: "jede " + root.step + ". Transaktion"
+            text: Tr.t("txlist.sampled", root.lang, root.step)
             color: root.accentColor
             font.pixelSize: root.uiFont * 0.8
         }
@@ -99,7 +97,7 @@ Column {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: "Seite " + (root.page + 1) + " von " + root.seiten
+            text: Tr.t("txlist.page", root.lang, root.page + 1, root.seiten)
             color: root.dimColor
             font.pixelSize: root.uiFont * 0.8
         }
@@ -160,7 +158,7 @@ Column {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     width: root.uiFont * 8
-                    text: "₿ " + (zeile.modelData.a / 1e8).toFixed(8).replace(".", ",")
+                    text: "₿ " + Tr.fixed(zeile.modelData.a / 1e8, 8, root.lang)
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.85
                 }
@@ -176,8 +174,8 @@ Column {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: zeile.modelData.r > 0
-                        ? zeile.modelData.r.toFixed(2).replace(".", ",") + " sat/vB"
-                        : "keine Gebühr"
+                        ? Tr.fixed(zeile.modelData.r, 2, root.lang) + " sat/vB"
+                        : Tr.t("txlist.noFee", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.85
                 }
@@ -201,10 +199,10 @@ Column {
 
         Repeater {
             model: [
-                { "l": "‹‹ Anfang", "d": -1000000 },
-                { "l": "‹ zurück", "d": -1 },
-                { "l": "weiter ›", "d": 1 },
-                { "l": "Ende ››", "d": 1000000 }
+                { "l": Tr.t("page.first", root.lang), "d": -1000000 },
+                { "l": Tr.t("page.prev", root.lang), "d": -1 },
+                { "l": Tr.t("page.next", root.lang), "d": 1 },
+                { "l": Tr.t("page.last", root.lang), "d": 1000000 }
             ]
 
             Rectangle {
