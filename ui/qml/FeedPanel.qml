@@ -554,6 +554,15 @@ Item {
                 font.family: "monospace"
             }
 
+            // Gehoert die Transaktion zu einer beobachteten Wallet, ist das
+            // die wichtigste Angabe an ihr -- also nach oben.
+            Text {
+                visible: tip.tx && tip.tx.m === 1
+                text: "● gehört zu einer beobachteten Wallet"
+                color: root.accentColor
+                font.pixelSize: root.baseFont - 2
+            }
+
             Text {
                 visible: root.inOutText.length > 0
                 text: root.inOutText

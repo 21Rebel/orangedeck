@@ -1746,3 +1746,116 @@ dem **blanken Hash**, nicht mit JSON; der Daemon reichte ihn unveraendert
 durch, deklarierte ihn aber als `application/json`, und `JSON.parse` in
 `FeedState.lookup` scheiterte. Der Daemon verpackt ihn jetzt als
 JSON-Zeichenkette.
+
+
+## Beobachtete Wallets, watch-only (`WatchView.qml`)
+
+Die Anwendung zeigt Guthaben und Verlauf einer Wallet, ohne sie anzufassen.
+Eingetragen wird ein erweiterter **oeffentlicher** Schluessel -- xpub, ypub
+oder zpub.
+
+### Der Grundsatz zuerst, weil er den Bau bestimmt
+
+Verbindlich seit 01.09.2026 (`ZIELBILD.md`): **die Anwendung bekommt nie etwas
+in die Hand, mit dem sich Geld bewegen liesse.** Daraus folgt hier dreierlei:
+
+1. **Nur oeffentliche Rechnung.** Im Daemon steht Punktarithmetik auf
+   secp256k1 und sonst nichts. Gehaertete Ableitung ist nicht moeglich -- sie
+   braeuchte den privaten Schluessel. Es gibt im ganzen Programm keine Zeile,
+   die signieren koennte.
+2. **Der xpub verlaesst das Geraet nie.** Die Adressen werden hier abgeleitet
+   und **einzeln** ueber `/api/address/<addr>` abgefragt. Wer den xpub an einen
+   Dienst gibt, zeigt ihm schlagartig die ganze Wallet -- jede vergangene und
+   jede kuenftige Adresse.
+3. **Der Dienst nimmt nichts entgegen.** Eingetragen wird ueber die
+   Kommandozeile, nicht ueber die Oberflaeche. Ein Schreibweg in die
+   Loopback-Schnittstelle waere die erste Angriffsflaeche des Programms.
+
+Ein `xprv`/`yprv`/`zprv` wird **vor** jeder weiteren Pruefung abgewiesen, mit
+einer Meldung, die sagt warum -- sonst kaeme nur "unbekannte Fassung" heraus.
+
+### Die Mathematik, und wie sie geprueft wurde
+
+Rund 150 Zeilen ohne fremde Abhaengigkeit: Punktaddition und
+Skalarmultiplikation auf secp256k1, Base58Check, Bech32/Bech32m, HMAC-SHA512
+fuer CKDpub aus BIP32.
+
+    xpub  0x0488b21e  ->  P2PKH          1…    (BIP44)
+    ypub  0x049d7cb2  ->  P2WPKH in P2SH 3…    (BIP49)
+    zpub  0x04b24746  ->  P2WPKH         bc1…  (BIP84)
+
+Die Versionsbytes stammen aus SLIP-0132, nicht aus dem Gedaechtnis.
+
+**Zwei unabhaengige Gegenproben, beide bestanden:**
+
+1. Die Testvektoren aus SLIP-0132 (xpub/ypub/zpub, je erste Adresse) und
+   BIP-0084 (zwei Empfangs-, eine Wechseladresse und der oeffentliche
+   Schluessel als Hex). Sechs von sechs.
+2. **101 echte Ausgaenge aus der Kette**: aus dem `scriptpubkey` eines
+   Transaktionsausgangs dieselbe Adresse erzeugen, die mempool.space unter
+   `scriptpubkey_address` nennt -- p2pkh, p2sh, v0_p2wpkh, v0_p2wsh und
+   v1_p2tr, keine einzige Abweichung. Das prueft die Kodierung gegen die
+   Wirklichkeit statt gegen eine Fassung derselben Erwartung.
+
+### Abtasten mit Luecke
+
+`WATCH_GAP = 20` wie in BIP44: nach zwanzig unbenutzten Adressen in Folge gilt
+die Kette als zu Ende. Beide Ketten (Empfang und Wechselgeld) werden getrennt
+abgetastet.
+
+**`WATCH_SPACING = 0.35` Sekunden zwischen den Abfragen -- nicht aus Ruecksicht
+auf den Server, sondern auf den Benutzer.** Hundert Adressen im Stakkato von
+derselben Herkunft zeigen dem Betreiber unmissverstaendlich, dass sie
+zusammengehoeren. Das ist das Restrisiko dieser Ansicht, und es ist eines der
+**Privatsphaere, nicht der Sicherheit**: Guthaben sind watch-only vollstaendig
+geschuetzt. Ganz aufloesen laesst sich die Verkettung nur mit eigenem electrs.
+
+Ein Lauf dauert dadurch: gemessen an der Testwallet aus BIP-0084 (40 benutzte
+Adressen, 276 Transaktionen) rund 100 Sekunden. Abgetastet wird alle fuenf
+Minuten und ausserdem nach jedem Blockfund -- vorher aendert sich nichts.
+
+### Zwei Bauentscheidungen, die aus Messungen kommen
+
+**Der Abtaster hat einen eigenen Faden.** Im Faden der uebrigen Nebenquellen
+haette ein Lauf von hundert Sekunden die Mempool-Kurve loechrig gemacht und die
+Miner-Abfrage angehalten.
+
+**Die Wallet-Angaben stehen nicht im Zustand.** Sie sind rund 8 kB und aendern
+sich alle fuenf Minuten; der Zustand wird 2,5-mal je Sekunde geschrieben und
+ebenso oft geholt. Im Zustand steht nur die Kurzfassung (Saldo, Anzahl), das
+Ganze unter dem eigenen Pfad `/wallets`, den die Ansicht alle fuenf Sekunden
+holt -- und nur, solange sie zu sehen ist.
+
+    /state    23 kB -> 31 kB mit Wallet-Angaben, 2,5x je Sekunde
+    /wallets   8 kB, alle fuenf Sekunden, nur bei offener Ansicht
+
+### Eigene Transaktionen in der Halde
+
+Der Daemon fuehrt die TXIDs der beobachteten Wallets mit und setzt an der
+Kachel das Feld `m`. `FeedCanvas` zeichnet darum einen hellen Rahmen -- **nur
+einen Rahmen, keine eigene Farbe**: die Fuellung soll weiter Gebuehr oder Alter
+zeigen. Bei vier Pixeln Kantenlaenge bleibt ein Kern von zwei Pixeln stehen,
+das genuegt zum Finden. Der Strich sitzt auf halben Bildpunkten
+(`+ 0.5`), sonst liegt er je zur Haelfte auf beiden Nachbarpunkten und wird
+grau statt weiss. Im Tooltip steht es zusaetzlich in Worten.
+
+### Bedienung
+
+    btcfeed --watch-add <xpub|ypub|zpub> [Name]
+    btcfeed --watch-list
+    btcfeed --watch-remove <Nummer|Name>
+    systemctl --user restart btcfeed
+
+Der Eintrag landet in `~/.config/btcfeed/sources.json`, die Datei wird dabei
+auf `0600` gesetzt. Die Ansicht nennt diese Befehle selbst, solange nichts
+eingetragen ist.
+
+### Was fehlt
+
+- **Taproot (BIP86)** ist nicht dabei. Fuer P2TR gibt es kein eigenes
+  Praefix -- ein xpub allein sagt nicht, dass Taproot gemeint ist. Das
+  braeuchte eine ausdrueckliche Angabe der Adressform beim Eintragen.
+- **Testnetz** (tpub/upub/vpub) ist nicht vorgesehen.
+- Die Transaktionsliste fragt hoechstens `WATCH_TX_REQUESTS = 15` Adressen ab
+  und behaelt die 30 juengsten Vorgaenge. Fuer eine grosse Wallet ist das ein
+  Ausschnitt, kein Kontoauszug.

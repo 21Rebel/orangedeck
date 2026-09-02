@@ -30,6 +30,37 @@ Anwendung und in DMS, `dms ipc call dash toggle bitcoin` meldet
 `DASH_TOGGLE_SUCCESS`, und 18 Sekunden nach dem Beenden der Anwendung meldet
 sich der Daemon beim Server wieder ab (`tracking: null`).
 
+## Dazu am 02.09.2026: beobachtete Wallets (watch-only)
+
+Fuenfter Reiter "Wallet", im eigenen Fenster wie im Dashboard-Tab. Zeigt Saldo,
+Verlauf, benutzte Adressen und die naechste unbenutzte Empfangsadresse.
+
+**Der Sicherheitsgrundsatz hat den Bau bestimmt, nicht umgekehrt:**
+
+- Im Daemon steht nur Punktarithmetik auf secp256k1 -- kein privater
+  Schluessel, keine Signatur, nichts, was eine erzeugen koennte. Gehaertete
+  Ableitung ist gar nicht moeglich.
+- Der xpub verlaesst das Geraet nie; Adressen werden lokal abgeleitet und
+  einzeln abgefragt.
+- Eingetragen wird ueber die **Kommandozeile** (`btcfeed --watch-add`), nicht
+  ueber die Oberflaeche: der Dienst nimmt weiterhin nichts entgegen.
+- Ein privater Schluessel wird vor jeder anderen Pruefung abgewiesen, mit einer
+  Meldung, die sagt warum.
+
+**Zwei unabhaengige Gegenproben der Ableitung, beide bestanden:** die
+Testvektoren aus SLIP-0132 und BIP-0084 (sechs von sechs) und **101 echte
+Ausgaenge aus der Kette** in fuenf Skriptformen gegen `scriptpubkey_address`
+von mempool.space, ohne Abweichung.
+
+Nebenher entstanden: eigene Transaktionen bekommen in der Halde einen hellen
+Rahmen (`m` an der Kachel, `FeedCanvas` zeichnet ihn) und einen Hinweis im
+Tooltip.
+
+Was fehlt: **Taproot (BIP86)** -- fuer P2TR gibt es kein eigenes Praefix, das
+braeuchte eine ausdrueckliche Angabe der Adressform. Testnetz ebenfalls nicht.
+Die Transaktionsliste ist ein Ausschnitt (hoechstens 15 abgefragte Adressen,
+30 juengste Vorgaenge), kein Kontoauszug.
+
 ## Dazu am 02.09.2026: die Mempool-Goggles
 
 Ueber jeder Kachelgrafik im Explorer steht jetzt "Farbe: Gebuehr | Art". In der
@@ -116,15 +147,18 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
    `transactions`-Nachrichten des WebSocket fuehren kein `flags` mit
    (nachgesehen). Fuer den Block im Feed waere es moeglich, aber zwei
    Farblogiken in einem Bild waeren irrefuehrend.
-3. **Flatpak.** `flatpak` ist da, **`flatpak-builder` fehlt** und muesste
+3. **Flatpak.** *(02.09.2026: `flatpak-builder` fehlt weiterhin. Die
+   Installation braucht ein Passwort -- das Paket heisst `flatpak-builder`
+   und liegt in `cachyos-extra-v3`.)* `flatpak` ist da, **`flatpak-builder` fehlt** und muesste
    installiert werden.
-4. **Layer-Shell** (`layer-shell-qt`, in den Paketquellen, nicht installiert)
+4. **Layer-Shell** *(02.09.2026: gebraucht wird `layer-shell-qt` aus `plasma`
+   -- die **Qt6**-Fassung. Installiert ist nur `layer-shell-qt5`. Auch das
+   braucht ein Passwort.)* (`layer-shell-qt`, in den Paketquellen, nicht installiert)
    fuer ein eigenes Desktop-Widget und eine eigene Leiste auf Wayland.
 5. **Android-APK.** SDK und NDK fehlen; der frickeligste Teil.
    **>>> Vor diesem Schritt dem Nutzer Bescheid geben <<<** -- er haengt dann
    sein Handy an den Rechner (abgesprochen am 01.09.2026).
-6. **WatchView** (xpub, watch-only). Der letzte grosse Brocken. Grundsatz steht
-   in `ZIELBILD.md`: Adressen **lokal** ableiten, den xpub nie verschicken.
+6. ~~WatchView (xpub, watch-only).~~ **Erledigt am 02.09.2026**, siehe unten.
 7. **Blockhistorie** mit Transaktionsliste zum Durchblaettern.
 
 ## Kleinigkeiten, notiert

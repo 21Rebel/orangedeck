@@ -21,6 +21,8 @@ Item {
 
     property var feed: null
     property bool paused: false
+    // Rahmenfarbe fuer Transaktionen einer beobachteten Wallet
+    property color ownColor: "#ffffff"
     property bool showBlock: true
     property real density: 1.0
     property string colorMode: "age"        // "age" | "fee"
@@ -1137,12 +1139,17 @@ Item {
 
             // Nach Farbe buendeln -- das spart tausende Zustandswechsel
             var groups = {};
+            // Transaktionen einer beobachteten Wallet. Der Daemon setzt das
+            // Feld `m`; hier wird nur nachgesehen, ob es da ist.
+            var eigene = [];
             var i, e, key;
             for (i = 0; i < root.poolTx.length; i++) {
                 e = root.poolTx[i];
                 if (e.fly < 1)
                     continue;
                 e.pending = false;
+                if (e.tx && e.tx.m)
+                    eigene.push(e);
                 if (ageOn) {
                     var idx = Math.floor((now - e.t0) / 60000 * (steps - 1));
                     key = idx < 0 ? 0 : (idx >= steps ? steps - 1 : idx);
@@ -1168,6 +1175,26 @@ Item {
                     // wird ein Pixel hoeher oder niedriger als breit.
                     ctx.fillRect(Math.round(root.targetX(t.sq)),
                                  Math.round(root.targetY(t.sq)), side, side);
+                }
+            }
+
+            // Eigene Transaktionen bekommen einen hellen Rahmen. Bewusst nur
+            // ein Rahmen und keine eigene Farbe: die Fuellung soll weiter
+            // Gebuehr oder Alter zeigen. Bei vier Pixeln Kantenlaenge bleibt
+            // ein Kern von zwei Pixeln stehen -- das reicht, um sie zu finden.
+            if (eigene.length) {
+                ctx.strokeStyle = String(root.ownColor);
+                ctx.lineWidth = 1;
+                for (i = 0; i < eigene.length; i++) {
+                    var m = eigene[i];
+                    var ms = m.sq.r * root.gridSize - root.unitPad * 2;
+                    if (ms < 1)
+                        ms = 1;
+                    // Auf halbe Bildpunkte: ein 1 px breiter Strich sitzt sonst
+                    // je zur Haelfte auf beiden Nachbarpunkten und wird grau.
+                    ctx.strokeRect(Math.round(root.targetX(m.sq)) + 0.5,
+                                   Math.round(root.targetY(m.sq)) + 0.5,
+                                   ms - 1, ms - 1);
                 }
             }
 

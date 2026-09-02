@@ -33,6 +33,7 @@ set(SHARED_QML
     ../ui/qml/BlockTiles.qml
     ../ui/qml/ProjectedBlock.qml
     ../ui/qml/TileGoggles.qml
+    ../ui/qml/WatchView.qml
     ../ui/qml/ExplorerHome.qml
     ../ui/qml/MainPanels.qml
     ../ui/qml/search.js

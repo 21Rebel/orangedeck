@@ -30,8 +30,9 @@ Window {
     property bool showInfo: true
     property bool showLegend: true
     property real bgOpacity: 0.82
-    // 0 = Feed, 1 = BlockClock, 2 = Miner. Wird gemerkt, damit ein Tablet
-    // nach dem Einschalten gleich wieder als BlockClock hochkommt.
+    // 0 = Feed, 1 = BlockClock, 2 = Miner, 3 = Explorer, 4 = Wallet. Wird
+    // gemerkt, damit ein Tablet nach dem Einschalten gleich wieder als
+    // BlockClock hochkommt.
     property int view: 0
 
     // Bleibt auf dem Geraet: QSettings schreibt nach
@@ -58,7 +59,7 @@ Window {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         anchors.topMargin: 8
-        labels: ["Feed", "BlockClock", "Miner", "Explorer"]
+        labels: ["Feed", "BlockClock", "Miner", "Explorer", "Wallet"]
         current: win.view
         fontSize: 13
         z: 30
@@ -113,6 +114,24 @@ Window {
         feed: feedState
     }
 
+    WatchView {
+        visible: win.view === 4
+        // Nur nachfragen, solange die Ansicht auch zu sehen ist
+        live: visible
+        anchors.fill: parent
+        anchors.margins: 14
+        anchors.topMargin: tabs.height + 14
+        feed: feedState
+        onTxPicked: function (txid) {
+            win.view = 3;
+            explorer.go("tx", txid);
+        }
+        onAddressPicked: function (adr) {
+            win.view = 3;
+            explorer.go("address", adr);
+        }
+    }
+
     Item {
         anchors.fill: parent
         focus: true
@@ -151,6 +170,7 @@ Window {
             case Qt.Key_2:
             case Qt.Key_3:
             case Qt.Key_4:
+            case Qt.Key_5:
                 win.view = event.key - Qt.Key_1;
                 hint.flash();
                 break;

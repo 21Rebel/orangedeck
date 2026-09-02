@@ -60,6 +60,11 @@ Item {
     // liefert alle Felder normalisiert, Hashrate immer in H/s.
     readonly property var miners: snap.miners || []
     readonly property var minerTotal: snap.minerTotal || ({})
+    // Kurzfassung der beobachteten Wallets. Die vollen Angaben holt die
+    // Wallet-Ansicht ueber `/wallets` -- sie sind zu gross fuer den Zustand.
+    readonly property var wallets: snap.wallets || []
+    readonly property bool walletBusy: snap.walletBusy || false
+    readonly property bool walletConfigured: wallets.length > 0
     // Verlauf je Geraet, vom Daemon mitgeschrieben
     readonly property var minerHistory: snap.minerHistory || ({})
     readonly property bool minerConfigured: miners.length > 0
@@ -95,6 +100,32 @@ Item {
             root[pendingKey] = false;
             if (onFail)
                 onFail();
+        }
+    }
+
+    // Eine beliebige Abfrage gegen den Daemon, JSON zurueck. Getrennt von
+    // `lookup`, weil das die Pfade nach draussen meint -- hier geht es um die
+    // eigenen Pfade des Dienstes (`/wallets`).
+    function getJson(path, done) {
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () {
+            if (x.readyState !== XMLHttpRequest.DONE)
+                return;
+            if (x.status !== 200) {
+                done(null, "nicht erreichbar");
+                return;
+            }
+            try {
+                done(JSON.parse(x.responseText), null);
+            } catch (e) {
+                done(null, "Antwort nicht lesbar");
+            }
+        };
+        try {
+            x.open("GET", root.endpoint + path);
+            x.send();
+        } catch (e) {
+            done(null, String(e));
         }
     }
 

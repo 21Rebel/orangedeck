@@ -98,7 +98,7 @@ Item {
         anchors.top: parent.top
         anchors.leftMargin: Theme.spacingS
         anchors.topMargin: 2
-        labels: ["Feed", "BlockClock", "Miner", "Explorer"]
+        labels: ["Feed", "BlockClock", "Miner", "Explorer", "Wallet"]
         current: root.view
         fontSize: Theme.fontSizeSmall
         textColor: Theme.surfaceText
@@ -132,6 +132,27 @@ Item {
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
         accentColor: Theme.primary
+    }
+
+    WatchView {
+        visible: root.live && root.view === 4
+        // Nur nachfragen, wenn der Tab auch offen ist
+        live: visible
+        anchors.fill: parent
+        anchors.margins: Theme.spacingS
+        anchors.topMargin: tabs.height + 4
+        feed: feedState
+        textColor: Theme.surfaceText
+        dimColor: Theme.surfaceVariantText
+        accentColor: Theme.primary
+        onTxPicked: function (txid) {
+            root.put("view", 3);
+            explorer.go("tx", txid);
+        }
+        onAddressPicked: function (adr) {
+            root.put("view", 3);
+            explorer.go("address", adr);
+        }
     }
 
     MinerView {
