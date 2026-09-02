@@ -24,6 +24,9 @@ Item {
     property color goodColor: "#57b894"
     property real uiFont: 13
     property string lang: "de"
+    // Deckkraft und Startansicht gehoeren dem Fenster. Im Dashboard-Tab
+    // stellt die Flaeche der Wirt, dort waeren beide wirkungslos.
+    property bool windowed: true
 
     signal changed(string key, var value)
 
@@ -408,6 +411,7 @@ Item {
                 }
 
                 Zeile {
+                    visible: root.windowed
                     label: Tr.t("set.opacity", root.lang)
                     help: Tr.t("set.opacityHelp", root.lang)
 
@@ -438,6 +442,7 @@ Item {
                 }
 
                 Zeile {
+                    visible: root.windowed
                     label: Tr.t("set.startView", root.lang)
                     help: Tr.t("set.startViewHelp", root.lang)
 
