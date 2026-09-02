@@ -26,7 +26,7 @@ ShellRoot {
         property bool frosted: true
         property real bgOpacity: 0.82
         property real density: 1.0
-        property int startView: 0
+        property int startView: -1
         property string currency: "eur"
         property string tileColorMode: "fee"
         property bool clockBars: true
@@ -44,6 +44,8 @@ ShellRoot {
         property var explorerParts: []
         property var explorerPanels: []
         property string lang: "de"
+        property var bigFields: ["height"]
+        property int bigRotate: 0
         // Aus, bis sie in den Einstellungen ausdruecklich eingeschaltet wird
         property bool walletEnabled: false
         // 0 Feed, 1 BlockClock, 2 Miner, 3 Explorer, 4 Wallet, 5 Einstellungen
@@ -86,6 +88,8 @@ ShellRoot {
             "explorerParts": explorerParts,
             "explorerPanels": explorerPanels,
             "lang": lang,
+            "bigFields": bigFields,
+            "bigRotate": bigRotate,
             "walletEnabled": walletEnabled
         })
 
@@ -142,6 +146,10 @@ ShellRoot {
                 explorerPanels = value;
             else if (key === "lang")
                 lang = value;
+            else if (key === "bigFields")
+                bigFields = value;
+            else if (key === "bigRotate")
+                bigRotate = value;
             else if (key === "walletEnabled") {
                 walletEnabled = value;
                 if (!value && view === 4)
@@ -179,6 +187,8 @@ ShellRoot {
                 "explorerParts": explorerParts,
                 "explorerPanels": explorerPanels,
                 "lang": lang,
+                "bigFields": bigFields,
+                "bigRotate": bigRotate,
                 "walletEnabled": walletEnabled
             }));
             hint.flash();
@@ -210,7 +220,7 @@ ShellRoot {
                     if (typeof v.density === "number")
                         win.density = Math.max(0.6, Math.min(2, v.density));
                     if (typeof v.startView === "number")
-                        win.startView = Math.max(0, Math.min(3, v.startView));
+                        win.startView = Math.max(-1, Math.min(3, v.startView));
                     if (v.currency)
                         win.currency = v.currency;
                     if (v.tileColorMode)
@@ -245,6 +255,10 @@ ShellRoot {
                         win.explorerPanels = v.explorerPanels;
                     if (v.lang)
                         win.lang = v.lang;
+                    if (Array.isArray(v.bigFields))
+                        win.bigFields = v.bigFields;
+                    if (typeof v.bigRotate === "number")
+                        win.bigRotate = v.bigRotate;
                     if (typeof v.walletEnabled === "boolean")
                         win.walletEnabled = v.walletEnabled;
                     if (win.view === 4 && !win.walletEnabled)
@@ -321,6 +335,8 @@ ShellRoot {
             showBars: win.clockBars
             showSpark: win.clockSpark
             showTime: win.clockTime
+            bigFields: win.bigFields
+            bigRotate: win.bigRotate
         }
 
         MinerView {

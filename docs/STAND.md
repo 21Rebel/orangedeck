@@ -1,5 +1,40 @@
 # Stand und offene Punkte
 
+## Stand 02.09.2026, spaeter Abend -- Widgets und grosse Werte
+
+**Jeder Tab laesst sich einzeln auf den Desktop legen.** Das DMS-Widget
+(`shell/dms/BitcoinFeedDesktop.qml`) kennt jetzt eine Einstellung
+`widgetView` -- Feed, Blockclock, Miner oder Explorer. DMS gibt jeder
+Instanz eines Desktop-Widgets einen **eigenen** Einstellungsspeicher
+(`instanceId` + instanzgebundener `pluginService`), also kann man vier
+Widgets nebeneinander legen, jedes mit einer anderen Ansicht.
+
+**Blockclock: welcher Wert gross steht, ist waehlbar** -- Blockhoehe, Kurs,
+Moscow Time, Gebuehr, Hashrate, Mempool oder Uhrzeit, mehrere zugleich. Sind
+mehrere gewaehlt, wechselt die Anzeige reihum; das Intervall steht in den
+Einstellungen (aus / 5 / 10 / 30 / 60 s). Der gerade grosse Wert faellt aus
+der kleinen Kennzahlenzeile heraus, damit er nicht doppelt dasteht.
+Nachgesehen im Bild: vier Aufnahmen im Abstand von fuenf Sekunden zeigen
+Kurs -> Moscow Time -> Blockhoehe -> Kurs.
+
+**`startView` kennt jetzt "zuletzt benutzte" (-1)** und ist damit
+voreingestellt -- vorher ueberschrieb die Starteinstellung immer die zuletzt
+gewaehlte Ansicht.
+
+**Die zweite QSettings-Falle** (die erste war die leere Liste): eine
+INI-Zeichenkette mit Komma wird beim Lesen als **Liste** zurueckgegeben.
+`bigFieldsRaw=height,price,moscow` kam als `"height"` wieder an, stillschweigend
+und ohne Meldung -- die Rotation stand deshalb still. Alle Listen werden
+jetzt mit `|` zusammengesetzt (`Main.qml`, `btcfeed-dashtab`,
+`BitcoinFeedDesktop.qml`).
+
+**Beim Pruefen im kopflosen Compositor:** `labwc` uebernimmt `WAYLAND_DISPLAY`
+nicht als eigenen Sockelnamen, es sucht sich `wayland-N` selbst. Wer die
+Anwendung von aussen startet, trifft den falschen Compositor. Richtig ist
+`labwc -S <skript>` -- das Skript laeuft als Kind und erbt den richtigen
+Namen. Die Meldung "Failed to bind socket @/tmp/.X11-unix/X0" ist dabei
+harmlos, `labwc` laeuft trotzdem weiter.
+
 ## Stand 02.09.2026 -- der geplante Block lebt
 
 Punkt 1 der Liste ist erledigt. Auf der Startseite des Explorers steht der

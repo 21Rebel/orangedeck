@@ -3,8 +3,30 @@ import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
 
+// Einstellungen des Plugins in DMS.
+//
+// **Der grosse Teil steht nicht hier**, sondern auf der Seite "Einstellungen"
+// im Dashboard-Tab und im Fenster -- dort ist er nach Ansichten geordnet und
+// in allen Sprachen. Hier bleibt, was DMS selbst betrifft: die Ansicht eines
+// Desktop-Widgets und dessen Aussehen.
+//
+// DMS legt jede Desktop-Widget-Instanz getrennt ab. Wer den Feed dreimal aufs
+// Desktop legt, kann jedem Fenster eine andere Ansicht geben.
 PluginSettings {
     pluginId: "bitcoinFeed"
+
+    SelectionSetting {
+        settingKey: "widgetView"
+        label: "Ansicht des Desktop-Widgets"
+        description: "Jede Instanz kann eine andere zeigen — Feed, BlockClock, Miner oder Explorer."
+        options: [
+            {label: "Feed", value: "feed"},
+            {label: "BlockClock", value: "clock"},
+            {label: "Miner", value: "miner"},
+            {label: "Explorer", value: "explorer"}
+        ]
+        defaultValue: "feed"
+    }
 
     SelectionSetting {
         settingKey: "colorMode"

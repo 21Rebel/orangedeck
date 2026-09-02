@@ -89,10 +89,13 @@ Item {
     property string minerFieldsRaw: SettingsData.getPluginSetting(pid, "minerFieldsRaw", "")
     property string explorerPartsRaw: SettingsData.getPluginSetting(pid, "explorerPartsRaw", "")
     property string explorerPanelsRaw: SettingsData.getPluginSetting(pid, "explorerPanelsRaw", "")
-    readonly property var clockFields: clockFieldsRaw.length ? clockFieldsRaw.split(",") : []
-    readonly property var minerFields: minerFieldsRaw.length ? minerFieldsRaw.split(",") : []
-    readonly property var explorerParts: explorerPartsRaw.length ? explorerPartsRaw.split(",") : []
-    readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split(",") : []
+    property string bigFieldsRaw: SettingsData.getPluginSetting(pid, "bigFieldsRaw", "height")
+    property int bigRotate: SettingsData.getPluginSetting(pid, "bigRotate", 0)
+    readonly property var bigFields: bigFieldsRaw.length ? bigFieldsRaw.split("|") : ["height"]
+    readonly property var clockFields: clockFieldsRaw.length ? clockFieldsRaw.split("|") : []
+    readonly property var minerFields: minerFieldsRaw.length ? minerFieldsRaw.split("|") : []
+    readonly property var explorerParts: explorerPartsRaw.length ? explorerPartsRaw.split("|") : []
+    readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split("|") : []
 
     // 5 ist die Einstellungsseite -- sie steht immer am Ende, die
     // Wallet-Ansicht davor nur, wenn sie eingeschaltet ist.
@@ -124,6 +127,8 @@ Item {
         "clockSpark": clockSpark,
         "clockTime": clockTime,
         "clockFields": clockFields,
+        "bigFields": bigFields,
+        "bigRotate": bigRotate,
         "minerChart": minerChart,
         "minerDomains": minerDomains,
         "minerBoard": minerBoard,
@@ -136,9 +141,9 @@ Item {
 
     function setOpt(key, value) {
         // Listen kommen als Feld herein und gehen als Zeichenkette hinaus
-        if (key === "clockFields" || key === "minerFields"
+        if (key === "clockFields" || key === "minerFields" || key === "bigFields"
                 || key === "explorerParts" || key === "explorerPanels") {
-            root.put(key + "Raw", (value || []).join(","));
+            root.put(key + "Raw", (value || []).join("|"));
             return;
         }
         root.put(key, value);
@@ -211,6 +216,8 @@ Item {
         showBars: root.clockBars
         showSpark: root.clockSpark
         showTime: root.clockTime
+        bigFields: root.bigFields
+        bigRotate: root.bigRotate
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
         accentColor: Theme.primary

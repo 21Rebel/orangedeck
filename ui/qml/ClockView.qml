@@ -31,6 +31,69 @@ Item {
     property bool showSpark: true
     property bool showTime: false
     property string lang: "de"
+    // Was gross in der Mitte steht. Mehrere Eintraege wechseln sich ab --
+    // fuer ein Tablet an der Wand ist das der eigentliche Reiz: dieselbe
+    // Flaeche zeigt nacheinander Hoehe, Kurs und Moscow Time.
+    property var bigFields: ["height"]
+    property int bigRotate: 0        // Sekunden, 0 = nicht wechseln
+    property int bigIndex: 0
+
+    readonly property var bigList: (bigFields && bigFields.length) ? bigFields : ["height"]
+    readonly property string bigNow: bigList[bigIndex % bigList.length]
+
+    // Beschriftung und Wert der grossen Anzeige. Eine Stelle, damit die
+    // Reihenfolge unten nicht auseinanderlaeuft.
+    function bigLabel(id) {
+        if (id === "price")
+            return Tr.t("price", root.lang);
+        if (id === "moscow")
+            return Tr.t("clock.moscow", root.lang);
+        if (id === "fee")
+            return Tr.t("fee", root.lang);
+        if (id === "hashrate")
+            return Tr.t("hashrate", root.lang);
+        if (id === "mempool")
+            return Tr.t("mempool", root.lang);
+        if (id === "time")
+            return Tr.t("set.clockTime", root.lang);
+        return Tr.t("blockHeight", root.lang);
+    }
+
+    function bigValue(id) {
+        if (id === "price")
+            return root.kurs ? root.grp(root.kurs) + " " + root.waehrung : "–";
+        if (id === "moscow")
+            return root.kurs ? root.grp(1e8 / root.kurs) : "–";
+        if (id === "fee")
+            return root.comma(root.fees.fastest);
+        if (id === "hashrate")
+            return root.hr.current ? root.comma(root.hr.current / 1e18, 0) + " EH/s" : "–";
+        if (id === "mempool")
+            return root.feed ? root.grp(root.feed.mempoolCount) : "–";
+        if (id === "time")
+            return Qt.formatDateTime(root.jetzt, "HH:mm");
+        return root.grp(root.feed ? root.feed.tipHeight : 0);
+    }
+
+    // Fuer die Uhrzeit als grosse Anzeige -- sonst bliebe sie stehen
+    property date jetzt: new Date()
+
+    Timer {
+        interval: 10000
+        repeat: true
+        running: root.visible && (root.showTime || root.bigNow === "time")
+        triggeredOnStart: true
+        onTriggered: root.jetzt = new Date()
+    }
+
+    // Der Wechsel. Laeuft nur, wenn es etwas zu wechseln gibt und jemand
+    // hinsieht -- ein Zeitgeber im Verborgenen kostet nur Strom.
+    Timer {
+        interval: Math.max(2, root.bigRotate) * 1000
+        repeat: true
+        running: root.visible && root.bigRotate > 0 && root.bigList.length > 1
+        onTriggered: root.bigIndex = (root.bigIndex + 1) % root.bigList.length
+    }
 
     readonly property real kurs: Money.rate(price, currency)
     readonly property string waehrung: Money.symbol(Money.actual(price, currency))
@@ -110,30 +173,18 @@ Item {
             id: uhr
 
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: root.showTime
+            visible: root.showTime && root.bigNow !== "time"
             color: root.textColor
             font.pixelSize: root.scaleUnit * 2.2
             font.letterSpacing: root.scaleUnit * 0.04
 
-            function stellen() {
-                uhr.text = Qt.formatDateTime(new Date(), "HH:mm");
-            }
-
-            Component.onCompleted: stellen()
-
-            Timer {
-                interval: 10000
-                repeat: true
-                running: root.showTime && root.visible
-                triggeredOnStart: true
-                onTriggered: uhr.stellen()
-            }
+            text: Qt.formatDateTime(root.jetzt, "HH:mm")
         }
 
-        // ---------------------------------------------------- Blockhoehe
+        // ------------------------------------------------ Grosse Anzeige
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: Tr.t("blockHeight", root.lang)
+            text: root.bigLabel(root.bigNow)
             color: root.dimColor
             font.pixelSize: root.scaleUnit * 0.8
             font.letterSpacing: root.scaleUnit * 0.08
@@ -141,7 +192,7 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: root.grp(root.feed ? root.feed.tipHeight : 0)
+            text: root.bigValue(root.bigNow)
             color: root.accentColor
             font.pixelSize: root.scaleUnit * 3.4
             font.bold: true
@@ -191,7 +242,9 @@ Item {
                         }
                     ];
                     return alle.filter(function (x) {
-                        return root.zeigt(x.id);
+                        // Was oben gross steht, hier weglassen -- zweimal
+                        // dieselbe Zahl liest sich wie ein Fehler.
+                        return root.zeigt(x.id) && x.id !== root.bigNow;
                     });
                 }
 

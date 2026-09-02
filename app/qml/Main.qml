@@ -34,21 +34,27 @@ Window {
     property bool frosted: true
     property real bgOpacity: 0.82
     property real density: 1.0
-    property int startView: 0
+    // -1 heisst: die zuletzt benutzte Ansicht. Sonst faengt das Fenster
+    // immer bei derselben an und merkt sich gar nichts mehr.
+    property int startView: -1
     property string currency: "eur"
     property string tileColorMode: "fee"
     property bool clockBars: true
     // Leere Liste heisst: alles zeigen
-    // Als Zeichenkette abgelegt: QSettings schreibt eine **leere** Liste als
-    // `@Invalid()` und liest sie als ungueltigen Wert zurueck -- die Ansicht
-    // bekam dann weder eine Liste noch nichts.
+    // Als Zeichenkette abgelegt, getrennt mit "|". Zwei Fallen von QSettings
+    // stecken darin: eine **leere** Liste wird als `@Invalid()` geschrieben und
+    // als ungueltiger Wert zurueckgelesen -- und ein Komma in einer
+    // INI-Zeichenkette gilt beim Lesen als **Listentrenner**, aus
+    // "height,price" wurde stillschweigend wieder "height".
     property string clockFieldsRaw: ""
-    readonly property var clockFields: clockFieldsRaw.length ? clockFieldsRaw.split(",") : []
-    // Als Zeichenkette abgelegt: QSettings schreibt eine **leere** Liste als
-    // `@Invalid()` und liest sie als ungueltigen Wert zurueck -- die Ansicht
-    // bekam dann weder eine Liste noch nichts.
+    readonly property var clockFields: clockFieldsRaw.length ? clockFieldsRaw.split("|") : []
+    // Als Zeichenkette abgelegt, getrennt mit "|". Zwei Fallen von QSettings
+    // stecken darin: eine **leere** Liste wird als `@Invalid()` geschrieben und
+    // als ungueltiger Wert zurueckgelesen -- und ein Komma in einer
+    // INI-Zeichenkette gilt beim Lesen als **Listentrenner**, aus
+    // "height,price" wurde stillschweigend wieder "height".
     property string minerFieldsRaw: ""
-    readonly property var minerFields: minerFieldsRaw.length ? minerFieldsRaw.split(",") : []
+    readonly property var minerFields: minerFieldsRaw.length ? minerFieldsRaw.split("|") : []
     // Die Wallet-Ansicht ist **abgeschaltet, bis sie ausdruecklich
     // eingeschaltet wird**. Nicht wegen der Guthaben -- die sind watch-only
     // vollstaendig geschuetzt --, sondern wegen der Verkettung: es ist der
@@ -64,17 +70,26 @@ Window {
     property bool minerDomains: true
     property bool minerBoard: true
     property bool explorerLive: true
-    // Als Zeichenkette abgelegt: QSettings schreibt eine **leere** Liste als
-    // `@Invalid()` und liest sie als ungueltigen Wert zurueck -- die Ansicht
-    // bekam dann weder eine Liste noch nichts.
+    // Als Zeichenkette abgelegt, getrennt mit "|". Zwei Fallen von QSettings
+    // stecken darin: eine **leere** Liste wird als `@Invalid()` geschrieben und
+    // als ungueltiger Wert zurueckgelesen -- und ein Komma in einer
+    // INI-Zeichenkette gilt beim Lesen als **Listentrenner**, aus
+    // "height,price" wurde stillschweigend wieder "height".
     property string explorerPartsRaw: ""
-    readonly property var explorerParts: explorerPartsRaw.length ? explorerPartsRaw.split(",") : []
-    // Als Zeichenkette abgelegt: QSettings schreibt eine **leere** Liste als
-    // `@Invalid()` und liest sie als ungueltigen Wert zurueck -- die Ansicht
-    // bekam dann weder eine Liste noch nichts.
+    readonly property var explorerParts: explorerPartsRaw.length ? explorerPartsRaw.split("|") : []
+    // Als Zeichenkette abgelegt, getrennt mit "|". Zwei Fallen von QSettings
+    // stecken darin: eine **leere** Liste wird als `@Invalid()` geschrieben und
+    // als ungueltiger Wert zurueckgelesen -- und ein Komma in einer
+    // INI-Zeichenkette gilt beim Lesen als **Listentrenner**, aus
+    // "height,price" wurde stillschweigend wieder "height".
     property string explorerPanelsRaw: ""
-    readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split(",") : []
+    readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split("|") : []
     property string lang: "de"
+    // Grosse Anzeige der BlockClock -- als Zeichenkette abgelegt, siehe
+    // die uebrigen Listen.
+    property string bigFieldsRaw: "height"
+    readonly property var bigFields: bigFieldsRaw.length ? bigFieldsRaw.split("|") : ["height"]
+    property int bigRotate: 0
     property bool walletEnabled: false
     // 0 = Feed, 1 = BlockClock, 2 = Miner, 3 = Explorer, 4 = Wallet. Wird
     // gemerkt, damit ein Tablet nach dem Einschalten gleich wieder als
@@ -113,6 +128,8 @@ Window {
         property alias explorerPartsRaw: win.explorerPartsRaw
         property alias explorerPanelsRaw: win.explorerPanelsRaw
         property alias lang: win.lang
+        property alias bigFieldsRaw: win.bigFieldsRaw
+        property alias bigRotate: win.bigRotate
         property alias walletEnabled: win.walletEnabled
     }
 
@@ -166,9 +183,9 @@ Window {
         else if (key === "clockBars")
             win.clockBars = value;
         else if (key === "clockFields")
-            win.clockFieldsRaw = (value || []).join(",");
+            win.clockFieldsRaw = (value || []).join("|");
         else if (key === "minerFields")
-            win.minerFieldsRaw = (value || []).join(",");
+            win.minerFieldsRaw = (value || []).join("|");
         else if (key === "showHeader")
             win.showHeader = value;
         else if (key === "showFooter")
@@ -188,11 +205,15 @@ Window {
         else if (key === "explorerLive")
             win.explorerLive = value;
         else if (key === "explorerParts")
-            win.explorerPartsRaw = (value || []).join(",");
+            win.explorerPartsRaw = (value || []).join("|");
         else if (key === "explorerPanels")
-            win.explorerPanelsRaw = (value || []).join(",");
+            win.explorerPanelsRaw = (value || []).join("|");
         else if (key === "lang")
             win.lang = value;
+        else if (key === "bigFields")
+            win.bigFieldsRaw = (value || []).join("|");
+        else if (key === "bigRotate")
+            win.bigRotate = value;
         else if (key === "walletEnabled") {
             win.walletEnabled = value;
             // Ausgeschaltet, waehrend die Ansicht offen war -> zurueck
@@ -228,6 +249,8 @@ Window {
         "explorerParts": win.explorerParts,
         "explorerPanels": win.explorerPanels,
         "lang": win.lang,
+        "bigFields": win.bigFields,
+        "bigRotate": win.bigRotate,
         "walletEnabled": win.walletEnabled
     })
 
@@ -295,6 +318,8 @@ Window {
         showBars: win.clockBars
         showSpark: win.clockSpark
         showTime: win.clockTime
+        bigFields: win.bigFields
+        bigRotate: win.bigRotate
     }
 
     ExplorerView {

@@ -447,8 +447,9 @@ Item {
                     help: Tr.t("set.startViewHelp", root.lang)
 
                     Wahl {
-                        gewaehlt: String(root.val("startView", 0))
+                        gewaehlt: String(root.val("startView", -1))
                         eintraege: [
+                            { "k": "-1", "l": Tr.t("set.lastUsed", root.lang) },
                             { "k": "0", "l": Tr.t("tab.feed", root.lang) },
                             { "k": "1", "l": Tr.t("tab.clock", root.lang) },
                             { "k": "2", "l": Tr.t("tab.miner", root.lang) },
@@ -589,6 +590,44 @@ Item {
                             { "id": "mempool", "l": Tr.t("mempool", root.lang) },
                             { "id": "hashrate", "l": Tr.t("hashrate", root.lang) }
                         ]
+                    }
+                }
+
+                Zeile {
+                    label: Tr.t("set.bigValue", root.lang)
+                    help: Tr.t("set.bigValueHelp", root.lang)
+
+                    Haken {
+                        schluessel: "bigFields"
+                        alle: ["height", "price", "moscow", "fee", "hashrate", "mempool", "time"]
+                        eintraege: [
+                            { "id": "height", "l": Tr.t("blockHeight", root.lang) },
+                            { "id": "price", "l": Tr.t("price", root.lang) },
+                            { "id": "moscow", "l": Tr.t("clock.moscow", root.lang) },
+                            { "id": "fee", "l": Tr.t("fee", root.lang) },
+                            { "id": "hashrate", "l": Tr.t("hashrate", root.lang) },
+                            { "id": "mempool", "l": Tr.t("mempool", root.lang) },
+                            { "id": "time", "l": Tr.t("set.clockTime", root.lang) }
+                        ]
+                    }
+                }
+
+                Zeile {
+                    label: Tr.t("set.rotate", root.lang)
+                    help: Tr.t("set.rotateHelp", root.lang)
+
+                    Wahl {
+                        gewaehlt: String(root.val("bigRotate", 0))
+                        eintraege: [
+                            { "k": "0", "l": Tr.t("set.off", root.lang) },
+                            { "k": "5", "l": Tr.t("unit.sec", root.lang, 5) },
+                            { "k": "10", "l": Tr.t("unit.sec", root.lang, 10) },
+                            { "k": "30", "l": Tr.t("unit.sec", root.lang, 30) },
+                            { "k": "60", "l": Tr.t("unit.sec", root.lang, 60) }
+                        ]
+                        onPicked: function (k) {
+                            root.changed("bigRotate", parseInt(k, 10));
+                        }
                     }
                 }
 

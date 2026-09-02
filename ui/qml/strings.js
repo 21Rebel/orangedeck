@@ -530,6 +530,41 @@ var S = {
     "wallet.cmdAdd": ["btcfeed --watch-add <zpub…> \"Mein Sparbuch\"", "btcfeed --watch-add <zpub…> \"My savings\"", "btcfeed --watch-add <zpub…> \"Mis ahorros\"", "btcfeed --watch-add <zpub…> \"Mon épargne\"", "btcfeed --watch-add <zpub…> \"I miei risparmi\"", "btcfeed --watch-add <zpub…> \"As minhas poupanças\"", "btcfeed --watch-add <zpub…> \"Mijn spaargeld\"", "btcfeed --watch-add <zpub…> \"Мои сбережения\"", "btcfeed --watch-add <zpub…> \"貯金\"", "btcfeed --watch-add <zpub…> \"我的储蓄\"", "btcfeed --watch-add <zpub…> \"Minhas economias\"", "btcfeed --watch-add <zpub…> \"Moje oszczędności\"", "btcfeed --watch-add <zpub…> \"Moje úspory\""]
 ,
     "ago.sec": ["vor {0} s", "{0} s ago", "hace {0} s", "il y a {0} s", "{0} s fa", "há {0} s", "{0} s geleden", "{0} с назад", "{0}秒前", "{0} 秒前", "há {0} s", "{0} s temu", "před {0} s"]
+,
+    "set.bigValue": ["Große Anzeige", "Large display", "Pantalla grande", "Affichage principal", "Valore grande", "Valor em destaque", "Grote weergave", "Крупное значение", "大きな表示", "大号显示", "Valor em destaque", "Duży wskaźnik", "Velký údaj"],
+    "set.bigValueHelp": [
+        "Was groß in der Mitte steht. Mehrere ausgewählt heißt: sie wechseln sich ab.",
+        "What is shown large in the middle. Select several and they take turns.",
+        "Lo que se muestra en grande en el centro. Si eliges varios, se alternan.",
+        "Ce qui s’affiche en grand au centre. Si plusieurs sont cochés, ils alternent.",
+        "Cosa compare in grande al centro. Selezionandone più d’uno, si alternano.",
+        "O que aparece em grande ao centro. Se escolher vários, alternam-se.",
+        "Wat groot in het midden staat. Meerdere gekozen betekent: ze wisselen elkaar af.",
+        "Что показано крупно по центру. Если выбрано несколько — они чередуются.",
+        "中央に大きく表示する項目です。複数選ぶと順に切り替わります。",
+        "中间大字显示的内容。选择多项则轮流显示。",
+        "O que aparece em destaque no centro. Se escolher vários, eles se alternam.",
+        "Co widnieje dużą czcionką na środku. Wybranie kilku oznacza, że będą się zmieniać.",
+        "Co je velkým písmem uprostřed. Vyberete-li více, budou se střídat."],
+    "set.rotate": ["Wechseln alle", "Switch every", "Cambiar cada", "Changer toutes les", "Cambia ogni", "Alternar a cada", "Wisselen elke", "Менять каждые", "切り替え間隔", "切换间隔", "Alternar a cada", "Zmieniać co", "Střídat po"],
+    "set.rotateHelp": [
+        "Nur wirksam, wenn mehr als eine große Anzeige gewählt ist.",
+        "Only takes effect with more than one large display selected.",
+        "Sólo tiene efecto si hay más de una pantalla grande elegida.",
+        "N’a d’effet que si plusieurs affichages principaux sont cochés.",
+        "Ha effetto solo se è selezionato più di un valore grande.",
+        "Só tem efeito se estiver escolhido mais do que um valor em destaque.",
+        "Werkt alleen als er meer dan één grote weergave is gekozen.",
+        "Действует только если выбрано больше одного крупного значения.",
+        "大きな表示を複数選んだときだけ効きます。",
+        "仅在选择了多个大号显示项时生效。",
+        "Só tem efeito se houver mais de um valor em destaque.",
+        "Działa tylko wtedy, gdy wybrano więcej niż jeden duży wskaźnik.",
+        "Působí jen tehdy, je-li vybrán více než jeden velký údaj."],
+    "set.off": ["aus", "off", "no", "non", "no", "não", "uit", "выкл", "オフ", "关闭", "não", "wył.", "vyp."],
+    "unit.sec": ["{0} s", "{0} s", "{0} s", "{0} s", "{0} s", "{0} s", "{0} s", "{0} с", "{0} 秒", "{0} 秒", "{0} s", "{0} s", "{0} s"]
+,
+    "set.lastUsed": ["zuletzt benutzte", "last used", "la última usada", "la dernière", "l’ultima usata", "a última usada", "laatst gebruikte", "последний", "前回の画面", "上次使用", "a última usada", "ostatnio używany", "naposledy použité"]
 };
 
 // Text holen. `lang` bestimmt die Spalte; fehlt der Schluessel oder die
