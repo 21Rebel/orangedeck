@@ -87,6 +87,10 @@ Grid {
     // Ein Rahmen fuer alle Tafeln
     component Panel: Rectangle {
         property alias title: head.text
+        // Wo der Inhalt anfangen darf. Wer mittig stehen will, mittet
+        // **darunter** -- sonst rechnet er die Ueberschrift mit und sitzt
+        // sichtbar zu tief.
+        readonly property real contentTop: head.y + head.height + root.uiFont * 0.6
 
         width: root.panelWidth
         radius: root.uiFont * 0.4
@@ -112,8 +116,11 @@ Grid {
         title: "TRANSAKTIONSGEBÜHR"
 
         Row {
-            anchors.centerIn: parent
-            anchors.verticalCenterOffset: root.uiFont * 0.6
+            id: feeRow
+
+            anchors.horizontalCenter: parent.horizontalCenter
+            // Mittig im Raum **unter** der Ueberschrift
+            y: parent.contentTop + (parent.height - parent.contentTop - height) / 2
             spacing: root.uiFont * 1.6
 
             Repeater {

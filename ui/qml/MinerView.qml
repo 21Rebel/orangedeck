@@ -52,6 +52,44 @@ Item {
             Qt.openUrlExternally(webUrl);
     }
     readonly property bool roomForChart: height > 200
+
+    // Welche Kennzahlen ueberhaupt gezeigt werden. Leere Liste heisst alle --
+    // die Auswahl kommt aus den Einstellungen, hier steht nur der Filter.
+    property var metricKeys: []
+
+    readonly property var metrics: {
+        var m = root.one;
+        if (!m)
+            return [];
+        var alle = [
+            { "id": "temp", "k": "Temperatur", "v": (m.temp !== undefined && m.temp !== null)
+                ? Math.round(m.temp) + " °C" : "–" },
+            { "id": "power", "k": "Leistung", "v": m.power
+                ? m.power.toFixed(1).replace(".", ",") + " W" : "–" },
+            { "id": "fan", "k": "Lüfter", "v": m.fanRpm ? m.fanRpm + " U/min" : "–" },
+            { "id": "error", "k": "Fehlerquote", "v": (m.errorPct !== undefined && m.errorPct !== null)
+                ? m.errorPct.toFixed(1).replace(".", ",") + " %" : "–" },
+            { "id": "shares", "k": "Freigaben", "v": m.shares !== undefined
+                ? String(m.shares) + (m.rejected ? " (" + m.rejected + " abgelehnt)" : "") : "–" },
+            { "id": "uptime", "k": "Laufzeit", "v": root.span(m.uptime) }
+        ];
+        if (!root.metricKeys || root.metricKeys.length === 0)
+            return alle;
+        return alle.filter(function (x) {
+            return root.metricKeys.indexOf(x.id) >= 0;
+        });
+    }
+
+    // Ab sechs Kennzahlen auf Zeilen zu je drei verteilen, darunter eine Zeile.
+    readonly property var metricRows: {
+        var m = root.metrics;
+        if (m.length < 6)
+            return m.length ? [m] : [];
+        var out = [];
+        for (var i = 0; i < m.length; i += 3)
+            out.push(m.slice(i, i + 3));
+        return out;
+    }
     readonly property bool roomForBoard: height > 240
 
     function big(n, unit) {
@@ -359,42 +397,49 @@ Item {
                 spacing: root.scaleUnit * 0.2
                 visible: root.one !== null
 
-                Row {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: root.scaleUnit * 1.1
+                // Die Kennzahlen. Ab sechs Stueck werden sie auf Zeilen zu je
+                // drei verteilt -- in einer Reihe liefen sie im Dashboard ueber
+                // den Rand hinaus und die aeusseren beiden wurden abgeschnitten.
+                // Bis fuenf bleibt es bei einer Zeile.
+                Column {
+                    width: parent.width
+                    spacing: root.scaleUnit * 0.45
 
                     Repeater {
-                        model: root.one ? [
-                            { "k": "Temperatur", "v": root.one.temp !== undefined && root.one.temp !== null
-                                ? Math.round(root.one.temp) + " °C" : "–" },
-                            { "k": "Leistung", "v": root.one.power ? root.one.power.toFixed(1).replace(".", ",") + " W" : "–" },
-                            { "k": "Lüfter", "v": root.one.fanRpm ? root.one.fanRpm + " U/min" : "–" },
-                            { "k": "Fehlerquote", "v": root.one.errorPct !== undefined && root.one.errorPct !== null
-                                ? root.one.errorPct.toFixed(1).replace(".", ",") + " %" : "–" },
-                            { "k": "Freigaben", "v": root.one.shares !== undefined
-                                ? String(root.one.shares) + (root.one.rejected ? " (" + root.one.rejected + " abgelehnt)" : "") : "–" },
-                            { "k": "Laufzeit", "v": root.span(root.one.uptime) }
-                        ] : []
+                        model: root.metricRows
 
-                        Column {
-                            id: cell
+                        Row {
+                            id: zeile
 
                             required property var modelData
 
-                            spacing: root.scaleUnit * 0.1
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            spacing: root.scaleUnit * 1.1
 
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: cell.modelData.k
-                                color: root.dimColor
-                                font.pixelSize: root.scaleUnit * 0.55
-                            }
+                            Repeater {
+                                model: zeile.modelData
 
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: cell.modelData.v
-                                color: root.textColor
-                                font.pixelSize: root.scaleUnit * 0.8
+                                Column {
+                                    id: cell
+
+                                    required property var modelData
+
+                                    spacing: root.scaleUnit * 0.1
+
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: cell.modelData.k
+                                        color: root.dimColor
+                                        font.pixelSize: root.scaleUnit * 0.55
+                                    }
+
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: cell.modelData.v
+                                        color: root.textColor
+                                        font.pixelSize: root.scaleUnit * 0.8
+                                    }
+                                }
                             }
                         }
                     }

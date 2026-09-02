@@ -55,6 +55,14 @@ Item {
 
     implicitHeight: uiFont * 13.5
 
+    // Die Kacheln sind **quadratisch**. Vorher fuellten sie den Streifen und
+    // wurden dabei hochkant -- ein Block ist aber keine Saeule. Die Kantenlaenge
+    // ist das Kleinere aus Spaltenbreite und dem, was unter der Beschriftung
+    // uebrig bleibt.
+    readonly property real cellWidth: uiFont * 9
+    readonly property real cardSide: Math.max(uiFont * 4,
+        Math.min(cellWidth, implicitHeight - uiFont * 3.2))
+
     function grp(n) {
         if (n === undefined || n === null)
             return "–";
@@ -200,7 +208,7 @@ Item {
 
                         required property var modelData
 
-                        width: root.uiFont * 9
+                        width: root.cellWidth
                         height: strip.height
 
                         Text {
@@ -213,14 +221,13 @@ Item {
                         }
 
                         BlockCard {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
+                            anchors.horizontalCenter: parent.horizontalCenter
                             anchors.top: etaLabel.bottom
                             anchors.topMargin: root.uiFont * 0.3
-                            anchors.bottom: parent.bottom
+                            width: root.cardSide
+                            height: root.cardSide
                             tone: root.feeShade(pcell.modelData.medianFee)
                             hovered: parea.containsMouse
-                            depth: root.uiFont * 0.45
                             cornerRadius: root.uiFont * 0.3
 
                             Column {
@@ -348,7 +355,7 @@ Item {
 
                     readonly property var ex: cell.modelData.extras || ({})
 
-                    width: root.uiFont * 9
+                    width: root.cellWidth
                     height: strip.height
 
                     Text {
@@ -362,15 +369,14 @@ Item {
                     }
 
                     BlockCard {
-                        anchors.left: parent.left
-                        anchors.right: parent.right
+                        anchors.horizontalCenter: parent.horizontalCenter
                         anchors.top: heightLabel.bottom
                         anchors.topMargin: root.uiFont * 0.3
-                        anchors.bottom: parent.bottom
+                        width: root.cardSide
+                        height: root.cardSide
                         tone: root.minedColor
                         highlighted: cell.index === 0
                         hovered: area.containsMouse
-                        depth: root.uiFont * 0.45
                         cornerRadius: root.uiFont * 0.3
 
                         Column {

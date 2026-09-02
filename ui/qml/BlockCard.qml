@@ -1,9 +1,11 @@
 // Eine Blockkachel -- fuer geplante wie fuer bestaetigte Bloecke dieselbe.
 //
-// Der raeumliche Eindruck entsteht aus drei Lagen: eine dunkle Rueckflaeche,
-// die rechts und unten hervorschaut, die eingefaerbte Vorderflaeche und
-// darueber ein Glanz. Der Glanz macht den Glaseindruck: hell und schraeg
-// ueber die obere Haelfte, dazu eine helle Kante oben und eine dunkle unten.
+// Frueher lag hinter der Kachel eine dunkle Rueckflaeche, die rechts und unten
+// hervorschaute und Tiefe vortaeuschte. Sie ist am 02.09.2026 herausgeflogen:
+// der Block ist ein Datensatz und kein Gegenstand, und in einer Reihe
+// nebeneinander wirkte der Schlagschatten wie Schmutz zwischen den Kacheln.
+// Geblieben ist der Glanz -- helle Kante oben, dunkle unten, ein schraeger
+// Lichtstreifen darueber. Das genuegt fuer den Glaseindruck.
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
@@ -16,37 +18,18 @@ Item {
     property color tone: "#7b5cd6"
     property bool highlighted: false
     property bool hovered: false
-    property real depth: 6
     property real cornerRadius: 4
     // Die Vorderflaeche -- Inhalte werden hier hineingehaengt
     default property alias content: face.data
 
-    readonly property real faceWidth: width - depth
-    readonly property real faceHeight: height - depth
-
     readonly property color base: hovered ? Qt.lighter(tone, 1.2)
                                           : (highlighted ? Qt.lighter(tone, 1.08) : tone)
 
-    // --- Rueckflaeche: gibt die Tiefe -----------------------------------
-    Rectangle {
-        anchors.fill: face
-        anchors.leftMargin: -root.depth * 0.35
-        anchors.topMargin: -root.depth * 0.35
-        anchors.rightMargin: -root.depth
-        anchors.bottomMargin: -root.depth
-        radius: root.cornerRadius
-        color: Qt.darker(root.base, 2.6)
-        opacity: 0.9
-    }
-
-    // --- Vorderflaeche ---------------------------------------------------
+    // --- Flaeche ---------------------------------------------------------
     Rectangle {
         id: face
 
-        anchors.left: parent.left
-        anchors.top: parent.top
-        width: root.faceWidth
-        height: root.faceHeight
+        anchors.fill: parent
         radius: root.cornerRadius
 
         gradient: Gradient {
@@ -54,10 +37,12 @@ Item {
                 position: 0
                 color: Qt.lighter(root.base, 1.18)
             }
+
             GradientStop {
                 position: 0.55
                 color: root.base
             }
+
             GradientStop {
                 position: 1
                 color: Qt.darker(root.base, 1.4)
@@ -92,6 +77,7 @@ Item {
                     position: 0
                     color: Qt.rgba(1, 1, 1, 0.22)
                 }
+
                 GradientStop {
                     position: 1
                     color: Qt.rgba(1, 1, 1, 0)

@@ -95,8 +95,14 @@ Item {
     // Abstand des Pfeils vom rechten Rand -- ohne ihn klebt er an der Kante.
     property real edgeMargin: Math.max(4, Math.min(width * 0.012, labelSize))
 
+    // **Ein Winkel fuer beide Enden.** Vorher war die Spitze rechts auf eine
+    // feste Laenge gedeckelt und der Pfeil links wuchs mit der Banddicke -- an
+    // einem dicken Band trafen dadurch zwei verschiedene Steigungen aufeinander.
+    // Jetzt haengt beides an derselben Formel, der Winkel ist damit ueberall
+    // gleich: atan((h/2) / (h * headRatio)), bei headRatio 1,1 also rund 24
+    // Grad zur Achse.
     function tipFor(thickness) {
-        return Math.min(root.arrowLen, Math.max(2, thickness));
+        return root.headFor(thickness);
     }
 
     // Pfeil am **Anfang** der Eingaenge. Im Original sind das SVG-Marker mit
@@ -303,6 +309,28 @@ Item {
             ctx.bezierCurveTo(x0 + d, y0, x1 - d, y1, x1, y1);
         }
 
+        // Eine winkelfoermige Kerbe quer durchs Band, nach rechts weisend.
+        // Herausgeschnitten statt aufgemalt (`destination-out`): so bleibt sie
+        // von der Farbe des Bandes unabhaengig und passt sich jedem Verlauf an.
+        // Die Baender liegen an dieser Stelle weit auseinander, es wird also
+        // nichts anderes mitgetroffen.
+        function notch(ctx, x, cy, len, thickness) {
+            if (len < 1.5 || thickness < 2)
+                return;
+            var alt = ctx.globalCompositeOperation;
+            ctx.globalCompositeOperation = "destination-out";
+            ctx.lineWidth = Math.max(1, Math.min(2.5, thickness * 0.12));
+            ctx.lineJoin = "miter";
+            ctx.strokeStyle = "#000000";
+            ctx.beginPath();
+            ctx.moveTo(x, cy - thickness / 2);
+            ctx.lineTo(x + len, cy);
+            ctx.lineTo(x, cy + thickness / 2);
+            ctx.stroke();
+            ctx.globalCompositeOperation = alt;
+            ctx.lineJoin = "round";
+        }
+
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
@@ -342,20 +370,18 @@ Item {
                 ctx.strokeStyle = g;
                 ctx.lineWidth = b.hEdge;
                 ctx.beginPath();
-                // Der Strich beginnt hinter dem Pfeil
-                ctx.moveTo(head, cEdge);
+                // Das Band laeuft **durch** bis an den Rand. Vorher begann es
+                // hinter dem Pfeil, und weil der Strich stumpf endet, blieb
+                // zwischen der schraegen Kante des Dreiecks und der senkrechten
+                // Kante des Bandes beidseits ein Spalt stehen.
+                ctx.moveTo(0, cEdge);
                 ctx.lineTo(xL, cEdge);
                 canvas.curve(ctx, xL, cEdge, xC + seam, cMid);
                 ctx.stroke();
-
-                // Pfeil am Anfang: nach rechts weisend, in den Fluss hinein
-                ctx.fillStyle = g;
-                ctx.beginPath();
-                ctx.moveTo(0, cEdge - b.hEdge / 2);
-                ctx.lineTo(head + 0.5, cEdge);
-                ctx.lineTo(0, cEdge + b.hEdge / 2);
-                ctx.closePath();
-                ctx.fill();
+                // Der Pfeil ist jetzt eine **Kerbe im Band**, kein angesetztes
+                // Dreieck: ein schmaler Winkel wird wieder herausgeschnitten.
+                // Dadurch gibt es keine Naht, und die Richtung bleibt lesbar.
+                canvas.notch(ctx, 0, cEdge, head, b.hEdge);
             }
 
             for (i = 0; i < root.bandsOut.length; i++) {
@@ -387,7 +413,8 @@ Item {
                 ctx.stroke();
 
                 // Die Spitze als eigenes Dreieck -- ein Strich kann nicht
-                // spitz zulaufen.
+                // spitz zulaufen. Ein halber Bildpunkt Ueberlappung, damit
+                // zwischen Strich und Dreieck keine Naht bleibt.
                 ctx.fillStyle = g;
                 ctx.beginPath();
                 ctx.moveTo(xT - 0.5, cEdge - b.hEdge / 2);
@@ -395,6 +422,9 @@ Item {
                 ctx.lineTo(xT - 0.5, cEdge + b.hEdge / 2);
                 ctx.closePath();
                 ctx.fill();
+                // Dieselbe Kerbe wie am Eingang, kurz vor der Spitze -- so
+                // sehen beide Enden gleich aus.
+                canvas.notch(ctx, xT - tip, cEdge, tip, b.hEdge);
             }
 
             if (root.fee > 0 && root.bandsOut.length) {
