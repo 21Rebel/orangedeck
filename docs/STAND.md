@@ -1,5 +1,142 @@
 # Stand und offene Punkte
 
+> Diese Datei ist ein Journal, das Neueste oben. Der Abschnitt gleich hier
+> darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
+> es dazu kam, und stehen nur noch zum Nachschlagen.
+
+## UEBERGABE 02.09.2026, Abend
+
+### Was heute dazugekommen ist
+
+- **Blockclock**: welcher Wert gross steht, ist waehlbar (Blockhoehe, Kurs,
+  Moscow Time, Gebuehr, Hashrate, Mempool, Uhrzeit) und wechselt reihum.
+- **Widgets**: jede Ansicht laesst sich einzeln auf den Desktop legen -- in
+  DMS ueber die Plugin-Einstellungen, ueberall sonst mit `--layer` (Anleitung
+  in `packaging/widgets/README.md`). Mehrere nebeneinander, jedes mit eigenem
+  Einstellungsspeicher (`--id`).
+- **Flatpak**: `packaging/flatpak/store._21rebel.btcfeed.yml`, gebaut,
+  installiert, geprueft.
+- **Android**: Werkzeugkette steht, das APK baut (45 MB, arm64-v8a,
+  unsigniert). Auf dem Handy war es noch nicht.
+- **Direktbezug**: die Oberflaeche kann selbst mit mempool.space reden
+  (`--source direct` oder Einstellungen → Allgemein). Kein Dienst noetig --
+  dafuer ohne Miner und Wallet.
+- **Der Zustand wurde gekuerzt**: `?since` und `?slow` machen aus 32 kB je
+  Abfrage rund 2 kB.
+- **Fluss-Diagramm**: Anschlussstuecke mit Verlauf, Stufe an der Naht behoben,
+  Angaben am Zeiger.
+
+### Entschieden
+
+- **Es darf nichts kosten.** Kein Signaturzertifikat fuer Windows, kein
+  Apple-Entwicklerprogramm. Folge: Windows warnt (SmartScreen), macOS braucht
+  Rechtsklick → Oeffnen. Kostenlos bleiben: GitHub, GitHub Actions fuer
+  oeffentliche Projekte, Flathub.
+- **GitHub-Konto morgen frueh**, danach wird dort gepflegt und dokumentiert.
+- **Pruef-VMs morgen frueh** -- die Abbilder laden dauert.
+
+### Offene Punkte, in der Reihenfolge fuer morgen
+
+1. **Durchgang ueber alle Reiter, optisch** -- und pruefen, dass alles auch
+   im Dashboard und in den Widgets vollstaendig funktioniert.
+2. **GitHub-Konto und Veroeffentlichung.** Repo anlegen, README und NOTICE
+   durchsehen (Herkunft/Lizenz von bitfeed), Bilder fuer die Registerkarte.
+3. **Pruef-VMs**: Fedora KDE (Plasma/Wayland, aktuelles Qt, Layer-Shell) und
+   Ubuntu LTS mit GNOME (altes Qt, **kein** Layer-Shell). Zwei genuegen, sie
+   sind die beiden Enden des Spektrums. `qemu`, `virt-manager` und `virsh`
+   sind da; rund 20 GB je VM. Zugriff braucht **nichts von aussen**: SSH im
+   NAT-Netz von libvirt, und `virsh screenshot <vm>` liefert Bildabzuege
+   fuer die Sichtpruefung.
+4. **APK aufs Handy.** Braucht das Telefon am Kabel und einmal
+   `sudo usermod -aG adbusers satoshoe`. Vorher entscheiden: auf dem Handy
+   gibt es keinen Dienst -- der Direktbezug ist jetzt der Weg dafuer.
+5. **Kursverlauf mit Schieber** (`/api/v1/historical-price`).
+6. **Kleinigkeit, offen gelassen**: das Suchfeld im Explorer bekommt beim
+   Oeffnen keinen Eingabefokus. Tippt man eine TxID, schalten deren Ziffern
+   die Ansicht um. Scharfstellen waere ein Einzeiler -- kostet aber die
+   Tastenkuerzel, solange der Explorer offen ist. Noch nicht entschieden.
+7. **Windows und macOS**, wenn die Veroeffentlichung steht: der Direktbezug
+   macht den Daemon dort entbehrlich, gebaut wuerde mit GitHub Actions
+   (`windows-latest`, `macos-latest`) ueber dieselbe aqtinstall-Kette wie
+   hier. Vorher zu tun: die Schriftnamen `"monospace"` (10 Dateien) und
+   `"sans-serif"` (3) brauchen Ersatzketten -- das sind fontconfig-Namen.
+   Widgets dort ueber `Qt.WindowStaysOnBottomHint` statt Layer-Shell.
+
+### Wie man morgen anfaengt
+
+    cd ~/Schreibtisch/btcfeed
+    git log --oneline -8
+    systemctl --user status btcfeed
+    curl -s http://127.0.0.1:21021/health
+
+**Nach jeder Aenderung an den geteilten QML-Dateien:**
+
+    tools/install-links.sh          # Shell und Dashboard (Verweise)
+    python3 daemon/btcfeed-dashtab  # DMS-Ueberlagerung neu bauen
+    systemctl --user restart dms
+    cmake --build build             # die eigenstaendige Anwendung
+    flatpak-builder --user --install --force-clean \
+        build-flatpak packaging/flatpak/store._21rebel.btcfeed.yml
+
+**Die letzten beiden nicht vergessen** -- sie tragen eine *Kopie*, keinen
+Verweis. Genau daran ist der Nutzer am 02.09. vorbeigelaufen: die Aenderungen
+waren im Baum, das geoeffnete Flatpak zeigte sie nicht. `install-links.sh`
+sagt es jetzt am Ende von selbst.
+
+**Und die Anwendung nach dem Pruefen wieder beenden.** Sie kostet rund 10 %
+CPU; am 01.09. ist das abends als hochdrehender Luefter aufgefallen.
+
+### Die Erkenntnisse von heute
+
+Ausfuehrlich in den Abschnitten darunter; hier die Kurzfassung.
+
+**QSettings hat zwei Fallen, beide stillschweigend.** Eine leere Liste wird
+als `@Invalid()` geschrieben und als ungueltiger Wert zurueckgelesen -- und
+eine INI-Zeichenkette mit **Komma** gilt beim Lesen als Liste, aus
+`"height,price"` wurde wieder `"height"`. Listen werden deshalb mit `|`
+zusammengesetzt.
+
+**Ein unsichtbares QML-Element behaelt seine Hoehe.** Die nackten Widgets
+hatten oben einen leeren Streifen in Reiterhoehe.
+
+**`labwc` uebernimmt `WAYLAND_DISPLAY` nicht als eigenen Sockelnamen** -- wer
+die Anwendung von aussen startet, trifft den falschen Compositor. Richtig ist
+`labwc -S <skript>`. Die Meldung "Failed to bind socket @/tmp/.X11-unix/X0"
+ist dabei harmlos.
+
+**`kill %1` greift in einem nicht-interaktiven Skript nicht** (keine
+Jobsteuerung). Zwei Testfenster liefen weiter und lagen uebereinander -- das
+sah nach einem Zeichenfehler aus und war keiner. PID merken.
+
+**Nacheinander messen ist wertlos.** Dieselbe Betriebsart kam auf 5,8 % und
+kurz darauf auf 13,5 % -- die Last haengt am Mempool-Verkehr. Nur
+**gleichzeitig** gemessen sind zwei Varianten vergleichbar.
+
+**Eine Flatpak-Kennung darf kein Segment mit einer Ziffer beginnen.** Aus
+`dev.21rebel.btcfeed` wurde `store._21rebel.btcfeed`.
+
+**Der Sandkasten blendet privilegierte Wayland-Protokolle aus**
+(`wp_security_context_v1`). Deshalb gibt es im Flatpak kein Layer-Shell --
+und das ist richtig so. Die Anwendung faellt sauber aufs Fenster zurueck.
+
+**`QCommandLineParser` lehnt eine ganze Option ab**, wenn eines ihrer
+Kuerzel schon vergeben ist. `-v` war von `--version` belegt, damit war
+`--view` stillschweigend unbekannt.
+
+**Unter Android ist das Programm eine Bibliothek** -- `install(TARGETS)`
+verlangt dort ein LIBRARY-Ziel. Und `androidx.core:core:1.17` verlangt
+compileSdk **36**, nicht 35.
+
+**Im Fluss-Diagramm wird mit der Randdicke gezeichnet**, nicht mit der Dicke
+im Strang. Ein erster Ausgleich, der nur die Lage korrigierte, blieb deshalb
+wirkungslos.
+
+**Ein Pruefstand fuer ein einzelnes Bauteil lohnt sich.** `TxFlow` allein mit
+einer echten Transaktion und von aussen gesetztem Zeiger
+(`scratchpad/flowtest.qml`, mit `qml6`) hat in fuenf Minuten einen Fehler
+gezeigt, den das ganze Programm verdeckt haette: steht die eine Seite schon
+und die andere noch nicht, lief der Aufbau in `out[0]` einer leeren Liste.
+
 ## Stand 02.09.2026, spaeter Abend -- Direktbezug, und was er kostet
 
 **Die Oberflaeche kann jetzt selbst mit mempool.space reden.** Der Anlass:
@@ -509,6 +646,9 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
 `packaging/bars/`.
 
 ## Offene Punkte, in der Reihenfolge, in der sie anzugehen sind
+
+> **Ueberholt.** Die gueltige Liste steht oben in der Uebergabe vom
+> 02.09.2026. Dieser Abschnitt bleibt als Beleg stehen, was wann erledigt war.
 
 1. ~~Lebendige Darstellung des geplanten Blocks auf der Startseite.~~
    **Erledigt am 02.09.2026**, siehe unten.
