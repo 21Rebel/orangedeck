@@ -239,7 +239,29 @@ Item {
             return;
         var last = trail[trail.length - 1];
         root.trail = trail.slice(0, -1);
+        // Die Historie hat keine Abfrage hinter sich -- sie wird gesetzt,
+        // nicht geladen.
+        if (last.kind === "history") {
+            root.kind = "history";
+            root.result = null;
+            root.status = "";
+            root.currentArg = "";
+            return;
+        }
         root.go(last.kind === "block" ? "blockhash" : last.kind, last.arg, false);
+    }
+
+    // Die Blockkette zum Durchblaettern. Wie `showProjected` kein Ladeweg --
+    // die Liste holt sich das Bauteil selbst.
+    function showHistory() {
+        if (root.kind && (root.result || root.kind === "history"))
+            root.trail = root.trail.concat([{ "kind": root.kind, "arg": root.currentArg }]);
+        root.kind = "history";
+        root.result = null;
+        root.extra = null;
+        root.tiles = null;
+        root.status = "";
+        root.currentArg = "";
     }
 
     // ------------------------------------------------------------ Suchfeld
@@ -471,31 +493,56 @@ Item {
                 onProjectedPicked: function (rank, data) {
                     root.showProjected(rank, data);
                 }
+                onHistoryPicked: function () {
+                    root.showHistory();
+                }
             }
 
             // ------------------------------------------- Transaktion
             Loader {
                 width: parent.width
+                // `visible` statt nur `active`: ein abgeschalteter Loader
+                // behaelt die Hoehe seines letzten Inhalts, und die Spalte
+                // laesst nur unsichtbare Kinder aus, keine leeren. Ohne das
+                // stand nach einer Blockansicht ein 2571 px hohes Nichts vor
+                // der naechsten Seite.
+                visible: active
                 active: root.kind === "tx" && root.result !== null
                 sourceComponent: txDetail
             }
 
             Loader {
                 width: parent.width
+                visible: active
                 active: root.kind === "block" && root.result !== null
                 sourceComponent: blockDetail
             }
 
             Loader {
                 width: parent.width
+                visible: active
                 active: root.kind === "address" && root.result !== null
                 sourceComponent: addressDetail
             }
 
             Loader {
                 width: parent.width
+                visible: active
                 active: root.kind === "projected" && root.result !== null
                 sourceComponent: projectedDetail
+            }
+
+            BlockHistory {
+                width: parent.width
+                visible: root.kind === "history"
+                feed: root.feed
+                textColor: root.textColor
+                dimColor: root.dimColor
+                accentColor: root.accentColor
+                uiFont: root.uiFont
+                onBlockPicked: function (hash) {
+                    root.go("blockhash", hash);
+                }
             }
         }
     }
@@ -1238,6 +1285,21 @@ Item {
                 colorMode: root.tileColorMode
                 dimColor: root.dimColor
                 labelSize: root.uiFont * 0.85
+                onTxPicked: function (txid) {
+                    root.go("tx", txid);
+                }
+            }
+
+            // Dieselben Transaktionen der Reihe nach, zum Durchblaettern
+            TxList {
+                width: flick.width
+                visible: root.tiles !== null
+                block: root.tiles
+                colorMode: root.tileColorMode
+                textColor: root.textColor
+                dimColor: root.dimColor
+                accentColor: root.accentColor
+                uiFont: root.uiFont
                 onTxPicked: function (txid) {
                     root.go("tx", txid);
                 }

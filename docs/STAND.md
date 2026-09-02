@@ -30,6 +30,33 @@ Anwendung und in DMS, `dms ipc call dash toggle bitcoin` meldet
 `DASH_TOGGLE_SUCCESS`, und 18 Sekunden nach dem Beenden der Anwendung meldet
 sich der Daemon beim Server wieder ab (`tracking: null`).
 
+## Dazu am 02.09.2026: Blockhistorie und Transaktionsliste
+
+"Alle Blöcke durchblättern" auf der Explorer-Startseite fuehrt in die
+Blockhistorie: fuenfzehn Bloecke je Seite, rueckwaerts durch die Kette. In der
+Blockansicht steht unter der Kachelgrafik dieselbe Liste der Reihe nach,
+25 Transaktionen je Seite. Nachgeladen wird nichts -- die Zeilen stecken schon
+in den Kacheldaten.
+
+**Dabei einen aelteren Fehler gefunden und behoben:** ein abgeschalteter
+`Loader` behaelt die Hoehe seines letzten Inhalts. Nach einer Blockansicht
+stand deshalb ein 2571 Pixel hohes Nichts vor der naechsten Seite -- eine
+`Column` laesst nur unsichtbare Kinder aus, keine leeren. `visible: active` an
+allen vier Loadern. **Merksatz: `active` steuert den Inhalt, `visible` die
+Flaeche.**
+
+**Und eine Falle, die schon in der Dokumentation stand und trotzdem zugeschlagen
+hat:** nach zwei neuen geteilten QML-Dateien lief `tools/install-links.sh`,
+aber **nicht** `python3 daemon/btcfeed-dashtab` -- damit fehlten sie in der
+DMS-Ueberlagerung, `ExplorerView` liess sich dort nicht mehr laden und **das
+ganze Dashboard ging nicht mehr auf**. Beide Schritte gehoeren zusammen, jedes
+Mal:
+
+    tools/install-links.sh
+    python3 daemon/btcfeed-dashtab
+    systemctl --user restart dms
+    dms ipc call dash toggle bitcoin      # muss DASH_TOGGLE_SUCCESS melden
+
 ## Dazu am 02.09.2026: beobachtete Wallets (watch-only)
 
 Fuenfter Reiter "Wallet", im eigenen Fenster wie im Dashboard-Tab. Zeigt Saldo,
@@ -159,7 +186,8 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
    **>>> Vor diesem Schritt dem Nutzer Bescheid geben <<<** -- er haengt dann
    sein Handy an den Rechner (abgesprochen am 01.09.2026).
 6. ~~WatchView (xpub, watch-only).~~ **Erledigt am 02.09.2026**, siehe unten.
-7. **Blockhistorie** mit Transaktionsliste zum Durchblaettern.
+7. ~~Blockhistorie mit Transaktionsliste zum Durchblaettern.~~
+   **Erledigt am 02.09.2026**, siehe unten.
 
 ## Kleinigkeiten, notiert
 

@@ -1859,3 +1859,50 @@ eingetragen ist.
 - Die Transaktionsliste fragt hoechstens `WATCH_TX_REQUESTS = 15` Adressen ab
   und behaelt die 30 juengsten Vorgaenge. Fuer eine grosse Wallet ist das ein
   Ausschnitt, kein Kontoauszug.
+
+
+## Blockhistorie und Transaktionsliste (`BlockHistory.qml`, `TxList.qml`)
+
+Zwei Ansichten, die dieselbe Luecke schliessen: aus dem Explorer kam man
+bisher nur so weit zurueck, wie die Leiste auf der Startseite reicht, und
+innerhalb eines Blocks gab es die Transaktionen nur als Kachelgrafik -- schoen
+auf einen Blick, aber nicht der Reihe nach lesbar.
+
+**`TxList`** zeigt dieselben Daten als Liste, 25 je Seite: Nummer im Block,
+TXID, Betrag, Groesse, Gebuehrenrate und -- wenn die Kacheln nach Art gefaerbt
+sind -- denselben Farbpunkt. Es wird **nichts nachgeladen**: `blocktiles` und
+`projectedtiles` liefern je Kachel schon eine Zeile
+`[txid, vsize, fee, value, rate]`. Ist die Liste ausgeduennt (`tileStep > 1`
+bei mehr als 8000 Transaktionen), steht das dabei -- sonst zaehlt jemand mit
+und wundert sich.
+
+**`BlockHistory`** blaettert die Kette rueckwaerts, fuenfzehn Bloecke je Seite.
+Der Daemon kann das laengst: `blocks/recent` fuer die neuesten,
+`blocks/<hoehe>` fuer die fuenfzehn davor (am 02.09.2026 nachgeprueft:
+`/v1/blocks/965000` liefert 965.000 bis 964.986). Geblaettert wird mit den
+**echten Hoehen** der angezeigten Bloecke, nicht mit einer angenommenen
+Seitenlaenge.
+
+### Der Fehler, den die Historie ans Licht gebracht hat
+
+Die neue Seite blieb leer. Nachgemessen statt geraten -- eine Debugzeile mit
+den Groessen aller Kinder der Spalte:
+
+    kind=[history] bodyH=3352
+    home sichtbar=false h=1814
+    hist sichtbar=true h=707 w=1072 y=2645
+    ldBlock y=58 h=2571
+
+**Ein abgeschalteter `Loader` behaelt die Hoehe seines letzten Inhalts.** Die
+Blockansicht war 2571 Pixel hoch; danach stand ein ebenso hohes Nichts vor der
+naechsten Seite. Eine `Column` laesst nur **unsichtbare** Kinder aus, keine
+leeren -- `active: false` allein genuegt also nicht.
+
+Der Fehler ist aelter als die Historie und traf jeden Wechsel von einer
+Blockansicht zu einer anderen Seite. Behoben mit einer Zeile an allen vier
+Loadern:
+
+    visible: active
+
+**Merksatz: `active` steuert den Inhalt, `visible` die Flaeche. Wer einen
+Loader in einen Positionierer haengt, braucht beides.**

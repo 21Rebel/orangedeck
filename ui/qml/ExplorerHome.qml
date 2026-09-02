@@ -24,6 +24,7 @@ Column {
     signal txPicked(string txid)
     signal projectedPicked(int rank, var data)
     signal colorModeRequested(string mode)
+    signal historyPicked()
 
     spacing: uiFont * 1.4
 
@@ -94,6 +95,25 @@ Column {
         }
         onProjectedPicked: function (rank, data) {
             root.projectedPicked(rank, data);
+        }
+    }
+
+    // Weiter zurueck als die Leiste reicht
+    Text {
+        id: historieLink
+
+        text: "Alle Blöcke durchblättern ›"
+        color: historieMaus.containsMouse ? root.accentColor : root.dimColor
+        font.pixelSize: root.uiFont * 0.85
+
+        MouseArea {
+            id: historieMaus
+
+            anchors.fill: parent
+            anchors.margins: -root.uiFont * 0.3
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.historyPicked()
         }
     }
 
