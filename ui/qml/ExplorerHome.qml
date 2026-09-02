@@ -4,6 +4,7 @@
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
+import "money.js" as Money
 
 pragma ComponentBehavior: Bound
 
@@ -15,6 +16,17 @@ Column {
     // mitverfolgt -- er kostet 7,8 kB/s, solange er laeuft.
     property bool live: true
     property string colorMode: "fee"
+    property string currency: "eur"
+    // Welche Abschnitte die Startseite zeigt. Leer heisst alle.
+    property var parts: []
+    property var panelIds: []
+
+    function zeigt(id) {
+        var f = root.parts;
+        if (!f || !f.length || typeof f.indexOf !== "function")
+            return true;
+        return f.indexOf(id) >= 0;
+    }
     property color textColor: "#f2eef8"
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
@@ -43,6 +55,7 @@ Column {
     // ------------------------------------------------------- Kennzahlen
     Flow {
         width: parent.width
+        visible: root.zeigt("stats")
         spacing: root.uiFont * 1.8
 
         Repeater {
@@ -56,8 +69,8 @@ Column {
                 { "k": "Schwierigkeit", "v": (root.feed && root.feed.difficulty.change !== undefined)
                     ? (root.feed.difficulty.change >= 0 ? "+" : "")
                       + root.feed.difficulty.change.toFixed(2).replace(".", ",") + " %" : "–" },
-                { "k": "Kurs", "v": (root.feed && root.feed.price.eur)
-                    ? root.grp(root.feed.price.eur) + " €" : "–" }
+                { "k": "Kurs", "v": root.feed
+                    ? Money.price1(root.feed.price, root.currency) : "–" }
             ]
 
             Column {
@@ -85,6 +98,7 @@ Column {
     // Geplante und bestaetigte Bloecke in einer Leiste
     BlockChain {
         width: parent.width
+        visible: root.zeigt("chain")
         feed: root.feed
         textColor: root.textColor
         dimColor: root.dimColor
@@ -102,6 +116,7 @@ Column {
     Text {
         id: historieLink
 
+        visible: root.zeigt("chain")
         text: "Alle Blöcke durchblättern ›"
         color: historieMaus.containsMouse ? root.accentColor : root.dimColor
         font.pixelSize: root.uiFont * 0.85
@@ -120,8 +135,9 @@ Column {
     // ------------------------- der naechste Block, laufend mitgefuehrt
     ProjectedBlock {
         width: parent.width
+        visible: root.zeigt("next")
         feed: root.feed
-        live: root.live
+        live: root.live && root.zeigt("next")
         colorMode: root.colorMode
         onColorModeRequested: function (m) {
             root.colorModeRequested(m);
@@ -138,6 +154,8 @@ Column {
     // ------------------------------------------------------- Tafeln
     MainPanels {
         width: parent.width
+        visible: root.zeigt("panels")
+        panels: root.panelIds
         feed: root.feed
         textColor: root.textColor
         dimColor: root.dimColor
@@ -152,7 +170,8 @@ Column {
     Column {
         width: parent.width
         spacing: root.uiFont * 0.25
-        visible: root.feed && (root.feed.snap.recent || []).length > 0
+        visible: root.zeigt("recent") && root.feed
+                 && (root.feed.snap.recent || []).length > 0
 
         Text {
             text: "Zuletzt im Mempool gesehen"

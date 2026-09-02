@@ -7,6 +7,7 @@
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
+import "money.js" as Money
 
 // Der Repeater unten greift auf `root` zu. Ohne diese Zeile warnt qmllint,
 // dass IDs aus dem umgebenden Bauteil in geschachtelten Bauteilen nicht
@@ -26,13 +27,19 @@ Item {
     property var fields: []
     property string currency: "eur"
     property bool showBars: true
+    property bool showSpark: true
+    property bool showTime: false
 
-    readonly property real kurs: currency === "usd"
-        ? (price.usd || 0) : (price.eur || price.usd || 0)
-    readonly property string waehrung: currency === "usd" ? "$" : "€"
+    readonly property real kurs: Money.rate(price, currency)
+    readonly property string waehrung: Money.symbol(Money.actual(price, currency))
 
+    // Robust gegen alles, was kein Feld-Array ist: leer, undefiniert oder ein
+    // ungueltiger Wert aus der Ablage heissen "alles zeigen".
     function zeigt(id) {
-        return !root.fields || root.fields.length === 0 || root.fields.indexOf(id) >= 0;
+        var f = root.fields;
+        if (!f || !f.length || typeof f.indexOf !== "function")
+            return true;
+        return f.indexOf(id) >= 0;
     }
 
     readonly property var tip: feed ? feed.tip : ({})
@@ -97,6 +104,34 @@ Item {
         x: (flick.width - width) / 2
         y: Math.max(0, (flick.height - implicitHeight) / 2)
         spacing: root.scaleUnit * 0.5
+
+        // -------------------------------------------------------- Uhrzeit
+        // Fuer ein Tablet an der Wand: dann ist es auch eine Uhr. Der
+        // Zeitgeber laeuft nur, wenn die Zeit auch gezeigt wird -- eine Anzeige
+        // im Minutentakt braucht keinen Sekundentakt.
+        Text {
+            id: uhr
+
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.showTime
+            color: root.textColor
+            font.pixelSize: root.scaleUnit * 2.2
+            font.letterSpacing: root.scaleUnit * 0.04
+
+            function stellen() {
+                uhr.text = Qt.formatDateTime(new Date(), "HH:mm");
+            }
+
+            Component.onCompleted: stellen()
+
+            Timer {
+                interval: 10000
+                repeat: true
+                running: root.showTime && root.visible
+                triggeredOnStart: true
+                onTriggered: uhr.stellen()
+            }
+        }
 
         // ---------------------------------------------------- Blockhoehe
         Text {
@@ -259,7 +294,7 @@ Item {
 
             width: parent.width
             height: root.scaleUnit * 1.8
-            visible: (root.hr.series || []).length > 1
+            visible: root.showSpark && (root.hr.series || []).length > 1
 
             Connections {
                 target: root

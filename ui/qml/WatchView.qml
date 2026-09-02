@@ -12,6 +12,7 @@
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
+import "money.js" as Money
 
 pragma ComponentBehavior: Bound
 
@@ -68,7 +69,7 @@ Item {
     property bool __pending: false
 
     readonly property var one: (wallets.length > shown) ? wallets[shown] : null
-    readonly property real eur: (feed && feed.price.eur) || 0
+    property string currency: "eur"
 
     function grp(n) {
         if (n === undefined || n === null || isNaN(n))
@@ -87,9 +88,7 @@ Item {
     }
 
     function euro(sats) {
-        if (!root.eur)
-            return "";
-        return "≈ " + root.grp(sats / 1e8 * root.eur) + " €";
+        return Money.fiat(sats, root.feed ? root.feed.price : null, root.currency);
     }
 
     function ago(ts) {

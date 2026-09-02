@@ -38,14 +38,41 @@ Window {
     property string tileColorMode: "fee"
     property bool clockBars: true
     // Leere Liste heisst: alles zeigen
-    property var clockFields: []
-    property var minerFields: []
+    // Als Zeichenkette abgelegt: QSettings schreibt eine **leere** Liste als
+    // `@Invalid()` und liest sie als ungueltigen Wert zurueck -- die Ansicht
+    // bekam dann weder eine Liste noch nichts.
+    property string clockFieldsRaw: ""
+    readonly property var clockFields: clockFieldsRaw.length ? clockFieldsRaw.split(",") : []
+    // Als Zeichenkette abgelegt: QSettings schreibt eine **leere** Liste als
+    // `@Invalid()` und liest sie als ungueltigen Wert zurueck -- die Ansicht
+    // bekam dann weder eine Liste noch nichts.
+    property string minerFieldsRaw: ""
+    readonly property var minerFields: minerFieldsRaw.length ? minerFieldsRaw.split(",") : []
     // Die Wallet-Ansicht ist **abgeschaltet, bis sie ausdruecklich
     // eingeschaltet wird**. Nicht wegen der Guthaben -- die sind watch-only
     // vollstaendig geschuetzt --, sondern wegen der Verkettung: es ist der
     // einzige Teil des Programms, bei dem der Benutzer etwas ueber sich
     // preisgibt. Der Reiter erscheint erst nach der Warnung in den
     // Einstellungen.
+    property bool showHeader: true
+    property bool showFooter: true
+    property bool showBlock: true
+    property bool clockSpark: true
+    property bool clockTime: false
+    property bool minerChart: true
+    property bool minerDomains: true
+    property bool minerBoard: true
+    property bool explorerLive: true
+    // Als Zeichenkette abgelegt: QSettings schreibt eine **leere** Liste als
+    // `@Invalid()` und liest sie als ungueltigen Wert zurueck -- die Ansicht
+    // bekam dann weder eine Liste noch nichts.
+    property string explorerPartsRaw: ""
+    readonly property var explorerParts: explorerPartsRaw.length ? explorerPartsRaw.split(",") : []
+    // Als Zeichenkette abgelegt: QSettings schreibt eine **leere** Liste als
+    // `@Invalid()` und liest sie als ungueltigen Wert zurueck -- die Ansicht
+    // bekam dann weder eine Liste noch nichts.
+    property string explorerPanelsRaw: ""
+    readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split(",") : []
     property bool walletEnabled: false
     // 0 = Feed, 1 = BlockClock, 2 = Miner, 3 = Explorer, 4 = Wallet. Wird
     // gemerkt, damit ein Tablet nach dem Einschalten gleich wieder als
@@ -70,8 +97,19 @@ Window {
         property alias currency: win.currency
         property alias tileColorMode: win.tileColorMode
         property alias clockBars: win.clockBars
-        property alias clockFields: win.clockFields
-        property alias minerFields: win.minerFields
+        property alias clockFieldsRaw: win.clockFieldsRaw
+        property alias minerFieldsRaw: win.minerFieldsRaw
+        property alias showHeader: win.showHeader
+        property alias showFooter: win.showFooter
+        property alias showBlock: win.showBlock
+        property alias clockSpark: win.clockSpark
+        property alias clockTime: win.clockTime
+        property alias minerChart: win.minerChart
+        property alias minerDomains: win.minerDomains
+        property alias minerBoard: win.minerBoard
+        property alias explorerLive: win.explorerLive
+        property alias explorerPartsRaw: win.explorerPartsRaw
+        property alias explorerPanelsRaw: win.explorerPanelsRaw
         property alias walletEnabled: win.walletEnabled
     }
 
@@ -120,9 +158,31 @@ Window {
         else if (key === "clockBars")
             win.clockBars = value;
         else if (key === "clockFields")
-            win.clockFields = value;
+            win.clockFieldsRaw = (value || []).join(",");
         else if (key === "minerFields")
-            win.minerFields = value;
+            win.minerFieldsRaw = (value || []).join(",");
+        else if (key === "showHeader")
+            win.showHeader = value;
+        else if (key === "showFooter")
+            win.showFooter = value;
+        else if (key === "showBlock")
+            win.showBlock = value;
+        else if (key === "clockSpark")
+            win.clockSpark = value;
+        else if (key === "clockTime")
+            win.clockTime = value;
+        else if (key === "minerChart")
+            win.minerChart = value;
+        else if (key === "minerDomains")
+            win.minerDomains = value;
+        else if (key === "minerBoard")
+            win.minerBoard = value;
+        else if (key === "explorerLive")
+            win.explorerLive = value;
+        else if (key === "explorerParts")
+            win.explorerPartsRaw = (value || []).join(",");
+        else if (key === "explorerPanels")
+            win.explorerPanelsRaw = (value || []).join(",");
         else if (key === "walletEnabled") {
             win.walletEnabled = value;
             // Ausgeschaltet, waehrend die Ansicht offen war -> zurueck
@@ -146,6 +206,17 @@ Window {
         "clockBars": win.clockBars,
         "clockFields": win.clockFields,
         "minerFields": win.minerFields,
+        "showHeader": win.showHeader,
+        "showFooter": win.showFooter,
+        "showBlock": win.showBlock,
+        "clockSpark": win.clockSpark,
+        "clockTime": win.clockTime,
+        "minerChart": win.minerChart,
+        "minerDomains": win.minerDomains,
+        "minerBoard": win.minerBoard,
+        "explorerLive": win.explorerLive,
+        "explorerParts": win.explorerParts,
+        "explorerPanels": win.explorerPanels,
         "walletEnabled": win.walletEnabled
     })
 
@@ -188,6 +259,10 @@ Window {
             win.colorMode = m;
         }
         sizeMode: win.sizeMode
+        headerVisible: win.showHeader
+        footerVisible: win.showFooter
+        blockVisible: win.showBlock
+        currency: win.currency
         infoVisible: win.showInfo
         legendVisible: win.showLegend
         rulerVisible: win.showRuler
@@ -205,6 +280,8 @@ Window {
         fields: win.clockFields
         currency: win.currency
         showBars: win.clockBars
+        showSpark: win.clockSpark
+        showTime: win.clockTime
     }
 
     ExplorerView {
@@ -216,6 +293,10 @@ Window {
         anchors.topMargin: tabs.height + 14
         feed: feedState
         tileColorMode: win.tileColorMode
+        currency: win.currency
+        homeParts: win.explorerParts
+        homePanels: win.explorerPanels
+        trackProjected: win.explorerLive
         onTileColorModeRequested: function (m) {
             win.tileColorMode = m;
         }
@@ -228,6 +309,9 @@ Window {
         anchors.topMargin: tabs.height + 14
         feed: feedState
         metricKeys: win.minerFields
+        showChart: win.minerChart
+        showDomains: win.minerDomains
+        showBoard: win.minerBoard
     }
 
     SettingsView {
@@ -253,6 +337,7 @@ Window {
             win.view = 3;
             explorer.go("tx", txid);
         }
+        currency: win.currency
         onAddressPicked: function (adr) {
             win.view = 3;
             explorer.go("address", adr);

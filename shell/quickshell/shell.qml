@@ -31,6 +31,17 @@ ShellRoot {
         property bool clockBars: true
         property var clockFields: []
         property var minerFields: []
+        property bool showHeader: true
+        property bool showFooter: true
+        property bool showBlock: true
+        property bool clockSpark: true
+        property bool clockTime: false
+        property bool minerChart: true
+        property bool minerDomains: true
+        property bool minerBoard: true
+        property bool explorerLive: true
+        property var explorerParts: []
+        property var explorerPanels: []
         // Aus, bis sie in den Einstellungen ausdruecklich eingeschaltet wird
         property bool walletEnabled: false
         // 0 Feed, 1 BlockClock, 2 Miner, 3 Explorer, 4 Wallet, 5 Einstellungen
@@ -56,6 +67,17 @@ ShellRoot {
             "clockBars": clockBars,
             "clockFields": clockFields,
             "minerFields": minerFields,
+            "showHeader": showHeader,
+            "showFooter": showFooter,
+            "showBlock": showBlock,
+            "clockSpark": clockSpark,
+            "clockTime": clockTime,
+            "minerChart": minerChart,
+            "minerDomains": minerDomains,
+            "minerBoard": minerBoard,
+            "explorerLive": explorerLive,
+            "explorerParts": explorerParts,
+            "explorerPanels": explorerPanels,
             "walletEnabled": walletEnabled
         })
 
@@ -88,6 +110,28 @@ ShellRoot {
                 clockFields = value;
             else if (key === "minerFields")
                 minerFields = value;
+            else if (key === "showHeader")
+                showHeader = value;
+            else if (key === "showFooter")
+                showFooter = value;
+            else if (key === "showBlock")
+                showBlock = value;
+            else if (key === "clockSpark")
+                clockSpark = value;
+            else if (key === "clockTime")
+                clockTime = value;
+            else if (key === "minerChart")
+                minerChart = value;
+            else if (key === "minerDomains")
+                minerDomains = value;
+            else if (key === "minerBoard")
+                minerBoard = value;
+            else if (key === "explorerLive")
+                explorerLive = value;
+            else if (key === "explorerParts")
+                explorerParts = value;
+            else if (key === "explorerPanels")
+                explorerPanels = value;
             else if (key === "walletEnabled") {
                 walletEnabled = value;
                 if (!value && view === 4)
@@ -113,6 +157,17 @@ ShellRoot {
                 "clockBars": clockBars,
                 "clockFields": clockFields,
                 "minerFields": minerFields,
+                "showHeader": showHeader,
+                "showFooter": showFooter,
+                "showBlock": showBlock,
+                "clockSpark": clockSpark,
+                "clockTime": clockTime,
+                "minerChart": minerChart,
+                "minerDomains": minerDomains,
+                "minerBoard": minerBoard,
+                "explorerLive": explorerLive,
+                "explorerParts": explorerParts,
+                "explorerPanels": explorerPanels,
                 "walletEnabled": walletEnabled
             }));
             hint.flash();
@@ -155,6 +210,28 @@ ShellRoot {
                         win.clockFields = v.clockFields;
                     if (Array.isArray(v.minerFields))
                         win.minerFields = v.minerFields;
+                    if (typeof v.showHeader === "boolean")
+                        win.showHeader = v.showHeader;
+                    if (typeof v.showFooter === "boolean")
+                        win.showFooter = v.showFooter;
+                    if (typeof v.showBlock === "boolean")
+                        win.showBlock = v.showBlock;
+                    if (typeof v.clockSpark === "boolean")
+                        win.clockSpark = v.clockSpark;
+                    if (typeof v.clockTime === "boolean")
+                        win.clockTime = v.clockTime;
+                    if (typeof v.minerChart === "boolean")
+                        win.minerChart = v.minerChart;
+                    if (typeof v.minerDomains === "boolean")
+                        win.minerDomains = v.minerDomains;
+                    if (typeof v.minerBoard === "boolean")
+                        win.minerBoard = v.minerBoard;
+                    if (typeof v.explorerLive === "boolean")
+                        win.explorerLive = v.explorerLive;
+                    if (Array.isArray(v.explorerParts))
+                        win.explorerParts = v.explorerParts;
+                    if (Array.isArray(v.explorerPanels))
+                        win.explorerPanels = v.explorerPanels;
                     if (typeof v.walletEnabled === "boolean")
                         win.walletEnabled = v.walletEnabled;
                     if (win.view === 4 && !win.walletEnabled)
@@ -202,6 +279,10 @@ ShellRoot {
                 win.save();
             }
             sizeMode: win.sizeMode
+            headerVisible: win.showHeader
+            footerVisible: win.showFooter
+            blockVisible: win.showBlock
+            currency: win.currency
             infoVisible: win.showInfo
             legendVisible: win.showLegend
             rulerVisible: win.showRuler
@@ -223,6 +304,8 @@ ShellRoot {
             fields: win.clockFields
             currency: win.currency
             showBars: win.clockBars
+            showSpark: win.clockSpark
+            showTime: win.clockTime
         }
 
         MinerView {
@@ -232,6 +315,9 @@ ShellRoot {
             anchors.topMargin: tabs.height + 14
             feed: feedState
             metricKeys: win.minerFields
+            showChart: win.minerChart
+            showDomains: win.minerDomains
+            showBoard: win.minerBoard
         }
 
         ExplorerView {
@@ -243,6 +329,10 @@ ShellRoot {
             anchors.topMargin: tabs.height + 14
             feed: feedState
             tileColorMode: win.tileColorMode
+            currency: win.currency
+            homeParts: win.explorerParts
+            homePanels: win.explorerPanels
+            trackProjected: win.explorerLive
             onTileColorModeRequested: function (m) {
                 win.tileColorMode = m;
                 win.save();
@@ -267,6 +357,7 @@ ShellRoot {
             anchors.margins: 14
             anchors.topMargin: tabs.height + 14
             feed: feedState
+            currency: win.currency
             onTxPicked: function (txid) {
                 win.view = 3;
                 explorer.go("tx", txid);

@@ -21,6 +21,16 @@ Grid {
     property color badColor: "#d9534f"
     property real uiFont: 13
     property var replacements: []
+    // Welche Tafeln gezeigt werden. Leer heisst alle. `Grid` laesst
+    // unsichtbare Kinder aus, es bleibt also keine Luecke stehen.
+    property var panels: []
+
+    function zeigt(id) {
+        var f = root.panels;
+        if (!f || !f.length || typeof f.indexOf !== "function")
+            return true;
+        return f.indexOf(id) >= 0;
+    }
 
     signal txPicked(string txid)
 
@@ -113,6 +123,7 @@ Grid {
     // ------------------------------------------------ Gebuehrenstufen
     Panel {
         height: root.uiFont * 8.4
+        visible: root.zeigt("fees")
         title: "TRANSAKTIONSGEBÜHR"
 
         Row {
@@ -185,6 +196,7 @@ Grid {
     // ------------------------------------------ Schwierigkeitsanpassung
     Panel {
         height: root.uiFont * 8.4
+        visible: root.zeigt("difficulty")
         title: "SCHWIERIGKEITSANPASSUNG"
 
         Column {
@@ -277,6 +289,7 @@ Grid {
     // ----------------------------------------------- Zustand des Mempools
     Panel {
         height: root.lowerHeight
+        visible: root.zeigt("mempool")
         title: "MEMPOOL"
 
         Column {
@@ -424,6 +437,7 @@ Grid {
     // ------------------------------------------------ Ersetzungen (RBF)
     Panel {
         height: root.lowerHeight
+        visible: root.zeigt("rbf")
         title: "ERSETZTE TRANSAKTIONEN (RBF)"
 
         Column {

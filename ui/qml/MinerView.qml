@@ -56,6 +56,9 @@ Item {
     // Welche Kennzahlen ueberhaupt gezeigt werden. Leere Liste heisst alle --
     // die Auswahl kommt aus den Einstellungen, hier steht nur der Filter.
     property var metricKeys: []
+    property bool showChart: true
+    property bool showDomains: true
+    property bool showBoard: true
 
     readonly property var metrics: {
         var m = root.one;
@@ -73,10 +76,11 @@ Item {
                 ? String(m.shares) + (m.rejected ? " (" + m.rejected + " abgelehnt)" : "") : "–" },
             { "id": "uptime", "k": "Laufzeit", "v": root.span(m.uptime) }
         ];
-        if (!root.metricKeys || root.metricKeys.length === 0)
+        var mk = root.metricKeys;
+        if (!mk || !mk.length || typeof mk.indexOf !== "function")
             return alle;
         return alle.filter(function (x) {
-            return root.metricKeys.indexOf(x.id) >= 0;
+            return mk.indexOf(x.id) >= 0;
         });
     }
 
@@ -463,7 +467,7 @@ Item {
             MinerChart {
                 width: parent.width
                 height: root.scaleUnit * 4.2
-                visible: root.one !== null && root.roomForChart
+                visible: root.showChart && root.one !== null && root.roomForChart
                          && (root.oneHist.hr || []).length > 1
                 hist: root.oneHist
                 lineColor: root.accentColor
@@ -476,7 +480,7 @@ Item {
                 width: parent.width
                 spacing: root.scaleUnit * 0.15
                 visible: root.one !== null && (root.one.domains || []).length > 0
-                         && root.roomForChart
+                         && root.roomForChart && root.showDomains
 
                 Text {
                     // Der Chip ist intern in Hash-Domaenen geteilt (beim BM1370
@@ -536,7 +540,7 @@ Item {
             Column {
                 width: parent.width
                 spacing: root.scaleUnit * 0.12
-                visible: root.one !== null && root.roomForBoard
+                visible: root.showBoard && root.one !== null && root.roomForBoard
                          && (root.one.scoreboard || []).length > 0
 
                 Text {

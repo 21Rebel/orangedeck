@@ -1969,3 +1969,67 @@ Quelle. Ebenso die **freie Waehrungswahl**: geliefert werden zurzeit nur Euro
 und Dollar. Und die **Wahl der Datenquelle** je Ansicht ist noch nicht
 eingebaut; umgestellt wird bis auf Weiteres ueber `host` in
 `~/.config/btcfeed/sources.json`, was den ganzen Feed umzieht.
+
+
+## Die Einstellungen, ausgebaut (02.09.2026, zweiter Durchgang)
+
+Jeder Reiter hat jetzt seine eigenen Einstellungen, und dazu einen Reiter
+"Allgemein" fuer alles, was ueberall gilt.
+
+### Waehrung: sieben statt zwei
+
+Der WebSocket liefert **sieben** Kurse in derselben Nachricht mit -- USD, EUR,
+GBP, CAD, CHF, AUD, JPY. Der Daemon warf fuenf davon weg. Sie kosten nichts
+extra, also liegen jetzt alle im Zustand, und die Waehrung ist eine
+Einstellung.
+
+Umgerechnet wird an **einer** Stelle: `money.js` kennt Zeichen, Namen, Kurs und
+das Ausschreiben grosser Betraege. Vorher stand das Euro-Zeichen an fuenf
+Stellen im Quelltext. Fehlt die gewaehlte Waehrung im Zustand, wird der Reihe
+nach ausgewichen -- lieber eine andere Waehrung als ein Strich.
+
+### Was sich jetzt ein- und ausblenden laesst
+
+    Allgemein   Waehrung, Sprache, Deckkraft, Kachelgroesse, Startansicht
+    Feed        Farbe, Groesse, Kopfzeile, Fusszeile, Blockangaben,
+                Kachelgrafik des Blocks, Legende, Trennlinie, Weichzeichnung
+    BlockClock  fuenf Kennzahlen einzeln, Schwierigkeit/Halving,
+                Hashrate-Kurve, Uhrzeit
+    Miner       sechs Kennzahlen einzeln, Verlaufskurve, Rechenwerke,
+                Bestenliste
+    Explorer    Farbe, fuenf Abschnitte der Startseite, vier Tafeln,
+                geplanten Block mitverfolgen
+    Wallet      der Schalter samt Warnung
+
+### Falle: QSettings kann keine leere Liste
+
+Eine leere Liste wird als `@Invalid()` geschrieben und als **ungueltiger
+Wert** zurueckgelesen -- nicht als leere Liste und nicht als `undefined`. Die
+Ansicht bekam dann etwas, das weder `length` noch `indexOf` hat, und der Filter
+lief auf einen Fehler.
+
+Zwei Griffe dagegen:
+
+1. Die Anwendung legt Listen als **Zeichenkette** ab (`explorerPartsRaw`) und
+   spaltet sie beim Lesen. Das Quickshell-Fenster braucht das nicht -- JSON
+   kann leere Listen.
+2. Jeder Filter prueft nicht nur auf leer, sondern auch darauf, **ob ueberhaupt
+   eine Liste vorliegt**:
+
+       if (!f || !f.length || typeof f.indexOf !== "function")
+           return true;      // heisst: alles zeigen
+
+**Merksatz: eine leere Liste ueberlebt QSettings nicht.** Wer Mehrfachauswahl
+speichert, speichert eine Zeichenkette.
+
+### Sprache: bewusst nicht eingebaut
+
+In den Einstellungen steht die Zeile, aber mit nur einem Eintrag. Eine
+Umschaltung muesste rund 300 Textstellen in fuenfzehn Dateien erfassen. Das ist
+ein eigener Arbeitsgang -- und halb uebersetzt waere schlechter als gar nicht:
+ein englisches Einstellungsfenster vor deutschen Ansichten hilft niemandem.
+
+Der Weg dafuer stuende fest: eine `strings.js` mit `t(key, lang)` und ein
+`lang` an jeder Ansicht, so wie schon `textColor` und `uiFont` durchgereicht
+werden. Ein Singleton ginge nicht ohne Weiteres, weil dieselben Dateien in drei
+Wirten laufen und ein `qmldir` nur im CMake-Modul entsteht.

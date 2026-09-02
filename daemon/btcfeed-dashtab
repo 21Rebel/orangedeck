@@ -60,6 +60,10 @@ Item {
     // Anwendung ausdruecklich eingeschaltet wird -- hier gilt derselbe
     // Schalter, damit der Reiter nicht im Dashboard doch erscheint.
     property bool walletEnabled: SettingsData.getPluginSetting(pid, "walletEnabled", false)
+    // Waehrung wie in der Anwendung -- sie steht ueberall, wo ein Gegenwert
+    // erscheint. Die uebrigen Einstellungen bleiben im Dashboard auf den
+    // Vorgaben: der Tab ist eine Kurzfassung, keine zweite Anwendung.
+    property string currency: SettingsData.getPluginSetting(pid, "currency", "eur")
     readonly property var tabViews: walletEnabled ? [0, 1, 2, 3, 4] : [0, 1, 2, 3]
     readonly property var tabLabels: walletEnabled
         ? ["Feed", "BlockClock", "Miner", "Explorer", "Wallet"]
@@ -124,6 +128,7 @@ Item {
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
         feed: feedState
+        currency: root.currency
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
         accentColor: Theme.primary
@@ -137,6 +142,7 @@ Item {
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
         feed: feedState
+        currency: root.currency
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
         accentColor: Theme.primary
@@ -150,6 +156,7 @@ Item {
         anchors.margins: Theme.spacingS
         anchors.topMargin: tabs.height + 4
         feed: feedState
+        currency: root.currency
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
         accentColor: Theme.primary
@@ -191,6 +198,7 @@ Item {
             explorer.go("tx", txid);
         }
         colorMode: root.colorMode
+        currency: root.currency
         onColorModeRequested: function (m) {
             root.put("colorMode", m);
         }

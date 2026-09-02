@@ -41,6 +41,7 @@ set(SHARED_QML
     ../ui/qml/MainPanels.qml
     ../ui/qml/search.js
     ../ui/qml/txtype.js
+    ../ui/qml/money.js
     ../ui/qml/mondrian.js
     ../ui/qml/colors.js
 )

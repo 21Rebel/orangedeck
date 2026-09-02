@@ -3,6 +3,7 @@
 // Baustein im DMS-Plugin und im eigenen Fenster laufen kann.
 import QtQuick
 import "colors.js" as Palette
+import "money.js" as Money
 import "txtype.js" as TxType
 
 Item {
@@ -24,7 +25,12 @@ Item {
     property bool frostedBlur: true
     // Die gestrichelte Linie ueber der Halde
     property bool rulerVisible: true
+    property bool footerVisible: true
+    // Die Kachelgrafik des letzten Blocks in der Mitte
+    property bool blockVisible: true
     property string colorMode: "age"
+    // Welche Waehrung angezeigt wird -- der Daemon liefert sieben mit
+    property string currency: "eur"
     property string sizeMode: "value"
 
     property color textColor: "#e6e0e9"
@@ -34,7 +40,7 @@ Item {
     property int baseFont: 12
 
     readonly property bool showHeader: headerVisible && height >= 108
-    readonly property bool showFooter: height >= 168
+    readonly property bool showFooter: footerVisible && height >= 168
     readonly property bool showInfo: infoVisible && width >= 480 && height >= 300
     // In flachen Flaechen (Dashboard-Tab) nur das Noetigste, sonst laeuft die
     // Spalte in die Halde hinein
@@ -86,15 +92,7 @@ Item {
     }
 
     function fiat(sats) {
-        var eur = feed && feed.price ? feed.price.eur : 0;
-        if (!sats || !eur)
-            return "";
-        var v = sats / 1e8 * eur;
-        if (v >= 1e9)
-            return "≈ " + dec(v / 1e9, 2) + " Mrd €";
-        if (v >= 1e6)
-            return "≈ " + dec(v / 1e6, 0) + " Mio €";
-        return "≈ " + grp(v) + " €";
+        return Money.fiat(sats, root.feed ? root.feed.price : null, root.currency);
     }
 
     // Blockanimation von Hand ausloesen (Taste b im eigenen Fenster) -- zum
@@ -217,7 +215,7 @@ Item {
         density: root.density
         colorMode: root.colorMode
         sizeMode: root.sizeMode
-        showBlock: height > 130
+        showBlock: root.blockVisible && height > 130
         showRuler: root.rulerVisible
         gridColor: root.lineColor
         rulerColor: root.dimColor
@@ -548,7 +546,7 @@ Item {
         Text {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            text: root.feed && root.feed.price && root.feed.price.eur ? "₿ " + root.grp(root.feed.price.eur) + " €" : ""
+            text: root.feed ? "₿ " + Money.price1(root.feed.price, root.currency) : ""
             color: root.dimColor
             font.pixelSize: root.baseFont - 2
         }

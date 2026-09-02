@@ -182,6 +182,11 @@ Item {
     // Kachelfarbe fuer alle Kachelgrafiken dieser Ansicht: "fee" oder "type".
     // Sie liegt hier, damit die Wahl beim Blaettern erhalten bleibt.
     property string tileColorMode: "fee"
+    property string currency: "eur"
+    // Abschnitte und Tafeln der Startseite, beides leer = alles
+    property var homeParts: []
+    property var homePanels: []
+    property bool trackProjected: true
     // Der Wirt haelt die Lesart und merkt sie sich -- hier wird sie nur
     // erbeten, nicht selbst gesetzt. Sonst zerschlaegt die Zuweisung die
     // Bindung, die von den Einstellungen herkommt.
@@ -478,8 +483,11 @@ Item {
                 // Nur mitverfolgen, wenn die Startseite auch wirklich zu sehen
                 // ist -- `visible` allein reicht nicht, das Fenster kann zu
                 // sein (siehe DOKUMENTATION).
-                live: visible && root.visible
+                live: visible && root.visible && root.trackProjected
                 colorMode: root.tileColorMode
+                currency: root.currency
+                parts: root.homeParts
+                panelIds: root.homePanels
                 onColorModeRequested: function (m) {
                     root.tileColorModeRequested(m);
                 }

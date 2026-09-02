@@ -83,6 +83,8 @@ RECENT_KEEP = 120         # wie viele frische TX im Zustand liegen bleiben
 MAX_TILES = 8000          # Obergrenze an Kacheln pro Block
 # Wie viele geplante Bloecke im Zustand mitgefuehrt werden. Acht, weil
 # `projectedtiles` genau diese Raenge kennt.
+# Waehrungen, die mempool.space mitliefert
+CURRENCIES = ("USD", "EUR", "GBP", "CAD", "CHF", "AUD", "JPY")
 PROJECTED_KEEP = 8
 # Wie viele Aenderungsschritte je Rang aufgehoben werden. Die Oberflaeche
 # fragt alle zwei Sekunden nach, der Server schickt etwa im Sekundentakt --
@@ -1882,8 +1884,11 @@ def handle(feed, msg):
         feed.vbps = int(msg["vBytesPerSecond"] or 0)
         feed.dirty = True
     if "conversions" in msg:
+        # Der Server liefert sieben Waehrungen mit -- fuenf davon wurden bisher
+        # weggeworfen. Sie kosten nichts extra und ersparen der Oberflaeche
+        # jede eigene Umrechnung.
         c = msg["conversions"] or {}
-        feed.price = {"usd": c.get("USD"), "eur": c.get("EUR")}
+        feed.price = {k.lower(): c.get(k) for k in CURRENCIES if c.get(k)}
         feed.dirty = True
     if "blocks" in msg and msg["blocks"]:
         feed.set_tip(msg["blocks"][-1])

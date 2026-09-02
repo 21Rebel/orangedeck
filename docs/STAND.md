@@ -30,6 +30,33 @@ Anwendung und in DMS, `dms ipc call dash toggle bitcoin` meldet
 `DASH_TOGGLE_SUCCESS`, und 18 Sekunden nach dem Beenden der Anwendung meldet
 sich der Daemon beim Server wieder ab (`tracking: null`).
 
+## Stand 02.09.2026, spaeter Nachmittag -- Einstellungen ausgebaut
+
+Jeder Reiter hat jetzt seine eigenen Einstellungen, dazu "Allgemein" fuer alles
+Uebergreifende. **Waehrung: sieben statt zwei** -- der WebSocket liefert USD,
+EUR, GBP, CAD, CHF, AUD und JPY in derselben Nachricht mit, der Daemon warf
+fuenf davon weg. Umgerechnet wird jetzt an einer Stelle (`money.js`).
+
+Ein- und ausblendbar ist praktisch alles: im Feed Kopf-, Fusszeile,
+Blockangaben, Kachelgrafik, Legende, Trennlinie und Weichzeichnung; in der
+BlockClock fuenf Kennzahlen einzeln plus Balken, Kurve und **Uhrzeit**; beim
+Miner sechs Kennzahlen plus Kurve, Rechenwerke und Bestenliste; im Explorer
+fuenf Abschnitte der Startseite und die vier Tafeln einzeln.
+
+**Falle, die dabei aufgeflogen ist: QSettings kann keine leere Liste.** Sie
+wird als `@Invalid()` geschrieben und als ungueltiger Wert zurueckgelesen --
+die Ansicht bekam etwas, das weder `length` noch `indexOf` hat. Die Anwendung
+legt Listen jetzt als Zeichenkette ab (das Quickshell-Fenster braucht das
+nicht, JSON kann leere Listen), und jeder Filter prueft zusaetzlich, ob
+ueberhaupt eine Liste vorliegt.
+
+**Sprache ist bewusst nicht eingebaut.** Die Zeile steht in den Einstellungen,
+hat aber nur einen Eintrag. Eine Umschaltung muesste rund 300 Textstellen in
+fuenfzehn Dateien erfassen -- ein eigener Arbeitsgang, und halb uebersetzt
+waere schlechter als gar nicht. Der Weg stuende fest: `strings.js` mit
+`t(key, lang)` und ein `lang` an jeder Ansicht, so wie schon `textColor`
+durchgereicht wird. **Das ist die naechste Entscheidung des Nutzers.**
+
 ## Stand 02.09.2026, nachmittags -- Durchgang nach dem Ansehen
 
 Nach einem Durchgang durch alle Reiter, Punkt fuer Punkt:

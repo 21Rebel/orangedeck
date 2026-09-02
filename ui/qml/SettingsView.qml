@@ -9,6 +9,7 @@
 // des Programms kommt mit `import QtQuick` aus, und das soll so bleiben --
 // dieselben Dateien laufen im Fenster, im DMS-Plugin und spaeter unter Android.
 import QtQuick
+import "money.js" as Money
 
 pragma ComponentBehavior: Bound
 
@@ -36,14 +37,15 @@ Item {
     // statt stillschweigend zu fehlen.
     function has(key, id, alle) {
         var v = root.val(key, []);
-        if (!v || v.length === 0)
+        if (!v || !v.length || typeof v.indexOf !== "function")
             return true;
         return v.indexOf(id) >= 0;
     }
 
     function toggleIn(key, id, alle) {
         var v = root.val(key, []);
-        var cur = (!v || v.length === 0) ? alle.slice() : v.slice();
+        var cur = (!v || !v.length || typeof v.slice !== "function")
+            ? alle.slice() : v.slice();
         var i = cur.indexOf(id);
         if (i >= 0)
             cur.splice(i, 1);
@@ -362,6 +364,39 @@ Item {
                 visible: root.tab === "allgemein"
 
                 Zeile {
+                    label: "Währung"
+                    help: "Gilt überall, wo ein Gegenwert steht — Feed, BlockClock, Explorer und Wallet. Die Kurse kommen alle in derselben Nachricht mit, es kostet also nichts, umzustellen."
+
+                    Wahl {
+                        gewaehlt: root.val("currency", "eur")
+                        eintraege: {
+                            var out = [];
+                            for (var i = 0; i < Money.CURRENCIES.length; i++) {
+                                out.push({ "k": Money.CURRENCIES[i].k,
+                                           "l": Money.CURRENCIES[i].z });
+                            }
+                            return out;
+                        }
+                        onPicked: function (k) {
+                            root.changed("currency", k);
+                        }
+                    }
+                }
+
+                Zeile {
+                    label: "Sprache"
+                    help: "Zurzeit nur Deutsch. Eine Umschaltung müsste rund 300 Textstellen in fünfzehn Dateien erfassen — das ist ein eigener Arbeitsgang und keine Einstellung, die man nebenbei einbaut."
+
+                    Wahl {
+                        gewaehlt: "de"
+                        eintraege: [
+                            { "k": "de", "l": "Deutsch" }
+                        ]
+                        onPicked: function (k) {}
+                    }
+                }
+
+                Zeile {
                     label: "Deckkraft des Fensters"
                     help: "Wie durchsichtig der Hintergrund ist. Ob dahinter weichgezeichnet wird, entscheidet der Compositor."
 
@@ -449,12 +484,42 @@ Item {
                 }
 
                 Zeile {
+                    label: "Kopfzeile"
+                    help: "Die Zeile ganz oben mit Blockhöhe, Alter und Mempool."
+
+                    Schalter {
+                        an: root.val("showHeader", true)
+                        onUmgelegt: root.changed("showHeader", !root.val("showHeader", true))
+                    }
+                }
+
+                Zeile {
+                    label: "Fußzeile"
+                    help: "Unten: nächster Block, mittlere Gebühr und Kurs."
+
+                    Schalter {
+                        an: root.val("showFooter", true)
+                        onUmgelegt: root.changed("showFooter", !root.val("showFooter", true))
+                    }
+                }
+
+                Zeile {
                     label: "Blockangaben"
                     help: "Das Feld links mit Höhe, Wert und Pool."
 
                     Schalter {
                         an: root.val("showInfo", true)
                         onUmgelegt: root.changed("showInfo", !root.val("showInfo", true))
+                    }
+                }
+
+                Zeile {
+                    label: "Letzter Block als Kachelgrafik"
+                    help: "Das Quadrat in der Mitte. Ohne es bleibt nur die Halde — auf einem schmalen Widget oft genau richtig."
+
+                    Schalter {
+                        an: root.val("showBlock", true)
+                        onUmgelegt: root.changed("showBlock", !root.val("showBlock", true))
                     }
                 }
 
@@ -512,28 +577,32 @@ Item {
                 }
 
                 Zeile {
-                    label: "Währung"
-                    help: "Der Daemon holt Euro und Dollar ohnehin beide."
-
-                    Wahl {
-                        gewaehlt: root.val("currency", "eur")
-                        eintraege: [
-                            { "k": "eur", "l": "Euro" },
-                            { "k": "usd", "l": "Dollar" }
-                        ]
-                        onPicked: function (k) {
-                            root.changed("currency", k);
-                        }
-                    }
-                }
-
-                Zeile {
                     label: "Schwierigkeit und Halving"
-                    help: "Die beiden Balken am unteren Rand."
+                    help: "Die beiden Zeilen mit Fortschrittsbalken am unteren Rand."
 
                     Schalter {
                         an: root.val("clockBars", true)
                         onUmgelegt: root.changed("clockBars", !root.val("clockBars", true))
+                    }
+                }
+
+                Zeile {
+                    label: "Hashrate-Kurve"
+                    help: "Der schmale Verlauf ganz unten, drei Tage."
+
+                    Schalter {
+                        an: root.val("clockSpark", true)
+                        onUmgelegt: root.changed("clockSpark", !root.val("clockSpark", true))
+                    }
+                }
+
+                Zeile {
+                    label: "Uhrzeit"
+                    help: "Für ein Tablet an der Wand — dann ist es auch eine Uhr."
+
+                    Schalter {
+                        an: root.val("clockTime", false)
+                        onUmgelegt: root.changed("clockTime", !root.val("clockTime", false))
                     }
                 }
             }
@@ -560,6 +629,36 @@ Item {
                         ]
                     }
                 }
+
+                Zeile {
+                    label: "Verlaufskurve"
+                    help: "Hashrate und Temperatur der letzten Viertelstunde."
+
+                    Schalter {
+                        an: root.val("minerChart", true)
+                        onUmgelegt: root.changed("minerChart", !root.val("minerChart", true))
+                    }
+                }
+
+                Zeile {
+                    label: "Rechenwerke einzeln"
+                    help: "Die Balken je ASIC-Kern — zeigt, ob einer schwächelt."
+
+                    Schalter {
+                        an: root.val("minerDomains", true)
+                        onUmgelegt: root.changed("minerDomains", !root.val("minerDomains", true))
+                    }
+                }
+
+                Zeile {
+                    label: "Bestenliste"
+                    help: "Die höchsten erreichten Schwierigkeiten."
+
+                    Schalter {
+                        an: root.val("minerBoard", true)
+                        onUmgelegt: root.changed("minerBoard", !root.val("minerBoard", true))
+                    }
+                }
             }
 
             // -------------------------------------------------- Explorer
@@ -580,6 +679,49 @@ Item {
                         onPicked: function (k) {
                             root.changed("tileColorMode", k);
                         }
+                    }
+                }
+
+                Zeile {
+                    label: "Abschnitte der Startseite"
+                    help: "Was auf der Explorer-Startseite untereinander steht. Nichts ausgewählt heißt: alles."
+
+                    Haken {
+                        schluessel: "explorerParts"
+                        alle: ["stats", "chain", "next", "panels", "recent"]
+                        eintraege: [
+                            { "id": "stats", "l": "Kennzahlenzeile" },
+                            { "id": "chain", "l": "Blockleiste" },
+                            { "id": "next", "l": "Nächster Block" },
+                            { "id": "panels", "l": "Tafeln" },
+                            { "id": "recent", "l": "Letzte Transaktionen" }
+                        ]
+                    }
+                }
+
+                Zeile {
+                    label: "Welche Tafeln"
+                    help: "Die vier Kästchen unter der Blockleiste."
+
+                    Haken {
+                        schluessel: "explorerPanels"
+                        alle: ["fees", "difficulty", "mempool", "rbf"]
+                        eintraege: [
+                            { "id": "fees", "l": "Gebühren" },
+                            { "id": "difficulty", "l": "Schwierigkeit" },
+                            { "id": "mempool", "l": "Mempool" },
+                            { "id": "rbf", "l": "RBF" }
+                        ]
+                    }
+                }
+
+                Zeile {
+                    label: "Geplanten Block mitverfolgen"
+                    help: "Hält die Kachelgrafik des nächsten Blocks aktuell. Kostet rund 8 kB/s, solange die Seite offen ist."
+
+                    Schalter {
+                        an: root.val("explorerLive", true)
+                        onUmgelegt: root.changed("explorerLive", !root.val("explorerLive", true))
                     }
                 }
             }
