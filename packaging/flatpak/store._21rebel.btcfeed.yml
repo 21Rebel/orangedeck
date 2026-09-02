@@ -1,0 +1,77 @@
+# Flatpak-Bauplan.
+#
+# Gebaut wird aus dem Arbeitsverzeichnis heraus (`type: dir`), nicht aus einem
+# Git-Stand -- solange es kein oeffentliches Verzeichnis gibt, ist das der
+# einzige Weg, der ohne Fernverbindung auskommt.
+#
+#   flatpak-builder --user --install --force-clean \
+#       build-flatpak packaging/flatpak/store._21rebel.btcfeed.yml
+#
+# Laufzeit ist die KDE-Plattform, weil sie Qt 6 samt QML schon mitbringt --
+# die Anwendung braucht nur Core, Gui, Qml und Quick. Python fuer den Daemon
+# ist dort ebenfalls vorhanden (3.12), er kommt mit der Standardbibliothek aus.
+id: store._21rebel.btcfeed
+runtime: org.kde.Platform
+runtime-version: '6.9'
+sdk: org.kde.Sdk
+command: btcfeed-launch
+
+finish-args:
+  # Die einzige Verbindung nach draussen: mempool.space und die eigene
+  # Loopback-Schnittstelle. `--share=network` heisst hier auch, dass 127.0.0.1
+  # dieselbe ist wie ausserhalb -- ein schon laufender Benutzerdienst wird
+  # mitbenutzt.
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Kein --filesystem: die Einstellungen landen in ~/.var/app/store._21rebel.btcfeed,
+  # sonst wird nichts vom Rechner angefasst.
+
+modules:
+  # Layer-Shell steckt nicht in der KDE-Laufzeit -- ohne dieses Modul faellt
+  # `--layer` weg und das Flatpak kann keine Widgets auf den Desktop legen.
+  #
+  # **Nicht** die neueste Fassung: 6.7.4 (wie im System) verlangt Qt 6.10 und
+  # ECM 6.26, die Laufzeit 6.9 hat Qt 6.9.3 und ECM 6.22. 6.5.5 ist die
+  # letzte, die dazu passt -- Qt 6.9, ECM 6.18. Die Schnittstelle, die hier
+  # gebraucht wird (Ebene, Kanten, Raender, Groesse), ist in beiden dieselbe.
+  - name: layer-shell-qt
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTING=OFF
+    sources:
+      - type: archive
+        url: https://download.kde.org/stable/plasma/6.5.5/layer-shell-qt-6.5.5.tar.xz
+        sha256: 6844fee55b8b7cbc320cd8308b51595ef830d5a99b4d355b0fd59f88feab2c11
+    cleanup:
+      - /include
+      - /lib/cmake
+      - /lib/pkgconfig
+      - /mkspecs
+
+  - name: btcfeed
+    buildsystem: simple
+    build-commands:
+      - cmake -S app -B build-fp -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/app
+      - cmake --build build-fp
+      - cmake --install build-fp
+      # Der Daemon ist ein einzelnes Python-Skript ohne Fremdpakete
+      - install -Dm755 daemon/btcfeed /app/bin/btcfeed
+      - install -Dm755 packaging/flatpak/btcfeed-launch /app/bin/btcfeed-launch
+      # Im Sandkasten startet der Starter erst den Daemon, dann die Anwendung
+      - sed -i 's|^Exec=btcfeed-app$|Exec=btcfeed-launch|' /app/share/applications/store._21rebel.btcfeed.desktop
+      - install -Dm644 app/icons/store._21rebel.btcfeed.svg
+        /app/share/icons/hicolor/scalable/apps/store._21rebel.btcfeed.svg
+      - install -Dm644 packaging/flatpak/store._21rebel.btcfeed.metainfo.xml
+        /app/share/metainfo/store._21rebel.btcfeed.metainfo.xml
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - build
+          - build-flatpak
+          - build-android
+          - .flatpak-builder
+          - upstream

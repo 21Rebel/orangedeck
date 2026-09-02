@@ -1,5 +1,8 @@
-__pycache__/
-*.pyc
+build/
+build-android/
+build-flatpak/
+.flatpak-builder/
 packaging/android/build/
 packaging/flatpak/.flatpak-builder/
-build/
+*.pyc
+__pycache__/

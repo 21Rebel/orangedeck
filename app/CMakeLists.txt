@@ -10,6 +10,13 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Qml Quick)
 qt_standard_project_setup(REQUIRES 6.5)
 
+# Freiwillig: damit wird aus dem Fenster auf Wunsch eine Layer-Shell-Flaeche
+# (`--layer`), also ein Desktop-Widget oder eine Leiste. Fehlt die Bibliothek,
+# faellt nur dieser Schalter weg -- unter Android gibt es sie ohnehin nicht.
+if(NOT ANDROID)
+    find_package(LayerShellQt QUIET)
+endif()
+
 qt_add_executable(btcfeed-app src/main.cpp)
 
 # Die geteilten Dateien liegen ausserhalb dieses Verzeichnisses. Ohne
@@ -63,7 +70,23 @@ qt_add_qml_module(btcfeed-app
 
 target_link_libraries(btcfeed-app PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick)
 
+if(LayerShellQt_FOUND)
+    target_compile_definitions(btcfeed-app PRIVATE BTCFEED_LAYERSHELL)
+    target_link_libraries(btcfeed-app PRIVATE LayerShellQt::Interface)
+    message(STATUS "btcfeed: Layer-Shell vorhanden, --layer steht bereit")
+else()
+    message(STATUS "btcfeed: ohne Layer-Shell gebaut, --layer fehlt")
+endif()
+
 include(GNUInstallDirs)
-install(TARGETS btcfeed-app RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/dev.21rebel.btcfeed.desktop
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+# Auf Android ist "btcfeed-app" keine ausfuehrbare Datei, sondern eine
+# Bibliothek, die die Java-Huelle laedt -- `install(TARGETS)` verlangt dort
+# ein LIBRARY-Ziel und bricht sonst schon beim Einrichten ab. Installiert wird
+# unter Android ohnehin nichts: das Ergebnis ist das APK.
+if(NOT ANDROID)
+    install(TARGETS btcfeed-app RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/store._21rebel.btcfeed.desktop
+            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/icons/store._21rebel.btcfeed.svg
+            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
+endif()

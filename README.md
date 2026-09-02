@@ -46,6 +46,24 @@ Deckkraft, `F11` Vollbild, `q` beenden.
 nicht auf stderr -- QML-Fehler bleiben dadurch unsichtbar. Mit
 `QT_FORCE_STDERR_LOGGING=1` starten, dann erscheinen sie.
 
+## Als Flatpak
+
+    flatpak install --user flathub org.kde.Platform//6.9 org.kde.Sdk//6.9
+    flatpak-builder --user --install --force-clean \
+        build-flatpak packaging/flatpak/store._21rebel.btcfeed.yml
+    flatpak run --user store._21rebel.btcfeed
+
+Das Paket bringt den Daemon mit und startet ihn, falls noch keiner laeuft.
+
+## Als Widget auf dem Desktop
+
+    btcfeed-app --layer top --anchor top,right --width 300 --height 220 \
+                --margin 24 --view 1 --bare --id uhr
+
+Jede Ansicht laesst sich einzeln als Layer-Shell-Flaeche auf den Desktop
+legen -- unter niri, sway, Hyprland, river, labwc. Alle Schalter und
+Startzeilen stehen in `packaging/widgets/README.md`.
+
 ## Wo weiterlesen
 
 - `docs/ZIELBILD.md` — wohin es geht, in welcher Reihenfolge

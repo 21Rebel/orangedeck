@@ -1,5 +1,122 @@
 # Stand und offene Punkte
 
+## Stand 02.09.2026, Abend -- Flatpak, Layer-Shell, Android-APK
+
+Drei der offenen Punkte auf einmal. Vorher wurde installiert, was fehlte:
+`flatpak-builder`, `layer-shell-qt` (Qt6), `wlr-randr`, `jdk17-openjdk`,
+`android-udev` aus den Paketquellen; die KDE-Laufzeit `org.kde.Platform//6.9`
+und `org.kde.Sdk//6.9` als **Benutzer**-Installation; Android-Kommandozeile,
+Plattform 36, Build-Tools 36.0.0 und NDK 27.2.12479018 nach `~/Android/sdk`;
+Qt 6.11.2 fuer `android_arm64_v8a` mit `aqtinstall` nach `~/Qt`.
+
+### Flatpak -- laeuft
+
+`packaging/flatpak/store._21rebel.btcfeed.yml`. Gebaut und geprueft: das
+Paket startet im kopflosen Compositor, zeigt Live-Daten und traegt sein
+eigenes Symbol.
+
+**Die Kennung musste sich aendern.** `dev.21rebel.btcfeed` weist Flatpak ab:
+*"Name segment can't start with 2"*. Ein Segment einer solchen Kennung darf
+nicht mit einer Ziffer beginnen; die vorgesehene Schreibweise setzt einen
+Unterstrich davor. Neu ist deshalb **`store._21rebel.btcfeed`** -- und das
+passt zugleich zu einer Domain, die es wirklich gibt (21rebel.store).
+Umbenannt wurden die `.desktop`-Datei und das Symbol; in `main.cpp` steht die
+Kennung jetzt ausdruecklich (`setDesktopFileName`), sonst leitet Qt die
+Wayland-app_id aus der umgedrehten Domain ab und der Fensterverwalter findet
+das Symbol nicht.
+
+Dazu neu: `app/icons/store._21rebel.btcfeed.svg` (eigene Zeichnung -- Kacheln
+wie im Feed, **nichts** von Bitfeed uebernommen), eine AppStream-Beschreibung
+und `packaging/flatpak/btcfeed-launch`. Der Starter prueft erst, ob auf
+`127.0.0.1:21021` schon ein Daemon antwortet: im Flatpak ist das dank
+`--share=network` dieselbe Schnittstelle wie draussen, ein laufender
+Benutzerdienst wird also mitbenutzt und nur sonst einer im Sandkasten
+gestartet. Python bringt die Laufzeit mit (3.12), der Daemon kommt mit der
+Standardbibliothek aus.
+
+`layer-shell-qt` fehlt in der KDE-Laufzeit und wird als eigenes Modul
+mitgebaut -- **nicht** in der Fassung des Systems: 6.7.4 verlangt Qt 6.10 und
+ECM 6.26, die Laufzeit 6.9 hat Qt 6.9.3 und ECM 6.22. 6.5.5 ist die letzte,
+die dazu passt.
+
+**Und trotzdem gibt es im Flatpak keine Widgets** -- aus einem Grund, der
+richtig ist: der Compositor blendet privilegierte Protokolle vor
+Sandkastenprogrammen aus. Nachgewiesen: derselbe Aufruf legt als gewoehnlich
+gebaute Anwendung drei Layer-Flaechen an, aus dem Flatpak scheitert er mit
+"Failed to initialize layer-shell integration", obwohl die Bibliothek
+geladen ist -- und labwc schreibt genau bei diesen beiden Laeufen (und nur
+bei ihnen) "Blocking ... protocol" ins Protokoll. Flatpak meldet den
+Sandkasten ueber `wp_security_context_v1` an, und wer sich so anmeldet,
+bekommt `zwlr_layer_shell_v1` nicht mehr zu sehen. Ein Programm im Sandkasten
+soll sich eben nicht ueber den ganzen Bildschirm legen koennen.
+
+Die Anwendung faellt sauber zurueck: `--layer` warnt und zeigt ein
+gewoehnliches Fenster. Ein Zwischenschritt hatte das kaputtgemacht --
+`QT_WAYLAND_SHELL_INTEGRATION=layer-shell` von Hand gesetzt, weil
+`Shell::useLayerShell()` in 6.5 noch nicht als ueberfluessig gilt. Das ist
+aber ein **globaler** Schalter: schlaegt die Anbindung fehl, startet Qt
+ueberhaupt nicht mehr ("no Qt platform plugin could be initialized"). Seit
+Qt 6.5 haengt LayerShellQt die Anbindung ohnehin an das **einzelne Fenster**
+(`waylandWindow->setShellIntegration`), auch in 6.5.5 -- die Zeile war
+unnoetig und ist wieder heraus.
+
+**Fuer Widgets also: aus den Paketquellen bauen, nicht das Flatpak.** Das
+Flatpak bleibt das gewoehnliche Fenster.
+
+### Layer-Shell -- Widgets ohne DMS
+
+`btcfeed-app` kennt jetzt Schalter (Anleitung in
+`packaging/widgets/README.md` samt Startzeilen fuer niri, Hyprland, sway und
+labwc):
+
+    --layer <background|bottom|top|overlay>   --anchor top,left,...
+    --width --height --margin --exclusive
+    --view <0-5>   --bare   --id <name>
+
+Nachgewiesen im Bild: drei Flaechen gleichzeitig auf einem Compositor --
+Miner links oben, Blockclock rechts oben, Feed als Leiste unten, jede mit
+eigener Ansicht.
+
+Drei Dinge, die dabei zu lernen waren:
+
+- **Das Fenster muss unsichtbar entstehen.** `Window { visible: true }` haengt
+  die Wayland-Flaeche sofort ein; danach ist `LayerShellQt::Window::get()`
+  wirkungslos und `--layer` bliebe stumm. Jetzt setzt `main.cpp` beim Laden
+  `visible: false` und zeigt das Fenster erst, nachdem die Layer-Flaeche
+  eingerichtet ist.
+- **`-v` war schon vergeben.** `--version` belegt es; `QCommandLineParser`
+  lehnt daraufhin die **ganze** Option ab, und `--view` war stillschweigend
+  unbekannt ("Unknown option 'view'"). Kein Kuerzel mehr.
+- **`--id` ist der Punkt, an dem mehrere Widgets nebeneinander gehen.** Ohne
+  eigenen Einstellungsspeicher schreiben sie sich gegenseitig um. Mit
+  `--id uhr` liegt er in `~/.config/btcfeed/btcfeed-uhr.conf`.
+
+Nebenbei: ein unsichtbares Element behaelt seine Hoehe -- die nackten Widgets
+hatten oben einen leeren Streifen in Reiterhoehe (`win.tabSpace`).
+
+### Android -- das APK steht, das Handy fehlt noch
+
+`cmake --build build-android --target apk` liefert 45 MB, arm64-v8a,
+unsigniert. Die Werkzeugkette traegt also.
+
+**Zwei Stolpersteine.** `install(TARGETS)` bricht unter Android ab
+("no LIBRARY DESTINATION"): dort ist das Programm eine Bibliothek, die die
+Java-Huelle laedt. Installiert wird unter Android ohnehin nichts, also ist die
+Regel jetzt in `if(NOT ANDROID)` gefasst. Und Plattform 35 reicht nicht:
+`androidx.core:core:1.17.0` verlangt **compileSdk 36**.
+
+**Offen und wichtig:** auf dem Handy gibt es keinen Daemon. Die Anwendung
+fragt `127.0.0.1:21021` -- dort antwortet auf einem Telefon niemand. Zwei
+Wege stehen zur Wahl, und das ist genau die Frage "wie soll die mobile
+Fassung aussehen":
+
+1. Die Anwendung redet auf dem Handy **selbst** mit mempool.space.
+   Kein Daemon, aber die Aufbereitung (Kachelpackung, Aenderungsbuch) muesste
+   in QML nachgebaut werden.
+2. Das Handy fragt den Daemon **auf dem Rechner** im Heimnetz. Wenig Arbeit --
+   aber der Daemon lauscht bewusst nur auf `127.0.0.1`. Das aufzumachen ist
+   eine Entscheidung, die dem Nutzer gehoert, nicht der Anwendung.
+
 ## Stand 02.09.2026, spaeter Abend -- Widgets und grosse Werte
 
 **Jeder Tab laesst sich einzeln auf den Desktop legen.** Das DMS-Widget
@@ -284,7 +401,7 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
   Loopback. Abfragen: `/state`, `/block`, `/health`, `/lookup/<art>/<wert>`.
 - **Die Grafik haengt an nichts ausser Qt Quick.** Dieselben QML-Dateien
   bedienen DMS-Plugin, Dashboard-Tab und die eigenstaendige Anwendung
-  (`app/`, CMake, app_id `dev.21rebel.btcfeed-app`).
+  (`app/`, CMake, app_id `store._21rebel.btcfeed`).
 
 **Vier Ansichten** (Tabs oder Tasten 1-4)
 - **Feed** -- Halde und Block wie bitfeed, mit Zoom (Rad, Zusammenziehen,
@@ -310,17 +427,12 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
    `transactions`-Nachrichten des WebSocket fuehren kein `flags` mit
    (nachgesehen). Fuer den Block im Feed waere es moeglich, aber zwei
    Farblogiken in einem Bild waeren irrefuehrend.
-3. **Flatpak.** *(02.09.2026: `flatpak-builder` fehlt weiterhin. Die
-   Installation braucht ein Passwort -- das Paket heisst `flatpak-builder`
-   und liegt in `cachyos-extra-v3`.)* `flatpak` ist da, **`flatpak-builder` fehlt** und muesste
-   installiert werden.
-4. **Layer-Shell** *(02.09.2026: gebraucht wird `layer-shell-qt` aus `plasma`
-   -- die **Qt6**-Fassung. Installiert ist nur `layer-shell-qt5`. Auch das
-   braucht ein Passwort.)* (`layer-shell-qt`, in den Paketquellen, nicht installiert)
-   fuer ein eigenes Desktop-Widget und eine eigene Leiste auf Wayland.
-5. **Android-APK.** SDK und NDK fehlen; der frickeligste Teil.
-   **>>> Vor diesem Schritt dem Nutzer Bescheid geben <<<** -- er haengt dann
-   sein Handy an den Rechner (abgesprochen am 01.09.2026).
+3. ~~**Flatpak.**~~ **Erledigt am 02.09.2026**, siehe oben.
+4. ~~**Layer-Shell**~~ **Erledigt am 02.09.2026**, siehe oben.
+5. **Android-APK.** Werkzeugkette steht, das APK baut (02.09.2026). Offen:
+   auf das Handy spielen -- **dafuer haengt der Nutzer sein Telefon an** --
+   und vorher entscheiden, woher die Daten auf dem Handy kommen sollen
+   (siehe oben, zwei Wege).
 6. ~~WatchView (xpub, watch-only).~~ **Erledigt am 02.09.2026**, siehe unten.
 7. ~~Blockhistorie mit Transaktionsliste zum Durchblaettern.~~
    **Erledigt am 02.09.2026**, siehe unten.

@@ -315,8 +315,9 @@ Block (3 s). Keine QML-Fehler, Plugin geladen, Daten live (`source ws`).
 Sie bindet **dieselben Dateien** aus `ui/qml/` ein, kopiert nichts, und laeuft
 ohne Quickshell und ohne DMS.
 
-Nachgewiesen am 01.09.2026: eigenes Fenster auf dem Desktop mit der app_id
-`dev.21rebel.btcfeed-app`, zwei stehende Verbindungen zum Daemon auf
+Nachgewiesen am 01.09.2026: eigenes Fenster auf dem Desktop (app_id damals
+`dev.21rebel.btcfeed-app`, seit dem 02.09.2026 ausdruecklich
+`store._21rebel.btcfeed`), zwei stehende Verbindungen zum Daemon auf
 `127.0.0.1:21021` (Zustand und Block), **3,0 % CPU** ueber sechs Sekunden
 gemessen. Einstellungen liegen portabel in `~/.config/btcfeed/btcfeed.conf`.
 

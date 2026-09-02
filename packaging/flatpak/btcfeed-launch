@@ -1,0 +1,22 @@
+#!/bin/sh
+# Startet den Daemon, falls noch keiner antwortet, und dann die Anwendung.
+#
+# Im Flatpak teilt sich die Anwendung das Netzwerk des Rechners (--share=network),
+# also ist 127.0.0.1 dieselbe Schnittstelle wie draussen. Laeuft der Daemon
+# schon als Benutzerdienst, wird er mitbenutzt -- sonst startet hier einer im
+# Sandkasten. Zwei Instanzen kann es nicht geben: btcfeed haelt eine Sperre und
+# beendet sich mit 0, wenn er belegt ist.
+set -e
+
+if ! curl -s -m 2 -o /dev/null http://127.0.0.1:21021/health; then
+    /app/bin/btcfeed >/dev/null 2>&1 &
+    # kurz warten, sonst zeigt die erste Ansicht "keine Verbindung"
+    i=0
+    while [ $i -lt 20 ]; do
+        curl -s -m 1 -o /dev/null http://127.0.0.1:21021/health && break
+        i=$((i + 1))
+        sleep 0.25
+    done
+fi
+
+exec /app/bin/btcfeed-app "$@"

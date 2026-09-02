@@ -3,6 +3,6 @@ Type=Application
 Name=Bitcoin Feed
 Comment=Live-Ansicht des Bitcoin-Mempools
 Exec=btcfeed-app
-Icon=dev.21rebel.btcfeed
+Icon=store._21rebel.btcfeed
 Terminal=false
 Categories=Network;Monitor;

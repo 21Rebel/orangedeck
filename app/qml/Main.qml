@@ -95,6 +95,11 @@ Window {
     // gemerkt, damit ein Tablet nach dem Einschalten gleich wieder als
     // BlockClock hochkommt.
     property int view: 0
+    // Von der Befehlszeile gesetzt (`--view`, `--bare`) und **nicht**
+    // gespeichert: ein Widget an der Wand soll seine Ansicht behalten, ohne
+    // die zuletzt benutzte Ansicht des grossen Fensters umzuschreiben.
+    property int forcedView: -1
+    property bool bare: false
 
     // Bleibt auf dem Geraet: QSettings schreibt nach
     // ~/.config/btcfeed/btcfeed.conf (Linux) bzw. in den App-Speicher (Android).
@@ -137,7 +142,9 @@ Window {
     // das meist die BlockClock. Der Reiter "Wallet" faellt weg, solange er
     // nicht eingeschaltet ist.
     Component.onCompleted: {
-        if (win.startView >= 0 && win.startView <= 3)
+        if (win.forcedView >= 0)
+            win.view = win.forcedView;
+        else if (win.startView >= 0 && win.startView <= 3)
             win.view = win.startView;
         // Ausgeschaltete Wallet-Ansicht darf nicht als leere Seite dastehen
         if (win.view === 4 && !win.walletEnabled)
@@ -258,6 +265,10 @@ Window {
         id: feedState
     }
 
+    // Ein unsichtbares Element behaelt seine Hoehe -- ohne diese Zeile
+    // haetten die nackten Widgets oben einen leeren Streifen in Reiterhoehe.
+    readonly property real tabSpace: tabs.visible ? tabs.height : 0
+
     // Umschalten auch mit der Maus, nicht nur mit 1/2/3
     ViewTabs {
         id: tabs
@@ -265,6 +276,7 @@ Window {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         anchors.topMargin: 8
+        visible: !win.bare
         labels: win.tabLabels
         current: win.tabViews.indexOf(win.view)
         fontSize: 13
@@ -280,7 +292,7 @@ Window {
         visible: win.view === 0
         anchors.fill: parent
         anchors.margins: 14
-        anchors.topMargin: tabs.height + 14
+        anchors.topMargin: win.tabSpace + 14
         feed: feedState
         lang: win.lang
         baseFont: 13
@@ -294,8 +306,8 @@ Window {
             win.colorMode = m;
         }
         sizeMode: win.sizeMode
-        headerVisible: win.showHeader
-        footerVisible: win.showFooter
+        headerVisible: win.showHeader && !win.bare
+        footerVisible: win.showFooter && !win.bare
         blockVisible: win.showBlock
         currency: win.currency
         infoVisible: win.showInfo
@@ -310,7 +322,7 @@ Window {
         visible: win.view === 1
         anchors.fill: parent
         anchors.margins: 14
-        anchors.topMargin: tabs.height + 14
+        anchors.topMargin: win.tabSpace + 14
         feed: feedState
         lang: win.lang
         fields: win.clockFields
@@ -328,7 +340,7 @@ Window {
         visible: win.view === 3
         anchors.fill: parent
         anchors.margins: 14
-        anchors.topMargin: tabs.height + 14
+        anchors.topMargin: win.tabSpace + 14
         feed: feedState
         lang: win.lang
         tileColorMode: win.tileColorMode
@@ -343,9 +355,11 @@ Window {
 
     MinerView {
         visible: win.view === 2
+        // Im nackten Widget bleiben Info- und Web-Knopf weg
+        showActions: !win.bare
         anchors.fill: parent
         anchors.margins: 14
-        anchors.topMargin: tabs.height + 14
+        anchors.topMargin: win.tabSpace + 14
         feed: feedState
         lang: win.lang
         metricKeys: win.minerFields
@@ -358,7 +372,7 @@ Window {
         visible: win.view === 5
         anchors.fill: parent
         anchors.margins: 14
-        anchors.topMargin: tabs.height + 14
+        anchors.topMargin: win.tabSpace + 14
         opts: win.opts
         lang: win.lang
         onChanged: function (key, value) {
@@ -372,7 +386,7 @@ Window {
         live: visible
         anchors.fill: parent
         anchors.margins: 14
-        anchors.topMargin: tabs.height + 14
+        anchors.topMargin: win.tabSpace + 14
         feed: feedState
         onTxPicked: function (txid) {
             win.view = 3;
@@ -451,6 +465,7 @@ Window {
 
     Text {
         id: hint
+
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
