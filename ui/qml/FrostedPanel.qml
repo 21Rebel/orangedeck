@@ -54,6 +54,26 @@ Item {
             : Qt.rect(0, 0, 0, 0)
     }
 
+    // Die Form des Feldes als Maske. Ohne sie beschneidet QML nur rechteckig
+    // (`clip`), waehrend die eingefaerbte Flaeche darueber abgerundet ist --
+    // in den vier Ecken stand dadurch weichgezeichneter Inhalt **ohne**
+    // Einfaerbung, was wie ein Fehler aussah und es auch war.
+    Item {
+        id: maskShape
+
+        anchors.fill: parent
+        visible: false
+        layer.enabled: true
+        layer.smooth: true
+
+        Rectangle {
+            anchors.fill: parent
+            radius: root.cornerRadius
+            color: "white"
+            antialiasing: true
+        }
+    }
+
     MultiEffect {
         anchors.fill: parent
         visible: root.blurActive
@@ -61,6 +81,11 @@ Item {
         blurEnabled: true
         blur: root.blurStrength
         blurMax: 24
+        maskEnabled: true
+        maskSource: maskShape
+        // Harte, aber geglaettete Kante genau auf der Rundung
+        maskThresholdMin: 0.5
+        maskSpreadAtMin: 0.2
     }
 
     // Nachfuehren im selben Takt wie die Halde.

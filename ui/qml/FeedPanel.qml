@@ -3,6 +3,7 @@
 // Baustein im DMS-Plugin und im eigenen Fenster laufen kann.
 import QtQuick
 import "colors.js" as Palette
+import "txtype.js" as TxType
 
 Item {
     id: root
@@ -17,6 +18,8 @@ Item {
     // wenn grosse helle Kachelflaechen direkt dahinter liegen.
     // Kachel angetippt -- wird von FeedCanvas durchgereicht
     signal txActivated(string txid)
+    // Der Wirt haelt die Lesart -- er merkt sie sich auch ueber Sitzungen
+    signal colorModeRequested(string mode)
     property bool frostedInfo: true
     property bool frostedBlur: true
     property string colorMode: "age"
@@ -251,6 +254,18 @@ Item {
             bottomPadding: 6
         }
 
+        // Ohne Beschriftung war nicht zu erkennen, was die Zahl meint. Sie ist
+        // die Summe **aller Ausgaenge dieses Blocks**, nicht der Mempool und
+        // nicht "was den Besitzer gewechselt hat": Wechselgeld an den Absender
+        // zaehlt mit, deshalb liegt sie regelmaessig ueber dem, was tatsaechlich
+        // geflossen ist.
+        Text {
+            visible: !root.infoCompact
+            text: "Bewegter Wert"
+            color: root.dimColor
+            font.pixelSize: root.baseFont - 2
+        }
+
         Text {
             text: "₿ " + root.dec((root.block.totalValue || 0) / 1e8, 4)
             color: root.textColor
@@ -351,15 +366,71 @@ Item {
 
         Text {
             anchors.right: parent.right
-            text: root.colorMode === "fee" ? "Gebühr sat/vB" : "Alter in Sekunden"
+            text: root.colorMode === "type" ? "Art (nur im Block)"
+                : (root.colorMode === "fee" ? "Gebühr sat/vB" : "Alter in Sekunden")
             color: root.dimColor
             font.pixelSize: root.baseFont - 2
             topPadding: 4
         }
 
+        // Farbtafel der Arten. Nur die, die im Block auch vorkommen.
+        Repeater {
+            model: {
+                if (root.colorMode !== "type")
+                    return [];
+                var z = canvasView.blockTypeCounts || [];
+                var out = [];
+                for (var i = 0; i < z.length; i++) {
+                    if (z[i] > 0)
+                        out.push({ "i": i, "n": z[i] });
+                }
+                out.sort(function (a, b) {
+                    return b.n - a.n;
+                });
+                return out;
+            }
+
+            Row {
+                id: artZeile
+
+                required property var modelData
+
+                readonly property var meta: TxType.info(TxType.kindAt(artZeile.modelData.i))
+
+                anchors.right: parent.right
+                spacing: 5
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: artZeile.meta.label
+                    color: root.dimColor
+                    font.pixelSize: root.baseFont - 2
+                }
+
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: root.baseFont - 3
+                    height: width
+                    radius: 2
+                    color: artZeile.meta.color
+                }
+            }
+        }
+
+        Text {
+            anchors.right: parent.right
+            horizontalAlignment: Text.AlignRight
+            visible: root.colorMode === "type"
+            text: "Mempool: keine Art verfügbar\nDie Art ist gedeutet, nicht sicher"
+            color: root.dimColor
+            font.pixelSize: root.baseFont - 3
+            topPadding: 2
+        }
+
         Row {
             anchors.right: parent.right
             spacing: 4
+            visible: root.colorMode !== "type"
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
@@ -399,6 +470,36 @@ Item {
                 color: root.dimColor
                 font.pixelSize: root.baseFont - 3
             }
+        }
+    }
+
+    // Umschalter fuer die Kachelfarbe. Dieselben Knoepfe wie im Explorer,
+    // hier mit drei Lesarten: Alter, Gebuehr, Art.
+    TileGoggles {
+        id: goggles
+
+        z: 6
+        anchors.left: canvasView.left
+        anchors.bottom: canvasView.bottom
+        anchors.bottomMargin: root.baseFont * 0.5
+        width: Math.min(canvasView.width * 0.6, root.baseFont * 26)
+        visible: root.showLegend && root.width >= 420
+        mode: root.colorMode
+        modes: [
+            { "k": "age", "l": "Alter" },
+            { "k": "fee", "l": "Gebühr" },
+            { "k": "type", "l": "Art" }
+        ]
+        // Die Farbtafel steht schon in der Legende rechts -- zweimal dasselbe
+        // waere nur Rauschen. Hier bleibt der blosse Umschalter.
+        counts: []
+        total: 0
+        textColor: root.textColor
+        dimColor: root.dimColor
+        accentColor: root.accentColor
+        uiFont: root.baseFont
+        onPicked: function (m) {
+            root.colorModeRequested(m);
         }
     }
 

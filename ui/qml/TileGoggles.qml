@@ -18,7 +18,16 @@ pragma ComponentBehavior: Bound
 Column {
     id: root
 
-    property string mode: "fee"           // fee | type
+    property string mode: "fee"           // fee | age | type
+    // Welche Lesarten angeboten werden. Der Explorer kennt zwei, der Feed
+    // drei -- dort gibt es zusaetzlich das Alter, weil die Halde staendig
+    // nachwaechst und ein fertiger Block nicht.
+    property var modes: [
+        { "k": "fee", "l": "Gebühr" },
+        { "k": "type", "l": "Art" }
+    ]
+    // Zusatzzeile unter der Legende, wenn die Art nicht ueberall gilt
+    property string note: ""
     // Anzahl je Art, Index wie in TxType.KINDS
     property var counts: []
     property int total: 0
@@ -43,10 +52,7 @@ Column {
         }
 
         Repeater {
-            model: [
-                { "k": "fee", "l": "Gebühr" },
-                { "k": "type", "l": "Art" }
-            ]
+            model: root.modes
 
             Item {
                 id: knopf
@@ -156,7 +162,8 @@ Column {
         width: parent.width
         wrapMode: Text.WordWrap
         visible: root.mode === "type"
-        text: "Bitcoin kennt keine Transaktionsarten. Was hier steht, ist aus der "
+        text: (root.note.length ? root.note + " " : "")
+              + "Bitcoin kennt keine Transaktionsarten. Was hier steht, ist aus der "
               + "Form der Transaktion gedeutet — nützlich, aber nie sicher."
         color: root.dimColor
         font.pixelSize: root.uiFont * 0.75

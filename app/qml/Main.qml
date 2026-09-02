@@ -83,6 +83,9 @@ Window {
             explorer.go("tx", txid);
         }
         colorMode: win.colorMode
+        onColorModeRequested: function (m) {
+            win.colorMode = m;
+        }
         sizeMode: win.sizeMode
         infoVisible: win.showInfo
         legendVisible: win.showLegend
@@ -139,7 +142,9 @@ Window {
         Keys.onPressed: event => {
             switch (event.key) {
             case Qt.Key_C:
-                win.colorMode = win.colorMode === "age" ? "fee" : "age";
+                // Drei Lesarten im Kreis: Alter, Gebuehr, Art
+                win.colorMode = win.colorMode === "age" ? "fee"
+                    : (win.colorMode === "fee" ? "type" : "age");
                 hint.flash();
                 break;
             case Qt.Key_S:

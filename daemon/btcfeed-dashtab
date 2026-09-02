@@ -183,6 +183,9 @@ Item {
             explorer.go("tx", txid);
         }
         colorMode: root.colorMode
+        onColorModeRequested: function (m) {
+            root.put("colorMode", m);
+        }
         sizeMode: root.sizeMode
         infoVisible: root.showInfo
         legendVisible: root.showLegend

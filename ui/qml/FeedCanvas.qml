@@ -9,6 +9,7 @@
 import QtQuick
 import "mondrian.js" as Mondrian
 import "colors.js" as Palette
+import "txtype.js" as TxType
 
 Item {
     id: root
@@ -92,9 +93,51 @@ Item {
     readonly property real minZoom: 1
     readonly property real maxZoom: 24
     readonly property bool zoomed: zoom > 1.0001
+    // War das letzte Bild vergroessert? Beim Zuruecknehmen muss einmal die
+    // ganze Leinwand geraeumt werden.
+    property bool __warZoom: false
+    // Anzahl je Transaktionsart im dargestellten Block, Index wie TxType.KINDS
+    property var blockTypeCounts: []
+
+    // Die Lesart bestimmt jede Farbe im Bild -- beide Leinwaende muessen neu.
+    // Ohne das blieb der Block nach dem Umschalten in der alten Farbe stehen,
+    // bis der naechste gefunden wurde.
+    onColorModeChanged: {
+        poolCanvas.requestPaint();
+        blockCanvas.requestPaint();
+        flyLayer.refresh();
+    }
+
+    // Farbe einer Blockkachel. Drei Lesarten:
+    //
+    //   age   der Block ist fertig, alle Kacheln haben dasselbe Alter --
+    //         eine Farbe fuer den ganzen Block, wie im Original
+    //   fee   nach Gebuehrenrate
+    //   type  nach gedeuteter Transaktionsart (Mempool-Goggles)
+    function blockTileColor(s) {
+        if (root.colorMode === "type")
+            return TxType.info(TxType.kindAt(s.k || 0)).color;
+        if (root.colorMode === "fee")
+            return Palette.bucketColor(s.b);
+        return Palette.blockAgeColor();
+    }
 
     function viewApply(ctx) {
         ctx.setTransform(zoom, 0, 0, zoom, viewX, viewY);
+    }
+
+    // Einen Szenenwert so verschieben, dass er nach der Vergroesserung auf
+    // einem ganzen **Bildschirm**punkt landet.
+    //
+    // Vorher wurde in Szenenkoordinaten gerundet. Bei Massstab 1 ist das
+    // dasselbe, ab Massstab 2 nicht mehr: die Halde zeichnete auf
+    // `round(y)`, die Animationsebene aber auf den ungerundeten Wert -- und
+    // `y` ist wegen des nachrutschenden `scrollPx` gebrochen. Eine gerade
+    // gelandete Kachel sprang deshalb beim Uebergang von der einen zur
+    // anderen Ebene um bis zu einen halben Rasterschritt, und die Luecke
+    // daneben wurde sichtbar ungleich. Beide rechnen jetzt gleich.
+    function snap(v) {
+        return Math.round(v * zoom) / zoom;
     }
 
     function toSceneX(px) {
@@ -565,10 +608,15 @@ Item {
         return true;
     }
 
+    // Farbe einer Haldenkachel. **Die Art gibt es hier nicht**: die
+    // `transactions`-Nachrichten des WebSocket fuehren kein `flags` mit
+    // (02.09.2026 nachgesehen), und einzeln nachfragen scheidet bei fuenf
+    // neuen Transaktionen je Sekunde aus. In der Lesart "Art" faellt die Halde
+    // deshalb auf die Gebuehrenfarbe zurueck -- die Legende sagt das dazu.
     function colorFor(entry) {
-        if (colorMode === "fee")
-            return Palette.feeColorForRate(entry.rate);
-        return Palette.ageColor(Date.now() - entry.t0);
+        if (colorMode === "age")
+            return Palette.ageColor(Date.now() - entry.t0);
+        return Palette.feeColorForRate(entry.rate);
     }
 
     // mempool.space liefert die neuen Transaktionen im Sekundentakt als Paket.
@@ -737,11 +785,15 @@ Item {
 
             var tiles = b.tiles;
             var n = Math.floor(tiles.length / 2);
-            var sizes = [], buckets = [], weight = 0;
+            // Eine Ziffer je Kachel: die gedeutete Transaktionsart. Aeltere
+            // Blockdaten haben das Feld nicht -- dann gilt alles als Zahlung.
+            var types = b.types || "";
+            var sizes = [], buckets = [], kinds = [], weight = 0;
             for (var i = 0; i < n; i++) {
                 var r = parseInt(tiles.charAt(i * 2), 10) || 1;
                 sizes.push(r);
                 buckets.push(parseInt(tiles.charAt(i * 2 + 1), 10) || 0);
+                kinds.push(i < types.length ? (parseInt(types.charAt(i), 10) || 0) : 0);
                 weight += r * r;
             }
 
@@ -749,7 +801,7 @@ Item {
             var lay = new Mondrian.MondrianLayout(gw);
             var out = [];
             for (var k = 0; k < n; k++)
-                out.push({ "sq": lay.place(sizes[k]), "b": buckets[k] });
+                out.push({ "sq": lay.place(sizes[k]), "b": buckets[k], "k": kinds[k] });
 
             var idx = {};
             for (var c = 0; c < out.length; c++) {
@@ -765,6 +817,11 @@ Item {
             gridUnits = gw;
             rowsUsed = Math.max(gw, lay.height());
             forHeight = b.height;
+            // Wie oft welche Art vorkommt -- die Legende lebt davon
+            var z = [0, 0, 0, 0, 0, 0, 0, 0];
+            for (var t = 0; t < kinds.length; t++)
+                z[kinds[t]]++;
+            root.blockTypeCounts = z;
             requestPaint();
         }
 
@@ -876,7 +933,7 @@ Item {
             var byColor = {};
             for (var i = 0; i < squares.length; i++) {
                 var s = squares[i];
-                var c = root.colorMode === "fee" ? Palette.bucketColor(s.b) : Palette.blockAgeColor();
+                var c = root.blockTileColor(s);
                 if (!byColor[c])
                     byColor[c] = [];
                 byColor[c].push(s.sq);
@@ -1124,7 +1181,14 @@ Item {
             // Vollbild sind das vier Millionen Bildpunkte weniger pro Bild.
             // Bei Zoom greift die Sparmassnahme nicht mehr: die Halde kann dann
             // ueberall stehen, also die ganze Flaeche raeumen.
-            var clearTop = root.zoomed ? 0 : Math.max(0, root.poolTop - 8);
+            // Im Zoom kann die Halde ueberall stehen, also die ganze Flaeche
+            // raeumen. Und **einmal auch beim Verlassen des Zooms**: sonst
+            // bleibt oben stehen, was zuletzt dort gezeichnet wurde -- so kam
+            // die gestrichelte Linie doppelt ins Bild, einmal an ihrem Platz
+            // und einmal als Rest von vorhin.
+            var clearTop = (root.zoomed || root.__warZoom)
+                ? 0 : Math.max(0, root.poolTop - 8);
+            root.__warZoom = root.zoomed;
             ctx.clearRect(0, clearTop, root.width, root.height - clearTop);
             root.viewApply(ctx);
             // Beim Laden und Entladen (z. B. Dashboard-Tab) kann gezeichnet
@@ -1173,8 +1237,8 @@ Item {
                     // scrollPx und ist damit gebrochen. Ohne Rundung schnappt
                     // die Unterkante anders als die Oberkante, und die Kachel
                     // wird ein Pixel hoeher oder niedriger als breit.
-                    ctx.fillRect(Math.round(root.targetX(t.sq)),
-                                 Math.round(root.targetY(t.sq)), side, side);
+                    ctx.fillRect(root.snap(root.targetX(t.sq)),
+                                 root.snap(root.targetY(t.sq)), side, side);
                 }
             }
 
@@ -1192,20 +1256,29 @@ Item {
                         ms = 1;
                     // Auf halbe Bildpunkte: ein 1 px breiter Strich sitzt sonst
                     // je zur Haelfte auf beiden Nachbarpunkten und wird grau.
-                    ctx.strokeRect(Math.round(root.targetX(m.sq)) + 0.5,
-                                   Math.round(root.targetY(m.sq)) + 0.5,
-                                   ms - 1, ms - 1);
+                    ctx.strokeRect(root.snap(root.targetX(m.sq)) + 0.5 / root.zoom,
+                                   root.snap(root.targetY(m.sq)) + 0.5 / root.zoom,
+                                   ms - 1 / root.zoom, ms - 1 / root.zoom);
                 }
             }
 
             // Trennlinie am oberen Rand des Mempool-Bereichs. Von Hand
             // gestrichelt -- verlaesslicher als setLineDash.
+            //
+            // Sie wird **nicht** mitvergroessert: sie ist eine Beschriftung
+            // der Ansicht, keine Kachel. Ihre Aufschrift ("Mempool: … unbe-
+            // staetigt") sitzt in `FeedPanel` und wird auch nicht groesser --
+            // eine mitwachsende Linie daneben sah nur falsch aus. Also zurueck
+            // in Bildschirmkoordinaten und die Hoehe umgerechnet.
             if (root.showRuler && root.pileRows > 0) {
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.fillStyle = String(root.rulerColor);
                 ctx.globalAlpha = 0.75;
-                var y0 = Math.round(root.pileTopY) - 3.5;
-                for (var dx = 0; dx < root.width; dx += 11)
-                    ctx.fillRect(dx, y0, 6, 1);
+                var y0 = Math.round(root.pileTopY * root.zoom + root.viewY) - 4;
+                if (y0 > 0 && y0 < root.height) {
+                    for (var dx = 0; dx < root.width; dx += 11)
+                        ctx.fillRect(dx, y0, 6, 1);
+                }
                 ctx.globalAlpha = 1;
             }
         }
@@ -1261,8 +1334,8 @@ Item {
                     break;
                 var side = Math.max(1, t.sq.r * root.gridSize - root.unitPad * 2);
                 var ty = root.targetY(t.sq);
-                item.x = root.targetX(t.sq);
-                item.y = t.fromY + (ty - t.fromY) * t.fly;
+                item.x = root.snap(root.targetX(t.sq));
+                item.y = root.snap(t.fromY + (ty - t.fromY) * t.fly);
                 item.width = side;
                 item.height = side;
                 item.color = root.colorFor(t);
