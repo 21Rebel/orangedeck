@@ -59,3 +59,17 @@ systemctl --user daemon-reload
 systemctl --user enable btcfeed.service >/dev/null 2>&1 && echo "Dienst btcfeed eingerichtet"
 
 echo "Verlinkt gegen $R"
+
+# --- Was NICHT verlinkt ist -------------------------------------------------
+# Die Verweise oben halten Shell und Dashboard von selbst aktuell. Zwei Wege
+# nicht: die eigenstaendige Anwendung wird gebaut, und das Flatpak traegt eine
+# **Kopie** in sich. Am 02.09.2026 genau daran vorbeigelaufen -- die Aenderungen
+# waren da, das geoeffnete Flatpak zeigte sie nur nicht.
+if [ -d "$R/build" ]; then
+  echo "Eigenstaendige Anwendung neu bauen:  cmake --build $R/build"
+fi
+if flatpak info --user store._21rebel.btcfeed >/dev/null 2>&1; then
+  echo "Flatpak ist installiert und jetzt VERALTET. Neu bauen mit:"
+  echo "  flatpak-builder --user --install --force-clean \\"
+  echo "      $R/build-flatpak $R/packaging/flatpak/store._21rebel.btcfeed.yml"
+fi
