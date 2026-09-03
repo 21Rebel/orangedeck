@@ -134,8 +134,18 @@ Item {
 
     // Fangflaeche: ein Klick daneben klappt wieder zu. Sie liegt **unter** der
     // Liste, aber ueber allem anderen.
+    //
+    // **Nicht an `root.parent`.** Das Auswahlfeld steht in einer `Row`, und
+    // die ist ein Positionierer: ein Kind darin wird mitgereiht. Beim
+    // Aufklappen kam die Fangflaeche also als weiteres Element in die Reihe,
+    // `anchors.fill` blies sie auf deren Breite auf, die Reihe wurde dadurch
+    // breiter, die Fangflaeche wieder -- und weil die Reihe rechtsbuendig
+    // haengt, wanderten Feld und Umschalter nach links aus dem Bild. Sie
+    // verschwanden beim Klick vollstaendig.
+    //
+    // Der Bezugsrahmen ist ein gewoehnliches Element und reiht nichts.
     MouseArea {
-        parent: root.parent
+        parent: root.bounds ? root.bounds : root
         anchors.fill: parent
         z: 90
         visible: root.offen
