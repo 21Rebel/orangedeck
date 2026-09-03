@@ -31,6 +31,11 @@ DROPIN = os.path.join(DROPIN_DIR, "10-btcfeed-dashtab.conf")
 MIRROR = {"Modules", "Common", "Modules/DankDash"}
 
 BITCOIN_TAB = """// Bitcoin-Feed als Dashboard-Tab. Wird von btcfeed-dashtab eingehaengt.
+//
+// Die Ansichten selbst stehen in `FeedTabs.qml` -- sie sind hier, im Popout der
+// Leisten-Pille und in der Control-Center-Kachel dieselben. Hier bleibt allein,
+// was DMS betrifft: wo die Einstellungen liegen, die Knoepfe oben rechts und
+// der Schalter fuers Desktop-Widget.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -56,31 +61,27 @@ Item {
     // aber selbst und setzt diesen Wert von aussen (siehe `patch_popout`).
     property bool live: true
 
-    // Oberkante des Inhalts: unter der Reiterzeile, mit Luft dazwischen.
-    // Vorher stand an sechs Stellen `tabs.height + 4` -- vier Pixel, und der
-    // Inhalt klebte oben wie unten.
-    readonly property real contentTop: tabs.y + tabs.height + Theme.spacingM
-
     readonly property string pid: "bitcoinFeed"
     readonly property string desktopInstance: "bitcoinFeed-1"
 
+    // Dieselben Einstellungen wie im Fenster -- der Dashboard-Tab ist keine
+    // Kurzfassung. Abgelegt werden sie in den Plugin-Einstellungen von DMS.
+    // Listen liegen als Zeichenkette in der Ablage: eine leere Liste ueberlebt
+    // weder QSettings noch die Plugin-Ablage zuverlaessig.
     property string colorMode: SettingsData.getPluginSetting(pid, "colorMode", "age")
-    // Die Wallet-Ansicht bleibt aus, bis sie in den Einstellungen der
-    // Anwendung ausdruecklich eingeschaltet wird -- hier gilt derselbe
-    // Schalter, damit der Reiter nicht im Dashboard doch erscheint.
-    property bool walletEnabled: SettingsData.getPluginSetting(pid, "walletEnabled", false)
-    // Waehrung wie in der Anwendung -- sie steht ueberall, wo ein Gegenwert
-    // erscheint. Die uebrigen Einstellungen bleiben im Dashboard auf den
-    // Vorgaben: der Tab ist eine Kurzfassung, keine zweite Anwendung.
+    property string sizeMode: SettingsData.getPluginSetting(pid, "sizeMode", "value")
+    property string dataSource: SettingsData.getPluginSetting(pid, "dataSource", "daemon")
     property string currency: SettingsData.getPluginSetting(pid, "currency", "eur")
     property string lang: SettingsData.getPluginSetting(pid, "lang", "de")
-    // Dieselben Einstellungen wie im Fenster -- der Dashboard-Tab ist keine
-    // Kurzfassung mehr. Abgelegt werden sie in den Plugin-Einstellungen von
-    // DMS, die Oberflaeche dazu ist dieselbe `SettingsView`.
+    // Die Wallet-Ansicht bleibt aus, bis sie ausdruecklich eingeschaltet wird
+    // -- hier gilt derselbe Schalter wie im Fenster.
+    property bool walletEnabled: SettingsData.getPluginSetting(pid, "walletEnabled", false)
     property bool showHeader: SettingsData.getPluginSetting(pid, "showHeader", true)
     property bool showFooter: SettingsData.getPluginSetting(pid, "showFooter", true)
     property bool showBlock: SettingsData.getPluginSetting(pid, "showBlock", true)
     property bool showRuler: SettingsData.getPluginSetting(pid, "showRuler", true)
+    property bool showInfo: SettingsData.getPluginSetting(pid, "showInfo", true)
+    property bool showLegend: SettingsData.getPluginSetting(pid, "showLegend", true)
     property bool frosted: SettingsData.getPluginSetting(pid, "frosted", true)
     property real density: SettingsData.getPluginSetting(pid, "density", 1)
     property string tileColorMode: SettingsData.getPluginSetting(pid, "tileColorMode", "fee")
@@ -91,8 +92,6 @@ Item {
     property bool minerDomains: SettingsData.getPluginSetting(pid, "minerDomains", true)
     property bool minerBoard: SettingsData.getPluginSetting(pid, "minerBoard", true)
     property bool explorerLive: SettingsData.getPluginSetting(pid, "explorerLive", true)
-    // Listen liegen als Zeichenkette in der Ablage -- eine leere Liste
-    // ueberlebt weder QSettings noch die Plugin-Ablage zuverlaessig.
     property string clockFieldsRaw: SettingsData.getPluginSetting(pid, "clockFieldsRaw", "")
     property string minerFieldsRaw: SettingsData.getPluginSetting(pid, "minerFieldsRaw", "")
     property string explorerPartsRaw: SettingsData.getPluginSetting(pid, "explorerPartsRaw", "")
@@ -104,37 +103,9 @@ Item {
     readonly property var minerFields: minerFieldsRaw.length ? minerFieldsRaw.split("|") : []
     readonly property var explorerParts: explorerPartsRaw.length ? explorerPartsRaw.split("|") : []
     readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split("|") : []
-
-    // 5 ist die Einstellungsseite -- sie steht immer am Ende, die
-    // Wallet-Ansicht davor nur, wenn sie eingeschaltet ist.
-    // Zwei Reiter fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit:
-    // der Miner steht im Heimnetz und die Wallet-Ableitung ist Rechenarbeit des
-    // Dienstes. Ein Reiter, hinter dem nichts sein kann, ist schlimmer als keiner.
-    readonly property var tabViews: {
-        var v = [0, 1];
-        if (feedState.canMiner)
-            v.push(2);
-        v.push(3);
-        if (walletEnabled && feedState.canWallet)
-            v.push(4);
-        v.push(5);
-        return v;
-    }
-    readonly property var tabLabels: {
-        var l = [Tr.t("tab.feed", lang), Tr.t("tab.clock", lang)];
-        if (feedState.canMiner)
-            l.push(Tr.t("tab.miner", lang));
-        l.push(Tr.t("tab.explorer", lang));
-        if (walletEnabled && feedState.canWallet)
-            l.push(Tr.t("tab.wallet", lang));
-        l.push(Tr.t("tab.settings", lang));
-        return l;
-    }
-
-    onTabViewsChanged: {
-        if (root.tabViews.indexOf(root.view) < 0)
-            root.put("view", 0);
-    }
+    // 0 = Feed, 1 = BlockClock, 2 = Miner, 3 = Explorer, 4 = Wallet,
+    // 5 = Einstellungen -- gemerkt wie die uebrigen Einstellungen
+    property int view: SettingsData.getPluginSetting(pid, "view", 0)
 
     readonly property var opts: ({
         "dataSource": dataSource,
@@ -167,6 +138,11 @@ Item {
         "walletEnabled": walletEnabled
     })
 
+    function put(key, value) {
+        SettingsData.setPluginSetting(pid, key, value);
+        root[key] = value;
+    }
+
     function setOpt(key, value) {
         // Listen kommen als Feld herein und gehen als Zeichenkette hinaus
         if (key === "clockFields" || key === "minerFields" || key === "bigFields"
@@ -178,16 +154,7 @@ Item {
         if (key === "walletEnabled" && !value && root.view === 4)
             root.put("view", 5);
     }
-    // "daemon" oder "direct" -- siehe FeedState.mode. Im Dashboard laeuft der
-    // Dienst ohnehin; die Wahl steht trotzdem offen, damit die Einstellungen
-    // ueberall dieselben sind.
-    property string dataSource: SettingsData.getPluginSetting(pid, "dataSource", "daemon")
-    property string sizeMode: SettingsData.getPluginSetting(pid, "sizeMode", "value")
-    property bool showInfo: SettingsData.getPluginSetting(pid, "showInfo", true)
-    property bool showLegend: SettingsData.getPluginSetting(pid, "showLegend", true)
-    // 0 = Feed, 1 = BlockClock, 2 = Miner -- gemerkt wie die uebrigen
-    // Einstellungen des Plugins
-    property int view: SettingsData.getPluginSetting(pid, "view", 0)
+
     property bool desktopOn: {
         const list = SettingsData.desktopWidgetInstances || [];
         for (var i = 0; i < list.length; i++) {
@@ -195,11 +162,6 @@ Item {
                 return list[i].enabled === true;
         }
         return false;
-    }
-
-    function put(key, value) {
-        SettingsData.setPluginSetting(pid, key, value);
-        root[key] = value;
     }
 
     function setDesktop(on) {
@@ -217,160 +179,35 @@ Item {
         mode: root.dataSource
     }
 
-    // Umschalten mit der Maus -- dasselbe Bauteil wie im eigenen Fenster
-    ViewTabs {
-        id: tabs
+    FeedTabs {
+        id: ansichten
 
-        anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.leftMargin: Theme.spacingS
+        anchors.fill: parent
+        anchors.margins: Theme.spacingS
         anchors.topMargin: Theme.spacingS
-        labels: root.tabLabels
-        current: root.tabViews.indexOf(root.view)
-        fontSize: Theme.fontSizeSmall
-        textColor: Theme.surfaceText
-        dimColor: Theme.surfaceVariantText
-        accentColor: Theme.primary
-        z: 30
-        onPicked: function (i) {
-            root.put("view", root.tabViews[i]);
-        }
-    }
-
-    ClockView {
-        visible: root.live && root.view === 1
-        anchors.fill: parent
-        anchors.margins: Theme.spacingS
-        anchors.topMargin: root.contentTop
+        live: root.live
         feed: feedState
-        lang: root.lang
-        currency: root.currency
-        fields: root.clockFields
-        showBars: root.clockBars
-        showSpark: root.clockSpark
-        showTime: root.clockTime
-        bigFields: root.bigFields
-        bigRotate: root.bigRotate
-        textColor: Theme.surfaceText
-        dimColor: Theme.surfaceVariantText
-        accentColor: Theme.primary
-    }
-
-    ExplorerView {
-        id: explorer
-
-        visible: root.live && root.view === 3
-        anchors.fill: parent
-        anchors.margins: Theme.spacingS
-        anchors.topMargin: root.contentTop
-        feed: feedState
-        lang: root.lang
-        currency: root.currency
-        tileColorMode: root.tileColorMode
-        homeParts: root.explorerParts
-        homePanels: root.explorerPanels
-        trackProjected: root.explorerLive
-        onTileColorModeRequested: function (m) {
-            root.put("tileColorMode", m);
-        }
-        textColor: Theme.surfaceText
-        dimColor: Theme.surfaceVariantText
-        accentColor: Theme.primary
-    }
-
-    SettingsView {
-        visible: root.live && root.view === 5
-        anchors.fill: parent
-        anchors.margins: Theme.spacingS
-        anchors.topMargin: root.contentTop
         opts: root.opts
-        lang: root.lang
+        view: root.view
+        // Die Knoepfe des Miners stellt hier die Leiste oben rechts -- dort
+        // kann sie nichts ueberdecken.
+        minerActions: false
         // Deckkraft und Startansicht gehoeren dem Fenster -- im Dashboard
         // stellt die Flaeche DMS.
-        windowed: false
-        textColor: Theme.surfaceText
-        dimColor: Theme.surfaceVariantText
-        accentColor: Theme.primary
-        onChanged: function (key, value) {
-            root.setOpt(key, value);
-        }
-    }
-
-    WatchView {
-        visible: root.live && root.view === 4 && root.walletEnabled
-        // Nur nachfragen, wenn der Tab auch offen ist
-        live: visible
-        anchors.fill: parent
-        anchors.margins: Theme.spacingS
-        anchors.topMargin: root.contentTop
-        feed: feedState
-        lang: root.lang
-        currency: root.currency
-        textColor: Theme.surfaceText
-        dimColor: Theme.surfaceVariantText
-        accentColor: Theme.primary
-        onTxPicked: function (txid) {
-            root.put("view", 3);
-            explorer.go("tx", txid);
-        }
-        onAddressPicked: function (adr) {
-            root.put("view", 3);
-            explorer.go("address", adr);
-        }
-    }
-
-    MinerView {
-        id: minerView
-
-        visible: root.live && root.view === 2
-        anchors.fill: parent
-        anchors.margins: Theme.spacingS
-        anchors.topMargin: root.contentTop
-        // Die Knoepfe stellt hier die Leiste oben rechts -- dort kann sie
-        // nichts ueberdecken.
-        showActions: false
-        feed: feedState
-        metricKeys: root.minerFields
-        showChart: root.minerChart
-        showDomains: root.minerDomains
-        showBoard: root.minerBoard
-        lang: root.lang
-        textColor: Theme.surfaceText
-        dimColor: Theme.surfaceVariantText
-        accentColor: Theme.primary
-    }
-
-    FeedPanel {
-        visible: root.live && root.view === 0
-        anchors.fill: parent
-        anchors.margins: Theme.spacingS
-        anchors.topMargin: root.contentTop
-        feed: feedState
-        lang: root.lang
-        headerVisible: root.showHeader
-        footerVisible: root.showFooter
-        blockVisible: root.showBlock
-        rulerVisible: root.showRuler
-        frostedInfo: root.frosted
-        frostedBlur: root.frosted
-        density: root.density
-        currency: root.currency
-        onTxActivated: function (txid) {
-            root.put("view", 3);
-            explorer.go("tx", txid);
-        }
-        colorMode: root.colorMode
-        onColorModeRequested: function (m) {
-            root.put("colorMode", m);
-        }
-        sizeMode: root.sizeMode
-        infoVisible: root.showInfo
-        legendVisible: root.showLegend
+        windowedSettings: false
+        gap: Theme.spacingM
+        tabFont: Theme.fontSizeSmall
+        baseFont: Theme.fontSizeSmall + 1
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
         accentColor: Theme.primary
         lineColor: Theme.outlineMedium
-        baseFont: Theme.fontSizeSmall + 1
+        onOptRequested: function (key, value) {
+            root.setOpt(key, value);
+        }
+        onViewRequested: function (v) {
+            root.put("view", v);
+        }
     }
 
     Process {
@@ -390,11 +227,11 @@ Item {
         spacing: 2
 
         DankActionButton {
-            visible: root.view === 2 && minerView.webUrl !== ""
+            visible: root.view === 2 && ansichten.minerWebUrl !== ""
             iconName: "lan"
             buttonSize: 28
             tooltipText: "Weboberfläche des Miners öffnen"
-            onClicked: minerView.openWeb()
+            onClicked: ansichten.minerOpenWeb()
         }
 
         DankActionButton {
@@ -402,7 +239,7 @@ Item {
             iconName: "info"
             buttonSize: 28
             tooltipText: "Legende"
-            onClicked: minerView.toggleInfo()
+            onClicked: ansichten.minerToggleInfo()
         }
 
         DankActionButton {
@@ -454,9 +291,9 @@ Item {
                 onToggled: checked => root.setDesktop(checked)
             }
 
-            // Alles Uebrige steht jetzt auf der Einstellungsseite -- hier
-            // bleibt nur, was allein das Dashboard betrifft. Zwei Orte fuer
-            // dieselbe Einstellung waren nur verwirrend.
+            // Alles Uebrige steht auf der Einstellungsseite -- hier bleibt nur,
+            // was allein das Dashboard betrifft. Zwei Orte fuer dieselbe
+            // Einstellung waren nur verwirrend.
             Rectangle {
                 width: parent.width
                 height: mehrText.height + Theme.spacingM

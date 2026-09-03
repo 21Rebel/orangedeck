@@ -1,6 +1,11 @@
 // Leiste: Pille mit Mempool-Zahl, Klick oeffnet die Live-Ansicht.
 // Rechtsklick oeffnet sie in einem eigenen Fenster.
 // Ausserdem als Control-Center-Kachel mit ausklappbarer Ansicht.
+//
+// **Popout und Kachel zeigen denselben Satz Ansichten wie das Dashboard**
+// (`FeedTabs.qml`) und lesen dieselben Einstellungen. Vorher stand hier nur der
+// Feed, und von dreissig Einstellungen kamen vier an -- Sprache und Waehrung
+// blieben auf den Vorgaben, obwohl sie anderswo eingestellt waren.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -12,6 +17,7 @@ PluginComponent {
     id: root
 
     property string windowCommand: Quickshell.env("HOME") + "/.local/bin/btcfeed-window"
+    readonly property string pid: "bitcoinFeed"
 
     function grp(n) {
         if (!n)
@@ -31,12 +37,6 @@ PluginComponent {
         return n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "k" : String(n);
     }
 
-    function feeText(v) {
-        if (!v)
-            return "–";
-        return v < 10 ? v.toFixed(1) : String(Math.round(v));
-    }
-
     FeedState {
         id: feedState
 
@@ -45,24 +45,86 @@ PluginComponent {
         // was sie kostet, kostet sie den ganzen Tag. Zwei Abfragen pro Sekunde
         // waren dafuer vierfach zu viel.
         pollMs: 2000
+        mode: root.get("dataSource", "daemon")
     }
 
-    property string colorMode: pluginService ? pluginService.loadPluginData("bitcoinFeed", "colorMode", "age") : "age"
-    property string sizeMode: pluginService ? pluginService.loadPluginData("bitcoinFeed", "sizeMode", "value") : "value"
-    property bool showInfo: pluginService ? pluginService.loadPluginData("bitcoinFeed", "showInfo", true) : true
-    property bool showLegend: pluginService ? pluginService.loadPluginData("bitcoinFeed", "showLegend", true) : true
+    // ------------------------------------------------------ Einstellungen
+    // Dieselbe Ablage wie im Dashboard-Tab: `PluginService.loadPluginData`
+    // reicht auf `SettingsData.getPluginSetting` durch. Was hier umgestellt
+    // wird, steht dort also auch -- und umgekehrt.
+    function get(key, def) {
+        return root.pluginService ? root.pluginService.loadPluginData(root.pid, key, def) : def;
+    }
+
+    function getList(key, def) {
+        var v = String(root.get(key, def) || "");
+        return v.length ? v.split("|") : [];
+    }
+
+    // Neu gebaut, sobald DMS meldet, dass sich etwas geaendert hat -- eine
+    // Bindung je Einstellung waeren dreissig, die alle dasselbe tun.
+    property var opts: root.buildOpts()
+    property int view: root.get("view", 0)
+
+    function buildOpts() {
+        return ({
+            "dataSource": root.get("dataSource", "daemon"),
+            "currency": root.get("currency", "eur"),
+            "lang": root.get("lang", "de"),
+            "density": root.get("density", 1),
+            "colorMode": root.get("colorMode", "age"),
+            "sizeMode": root.get("sizeMode", "value"),
+            "showHeader": root.get("showHeader", true),
+            "showFooter": root.get("showFooter", true),
+            "showBlock": root.get("showBlock", true),
+            "showInfo": root.get("showInfo", true),
+            "showLegend": root.get("showLegend", true),
+            "showRuler": root.get("showRuler", true),
+            "frosted": root.get("frosted", true),
+            "tileColorMode": root.get("tileColorMode", "fee"),
+            "clockBars": root.get("clockBars", true),
+            "clockSpark": root.get("clockSpark", true),
+            "clockTime": root.get("clockTime", false),
+            "clockFields": root.getList("clockFieldsRaw", ""),
+            "bigFields": root.getList("bigFieldsRaw", "height"),
+            "bigRotate": root.get("bigRotate", 0),
+            "minerChart": root.get("minerChart", true),
+            "minerDomains": root.get("minerDomains", true),
+            "minerBoard": root.get("minerBoard", true),
+            "minerFields": root.getList("minerFieldsRaw", ""),
+            "explorerLive": root.get("explorerLive", true),
+            "explorerParts": root.getList("explorerPartsRaw", ""),
+            "explorerPanels": root.getList("explorerPanelsRaw", ""),
+            "walletEnabled": root.get("walletEnabled", false)
+        });
+    }
+
+    function put(key, value) {
+        if (!root.pluginService)
+            return;
+        root.pluginService.savePluginData(root.pid, key, value);
+    }
+
+    function setOpt(key, value) {
+        // Listen kommen als Feld herein und gehen als Zeichenkette hinaus --
+        // eine leere Liste ueberlebt die Ablage sonst nicht.
+        if (key === "clockFields" || key === "minerFields" || key === "bigFields"
+                || key === "explorerParts" || key === "explorerPanels") {
+            root.put(key + "Raw", (value || []).join("|"));
+            return;
+        }
+        root.put(key, value);
+    }
 
     Connections {
         target: root.pluginService
         enabled: root.pluginService !== null
 
         function onPluginDataChanged(changedPluginId) {
-            if (changedPluginId !== "bitcoinFeed")
+            if (changedPluginId !== root.pid)
                 return;
-            root.colorMode = root.pluginService.loadPluginData("bitcoinFeed", "colorMode", "age");
-            root.sizeMode = root.pluginService.loadPluginData("bitcoinFeed", "sizeMode", "value");
-            root.showInfo = root.pluginService.loadPluginData("bitcoinFeed", "showInfo", true);
-            root.showLegend = root.pluginService.loadPluginData("bitcoinFeed", "showLegend", true);
+            root.opts = root.buildOpts();
+            root.view = root.get("view", 0);
         }
     }
 
@@ -78,6 +140,7 @@ PluginComponent {
         running: false
     }
 
+    // ------------------------------------------------ Control-Center-Kachel
     ccWidgetIcon: "currency_bitcoin"
     ccWidgetPrimaryText: "Bitcoin"
     ccWidgetSecondaryText: feedState.online ? root.grp(feedState.mempoolCount) + " im Mempool" : "Feed offline"
@@ -85,27 +148,34 @@ PluginComponent {
 
     ccDetailContent: Component {
         Rectangle {
-            implicitHeight: 300
+            implicitHeight: 340
             radius: Theme.cornerRadius
             color: Theme.surfaceContainerHigh
 
-            FeedPanel {
+            FeedTabs {
                 anchors.fill: parent
                 anchors.margins: Theme.spacingM
                 feed: feedState
-                colorMode: root.colorMode
-                sizeMode: root.sizeMode
-                infoVisible: root.showInfo
-                legendVisible: root.showLegend
+                opts: root.opts
+                view: root.view
+                gap: Theme.spacingS
+                tabFont: Theme.fontSizeSmall
+                baseFont: Theme.fontSizeSmall + 1
                 textColor: Theme.surfaceText
                 dimColor: Theme.surfaceVariantText
                 accentColor: Theme.primary
                 lineColor: Theme.outlineMedium
-                baseFont: Theme.fontSizeSmall + 1
+                onOptRequested: function (key, value) {
+                    root.setOpt(key, value);
+                }
+                onViewRequested: function (v) {
+                    root.put("view", v);
+                }
             }
         }
     }
 
+    // ------------------------------------------------------------- Pille
     pillRightClickAction: () => root.openInWindow()
 
     horizontalBarPill: Component {
@@ -148,8 +218,11 @@ PluginComponent {
         }
     }
 
-    popoutWidth: 560
-    popoutHeight: 520
+    // ------------------------------------------------------------- Popout
+    // Groesser als frueher: mit Reiterzeile und Legende braucht der Feed Platz,
+    // und unter 420 Punkten Hoehe faellt die Legende weg.
+    popoutWidth: 720
+    popoutHeight: 560
 
     popoutContent: Component {
         PopoutComponent {
@@ -176,19 +249,24 @@ PluginComponent {
                 width: parent.width
                 height: Math.max(200, root.popoutHeight - popout.headerHeight - popout.detailsHeight - Theme.spacingL * 2)
 
-                FeedPanel {
+                FeedTabs {
                     anchors.fill: parent
                     feed: feedState
-                    headerVisible: false
-                    colorMode: root.colorMode
-                    sizeMode: root.sizeMode
-                    infoVisible: root.showInfo
-                    legendVisible: root.showLegend
+                    opts: root.opts
+                    view: root.view
+                    gap: Theme.spacingM
+                    tabFont: Theme.fontSizeSmall
+                    baseFont: Theme.fontSizeSmall + 1
                     textColor: Theme.surfaceText
                     dimColor: Theme.surfaceVariantText
                     accentColor: Theme.primary
                     lineColor: Theme.outlineMedium
-                    baseFont: Theme.fontSizeSmall + 1
+                    onOptRequested: function (key, value) {
+                        root.setOpt(key, value);
+                    }
+                    onViewRequested: function (v) {
+                        root.put("view", v);
+                    }
                 }
             }
         }

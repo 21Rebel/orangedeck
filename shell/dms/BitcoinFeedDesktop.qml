@@ -5,6 +5,12 @@
 // DesktopPluginWrapper: `instanceScopedPluginService`). `loadPluginData` ist
 // hier also **je Instanz** -- man kann denselben Feed dreimal aufs Desktop
 // legen, einmal als Halde, einmal als BlockClock, einmal als Miner.
+//
+// Gezeigt wird eine einzige Ansicht ohne Reiterzeile, gebaut wird sie aber aus
+// demselben `FeedTabs` wie Dashboard und Popout (`tabsVisible: false`). Vorher
+// standen die vier Ansichten hier ein zweites Mal verdrahtet -- und bekamen
+// ihre Feineinstellungen nicht: die BlockClock ohne Auswahl der Werte, der
+// Miner ohne Kurve und Tafel, der Explorer ohne Startseite.
 import QtQuick
 import qs.Common
 
@@ -25,19 +31,73 @@ Item {
     property real defaultWidth: 520
     property real defaultHeight: 380
 
-    property int bgOpacity: pluginService ? pluginService.loadPluginData(pluginId, "desktopOpacity", 70) : 70
-    property int tileDensity: pluginService ? pluginService.loadPluginData(pluginId, "tileDensity", 100) : 100
-    property string colorMode: pluginService ? pluginService.loadPluginData(pluginId, "colorMode", "age") : "age"
-    property string sizeMode: pluginService ? pluginService.loadPluginData(pluginId, "sizeMode", "value") : "value"
-    property bool showInfo: pluginService ? pluginService.loadPluginData(pluginId, "showInfo", true) : true
-    property bool showLegend: pluginService ? pluginService.loadPluginData(pluginId, "showLegend", true) : true
-    // Welche Ansicht dieses Widget zeigt: feed | clock | miner | explorer
-    property string widgetView: pluginService ? pluginService.loadPluginData(pluginId, "widgetView", "feed") : "feed"
-    property string lang: pluginService ? pluginService.loadPluginData(pluginId, "lang", "de") : "de"
-    property string currency: pluginService ? pluginService.loadPluginData(pluginId, "currency", "eur") : "eur"
-    property string bigFieldsRaw: pluginService ? pluginService.loadPluginData(pluginId, "bigFieldsRaw", "height") : "height"
-    property int bigRotate: pluginService ? pluginService.loadPluginData(pluginId, "bigRotate", 0) : 0
-    readonly property var bigFields: bigFieldsRaw.length ? bigFieldsRaw.split("|") : ["height"]
+    function get(key, def) {
+        return root.pluginService ? root.pluginService.loadPluginData(root.pluginId, key, def) : def;
+    }
+
+    function getList(key, def) {
+        var v = String(root.get(key, def) || "");
+        return v.length ? v.split("|") : [];
+    }
+
+    // Nur dem Desktop-Widget eigen: Untergrund und Kachelgroesse haengen daran,
+    // wie gross das Fenster auf dem Schirm ist -- das ist je Instanz etwas
+    // anderes als im Dashboard.
+    property int bgOpacity: root.get("desktopOpacity", 70)
+    property int tileDensity: root.get("tileDensity", 100)
+    // Welche Ansicht dieses Widget zeigt: feed | clock | miner | explorer | wallet
+    property string widgetView: root.get("widgetView", "feed")
+
+    readonly property int viewIndex: {
+        switch (root.widgetView) {
+        case "clock":
+            return 1;
+        case "miner":
+            return 2;
+        case "explorer":
+            return 3;
+        case "wallet":
+            return 4;
+        default:
+            return 0;
+        }
+    }
+
+    property var opts: root.buildOpts()
+
+    function buildOpts() {
+        return ({
+            "dataSource": root.get("dataSource", "daemon"),
+            "currency": root.get("currency", "eur"),
+            "lang": root.get("lang", "de"),
+            // Die Kachelgroesse kommt hier aus der eigenen Einstellung
+            "density": Math.max(0.5, root.tileDensity / 100),
+            "colorMode": root.get("colorMode", "age"),
+            "sizeMode": root.get("sizeMode", "value"),
+            "showHeader": root.get("showHeader", true),
+            "showFooter": root.get("showFooter", true),
+            "showBlock": root.get("showBlock", true),
+            "showInfo": root.get("showInfo", true),
+            "showLegend": root.get("showLegend", true),
+            "showRuler": root.get("showRuler", true),
+            "frosted": root.get("frosted", true),
+            "tileColorMode": root.get("tileColorMode", "fee"),
+            "clockBars": root.get("clockBars", true),
+            "clockSpark": root.get("clockSpark", true),
+            "clockTime": root.get("clockTime", false),
+            "clockFields": root.getList("clockFieldsRaw", ""),
+            "bigFields": root.getList("bigFieldsRaw", "height"),
+            "bigRotate": root.get("bigRotate", 0),
+            "minerChart": root.get("minerChart", true),
+            "minerDomains": root.get("minerDomains", true),
+            "minerBoard": root.get("minerBoard", true),
+            "minerFields": root.getList("minerFieldsRaw", ""),
+            "explorerLive": root.get("explorerLive", true),
+            "explorerParts": root.getList("explorerPartsRaw", ""),
+            "explorerPanels": root.getList("explorerPanelsRaw", ""),
+            "walletEnabled": root.get("walletEnabled", false)
+        });
+    }
 
     Connections {
         target: root.pluginService
@@ -46,17 +106,10 @@ Item {
         function onPluginDataChanged(changedPluginId) {
             if (changedPluginId !== root.pluginId)
                 return;
-            root.bgOpacity = root.pluginService.loadPluginData(root.pluginId, "desktopOpacity", 70);
-            root.tileDensity = root.pluginService.loadPluginData(root.pluginId, "tileDensity", 100);
-            root.colorMode = root.pluginService.loadPluginData(root.pluginId, "colorMode", "age");
-            root.sizeMode = root.pluginService.loadPluginData(root.pluginId, "sizeMode", "value");
-            root.showInfo = root.pluginService.loadPluginData(root.pluginId, "showInfo", true);
-            root.showLegend = root.pluginService.loadPluginData(root.pluginId, "showLegend", true);
-            root.widgetView = root.pluginService.loadPluginData(root.pluginId, "widgetView", "feed");
-            root.lang = root.pluginService.loadPluginData(root.pluginId, "lang", "de");
-            root.currency = root.pluginService.loadPluginData(root.pluginId, "currency", "eur");
-            root.bigFieldsRaw = root.pluginService.loadPluginData(root.pluginId, "bigFieldsRaw", "height");
-            root.bigRotate = root.pluginService.loadPluginData(root.pluginId, "bigRotate", 0);
+            root.bgOpacity = root.get("desktopOpacity", 70);
+            root.tileDensity = root.get("tileDensity", 100);
+            root.widgetView = root.get("widgetView", "feed");
+            root.opts = root.buildOpts();
         }
     }
 
@@ -64,6 +117,7 @@ Item {
         id: feedState
 
         pollMs: 500
+        mode: root.get("dataSource", "daemon")
     }
 
     Rectangle {
@@ -75,62 +129,21 @@ Item {
         border.color: root.editMode ? Theme.primary : "transparent"
     }
 
-    FeedPanel {
-        visible: root.widgetView === "feed"
+    FeedTabs {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
+        // Eine Ansicht, keine Reiterzeile
+        tabsVisible: false
+        view: root.viewIndex
         feed: feedState
-        lang: root.lang
-        currency: root.currency
-        density: Math.max(0.5, root.tileDensity / 100)
-        colorMode: root.colorMode
-        sizeMode: root.sizeMode
-        infoVisible: root.showInfo
-        legendVisible: root.showLegend
+        opts: root.opts
+        // Auf dem Desktop stellt niemand Knoepfe -- das Widget ist zum Ansehen
+        // da, nicht zum Bedienen.
+        minerActions: false
+        baseFont: Theme.fontSizeSmall
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText
         accentColor: Theme.primary
         lineColor: Theme.outlineMedium
-        baseFont: Theme.fontSizeSmall
-    }
-
-    ClockView {
-        visible: root.widgetView === "clock"
-        anchors.fill: parent
-        anchors.margins: Theme.spacingM
-        feed: feedState
-        lang: root.lang
-        currency: root.currency
-        bigFields: root.bigFields
-        bigRotate: root.bigRotate
-        textColor: Theme.surfaceText
-        dimColor: Theme.surfaceVariantText
-        accentColor: Theme.primary
-    }
-
-    MinerView {
-        visible: root.widgetView === "miner"
-        anchors.fill: parent
-        anchors.margins: Theme.spacingM
-        feed: feedState
-        lang: root.lang
-        // Auf dem Desktop stellt niemand Knoepfe -- das Widget ist zum
-        // Ansehen da, nicht zum Bedienen.
-        showActions: false
-        textColor: Theme.surfaceText
-        dimColor: Theme.surfaceVariantText
-        accentColor: Theme.primary
-    }
-
-    ExplorerView {
-        visible: root.widgetView === "explorer"
-        anchors.fill: parent
-        anchors.margins: Theme.spacingM
-        feed: feedState
-        lang: root.lang
-        currency: root.currency
-        textColor: Theme.surfaceText
-        dimColor: Theme.surfaceVariantText
-        accentColor: Theme.primary
     }
 }
