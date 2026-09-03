@@ -52,6 +52,16 @@ Item {
     // Reiterzeile 409 Punkte, und davon wurde die Kurskurve zum Strich. Mit
     // 520 sind es 469 -- genug fuer die Kurve samt Zeitachse.
     implicitHeight: 520
+    // **Und eine Breite.** DankDashPopout leitet seine eigene aus der
+    // `implicitWidth` der gezeigten Seite ab (`pages.implicitWidth`, Zeile 238
+    // und 364). Ein `Item` hat von sich aus keine -- die Seite bekam damit eine
+    // Breite, die nicht zur sichtbaren Flaeche passte, und was am rechten Rand
+    // haengt (die Bedienzeile der Marktansicht) stand neben dem Dashboard.
+    // 700 minus dem Rand ist genau die Flaeche, die der Popout zeichnet.
+    implicitWidth: 700 - Theme.spacingM * 2
+    // Und nichts zeichnet mehr ueber die Seite hinaus, was auch immer sich in
+    // DMS noch aendert.
+    clip: true
 
     // **`Item.visible` genuegt hier nicht.** Wird das Popout-Fenster
     // geschlossen, bleibt `visible` an den Elementen darin wahr -- die
