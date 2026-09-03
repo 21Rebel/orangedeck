@@ -358,13 +358,24 @@ Item {
             // waechst also mit der Dicke. Nachgemessen an der Vorlage sind das
             // rund 8 % der Banddicke; 2,5 Bildpunkte Deckel liessen davon an
             // einem dicken Band ein Haar uebrig.
-            ctx.lineWidth = Math.max(1, Math.min(10, thickness * 0.08));
+            var lw = Math.max(1, Math.min(10, thickness * 0.08));
+            ctx.lineWidth = lw;
             ctx.lineJoin = "miter";
             ctx.strokeStyle = "#000000";
+            // **Ueberstand ueber die Bandkante hinaus.** Ein Strich endet
+            // stumpf und quer zu seiner **eigenen** Richtung -- die ist hier
+            // schraeg. Genau an der Kante blieb deshalb oben und unten ein
+            // Zacken Bandfarbe stehen. Beide Schenkel laufen jetzt um ihre
+            // eigene Staerke ueber die Kante hinaus; darueber liegt nichts,
+            // was mitgetroffen werden koennte.
+            var h = thickness / 2;
+            var diag = Math.sqrt(len * len + h * h);
+            var ux = (len / diag) * lw;
+            var uy = (h / diag) * lw;
             ctx.beginPath();
-            ctx.moveTo(x, cy - thickness / 2);
+            ctx.moveTo(x - ux, cy - h - uy);
             ctx.lineTo(x + len, cy);
-            ctx.lineTo(x, cy + thickness / 2);
+            ctx.lineTo(x - ux, cy + h + uy);
             ctx.stroke();
             ctx.globalCompositeOperation = alt;
             ctx.lineJoin = "round";
@@ -372,18 +383,25 @@ Item {
 
         // Das kurze Stueck am Rand: eine Seite voll, die andere in nichts
         // auslaufend. `nachAussenRechts` sagt, wohin ausgeblendet wird.
-        function stub(ctx, x, len, cy, thickness, col, nachAussenRechts, lit) {
+        //
+        // **`farbeBei` statt einer festen Farbe.** Vorher stand hier eine
+        // einzige: die des Bandanfangs. Der Farbverlauf des Bandes lief damit
+        // nicht durch, und weil er ueber den Farbkreis laeuft, sass an der
+        // Naht ein Sprung von gut zehn Grad Farbton -- deutlich zu sehen. Die
+        // Funktion liefert dieselbe Farbe, die das Band an dieser Stelle
+        // haette; ausgeblendet wird allein ueber die Deckkraft.
+        function stub(ctx, x, len, cy, thickness, farbeBei, nachAussenRechts, lit) {
             if (len < 1 || thickness < 0.5)
                 return;
-            var c = lit ? Qt.lighter(col, 1.35) : col;
             var g = ctx.createLinearGradient(x, 0, x + len, 0);
-            var a0 = nachAussenRechts ? 1 : 0;
-            var a1 = nachAussenRechts ? 0 : 1;
-            // Gleichmaessig, ohne Stuetzstelle in der Mitte: mit ihr sass die
-            // Deckkraft dort zu hoch und der Balken wirkte wie ein Kloetzchen
-            // statt wie ein Auslaufen.
-            g.addColorStop(0, Qt.rgba(c.r, c.g, c.b, a0));
-            g.addColorStop(1, Qt.rgba(c.r, c.g, c.b, a1));
+            for (var st = 0; st <= 4; st++) {
+                var t = st / 4;
+                var c = farbeBei(t);
+                if (lit)
+                    c = Qt.lighter(c, 1.35);
+                g.addColorStop(t, Qt.rgba(c.r, c.g, c.b,
+                                          nachAussenRechts ? 1 - t : t));
+            }
             ctx.strokeStyle = g;
             ctx.lineWidth = thickness;
             ctx.beginPath();
@@ -441,7 +459,12 @@ Item {
                 ctx.lineTo(xL, cEdge);
                 canvas.curve(ctx, xL, cEdge, xC + seam, cMid);
                 ctx.stroke();
-                canvas.stub(ctx, 0, root.stubLen, cEdge, b.hEdge, root.flowColor(0), false, lit);
+                // Der Verlauf des Bandes laeuft ueber `createLinearGradient(0, xC)`
+                // mit `flowColor(k/8)` -- an der Stelle x also `flowColor(x / (2*xC))`.
+                // Genau das liefert diese Funktion fuer das Anschlussstueck weiter.
+                canvas.stub(ctx, 0, xIn + 0.5, cEdge, b.hEdge, function (t) {
+                    return root.flowColor((t * xIn) / (2 * xC));
+                }, false, lit);
                 // Der Pfeil ist jetzt eine **Kerbe im Band**, kein angesetztes
                 // Dreieck: ein schmaler Winkel wird wieder herausgeschnitten.
                 // Dadurch gibt es keine Naht, und die Richtung bleibt lesbar.
@@ -481,8 +504,15 @@ Item {
                 // Erst der Block, dann die Kerbe: sie schneidet heraus, was
                 // schon steht, und muss deshalb zuletzt kommen -- sonst
                 // fuellt der Block sie wieder auf.
-                canvas.stub(ctx, xEnd, root.stubLen, cEdge, b.hEdge,
-                            b.fee ? root.feeColor : root.flowColor(1), true, lit);
+                canvas.stub(ctx, xEnd - 0.5, root.stubLen + 0.5, cEdge, b.hEdge,
+                            b.fee ? function () {
+                                return root.feeColor;
+                            } : function (t) {
+                                // Gegenstueck zur Eingangsseite: der Verlauf des
+                                // Bandes laeuft von xC bis w ueber flowColor(0,5..1).
+                                return root.flowColor(0.5 + 0.5 * (xEnd - xC + t * root.stubLen)
+                                                            / (w - xC));
+                            }, true, lit);
                 // Die Kerbe sitzt auf der Naht: die Schenkel an der Kante des
                 // Bandes, die Spitze im Block. Dieselbe wie am Eingang.
                 canvas.notch(ctx, xEnd, cEdge, root.tipFor(b.hEdge), b.hEdge);
