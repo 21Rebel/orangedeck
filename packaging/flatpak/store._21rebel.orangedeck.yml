@@ -5,16 +5,16 @@
 # einzige Weg, der ohne Fernverbindung auskommt.
 #
 #   flatpak-builder --user --install --force-clean \
-#       build-flatpak packaging/flatpak/store._21rebel.btcfeed.yml
+#       build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
 #
 # Laufzeit ist die KDE-Plattform, weil sie Qt 6 samt QML schon mitbringt --
 # die Anwendung braucht nur Core, Gui, Qml und Quick. Python fuer den Daemon
 # ist dort ebenfalls vorhanden (3.12), er kommt mit der Standardbibliothek aus.
-id: store._21rebel.btcfeed
+id: store._21rebel.orangedeck
 runtime: org.kde.Platform
 runtime-version: '6.9'
 sdk: org.kde.Sdk
-command: btcfeed-launch
+command: orangedeck-launch
 
 finish-args:
   # Die einzige Verbindung nach draussen: mempool.space und die eigene
@@ -25,7 +25,7 @@ finish-args:
   - --socket=wayland
   - --socket=fallback-x11
   - --device=dri
-  # Kein --filesystem: die Einstellungen landen in ~/.var/app/store._21rebel.btcfeed,
+  # Kein --filesystem: die Einstellungen landen in ~/.var/app/store._21rebel.orangedeck,
   # sonst wird nichts vom Rechner angefasst.
 
 modules:
@@ -51,21 +51,21 @@ modules:
       - /lib/pkgconfig
       - /mkspecs
 
-  - name: btcfeed
+  - name: orangedeck
     buildsystem: simple
     build-commands:
       - cmake -S app -B build-fp -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/app
       - cmake --build build-fp
       - cmake --install build-fp
       # Der Daemon ist ein einzelnes Python-Skript ohne Fremdpakete
-      - install -Dm755 daemon/btcfeed /app/bin/btcfeed
-      - install -Dm755 packaging/flatpak/btcfeed-launch /app/bin/btcfeed-launch
+      - install -Dm755 daemon/orangedeck /app/bin/orangedeck
+      - install -Dm755 packaging/flatpak/orangedeck-launch /app/bin/orangedeck-launch
       # Im Sandkasten startet der Starter erst den Daemon, dann die Anwendung
-      - sed -i 's|^Exec=btcfeed-app$|Exec=btcfeed-launch|' /app/share/applications/store._21rebel.btcfeed.desktop
-      - install -Dm644 app/icons/store._21rebel.btcfeed.svg
-        /app/share/icons/hicolor/scalable/apps/store._21rebel.btcfeed.svg
-      - install -Dm644 packaging/flatpak/store._21rebel.btcfeed.metainfo.xml
-        /app/share/metainfo/store._21rebel.btcfeed.metainfo.xml
+      - sed -i 's|^Exec=orangedeck-app$|Exec=orangedeck-launch|' /app/share/applications/store._21rebel.orangedeck.desktop
+      - install -Dm644 app/icons/store._21rebel.orangedeck.svg
+        /app/share/icons/hicolor/scalable/apps/store._21rebel.orangedeck.svg
+      - install -Dm644 packaging/flatpak/store._21rebel.orangedeck.metainfo.xml
+        /app/share/metainfo/store._21rebel.orangedeck.metainfo.xml
     sources:
       - type: dir
         path: ../..

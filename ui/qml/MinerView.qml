@@ -228,7 +228,7 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "btcfeed --discover-miners --write\nsystemctl --user restart btcfeed"
+            text: "orangedeck --discover-miners --write\nsystemctl --user restart orangedeck"
             horizontalAlignment: Text.AlignHCenter
             color: root.accentColor
             font.pixelSize: root.scaleUnit * 0.62

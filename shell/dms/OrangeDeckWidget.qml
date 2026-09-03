@@ -16,8 +16,8 @@ import qs.Modules.Plugins
 PluginComponent {
     id: root
 
-    property string windowCommand: Quickshell.env("HOME") + "/.local/bin/btcfeed-window"
-    readonly property string pid: "bitcoinFeed"
+    property string windowCommand: Quickshell.env("HOME") + "/.local/bin/orangedeck-window"
+    readonly property string pid: "orangedeck"
 
     function grp(n) {
         if (!n)
@@ -228,8 +228,8 @@ PluginComponent {
         PopoutComponent {
             id: popout
 
-            headerText: "Bitcoin Feed"
-            detailsText: feedState.online ? "Block " + root.grp(feedState.tipHeight) + " · " + root.grp(feedState.mempoolCount) + " Transaktionen im Mempool" : "Feed offline – btcfeed läuft nicht"
+            headerText: "OrangeDeck"
+            detailsText: feedState.online ? "Block " + root.grp(feedState.tipHeight) + " · " + root.grp(feedState.mempoolCount) + " Transaktionen im Mempool" : "Feed offline – orangedeck läuft nicht"
             showCloseButton: true
 
             headerActions: Component {

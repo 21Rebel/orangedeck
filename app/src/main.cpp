@@ -14,13 +14,13 @@
 #include <QQuickWindow>
 #include <QMargins>
 
-#ifdef BTCFEED_LAYERSHELL
+#ifdef ORANGEDECK_LAYERSHELL
 #include <LayerShellQt/Window>
 #endif
 
 namespace {
 
-#ifdef BTCFEED_LAYERSHELL
+#ifdef ORANGEDECK_LAYERSHELL
 using LSWindow = LayerShellQt::Window;
 
 LSWindow::Layer ebeneAus(const QString &s)
@@ -58,21 +58,21 @@ LSWindow::Anchors kantenAus(const QString &s)
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    app.setOrganizationName("btcfeed");
+    app.setOrganizationName("orangedeck");
     app.setOrganizationDomain("21rebel.dev");
-    app.setApplicationName("btcfeed");
+    app.setApplicationName("orangedeck");
     app.setApplicationVersion("0.1");
-    app.setApplicationDisplayName(QStringLiteral("Bitcoin Feed"));
+    app.setApplicationDisplayName(QStringLiteral("OrangeDeck"));
     // Ausdruecklich gesetzt: sonst leitet Qt die Wayland-app_id aus der
-    // umgedrehten Domain und dem Programmnamen ab ("dev.21rebel.btcfeed-app"),
+    // umgedrehten Domain und dem Programmnamen ab ("dev.21rebel.orangedeck-app"),
     // und der Fensterverwalter findet das Symbol nicht, weil die
     // .desktop-Datei anders heisst. Der Unterstrich gehoert dazu -- ein
     // Segment einer solchen Kennung darf nicht mit einer Ziffer beginnen.
-    app.setDesktopFileName(QStringLiteral("store._21rebel.btcfeed"));
+    app.setDesktopFileName(QStringLiteral("store._21rebel.orangedeck"));
 
     QCommandLineParser p;
     p.setApplicationDescription(QStringLiteral(
-        "Bitcoin Feed -- Mempool, Blockclock, Miner, Explorer.\n"
+        "OrangeDeck -- Mempool, Blockclock, Miner, Explorer.\n"
         "Ohne Schalter ein gewoehnliches Fenster; mit --layer ein Widget "
         "oder eine Leiste auf dem Desktop."));
     p.addHelpOption();
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
     // Muss **vor** dem Laden des QML stehen: die Settings-Gruppe darin holt
     // sich den Namen beim Erzeugen, spaeter wirkt eine Aenderung nicht mehr.
     if (p.isSet(oKennung) && !p.value(oKennung).isEmpty())
-        app.setApplicationName(QStringLiteral("btcfeed-") + p.value(oKennung));
+        app.setApplicationName(QStringLiteral("orangedeck-") + p.value(oKennung));
 
     QQmlApplicationEngine engine;
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
@@ -162,11 +162,11 @@ int main(int argc, char *argv[])
     if (!fenster)
         return 1;
 
-#ifdef BTCFEED_LAYERSHELL
+#ifdef ORANGEDECK_LAYERSHELL
     if (p.isSet(oLayer)) {
         if (LSWindow *ls = LSWindow::get(fenster)) {
             ls->setLayer(ebeneAus(p.value(oLayer)));
-            ls->setScope(QStringLiteral("btcfeed"));
+            ls->setScope(QStringLiteral("orangedeck"));
             if (p.isSet(oKante))
                 ls->setAnchors(kantenAus(p.value(oKante)));
             if (p.isSet(oRand)) {

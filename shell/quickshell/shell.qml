@@ -1,5 +1,5 @@
-// Eigenstaendiges Fenster: qs -p ~/.config/quickshell/BitcoinFeedApp
-// oder bequemer ueber ~/.local/bin/btcfeed-window
+// Eigenstaendiges Fenster: qs -p ~/.config/quickshell/OrangeDeckApp
+// oder bequemer ueber ~/.local/bin/orangedeck-window
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -9,7 +9,7 @@ ShellRoot {
     FloatingWindow {
         id: win
 
-        title: "Bitcoin Feed"
+        title: "OrangeDeck"
         implicitWidth: 1100
         implicitHeight: 800
         minimumSize.width: 260
@@ -222,7 +222,7 @@ ShellRoot {
         FileView {
             id: viewFile
 
-            path: Quickshell.env("HOME") + "/.local/state/btcfeed/view.json"
+            path: Quickshell.env("HOME") + "/.local/state/orangedeck/view.json"
             blockLoading: false
             atomicWrites: true
             printErrors: false

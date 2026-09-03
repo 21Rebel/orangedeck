@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=Bitcoin Feed
+Name=OrangeDeck
 Comment=Live-Ansicht des Bitcoin-Mempools
-Exec=btcfeed-app
-Icon=store._21rebel.btcfeed
+Exec=orangedeck-app
+Icon=store._21rebel.orangedeck
 Terminal=false
 Categories=Network;Monitor;

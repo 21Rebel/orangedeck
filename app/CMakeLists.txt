@@ -1,7 +1,7 @@
 # Eigenstaendige Qt-Anwendung. Dieselben QML-Dateien wie das DMS-Plugin --
 # ui/qml/ wird hier nur zusaetzlich in ein QML-Modul gepackt, nicht kopiert.
 cmake_minimum_required(VERSION 3.21)
-project(btcfeed-app VERSION 0.1 LANGUAGES CXX)
+project(orangedeck-app VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,7 +23,7 @@ endif()
 # androiddeployqt nur mit, was auch gebraucht wird.
 find_package(Qt6 QUIET COMPONENTS WebSockets)
 
-qt_add_executable(btcfeed-app src/main.cpp)
+qt_add_executable(orangedeck-app src/main.cpp)
 
 # Die geteilten Dateien liegen ausserhalb dieses Verzeichnisses. Ohne
 # ausdruecklichen Alias landen sie mit ihrem relativen Pfad im Ressourcenbaum,
@@ -70,38 +70,38 @@ foreach(f ${SHARED_QML} qml/Main.qml)
     set_source_files_properties("${f}" PROPERTIES QT_RESOURCE_ALIAS "${n}")
 endforeach()
 
-qt_add_qml_module(btcfeed-app
+qt_add_qml_module(orangedeck-app
     URI BtcFeed
     VERSION 1.0
     QML_FILES qml/Main.qml ${SHARED_QML}
 )
 
-target_link_libraries(btcfeed-app PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick)
+target_link_libraries(orangedeck-app PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick)
 
 if(Qt6WebSockets_FOUND)
-    target_link_libraries(btcfeed-app PRIVATE Qt6::WebSockets)
-    message(STATUS "btcfeed: QtWebSockets vorhanden, Direktbezug steht bereit")
+    target_link_libraries(orangedeck-app PRIVATE Qt6::WebSockets)
+    message(STATUS "orangedeck: QtWebSockets vorhanden, Direktbezug steht bereit")
 else()
-    message(STATUS "btcfeed: ohne QtWebSockets gebaut, nur Betrieb ueber den Dienst")
+    message(STATUS "orangedeck: ohne QtWebSockets gebaut, nur Betrieb ueber den Dienst")
 endif()
 
 if(LayerShellQt_FOUND)
-    target_compile_definitions(btcfeed-app PRIVATE BTCFEED_LAYERSHELL)
-    target_link_libraries(btcfeed-app PRIVATE LayerShellQt::Interface)
-    message(STATUS "btcfeed: Layer-Shell vorhanden, --layer steht bereit")
+    target_compile_definitions(orangedeck-app PRIVATE ORANGEDECK_LAYERSHELL)
+    target_link_libraries(orangedeck-app PRIVATE LayerShellQt::Interface)
+    message(STATUS "orangedeck: Layer-Shell vorhanden, --layer steht bereit")
 else()
-    message(STATUS "btcfeed: ohne Layer-Shell gebaut, --layer fehlt")
+    message(STATUS "orangedeck: ohne Layer-Shell gebaut, --layer fehlt")
 endif()
 
 include(GNUInstallDirs)
-# Auf Android ist "btcfeed-app" keine ausfuehrbare Datei, sondern eine
+# Auf Android ist "orangedeck-app" keine ausfuehrbare Datei, sondern eine
 # Bibliothek, die die Java-Huelle laedt -- `install(TARGETS)` verlangt dort
 # ein LIBRARY-Ziel und bricht sonst schon beim Einrichten ab. Installiert wird
 # unter Android ohnehin nichts: das Ergebnis ist das APK.
 if(NOT ANDROID)
-    install(TARGETS btcfeed-app RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/store._21rebel.btcfeed.desktop
+    install(TARGETS orangedeck-app RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/store._21rebel.orangedeck.desktop
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/icons/store._21rebel.btcfeed.svg
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/icons/store._21rebel.orangedeck.svg
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
 endif()

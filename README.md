@@ -1,4 +1,4 @@
-# btcfeed
+# orangedeck
 
 Live-Ansicht des Bitcoin-Mempools nach dem Vorbild von
 [bitfeed.live](https://bitfeed.live): Block in der Mitte, Mempool als Halde
@@ -11,7 +11,7 @@ Android-Fassung, die ein Tablet zur BlockClock macht — siehe `docs/ZIELBILD.md
 
 ## Aufbau
 
-    daemon/           btcfeed (Python, stdlib): holt die Daten, bietet sie
+    daemon/           orangedeck (Python, stdlib): holt die Daten, bietet sie
                       unter http://127.0.0.1:21021 an
     ui/qml/           die Grafik. Haengt nur an QtQuick -- kein Quickshell
     app/              eigenstaendige Qt-Anwendung (CMake), laeuft auf jedem
@@ -33,7 +33,7 @@ der Wahrheit, mehrfach aufrufbar.
 
     cmake -S app -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
     cmake --build build
-    ./build/btcfeed-app
+    ./build/orangedeck-app
 
 Braucht Qt 6.5 oder neuer (Core, Gui, Qml, Quick). Sie benutzt dieselben
 QML-Dateien wie das DMS-Plugin -- `ui/qml/` wird nur zusaetzlich ins
@@ -50,7 +50,7 @@ nicht auf stderr -- QML-Fehler bleiben dadurch unsichtbar. Mit
 
 Zwei Wege, umschaltbar in den Einstellungen unter "Allgemein":
 
-- **Eigener Dienst** (Vorgabe) -- `daemon/btcfeed` auf `127.0.0.1:21021`. Er
+- **Eigener Dienst** (Vorgabe) -- `daemon/orangedeck` auf `127.0.0.1:21021`. Er
   haelt **eine** Verbindung fuer alle Fenster und Widgets, leitet Wallets aus
   dem xpub ab und fragt den Miner im Heimnetz.
 - **Direkt** -- die Oberflaeche redet selbst mit mempool.space, ueber denselben
@@ -59,21 +59,21 @@ Zwei Wege, umschaltbar in den Einstellungen unter "Allgemein":
   Heimnetz, das andere ist Rechenarbeit des Dienstes.
 
 Auf dem Rechner ist der Dienst die bessere Wahl, auf dem Handy gibt es ihn
-nicht. Auf der Befehlszeile: `btcfeed-app --source direct`. Der Direktbezug
+nicht. Auf der Befehlszeile: `orangedeck-app --source direct`. Der Direktbezug
 braucht `qt6-websockets`; fehlt das Paket, bleibt der Dienst.
 
 ## Als Flatpak
 
     flatpak install --user flathub org.kde.Platform//6.9 org.kde.Sdk//6.9
     flatpak-builder --user --install --force-clean \
-        build-flatpak packaging/flatpak/store._21rebel.btcfeed.yml
-    flatpak run --user store._21rebel.btcfeed
+        build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
+    flatpak run --user store._21rebel.orangedeck
 
 Das Paket bringt den Daemon mit und startet ihn, falls noch keiner laeuft.
 
 ## Als Widget auf dem Desktop
 
-    btcfeed-app --layer top --anchor top,right --width 300 --height 220 \
+    orangedeck-app --layer top --anchor top,right --width 300 --height 220 \
                 --margin 24 --view 1 --bare --id uhr
 
 Jede Ansicht laesst sich einzeln als Layer-Shell-Flaeche auf den Desktop

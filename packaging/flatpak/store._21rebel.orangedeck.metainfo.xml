@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>store._21rebel.btcfeed</id>
-  <name>Bitcoin Feed</name>
+  <id>store._21rebel.orangedeck</id>
+  <name>OrangeDeck</name>
   <summary>Live-Ansicht des Bitcoin-Mempools</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
@@ -24,7 +24,7 @@
     </p>
   </description>
 
-  <launchable type="desktop-id">store._21rebel.btcfeed.desktop</launchable>
+  <launchable type="desktop-id">store._21rebel.orangedeck.desktop</launchable>
   <content_rating type="oars-1.1"/>
 
   <categories>

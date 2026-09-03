@@ -1,7 +1,7 @@
 # Upstream issue for DankMaterialShell (draft)
 
 Goal: let plugins register their own DankDash tab without patching core files.
-If this lands, the BitcoinFeed plugin's delta against upstream drops from 22
+If this lands, the OrangeDeck plugin's delta against upstream drops from 22
 lines to zero.
 
 Repo: https://github.com/AvengeMedia/DankMaterialShell
@@ -63,13 +63,13 @@ already declares `bar` or `desktop` surfaces:
 
 ```json
 {
-  "id": "bitcoinFeed",
+  "id": "orangedeck",
   "type": "composite",
   "capabilities": ["daemon", "dankbar-widget", "desktop-widget", "dash-tab"],
   "components": {
-    "daemon": "./BitcoinFeedDaemon.qml",
-    "widget": "./BitcoinFeedWidget.qml",
-    "desktop": "./BitcoinFeedDesktop.qml",
+    "daemon": "./OrangeDeckDaemon.qml",
+    "widget": "./OrangeDeckWidget.qml",
+    "desktop": "./OrangeDeckDesktop.qml",
     "dashTab": "./BitcoinTab.qml"
   },
   "icon": "currency_bitcoin"

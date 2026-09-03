@@ -14,7 +14,7 @@
   DMS ueber die Plugin-Einstellungen, ueberall sonst mit `--layer` (Anleitung
   in `packaging/widgets/README.md`). Mehrere nebeneinander, jedes mit eigenem
   Einstellungsspeicher (`--id`).
-- **Flatpak**: `packaging/flatpak/store._21rebel.btcfeed.yml`, gebaut,
+- **Flatpak**: `packaging/flatpak/store._21rebel.orangedeck.yml`, gebaut,
   installiert, geprueft.
 - **Android**: Werkzeugkette steht, das APK baut (45 MB, arm64-v8a,
   unsigniert). Auf dem Handy war es noch nicht.
@@ -64,19 +64,19 @@
 
 ### Wie man morgen anfaengt
 
-    cd ~/Schreibtisch/btcfeed
+    cd ~/Schreibtisch/orangedeck
     git log --oneline -8
-    systemctl --user status btcfeed
+    systemctl --user status orangedeck
     curl -s http://127.0.0.1:21021/health
 
 **Nach jeder Aenderung an den geteilten QML-Dateien:**
 
     tools/install-links.sh          # Shell und Dashboard (Verweise)
-    python3 daemon/btcfeed-dashtab  # DMS-Ueberlagerung neu bauen
+    python3 daemon/orangedeck-dashtab  # DMS-Ueberlagerung neu bauen
     systemctl --user restart dms
     cmake --build build             # die eigenstaendige Anwendung
     flatpak-builder --user --install --force-clean \
-        build-flatpak packaging/flatpak/store._21rebel.btcfeed.yml
+        build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
 
 **Die letzten beiden nicht vergessen** -- sie tragen eine *Kopie*, keinen
 Verweis. Genau daran ist der Nutzer am 02.09. vorbeigelaufen: die Aenderungen
@@ -113,7 +113,7 @@ kurz darauf auf 13,5 % -- die Last haengt am Mempool-Verkehr. Nur
 **gleichzeitig** gemessen sind zwei Varianten vergleichbar.
 
 **Eine Flatpak-Kennung darf kein Segment mit einer Ziffer beginnen.** Aus
-`dev.21rebel.btcfeed` wurde `store._21rebel.btcfeed`.
+`dev.21rebel.orangedeck` wurde `store._21rebel.orangedeck`.
 
 **Der Sandkasten blendet privilegierte Wayland-Protokolle aus**
 (`wp_security_context_v1`). Deshalb gibt es im Flatpak kein Layer-Shell --
@@ -149,7 +149,7 @@ Herausgekommen ist ein Zustand mit **genau demselben Aufbau** wie `/state`
 und `/block` -- `FeedState` schiebt beide Quellen durch dieselbe Auswertung
 (`__apply`), und keine einzige Ansicht merkt, woher die Zahlen kommen.
 Umgestellt wird in den Einstellungen unter "Allgemein" oder mit
-`btcfeed-app --source direct`.
+`orangedeck-app --source direct`.
 
 Weniger Arbeit als befuerchtet, aus zwei Gruenden: die Kachelpackung lief
 **schon immer** in QML (`mondrian.js`), der Dienst liefert nur rohe Listen --
@@ -238,23 +238,23 @@ Qt 6.11.2 fuer `android_arm64_v8a` mit `aqtinstall` nach `~/Qt`.
 
 ### Flatpak -- laeuft
 
-`packaging/flatpak/store._21rebel.btcfeed.yml`. Gebaut und geprueft: das
+`packaging/flatpak/store._21rebel.orangedeck.yml`. Gebaut und geprueft: das
 Paket startet im kopflosen Compositor, zeigt Live-Daten und traegt sein
 eigenes Symbol.
 
-**Die Kennung musste sich aendern.** `dev.21rebel.btcfeed` weist Flatpak ab:
+**Die Kennung musste sich aendern.** `dev.21rebel.orangedeck` weist Flatpak ab:
 *"Name segment can't start with 2"*. Ein Segment einer solchen Kennung darf
 nicht mit einer Ziffer beginnen; die vorgesehene Schreibweise setzt einen
-Unterstrich davor. Neu ist deshalb **`store._21rebel.btcfeed`** -- und das
+Unterstrich davor. Neu ist deshalb **`store._21rebel.orangedeck`** -- und das
 passt zugleich zu einer Domain, die es wirklich gibt (21rebel.store).
 Umbenannt wurden die `.desktop`-Datei und das Symbol; in `main.cpp` steht die
 Kennung jetzt ausdruecklich (`setDesktopFileName`), sonst leitet Qt die
 Wayland-app_id aus der umgedrehten Domain ab und der Fensterverwalter findet
 das Symbol nicht.
 
-Dazu neu: `app/icons/store._21rebel.btcfeed.svg` (eigene Zeichnung -- Kacheln
+Dazu neu: `app/icons/store._21rebel.orangedeck.svg` (eigene Zeichnung -- Kacheln
 wie im Feed, **nichts** von Bitfeed uebernommen), eine AppStream-Beschreibung
-und `packaging/flatpak/btcfeed-launch`. Der Starter prueft erst, ob auf
+und `packaging/flatpak/orangedeck-launch`. Der Starter prueft erst, ob auf
 `127.0.0.1:21021` schon ein Daemon antwortet: im Flatpak ist das dank
 `--share=network` dieselbe Schnittstelle wie draussen, ein laufender
 Benutzerdienst wird also mitbenutzt und nur sonst einer im Sandkasten
@@ -292,7 +292,7 @@ Flatpak bleibt das gewoehnliche Fenster.
 
 ### Layer-Shell -- Widgets ohne DMS
 
-`btcfeed-app` kennt jetzt Schalter (Anleitung in
+`orangedeck-app` kennt jetzt Schalter (Anleitung in
 `packaging/widgets/README.md` samt Startzeilen fuer niri, Hyprland, sway und
 labwc):
 
@@ -316,7 +316,7 @@ Drei Dinge, die dabei zu lernen waren:
   unbekannt ("Unknown option 'view'"). Kein Kuerzel mehr.
 - **`--id` ist der Punkt, an dem mehrere Widgets nebeneinander gehen.** Ohne
   eigenen Einstellungsspeicher schreiben sie sich gegenseitig um. Mit
-  `--id uhr` liegt er in `~/.config/btcfeed/btcfeed-uhr.conf`.
+  `--id uhr` liegt er in `~/.config/orangedeck/orangedeck-uhr.conf`.
 
 Nebenbei: ein unsichtbares Element behaelt seine Hoehe -- die nackten Widgets
 hatten oben einen leeren Streifen in Reiterhoehe (`win.tabSpace`).
@@ -347,7 +347,7 @@ Fassung aussehen":
 ## Stand 02.09.2026, spaeter Abend -- Widgets und grosse Werte
 
 **Jeder Tab laesst sich einzeln auf den Desktop legen.** Das DMS-Widget
-(`shell/dms/BitcoinFeedDesktop.qml`) kennt jetzt eine Einstellung
+(`shell/dms/OrangeDeckDesktop.qml`) kennt jetzt eine Einstellung
 `widgetView` -- Feed, Blockclock, Miner oder Explorer. DMS gibt jeder
 Instanz eines Desktop-Widgets einen **eigenen** Einstellungsspeicher
 (`instanceId` + instanzgebundener `pluginService`), also kann man vier
@@ -369,8 +369,8 @@ gewaehlte Ansicht.
 INI-Zeichenkette mit Komma wird beim Lesen als **Liste** zurueckgegeben.
 `bigFieldsRaw=height,price,moscow` kam als `"height"` wieder an, stillschweigend
 und ohne Meldung -- die Rotation stand deshalb still. Alle Listen werden
-jetzt mit `|` zusammengesetzt (`Main.qml`, `btcfeed-dashtab`,
-`BitcoinFeedDesktop.qml`).
+jetzt mit `|` zusammengesetzt (`Main.qml`, `orangedeck-dashtab`,
+`OrangeDeckDesktop.qml`).
 
 **Beim Pruefen im kopflosen Compositor:** `labwc` uebernimmt `WAYLAND_DISPLAY`
 nicht als eigenen Sockelnamen, es sucht sich `wayland-N` selbst. Wer die
@@ -389,7 +389,7 @@ Ansicht eines einzelnen geplanten Blocks (Klick auf eine gruene Kachel), dort
 ohne eigene Ueberschrift.
 
 Neu: `ui/qml/ProjectedBlock.qml`. Geaendert: `BlockTiles.qml` (lebendiger
-Betrieb), `daemon/btcfeed` (Aenderungsbuch, geplante Bloecke im Zustand),
+Betrieb), `daemon/orangedeck` (Aenderungsbuch, geplante Bloecke im Zustand),
 `BlockChain.qml`, `ExplorerHome.qml`, `ExplorerView.qml`, `FeedState.qml`,
 `colors.js`.
 
@@ -466,7 +466,7 @@ durchgereicht wird. **Das ist die naechste Entscheidung des Nutzers.**
 
 Nach einem Durchgang durch alle Reiter, Punkt fuer Punkt:
 
-**Das Fenster aus `btcfeed-window` war die alte Fassung** -- nur der Feed,
+**Das Fenster aus `orangedeck-window` war die alte Fassung** -- nur der Feed,
 keine Reiter. `shell.qml` hat jetzt dieselben Ansichten wie die eigenstaendige
 Anwendung; zwei Fenster mit verschiedenem Inhalt waren nur verwirrend.
 
@@ -501,7 +501,7 @@ gelesen und bestaetigt werden muss.
 ### Und ein Fehler, den ich selbst gebaut habe
 
 Nach zwei neuen geteilten QML-Dateien lief `tools/install-links.sh`, aber
-**nicht** `python3 daemon/btcfeed-dashtab` -- das Dashboard ging dadurch nicht
+**nicht** `python3 daemon/orangedeck-dashtab` -- das Dashboard ging dadurch nicht
 mehr auf. Dieselbe Falle wie schon dokumentiert. Beide Schritte gehoeren immer
 zusammen.
 
@@ -527,13 +527,13 @@ Flaeche.**
 
 **Und eine Falle, die schon in der Dokumentation stand und trotzdem zugeschlagen
 hat:** nach zwei neuen geteilten QML-Dateien lief `tools/install-links.sh`,
-aber **nicht** `python3 daemon/btcfeed-dashtab` -- damit fehlten sie in der
+aber **nicht** `python3 daemon/orangedeck-dashtab` -- damit fehlten sie in der
 DMS-Ueberlagerung, `ExplorerView` liess sich dort nicht mehr laden und **das
 ganze Dashboard ging nicht mehr auf**. Beide Schritte gehoeren zusammen, jedes
 Mal:
 
     tools/install-links.sh
-    python3 daemon/btcfeed-dashtab
+    python3 daemon/orangedeck-dashtab
     systemctl --user restart dms
     dms ipc call dash toggle bitcoin      # muss DASH_TOGGLE_SUCCESS melden
 
@@ -549,7 +549,7 @@ Verlauf, benutzte Adressen und die naechste unbenutzte Empfangsadresse.
   Ableitung ist gar nicht moeglich.
 - Der xpub verlaesst das Geraet nie; Adressen werden lokal abgeleitet und
   einzeln abgefragt.
-- Eingetragen wird ueber die **Kommandozeile** (`btcfeed --watch-add`), nicht
+- Eingetragen wird ueber die **Kommandozeile** (`orangedeck --watch-add`), nicht
   ueber die Oberflaeche: der Dienst nimmt weiterhin nichts entgegen.
 - Ein privater Schluessel wird vor jeder anderen Pruefung abgewiesen, mit einer
   Meldung, die sagt warum.
@@ -597,7 +597,7 @@ laesst sich in einem **unsichtbaren Compositor** pruefen, ohne den Bildschirm
 zu uebernehmen --
 
     WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 WLR_HEADLESS_OUTPUTS=1 labwc &
-    WAYLAND_DISPLAY=wayland-0 ./build/btcfeed-app &
+    WAYLAND_DISPLAY=wayland-0 ./build/orangedeck-app &
     WAYLAND_DISPLAY=wayland-0 grim bild.png
 
 Der Schirm ist 1280x720 gross und laesst sich ohne `wlr-randr` nicht
@@ -610,7 +610,7 @@ schlicht unterhalb der Fensterkante lag. Fuer die Registry-Screenshots
 
 ## Stand 01.09.2026, Abend — Uebergabe
 
-58 Commits an diesem Tag. Arbeitsbaum sauber, `btcfeed.service` laeuft ohne
+58 Commits an diesem Tag. Arbeitsbaum sauber, `orangedeck.service` laeuft ohne
 Neustarts, DMS laeuft, die eigenstaendige App ist beendet.
 
 Aus einem DMS-Plugin ist eine portable Anwendung mit vier Ansichten geworden.
@@ -620,15 +620,15 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
 ## Was steht
 
 **Grundlage**
-- Repo `~/Schreibtisch/btcfeed` ist die Quelle der Wahrheit;
+- Repo `~/Schreibtisch/orangedeck` ist die Quelle der Wahrheit;
   `tools/install-links.sh` verteilt alles. **bitfeed als `git subtree`** unter
   `upstream/bitfeed/`, Historie erhalten.
-- **`btcfeed` laeuft als abgesicherter Benutzerdienst** und bietet seine Daten
+- **`orangedeck` laeuft als abgesicherter Benutzerdienst** und bietet seine Daten
   unter `http://127.0.0.1:21021` an -- nur lesend, nur GET, gebunden auf
   Loopback. Abfragen: `/state`, `/block`, `/health`, `/lookup/<art>/<wert>`.
 - **Die Grafik haengt an nichts ausser Qt Quick.** Dieselben QML-Dateien
   bedienen DMS-Plugin, Dashboard-Tab und die eigenstaendige Anwendung
-  (`app/`, CMake, app_id `store._21rebel.btcfeed`).
+  (`app/`, CMake, app_id `store._21rebel.orangedeck`).
 
 **Vier Ansichten** (Tabs oder Tasten 1-4)
 - **Feed** -- Halde und Block wie bitfeed, mit Zoom (Rad, Zusammenziehen,
@@ -636,13 +636,13 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
 - **BlockClock** -- Blockhoehe gross, Gebuehr, Kurs, Mempool, Hashrate,
   Schwierigkeit mit Countdown, Halving.
 - **Miner** -- AxeOS und cgminer, mehrere Geraete, Verlaufskurve, Bestenliste,
-  Rechenwerke; Suche im eigenen Netz per `btcfeed --discover-miners`.
+  Rechenwerke; Suche im eigenen Netz per `orangedeck --discover-miners`.
 - **Explorer** -- Startseite mit Blockkette (geplant und bestaetigt in einer
   Leiste), vier Tafeln, letzte Transaktionen; Suche; Transaktions-, Block- und
   Adressansicht; Flussdiagramm; Kachelgrafik fuer bestaetigte **und** geplante
   Bloecke.
 
-**Leisten** -- `btcfeed --waybar`, `--polybar`, `--genmon`, Vorlagen in
+**Leisten** -- `orangedeck --waybar`, `--polybar`, `--genmon`, Vorlagen in
 `packaging/bars/`.
 
 ## Offene Punkte, in der Reihenfolge, in der sie anzugehen sind
@@ -678,7 +678,7 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
 - `FrostedPanel`: an den abgerundeten Ecken erscheint weichgezeichneter Inhalt
   ohne Einfaerbung (QML beschneidet nur rechteckig). Sauber ueber `maskEnabled`.
 - Eine neue geteilte QML-Datei braucht den Eintrag in `app/CMakeLists.txt`
-  **von Hand**; `install-links.sh` und `btcfeed-dashtab` lesen das Verzeichnis.
+  **von Hand**; `install-links.sh` und `orangedeck-dashtab` lesen das Verzeichnis.
 - "Angepasste vsize" und "Transaktion in Hex" fehlen in der Detailtafel.
 
 ## Die Erkenntnisse, die Zeit gekostet haben
@@ -715,21 +715,21 @@ Ausfuehrlich in `DOKUMENTATION.md`. Die wichtigsten in einem Satz:
 
 ## Wie man morgen anfaengt
 
-    cd ~/Schreibtisch/btcfeed
+    cd ~/Schreibtisch/orangedeck
     git log --oneline -10
-    systemctl --user status btcfeed
+    systemctl --user status orangedeck
     curl -s http://127.0.0.1:21021/health
 
 Aendert man etwas an den geteilten QML-Dateien:
 
     tools/install-links.sh          # verteilt alles
-    python3 daemon/btcfeed-dashtab  # baut die DMS-Ueberlagerung neu
+    python3 daemon/orangedeck-dashtab  # baut die DMS-Ueberlagerung neu
     systemctl --user restart dms
 
 Die eigenstaendige Anwendung:
 
     cmake -S app -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build
-    QT_FORCE_STDERR_LOGGING=1 ./build/btcfeed-app
+    QT_FORCE_STDERR_LOGGING=1 ./build/orangedeck-app
 
 **Nicht vergessen: die App nach dem Pruefen wieder beenden.** Sie kostet rund
 7 % CPU, und genau das ist am 01.09. abends als hochdrehender Luefter
@@ -838,7 +838,7 @@ Mempool-Inhalt** zeigen statt nur den Zulauf (kein Fuellen ueber eine
 Viertelstunde mehr), und es gaebe **Abgangsereignisse** (RBF, Verfall) fuer die
 Fallanimation nach unten aus dem Bild.
 
-Anschlusspunkt: `~/.local/bin/btcfeed` ist die einzige Stelle, die Daten holt.
+Anschlusspunkt: `~/.local/bin/orangedeck` ist die einzige Stelle, die Daten holt.
 Ein zweites Backend dort einzuhaengen ist ueberschaubar.
 
 **Was der Node koennen muss** (aus `server/bitcoin.conf.example` von bitfeed):
@@ -922,7 +922,7 @@ Ein Client-Fork wuerde also ausgerechnet den fertigen, entwanzten Teil wegwerfen
 — gegen Svelte-Code, der die hier behobenen Fehler noch enthaelt — und von den
 vier gewuenschten Funktionsgruppen nur eine mitbringen (Explorer).
 
-Als Datenquelle dagegen: **eigene mempool.space-Instanz**, weil `btcfeed` deren
+Als Datenquelle dagegen: **eigene mempool.space-Instanz**, weil `orangedeck` deren
 API bereits spricht und `HOST` schon eine Variable ist. Der Elixir-Server von
 bitfeed nur dann, falls die Abgangsereignisse fehlen. Vollstaendig in
 `ZIELBILD.md`.
@@ -935,8 +935,8 @@ Vorher zu klaeren:
   und den Lizenztext mitzuliefern. Also: `LICENSE` von bitfeed beilegen, im
   README klar sagen, was portiert und was eigen ist. Die Quellenangaben stehen
   bereits in den Dateikoepfen.
-- Das Repo braucht: `btcfeed`, `btcfeed-window`, `btcfeed-dashtab`, die fuenf
-  Dateien aus `~/.local/share/btcfeed/qml/`, das Plugin-Verzeichnis, die
+- Das Repo braucht: `orangedeck`, `orangedeck-window`, `orangedeck-dashtab`, die fuenf
+  Dateien aus `~/.local/share/orangedeck/qml/`, das Plugin-Verzeichnis, die
   Quickshell-App und ein Installationsskript, das die Symlinks setzt.
 - Fuer die DMS-Plugin-Registry gelten die Regeln aus [[dms-plugin-entwicklung]]
   (eigenes oeffentliches Repo, Screenshot ist Pflicht, `id` in camelCase).

@@ -6,7 +6,7 @@ set -euo pipefail
 R="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Aus dem Verzeichnis gelesen, nicht aufgezaehlt -- siehe Kommentar in
-# daemon/btcfeed-dashtab: eine fest verdrahtete Liste vergisst man.
+# daemon/orangedeck-dashtab: eine fest verdrahtete Liste vergisst man.
 QMLFILES="$(cd "$R/ui/qml" && command ls -1 *.qml *.js 2>/dev/null)"
 
 link() {  # link <ziel-im-repo> <ort-im-system>
@@ -20,43 +20,43 @@ link() {  # link <ziel-im-repo> <ort-im-system>
 
 # QML-Grafik: der eine Ort, auf den Plugin und Quickshell-App zeigen
 for f in $QMLFILES; do
-  link "$R/ui/qml/$f" "$HOME/.local/share/btcfeed/qml/$f"
+  link "$R/ui/qml/$f" "$HOME/.local/share/orangedeck/qml/$f"
 done
 
 # Daemon und Werkzeuge
-for f in btcfeed btcfeed-window btcfeed-dashtab; do
+for f in orangedeck orangedeck-window orangedeck-dashtab; do
   chmod +x "$R/daemon/$f"
   link "$R/daemon/$f" "$HOME/.local/bin/$f"
 done
 
 # DMS-Plugin
-P="$HOME/.config/DankMaterialShell/plugins/BitcoinFeed"
-for f in BitcoinFeedDaemon.qml BitcoinFeedDesktop.qml BitcoinFeedSettings.qml BitcoinFeedWidget.qml plugin.json; do
+P="$HOME/.config/DankMaterialShell/plugins/OrangeDeck"
+for f in OrangeDeckDaemon.qml OrangeDeckDesktop.qml OrangeDeckSettings.qml OrangeDeckWidget.qml plugin.json; do
   link "$R/shell/dms/$f" "$P/$f"
 done
 for f in DOKUMENTATION.md STAND.md ZIELBILD.md; do
   link "$R/docs/$f" "$P/$f"
 done
-# die QML-Dateien des Plugins zeigen weiter auf ~/.local/share/btcfeed/qml
+# die QML-Dateien des Plugins zeigen weiter auf ~/.local/share/orangedeck/qml
 for f in $QMLFILES; do
-  link "$HOME/.local/share/btcfeed/qml/$f" "$P/$f"
+  link "$HOME/.local/share/orangedeck/qml/$f" "$P/$f"
 done
 
 # Eigenes Quickshell-Fenster
-Q="$HOME/.config/quickshell/BitcoinFeedApp"
+Q="$HOME/.config/quickshell/OrangeDeckApp"
 link "$R/shell/quickshell/shell.qml" "$Q/shell.qml"
 for f in $QMLFILES; do
-  link "$HOME/.local/share/btcfeed/qml/$f" "$Q/$f"
+  link "$HOME/.local/share/orangedeck/qml/$f" "$Q/$f"
 done
 
 # --- Benutzerdienst ---------------------------------------------------------
-# Ohne ihn laeuft btcfeed als loser Prozess und stirbt mit der Sitzung.
-UNIT="$HOME/.config/systemd/user/btcfeed.service"
+# Ohne ihn laeuft orangedeck als loser Prozess und stirbt mit der Sitzung.
+UNIT="$HOME/.config/systemd/user/orangedeck.service"
 mkdir -p "$(dirname "$UNIT")"
 [ -L "$UNIT" ] && rm -f "$UNIT"
-ln -sf "$R/packaging/systemd/btcfeed.service" "$UNIT"
+ln -sf "$R/packaging/systemd/orangedeck.service" "$UNIT"
 systemctl --user daemon-reload
-systemctl --user enable btcfeed.service >/dev/null 2>&1 && echo "Dienst btcfeed eingerichtet"
+systemctl --user enable orangedeck.service >/dev/null 2>&1 && echo "Dienst orangedeck eingerichtet"
 
 echo "Verlinkt gegen $R"
 
@@ -68,8 +68,8 @@ echo "Verlinkt gegen $R"
 if [ -d "$R/build" ]; then
   echo "Eigenstaendige Anwendung neu bauen:  cmake --build $R/build"
 fi
-if flatpak info --user store._21rebel.btcfeed >/dev/null 2>&1; then
+if flatpak info --user store._21rebel.orangedeck >/dev/null 2>&1; then
   echo "Flatpak ist installiert und jetzt VERALTET. Neu bauen mit:"
   echo "  flatpak-builder --user --install --force-clean \\"
-  echo "      $R/build-flatpak $R/packaging/flatpak/store._21rebel.btcfeed.yml"
+  echo "      $R/build-flatpak $R/packaging/flatpak/store._21rebel.orangedeck.yml"
 fi

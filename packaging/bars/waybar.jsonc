@@ -1,14 +1,14 @@
 // Ausschnitt fuer ~/.config/waybar/config.jsonc
 //
-// In "modules-right" (oder -left/-center) den Namen "custom/btcfeed"
+// In "modules-right" (oder -left/-center) den Namen "custom/orangedeck"
 // aufnehmen, dann diesen Block danebenstellen.
 {
-  "custom/btcfeed": {
-    "exec": "~/.local/bin/btcfeed --waybar",
+  "custom/orangedeck": {
+    "exec": "~/.local/bin/orangedeck --waybar",
     "return-type": "json",
     "interval": 10,
     "tooltip": true,
     // Klick oeffnet das eigene Fenster
-    "on-click": "~/.local/bin/btcfeed-window"
+    "on-click": "~/.local/bin/orangedeck-window"
   }
 }

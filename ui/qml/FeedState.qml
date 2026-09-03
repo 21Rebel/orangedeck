@@ -1,4 +1,4 @@
-// Liest den von btcfeed gelieferten Zustand und meldet neue Transaktionen
+// Liest den von orangedeck gelieferten Zustand und meldet neue Transaktionen
 // sowie gefundene Bloecke als Signale weiter.
 //
 // Bewusst nur `import QtQuick`: diese Datei laeuft damit unveraendert in der
@@ -14,8 +14,8 @@
 //                       nachgemessen). Ueber HTTP gibt es diesen Sonderfall
 //                       nicht -- auf keinem Desktop und auch nicht auf Android.
 //   Process         ->  gehoert nicht hierher. Den Daemon starten in der
-//                       Shell BitcoinFeedDaemon.qml und beim eigenen Fenster
-//                       btcfeed-window; beide taten das ohnehin schon.
+//                       Shell OrangeDeckDaemon.qml und beim eigenen Fenster
+//                       orangedeck-window; beide taten das ohnehin schon.
 import QtQuick
 
 Item {

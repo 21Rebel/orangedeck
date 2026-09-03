@@ -12,8 +12,8 @@ PluginComponent {
     // es zwei Verwalter fuer einen Daemon. Der Rueckfall auf das Programm
     // greift, wenn die Unit nicht eingerichtet ist (tools/install-links.sh).
     property var feedCommand: ["sh", "-c",
-        "systemctl --user start btcfeed.service 2>/dev/null || exec \"$HOME/.local/bin/btcfeed\""]
-    property string statePath: (Quickshell.env("XDG_RUNTIME_DIR") || (Quickshell.env("HOME") + "/.local/state")) + "/btcfeed/state.json"
+        "systemctl --user start orangedeck.service 2>/dev/null || exec \"$HOME/.local/bin/orangedeck\""]
+    property string statePath: (Quickshell.env("XDG_RUNTIME_DIR") || (Quickshell.env("HOME") + "/.local/state")) + "/orangedeck/state.json"
 
     Process {
         id: feedProc
@@ -24,7 +24,7 @@ PluginComponent {
         stderr: StdioCollector {
             onStreamFinished: {
                 if (text.trim())
-                    console.log("btcfeed:", text.trim());
+                    console.log("orangedeck:", text.trim());
             }
         }
     }
@@ -37,7 +37,7 @@ PluginComponent {
         printErrors: false
     }
 
-    // Alle 10 s pruefen, ob der Zustand frisch ist. Die Dateisperre in btcfeed
+    // Alle 10 s pruefen, ob der Zustand frisch ist. Die Dateisperre in orangedeck
     // verhindert, dass mehrere Instanzen nebeneinander laufen.
     Timer {
         interval: 10000
@@ -58,12 +58,12 @@ PluginComponent {
     }
 
     IpcHandler {
-        target: "bitcoinFeed"
+        target: "orangedeck"
 
         function restart(): string {
             feedProc.running = false;
             feedProc.running = true;
-            return "btcfeed neu gestartet";
+            return "orangedeck neu gestartet";
         }
 
         function status(): string {

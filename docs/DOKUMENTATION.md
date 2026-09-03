@@ -1,4 +1,4 @@
-# Bitcoin Feed — Live-Mempool-Ansicht (Bitfeed-Nachbau)
+# OrangeDeck — Live-Mempool-Ansicht (Bitfeed-Nachbau)
 
 Nachbau der Ansicht von [bitfeed.live](https://bitfeed.live): der zuletzt
 gefundene Block in der Mitte, der Mempool als Halde unten, neue Transaktionen
@@ -8,19 +8,19 @@ fallen von oben hinein.
 
 | Teil | Ort | Zweck |
 |---|---|---|
-| Feed-Daemon | `~/.local/bin/btcfeed` | haengt am WebSocket von mempool.space, schreibt den Zustand |
-| Zustand | `$XDG_RUNTIME_DIR/btcfeed/state.json` | ~7 kB, alle 0,4 s neu geschrieben — **tmpfs**, nicht die SSD |
-| Sperre | `$XDG_RUNTIME_DIR/btcfeed/btcfeed.lock` | `flock`, es laeuft immer nur **eine** Instanz |
-| Grafik | `~/.local/share/btcfeed/qml/` | `FeedState`, `FeedCanvas`, `FeedPanel` — reines QtQuick |
-| Packung | `~/.local/share/btcfeed/qml/mondrian.js` | Portierung des Mondrian-Layouts aus bitfeed |
-| Farben | `~/.local/share/btcfeed/qml/colors.js` | HCL-Farbmodell aus bitfeed, nach sRGB gerechnet |
-| Blockdaten | `$XDG_RUNTIME_DIR/btcfeed/block.json` | Kacheln des letzten Blocks, ~10 kB, nur bei Blockwechsel |
-| DMS-Plugin | `~/.config/DankMaterialShell/plugins/BitcoinFeed/` | Leisten-Pille, Control-Center-Kachel, Desktop-Widget, Daemon |
-| Eigenes Fenster | `~/.config/quickshell/BitcoinFeedApp/` | eigenstaendige Quickshell-Konfiguration |
-| Fensterstarter | `~/.local/bin/btcfeed-window` | holt ein offenes Fenster nach vorn statt ein zweites zu oeffnen |
-| Dashboard-Tab | `~/.local/bin/btcfeed-dashtab` | legt die DMS-Ueberlagerung an, die den Tab einhaengt |
+| Feed-Daemon | `~/.local/bin/orangedeck` | haengt am WebSocket von mempool.space, schreibt den Zustand |
+| Zustand | `$XDG_RUNTIME_DIR/orangedeck/state.json` | ~7 kB, alle 0,4 s neu geschrieben — **tmpfs**, nicht die SSD |
+| Sperre | `$XDG_RUNTIME_DIR/orangedeck/orangedeck.lock` | `flock`, es laeuft immer nur **eine** Instanz |
+| Grafik | `~/.local/share/orangedeck/qml/` | `FeedState`, `FeedCanvas`, `FeedPanel` — reines QtQuick |
+| Packung | `~/.local/share/orangedeck/qml/mondrian.js` | Portierung des Mondrian-Layouts aus bitfeed |
+| Farben | `~/.local/share/orangedeck/qml/colors.js` | HCL-Farbmodell aus bitfeed, nach sRGB gerechnet |
+| Blockdaten | `$XDG_RUNTIME_DIR/orangedeck/block.json` | Kacheln des letzten Blocks, ~10 kB, nur bei Blockwechsel |
+| DMS-Plugin | `~/.config/DankMaterialShell/plugins/OrangeDeck/` | Leisten-Pille, Control-Center-Kachel, Desktop-Widget, Daemon |
+| Eigenes Fenster | `~/.config/quickshell/OrangeDeckApp/` | eigenstaendige Quickshell-Konfiguration |
+| Fensterstarter | `~/.local/bin/orangedeck-window` | holt ein offenes Fenster nach vorn statt ein zweites zu oeffnen |
+| Dashboard-Tab | `~/.local/bin/orangedeck-dashtab` | legt die DMS-Ueberlagerung an, die den Tab einhaengt |
 
-Die drei QML-Dateien liegen **einmal** unter `~/.local/share/btcfeed/qml/` und
+Die drei QML-Dateien liegen **einmal** unter `~/.local/share/orangedeck/qml/` und
 sind in Plugin- und App-Verzeichnis hineinsymlinkt. Eine Aenderung wirkt damit
 ueberall.
 
@@ -30,15 +30,15 @@ ueberall.
   Popout, Rechtsklick oeffnet direkt das eigene Fenster.
 - **Popout**: das Symbol oben rechts (`open_in_new`) oeffnet die grosse Ansicht.
 - **Control-Center**: Kachel "Bitcoin", aufklappbar.
-- **Desktop-Widget**: Instanz `bitcoinFeed-1`. Verschieben/Groesse aendern im
+- **Desktop-Widget**: Instanz `orangedeck-1`. Verschieben/Groesse aendern im
   Bearbeitungsmodus (Knopf unten rechts am Bildschirm).
-  Ein-/Ausschalten: `dms ipc call desktopWidget toggleEnabled bitcoinFeed-1`
-- **Eigenes Fenster**: `btcfeed-window`, oder ueber den Starter "Bitcoin Feed".
+  Ein-/Ausschalten: `dms ipc call desktopWidget toggleEnabled orangedeck-1`
+- **Eigenes Fenster**: `orangedeck-window`, oder ueber den Starter "OrangeDeck".
   Tasten im Fenster: `c` Farbe (Alter/Gebuehr), `s` Groesse (Wert/vBytes),
   `i` Blockangaben, `l` Legende. Die Auswahl steht in
-  `~/.local/state/btcfeed/view.json`.
+  `~/.local/state/orangedeck/view.json`.
 - **Einstellungen** der DMS-Oberflaechen: Einstellungen -> Plugins ->
-  Bitcoin Feed (Farbe, Groesse, Blockangaben, Legende, Deckkraft,
+  OrangeDeck (Farbe, Groesse, Blockangaben, Legende, Deckkraft,
   Kachelgroesse).
 
 ## Die Mechanik, so wie im Original
@@ -125,7 +125,7 @@ Kein eigener Node noetig — alles kommt vom oeffentlichen WebSocket
 Bewusst **nicht** abonniert: `track-mempool`. Das liefert vollstaendige
 Transaktionsobjekte und allein ~250 kB/s.
 
-Faellt der WebSocket aus, schaltet `btcfeed` selbsttaetig auf REST-Polling um
+Faellt der WebSocket aus, schaltet `orangedeck` selbsttaetig auf REST-Polling um
 (gaenger, aber die Ansicht lebt weiter) und versucht den WebSocket mit
 wachsender Wartezeit erneut.
 
@@ -135,24 +135,24 @@ wachsender Wartezeit erneut.
    sein — DMS setzt Hintergrund und Groesse selbst. Mit eigener Breite ueberlappt
    sie die Nachbarwidgets. Richtig ist ein blosses `Row { ... }`.
 2. **Widget-ID**: In `barConfigs[].rightWidgets` heisst der Eintrag schlicht
-   `bitcoinFeed`, in `controlCenterWidgets` dagegen `plugin_bitcoinFeed`.
+   `orangedeck`, in `controlCenterWidgets` dagegen `plugin_orangedeck`.
    Zwei verschiedene Konventionen im selben Programm.
 3. **Dashboard-Tab braucht einen Umweg**: `Modules/DankDash/DankDashPopout.qml`
    hat die fuenf Tabs fest verdrahtet, es gibt dort keinen Plugin-Haken. Statt
    in `/usr/share` zu schreiben (Root noetig, beim Paketupdate weg) legt
-   `btcfeed-dashtab` unter `~/.config/quickshell/dms-custom` eine
+   `orangedeck-dashtab` unter `~/.config/quickshell/dms-custom` eine
    **Ueberlagerung aus Symlinks** an; nur drei Dateien sind echte Kopien
    (`SettingsData.qml`, `DankDashPopout.qml`, `DMSShellIPC.qml`). Gestartet wird
    ueber ein systemd-Drop-in mit `dms run -c <pfad>`. DMS-Updates fliessen durch
    die Symlinks weiter; aendern sich die drei gepatchten Dateien, einmal
-   `btcfeed-dashtab` aufrufen (`--check` sagt, ob noetig, `--remove` macht es
+   `orangedeck-dashtab` aufrufen (`--check` sagt, ob noetig, `--remove` macht es
    rueckgaengig).
 4. **Desktop-Widget** braucht einen Eintrag in `desktopWidgetInstances`
    (`{id, widgetType, enabled, config}`) — die IPC-Befehle `desktopWidget enable`
    arbeiten nur auf bereits vorhandenen Instanzen. Die Standardgroesse kommt aus
    `defaultWidth`/`defaultHeight` am Widget selbst.
 5. **`qs -p <dir>` startet beliebig viele Instanzen** desselben Fensters. Daher
-   der Umweg ueber `btcfeed-window`.
+   der Umweg ueber `orangedeck-window`.
 6. **Fuellstand**: `MondrianLayout.height()` zaehlt *angelegte* Zeilen, nicht
    belegte. Einmal angelegte Zeilen bleiben stehen, auch wenn alles daraus
    entfernt wurde. Fuer die Regelung der Haldenhoehe braucht es
@@ -237,7 +237,7 @@ wachsender Wartezeit erneut.
    Unter `~/.local/state` waeren das rund 3 GB pro Tag auf die SSD, deshalb
    liegt er in `$XDG_RUNTIME_DIR` (tmpfs). Nur `view.json` -- die
    Tasteneinstellungen des eigenen Fensters -- gehoert dauerhaft nach
-   `~/.local/state/btcfeed/`.
+   `~/.local/state/orangedeck/`.
 
 ## Das Foerderband
 
@@ -293,9 +293,9 @@ Jede Kachel der Halde hat einen Datensatz -- es gibt keine Platzhalter mehr
 ## Pruefen
 
 ```
-btcfeed --print                     # Zustand einmalig per REST holen und zeigen
-dms ipc call bitcoinFeed status     # was das Plugin gerade liest
-dms ipc call bitcoinFeed restart    # Feed neu starten
+orangedeck --print                     # Zustand einmalig per REST holen und zeigen
+dms ipc call orangedeck status     # was das Plugin gerade liest
+dms ipc call orangedeck restart    # Feed neu starten
 ```
 
 
@@ -416,14 +416,14 @@ sich das ueber `maskEnabled` am MultiEffect.
 Die geteilten Bausteine liegen einmal unter `ui/qml/`, werden aber an vier
 Stellen gebraucht:
 
-    ~/.local/share/btcfeed/qml/                          (der eine echte Ort)
-    ~/.config/DankMaterialShell/plugins/BitcoinFeed/     (Plugin)
-    ~/.config/quickshell/BitcoinFeedApp/                 (eigenes Fenster)
+    ~/.local/share/orangedeck/qml/                          (der eine echte Ort)
+    ~/.config/DankMaterialShell/plugins/OrangeDeck/     (Plugin)
+    ~/.config/quickshell/OrangeDeckApp/                 (eigenes Fenster)
     ~/.config/quickshell/dms-custom/Modules/DankDash/    (Dashboard-Tab)
     app/CMakeLists.txt                                   (eigenstaendige App)
 
 Am 01.09.2026 kam `FrostedPanel.qml` dazu und landete ueberall ausser im
-DankDash-Verzeichnis -- dessen Liste steht in `daemon/btcfeed-dashtab`, nicht in
+DankDash-Verzeichnis -- dessen Liste steht in `daemon/orangedeck-dashtab`, nicht in
 `tools/install-links.sh`. Folge: `FeedPanel` liess sich dort nicht mehr laden
 ("FrostedPanel is not a type"), der Bitcoin-Tab scheiterte, und **das ganze
 Dashboard liess sich nicht mehr oeffnen**. Im Journal stand der Grund
@@ -431,14 +431,14 @@ sauber drin -- die laufende Instanz meldete aber nichts mehr, weil der Fehler
 beim Laden des Tabs auftrat, nicht im Betrieb.
 
 **Behoben, indem beide Skripte die Liste nicht mehr fuehren**: `install-links.sh`
-und `btcfeed-dashtab` lesen jetzt aus `ui/qml/`, was dort liegt. Einzig
+und `orangedeck-dashtab` lesen jetzt aus `ui/qml/`, was dort liegt. Einzig
 `app/CMakeLists.txt` braucht den Eintrag weiterhin von Hand -- CMake muss die
 Dateien zur Bauzeit kennen.
 
 Nach einer neuen Datei also:
 
     tools/install-links.sh          # verteilt alles
-    python3 daemon/btcfeed-dashtab  # baut die Ueberlagerung neu
+    python3 daemon/orangedeck-dashtab  # baut die Ueberlagerung neu
     systemctl --user restart dms
 
 
@@ -479,7 +479,7 @@ Original, das in WebGL ohnehin mit gebrochenen Groessen zeichnet. Ueberall
 sonst bleibt die Grafik bewusst hart.
 
 Wer im Dashboard echte Einzelquadrate will, muss dem Tab mehr Hoehe geben:
-`implicitHeight` in `BitcoinTab.qml` (Vorlage in `daemon/btcfeed-dashtab`)
+`implicitHeight` in `BitcoinTab.qml` (Vorlage in `daemon/orangedeck-dashtab`)
 muesste von 410 auf rund 545 steigen, damit `Hoehe / 2,5` ueber 210 px kommt.
 
 
@@ -509,31 +509,31 @@ bei Rasterweite 6:
 
 ## Der Daemon als Benutzerdienst -- zwei Fallen dabei
 
-`packaging/systemd/btcfeed.service`, eingerichtet von `tools/install-links.sh`.
-Vorher lief btcfeed als loser Prozess: er starb mit der Sitzung, und nach einem
+`packaging/systemd/orangedeck.service`, eingerichtet von `tools/install-links.sh`.
+Vorher lief orangedeck als loser Prozess: er starb mit der Sitzung, und nach einem
 Absturz belebte ihn nur zufaellig der Waechter im DMS-Plugin.
 
 **(1) `ProtectSystem=strict` macht auch `$XDG_RUNTIME_DIR` schreibgeschuetzt.**
-btcfeed scheiterte schon an seiner Sperrdatei:
+orangedeck scheiterte schon an seiner Sperrdatei:
 
-    OSError: [Errno 30] Read-only file system: '/run/user/1000/btcfeed/btcfeed.lock'
+    OSError: [Errno 30] Read-only file system: '/run/user/1000/orangedeck/orangedeck.lock'
 
-Richtig ist `RuntimeDirectory=btcfeed` -- systemd legt genau das Verzeichnis an,
-das btcfeed ohnehin benutzt, und macht es beschreibbar.
+Richtig ist `RuntimeDirectory=orangedeck` -- systemd legt genau das Verzeichnis an,
+das orangedeck ohnehin benutzt, und macht es beschreibbar.
 `RuntimeDirectoryPreserve=restart` erhaelt es ueber einen Neustart hinweg, damit
 `block.json` (rund 460 kB) nicht jedes Mal neu geholt wird.
 
 **(2) `Restart=always` plus ein zweiter Verwalter ergibt eine Endlosschleife.**
-btcfeed beendet sich **mit 0**, wenn schon eine Instanz die Sperre haelt
-("btcfeed laeuft bereits"). Der Waechter im DMS-Plugin hatte parallel eine
+orangedeck beendet sich **mit 0**, wenn schon eine Instanz die Sperre haelt
+("orangedeck laeuft bereits"). Der Waechter im DMS-Plugin hatte parallel eine
 eigene Instanz gestartet; der Dienst startete, fand die Sperre, beendete sich
 sauber -- und systemd startete ihn wieder. 16 Runden in einer Minute.
 
 Behoben an beiden Enden:
 - `Restart=on-failure` statt `always`
 - **Die Waechter starten jetzt den Dienst statt eines eigenen Prozesses.**
-  `BitcoinFeedDaemon.qml` und `btcfeed-window` rufen
-  `systemctl --user start btcfeed.service` und fallen nur dann auf das Programm
+  `OrangeDeckDaemon.qml` und `orangedeck-window` rufen
+  `systemctl --user start orangedeck.service` und fallen nur dann auf das Programm
   zurueck, wenn die Unit nicht eingerichtet ist.
 
 Gegengeprueft: nach einem `kill -9` auf den Hauptprozess kam der Dienst
@@ -566,7 +566,7 @@ Fehler.
 
 ### Datenseite
 
-`btcfeed` holt die langsamen Kennzahlen **in einem eigenen Faden**
+`orangedeck` holt die langsamen Kennzahlen **in einem eigenen Faden**
 (`run_extras`): die WebSocket-Schleife blockiert auf `ws.recv()`, dort haetten
 HTTP-Abfragen den Feed bis zu 15 Sekunden angehalten.
 
@@ -575,13 +575,13 @@ HTTP-Abfragen den Feed bis zu 15 Sekunden angehalten.
                                    (/3d liefert nur drei, zu wenig fuer eine Kurve)
     <bitaxe>/api/system/info       alle 5 Sekunden, nur wenn eingetragen
 
-Die Miner-Adresse steht in `~/.config/btcfeed/sources.json`:
+Die Miner-Adresse steht in `~/.config/orangedeck/sources.json`:
 
     { "bitaxe": "http://192.168.1.42" }
 
-`BTCFEED_BITAXE` in der Umgebung schlaegt die Datei. Ohne Eintrag passiert
+`ORANGEDECK_BITAXE` in der Umgebung schlaegt die Datei. Ohne Eintrag passiert
 nichts -- die Quelle ist damit abschaltbar wie alles andere. Die Datei ist
-bewusst getrennt von `btcfeed.conf`, die den QSettings der Anwendung gehoert.
+bewusst getrennt von `orangedeck.conf`, die den QSettings der Anwendung gehoert.
 
 ### qmllint: `pragma ComponentBehavior: Bound`
 
@@ -611,8 +611,8 @@ H/s -- die Ansicht muss nichts ueber das Geraet wissen.
 Die Geraete haengen ueblicherweise im WLAN und bekommen ihre Adresse per DHCP;
 ein fest eingetragener Wert haelt selten lange. Deshalb:
 
-    btcfeed --discover-miners           auflisten
-    btcfeed --discover-miners --write   in sources.json eintragen
+    orangedeck --discover-miners           auflisten
+    orangedeck --discover-miners --write   in sources.json eintragen
 
 Der Suchlauf geht ueber die eigenen /24-Netze und probiert je Adresse HTTP :80
 und TCP :4028. Virtuelle Bruecken (`virbr`, `docker`, `br-`, `veth`, `tun`,
@@ -632,7 +632,7 @@ Bitaxe Gamma 601, AxeOS v2.14.2, im Heimnetz erreichbar:
     Netzschwierigkeit laut Geraet 125.807.076.547.197
       -- deckt sich exakt mit dem Wert von mempool.space
 
-`btcfeed --discover-miners` fand es von selbst im WLAN.
+`orangedeck --discover-miners` fand es von selbst im WLAN.
 
 Zwei Dinge dabei gelernt:
 
@@ -748,7 +748,7 @@ Dashboard-Tab ist dafuer kein Platz, dort bleiben die Kennzahlen.
 `ViewTabs.qml` ist der Umschalter zwischen Feed, BlockClock und Miner --
 bewusst ein eigenes Bauteil, weil ihn **beide** Oberflaechen benutzen: das
 eigene Fenster (`app/qml/Main.qml`) und der Dashboard-Tab (Vorlage in
-`daemon/btcfeed-dashtab`). Nur `import QtQuick`, laeuft also auch unter
+`daemon/orangedeck-dashtab`). Nur `import QtQuick`, laeuft also auch unter
 Android. Die Beruehrungsflaeche ist hoeher als die Schrift -- mit dem Finger
 trifft man sonst schlecht.
 
@@ -1841,12 +1841,12 @@ grau statt weiss. Im Tooltip steht es zusaetzlich in Worten.
 
 ### Bedienung
 
-    btcfeed --watch-add <xpub|ypub|zpub> [Name]
-    btcfeed --watch-list
-    btcfeed --watch-remove <Nummer|Name>
-    systemctl --user restart btcfeed
+    orangedeck --watch-add <xpub|ypub|zpub> [Name]
+    orangedeck --watch-list
+    orangedeck --watch-remove <Nummer|Name>
+    systemctl --user restart orangedeck
 
-Der Eintrag landet in `~/.config/btcfeed/sources.json`, die Datei wird dabei
+Der Eintrag landet in `~/.config/orangedeck/sources.json`, die Datei wird dabei
 auf `0600` gesetzt. Die Ansicht nennt diese Befehle selbst, solange nichts
 eingetragen ist.
 
@@ -1968,7 +1968,7 @@ die der Daemon bisher nicht holt -- `/api/v1/historical-price` waere die
 Quelle. Ebenso die **freie Waehrungswahl**: geliefert werden zurzeit nur Euro
 und Dollar. Und die **Wahl der Datenquelle** je Ansicht ist noch nicht
 eingebaut; umgestellt wird bis auf Weiteres ueber `host` in
-`~/.config/btcfeed/sources.json`, was den ganzen Feed umzieht.
+`~/.config/orangedeck/sources.json`, was den ganzen Feed umzieht.
 
 
 ## Die Einstellungen, ausgebaut (02.09.2026, zweiter Durchgang)

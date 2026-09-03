@@ -1,19 +1,19 @@
-# btcfeed als Benutzerdienst. Vorher lief er als loser Prozess: er starb mit
+# orangedeck als Benutzerdienst. Vorher lief er als loser Prozess: er starb mit
 # der Sitzung, und nach einem Absturz belebte ihn nur zufaellig der Waechter
 # im DMS-Plugin wieder.
 #
 # Einrichten uebernimmt tools/install-links.sh.
 
 [Unit]
-Description=btcfeed -- Live-Ansicht des Bitcoin-Mempools
-Documentation=file:%h/Schreibtisch/btcfeed/README.md
+Description=orangedeck -- Live-Ansicht des Bitcoin-Mempools
+Documentation=file:%h/Schreibtisch/orangedeck/README.md
 After=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=%h/.local/bin/btcfeed
-# **Nicht** `always`. btcfeed beendet sich mit 0, wenn schon eine Instanz die
-# Sperre haelt ("btcfeed laeuft bereits") -- mit `always` wuerde systemd das
+ExecStart=%h/.local/bin/orangedeck
+# **Nicht** `always`. orangedeck beendet sich mit 0, wenn schon eine Instanz die
+# Sperre haelt ("orangedeck laeuft bereits") -- mit `always` wuerde systemd das
 # endlos wiederholen. Genau so am 01.09.2026 in eine Schleife von 16 Neustarts
 # gelaufen, weil der Waechter im DMS-Plugin parallel eine eigene Instanz
 # gestartet hatte.
@@ -31,14 +31,14 @@ PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=read-only
 # ProtectSystem=strict macht das ganze Dateisystem schreibgeschuetzt -- auch
-# $XDG_RUNTIME_DIR. Ohne die naechsten beiden Zeilen scheitert btcfeed schon an
-# seiner Sperrdatei ("Read-only file system: /run/user/1000/btcfeed.lock").
-# RuntimeDirectory legt genau das Verzeichnis an, das btcfeed ohnehin benutzt,
+# $XDG_RUNTIME_DIR. Ohne die naechsten beiden Zeilen scheitert orangedeck schon an
+# seiner Sperrdatei ("Read-only file system: /run/user/1000/orangedeck.lock").
+# RuntimeDirectory legt genau das Verzeichnis an, das orangedeck ohnehin benutzt,
 # und macht es beschreibbar; 'restart' erhaelt es ueber einen Neustart hinweg,
 # damit block.json nicht jedes Mal neu geholt werden muss.
-RuntimeDirectory=btcfeed
+RuntimeDirectory=orangedeck
 RuntimeDirectoryPreserve=restart
-# Faellt XDG_RUNTIME_DIR ganz aus, weicht btcfeed hierhin aus
+# Faellt XDG_RUNTIME_DIR ganz aus, weicht orangedeck hierhin aus
 ReadWritePaths=%h/.local/state
 ProtectKernelTunables=yes
 ProtectKernelModules=yes

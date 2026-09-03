@@ -13,7 +13,7 @@ import qs.Modules.Plugins
 // DMS legt jede Desktop-Widget-Instanz getrennt ab. Wer den Feed dreimal aufs
 // Desktop legt, kann jedem Fenster eine andere Ansicht geben.
 PluginSettings {
-    pluginId: "bitcoinFeed"
+    pluginId: "orangedeck"
 
     SelectionSetting {
         settingKey: "widgetView"

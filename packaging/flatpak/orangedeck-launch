@@ -4,12 +4,12 @@
 # Im Flatpak teilt sich die Anwendung das Netzwerk des Rechners (--share=network),
 # also ist 127.0.0.1 dieselbe Schnittstelle wie draussen. Laeuft der Daemon
 # schon als Benutzerdienst, wird er mitbenutzt -- sonst startet hier einer im
-# Sandkasten. Zwei Instanzen kann es nicht geben: btcfeed haelt eine Sperre und
+# Sandkasten. Zwei Instanzen kann es nicht geben: orangedeck haelt eine Sperre und
 # beendet sich mit 0, wenn er belegt ist.
 set -e
 
 if ! curl -s -m 2 -o /dev/null http://127.0.0.1:21021/health; then
-    /app/bin/btcfeed >/dev/null 2>&1 &
+    /app/bin/orangedeck >/dev/null 2>&1 &
     # kurz warten, sonst zeigt die erste Ansicht "keine Verbindung"
     i=0
     while [ $i -lt 20 ]; do
@@ -19,4 +19,4 @@ if ! curl -s -m 2 -o /dev/null http://127.0.0.1:21021/health; then
     done
 fi
 
-exec /app/bin/btcfeed-app "$@"
+exec /app/bin/orangedeck-app "$@"

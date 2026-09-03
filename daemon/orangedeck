@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""btcfeed -- Live-Bitcoin-Mempool-Feed fuer die DMS-Ansicht.
+"""orangedeck -- Live-Bitcoin-Mempool-Feed fuer die DMS-Ansicht.
 
 Haengt sich an den WebSocket von mempool.space und schreibt einen kompakten
-Zustand nach ~/.local/state/btcfeed/state.json. Kein eigener Node noetig.
+Zustand nach ~/.local/state/orangedeck/state.json. Kein eigener Node noetig.
 Faellt automatisch auf REST-Polling zurueck, wenn der WebSocket streikt.
 
-  btcfeed            Daemon (Standard, nur eine Instanz gleichzeitig)
-  btcfeed --once     Einmal Zustand holen und beenden (zum Testen)
-  btcfeed --print    Zustand ausgeben statt ihn zu schreiben
+  orangedeck            Daemon (Standard, nur eine Instanz gleichzeitig)
+  orangedeck --once     Einmal Zustand holen und beenden (zum Testen)
+  orangedeck --print    Zustand ausgeben statt ihn zu schreiben
 
 Fuer vorhandene Leisten, jeweils einmalig und ohne eigenen Feed -- sie fragen
 den laufenden Dienst ab:
 
-  btcfeed --waybar   JSON fuer das custom-Modul von Waybar
-  btcfeed --polybar  eine Zeile fuer Polybar, i3blocks, yambar
-  btcfeed --genmon   XML fuer das Genmon-Modul von XFCE
+  orangedeck --waybar   JSON fuer das custom-Modul von Waybar
+  orangedeck --polybar  eine Zeile fuer Polybar, i3blocks, yambar
+  orangedeck --genmon   XML fuer das Genmon-Modul von XFCE
 
 Die Oberflaeche fragt Einzelheiten ueber den Daemon ab, nicht selbst nach
 aussen:  /lookup/<art>/<wert>  mit art aus tx, txstatus, outspends, block,
@@ -23,12 +23,12 @@ blocktxids, blockheight, address, addresstxs.
 Miner im eigenen Netz suchen (die Geraete haengen meist im WLAN und bekommen
 ihre Adresse per DHCP):
 
-  btcfeed --discover-miners           gefundene Geraete auflisten
-  btcfeed --discover-miners --write   sie in sources.json eintragen
+  orangedeck --discover-miners           gefundene Geraete auflisten
+  orangedeck --discover-miners --write   sie in sources.json eintragen
 
 Zusaetzlich zu state.json bietet der Daemon die Daten unter
 http://127.0.0.1:21021/state, /block und /health an -- nur lesend und nur
-lokal. BTCFEED_ADDR und BTCFEED_PORT aendern das, siehe Kommentar dort.
+lokal. ORANGEDECK_ADDR und ORANGEDECK_PORT aendern das, siehe Kommentar dort.
 """
 import base64
 import fcntl
@@ -73,10 +73,10 @@ apply_host()
 # Der Zustand wird mehrmals pro Sekunde neu geschrieben und muss einen Neustart
 # nicht ueberleben -- er gehoert deshalb ins tmpfs, nicht auf die SSD.
 STATE_DIR = os.path.join(os.environ.get("XDG_RUNTIME_DIR")
-                         or os.path.expanduser("~/.local/state"), "btcfeed")
+                         or os.path.expanduser("~/.local/state"), "orangedeck")
 STATE_FILE = os.path.join(STATE_DIR, "state.json")
 BLOCK_FILE = os.path.join(STATE_DIR, "block.json")
-LOCK_FILE = os.path.join(STATE_DIR, "btcfeed.lock")
+LOCK_FILE = os.path.join(STATE_DIR, "orangedeck.lock")
 
 WRITE_INTERVAL = 0.4      # Sekunden zwischen zwei Schreibvorgaengen
 RECENT_KEEP = 120         # wie viele frische TX im Zustand liegen bleiben
@@ -109,15 +109,15 @@ FEE_BUCKETS = [0.5, 1, 2, 3, 5, 8, 15, 30, 80]
 # und unter Android gleichermassen. Die Dateien werden weiter geschrieben.
 #
 # **Standard ist 127.0.0.1.** Die Daten bleiben auf dem Geraet des Benutzers;
-# nichts wird nach aussen angeboten, solange BTCFEED_ADDR nicht ausdruecklich
+# nichts wird nach aussen angeboten, solange ORANGEDECK_ADDR nicht ausdruecklich
 # geaendert wird. Fuer ein Tablet im eigenen Netz ist das eine bewusste
 # Entscheidung, kein Standardverhalten.
-SERVE_ADDR = os.environ.get("BTCFEED_ADDR", "127.0.0.1")
-SERVE_PORT = int(os.environ.get("BTCFEED_PORT", "21021"))
+SERVE_ADDR = os.environ.get("ORANGEDECK_ADDR", "127.0.0.1")
+SERVE_PORT = int(os.environ.get("ORANGEDECK_PORT", "21021"))
 
 # Zusaetzliche Quellen. Jede ist einzeln abschaltbar, indem man sie weglaesst.
 #
-#   ~/.config/btcfeed/sources.json
+#   ~/.config/orangedeck/sources.json
 #   {
 #     "miners": [
 #       { "type": "axeos",   "url": "http://192.168.100.42" },
@@ -128,15 +128,15 @@ SERVE_PORT = int(os.environ.get("BTCFEED_PORT", "21021"))
 # `"bitaxe": "http://..."` wird als Kurzform weiter gelesen.
 #
 # Die Adressen stammen ueblicherweise aus DHCP und aendern sich. Deshalb gibt
-# es `btcfeed --discover-miners`, das das eigene Netz absucht. Der Daemon sucht
+# es `orangedeck --discover-miners`, das das eigene Netz absucht. Der Daemon sucht
 # **nicht** von selbst -- ein Suchlauf ueber das ganze Netz gehoert nicht in
 # einen Dienst, der im Hintergrund laeuft.
 #
-# Die Datei ist bewusst getrennt von btcfeed.conf, die den QSettings der
+# Die Datei ist bewusst getrennt von orangedeck.conf, die den QSettings der
 # Anwendung gehoert.
 SOURCES_FILE = os.path.join(
     os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"),
-    "btcfeed", "sources.json")
+    "orangedeck", "sources.json")
 
 
 def load_sources():
@@ -149,8 +149,8 @@ def load_sources():
 
     miners = list(cfg.get("miners") or [])
     # Kurzform und Umgebungsvariable einreihen
-    for short in (cfg.get("bitaxe"), os.environ.get("BTCFEED_MINER"),
-                  os.environ.get("BTCFEED_BITAXE")):
+    for short in (cfg.get("bitaxe"), os.environ.get("ORANGEDECK_MINER"),
+                  os.environ.get("ORANGEDECK_BITAXE")):
         if short:
             miners.append({"type": "axeos", "url": short})
     # Doppelte entfernen, Reihenfolge erhalten
@@ -177,8 +177,8 @@ def load_sources():
 SOURCES = load_sources()
 # {"host": "mempool.eigenes.netz", "scheme": "http"} schaltet alles um --
 # Feed, Kennzahlen und Explorer holen dann von dort.
-apply_host(SOURCES.get("host") or os.environ.get("BTCFEED_HOST"),
-           SOURCES.get("scheme") or os.environ.get("BTCFEED_SCHEME"))
+apply_host(SOURCES.get("host") or os.environ.get("ORANGEDECK_HOST"),
+           SOURCES.get("scheme") or os.environ.get("ORANGEDECK_SCHEME"))
 
 # Wie oft die langsamen Kennzahlen geholt werden. Schwierigkeit und Hashrate
 # aendern sich im Stunden- bis Tagestakt -- alle fuenf Minuten ist reichlich.
@@ -271,7 +271,7 @@ def tx_kind(flags, coinbase=False):
     if f & FLAG_BATCH:
         return 2
     return 0
-UA = "btcfeed/1.0 (+https://mempool.space)"
+UA = "orangedeck/1.0 (+https://mempool.space)"
 
 
 # --------------------------------------------------------------------------
@@ -1200,7 +1200,7 @@ def serve_local(feed):
         return None
     srv.daemon_threads = True
     if SERVE_ADDR not in ("127.0.0.1", "::1", "localhost"):
-        sys.stderr.write("WARNUNG: btcfeed ist auf %s erreichbar, nicht nur lokal.\n"
+        sys.stderr.write("WARNUNG: orangedeck ist auf %s erreichbar, nicht nur lokal.\n"
                          % SERVE_ADDR)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv
@@ -1635,7 +1635,7 @@ def cmd_watch(argv):
     if "--watch-add" in argv:
         rest = argv[argv.index("--watch-add") + 1:]
         if not rest:
-            print("Aufruf: btcfeed --watch-add <xpub|ypub|zpub> [Name]",
+            print("Aufruf: orangedeck --watch-add <xpub|ypub|zpub> [Name]",
                   file=sys.stderr)
             return 2
         xpub = rest[0].strip()
@@ -1663,13 +1663,13 @@ def cmd_watch(argv):
         _schreibe_sources(cfg)
         print("Eingetragen (%s, Fingerabdruck %s). Erste Empfangsadresse:\n  %s"
               % (xp.kind, xp.fingerprint, xp.address(0, 0)))
-        print("\nUebernehmen mit:\n  systemctl --user restart btcfeed")
+        print("\nUebernehmen mit:\n  systemctl --user restart orangedeck")
         return 0
 
     if "--watch-remove" in argv:
         rest = argv[argv.index("--watch-remove") + 1:]
         if not rest:
-            print("Aufruf: btcfeed --watch-remove <Nummer|Name>", file=sys.stderr)
+            print("Aufruf: orangedeck --watch-remove <Nummer|Name>", file=sys.stderr)
             return 2
         wahl = rest[0]
         vorher = len(liste)
@@ -1683,7 +1683,7 @@ def cmd_watch(argv):
             return 1
         cfg["watch"] = liste
         _schreibe_sources(cfg)
-        print("Entfernt. Uebernehmen mit:\n  systemctl --user restart btcfeed")
+        print("Entfernt. Uebernehmen mit:\n  systemctl --user restart orangedeck")
         return 0
     return 2
 
@@ -1726,7 +1726,7 @@ def cmd_discover(write=False):
         with open(SOURCES_FILE, "w") as f:
             json.dump(cfg, f, indent=2)
         print("\nIn %s eingetragen. Uebernehmen mit:\n"
-              "  systemctl --user restart btcfeed" % SOURCES_FILE, file=sys.stderr)
+              "  systemctl --user restart orangedeck" % SOURCES_FILE, file=sys.stderr)
     else:
         print("\nMit --write in %s eintragen." % SOURCES_FILE, file=sys.stderr)
     return 0
@@ -1760,8 +1760,8 @@ def bar_fields():
     try:
         d = local_state()
     except Exception:
-        return ("\u20bf --", "btcfeed läuft nicht.\n"
-                "Starten mit:  systemctl --user start btcfeed", "offline")
+        return ("\u20bf --", "orangedeck läuft nicht.\n"
+                "Starten mit:  systemctl --user start orangedeck", "offline")
 
     tip = d.get("tip") or {}
     fees = d.get("fees") or {}
@@ -2302,7 +2302,7 @@ def main():
 
     lock = acquire_lock()
     if lock is None:
-        print("btcfeed laeuft bereits -- diese Instanz beendet sich.", file=sys.stderr)
+        print("orangedeck laeuft bereits -- diese Instanz beendet sich.", file=sys.stderr)
         return 0
 
     _feed_ref[0] = feed

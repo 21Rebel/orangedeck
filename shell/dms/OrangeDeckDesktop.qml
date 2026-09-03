@@ -18,7 +18,7 @@ Item {
     id: root
 
     property var pluginService: null
-    property string pluginId: "bitcoinFeed"
+    property string pluginId: "orangedeck"
     // Von DMS gesetzt, wenn es eine Instanz ist
     property string instanceId: ""
     property var instanceData: null

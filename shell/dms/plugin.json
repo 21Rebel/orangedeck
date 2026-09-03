@@ -1,6 +1,6 @@
 {
-    "id": "bitcoinFeed",
-    "name": "Bitcoin Feed",
+    "id": "orangedeck",
+    "name": "OrangeDeck",
     "description": "Live-Ansicht des Bitcoin-Mempools: gefundener Block in der Mitte, Mempool als Halde unten, neue Transaktionen fallen von oben hinein. Daten von mempool.space, kein eigener Node noetig.",
     "version": "1.0.0",
     "author": "satoshoe",
@@ -8,11 +8,11 @@
     "capabilities": ["daemon", "dankbar-widget", "desktop-widget"],
     "icon": "currency_bitcoin",
     "components": {
-        "daemon": "./BitcoinFeedDaemon.qml",
-        "widget": "./BitcoinFeedWidget.qml",
-        "desktop": "./BitcoinFeedDesktop.qml"
+        "daemon": "./OrangeDeckDaemon.qml",
+        "widget": "./OrangeDeckWidget.qml",
+        "desktop": "./OrangeDeckDesktop.qml"
     },
-    "settings": "./BitcoinFeedSettings.qml",
+    "settings": "./OrangeDeckSettings.qml",
     "requires_dms": ">=1.5.0",
     "permissions": ["settings_read", "settings_write"]
 }

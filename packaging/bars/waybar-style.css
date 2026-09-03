@@ -1,10 +1,10 @@
 /* Ausschnitt fuer ~/.config/waybar/style.css */
-#custom-btcfeed {
+#custom-orangedeck {
   padding: 0 10px;
   color: #f7931a;              /* das Orange von Bitcoin */
 }
 
-/* btcfeed antwortet nicht oder der Zustand ist aelter als 30 s */
-#custom-btcfeed.offline {
+/* orangedeck antwortet nicht oder der Zustand ist aelter als 30 s */
+#custom-orangedeck.offline {
   color: #6b6b76;
 }

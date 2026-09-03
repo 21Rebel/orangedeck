@@ -20,7 +20,7 @@ Window {
     minimumWidth: 260
     minimumHeight: 160
     visible: true
-    title: qsTr("Bitcoin Feed")
+    title: qsTr("OrangeDeck")
 
     // Deckkraft macht das Fenster selbst; ob geblurrt wird, entscheidet der
     // Compositor. Kacheln und Schrift bleiben deckend.
@@ -108,7 +108,7 @@ Window {
     property string forcedSource: ""
 
     // Bleibt auf dem Geraet: QSettings schreibt nach
-    // ~/.config/btcfeed/btcfeed.conf (Linux) bzw. in den App-Speicher (Android).
+    // ~/.config/orangedeck/orangedeck.conf (Linux) bzw. in den App-Speicher (Android).
     Settings {
         id: prefs
         category: "view"

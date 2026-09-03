@@ -3,7 +3,7 @@
 In DankMaterialShell legt man die Ansichten ueber die Einstellungen des
 Plugins auf den Desktop. Ueberall sonst geht dasselbe mit **Layer-Shell**:
 
-    btcfeed-app --layer <ebene> --anchor <kanten> [--width N] [--height N]
+    orangedeck-app --layer <ebene> --anchor <kanten> [--width N] [--height N]
                 [--margin N] [--exclusive N] [--view N] [--bare] [--id name]
 
 **Nicht aus dem Flatpak.** Compositoren blenden privilegierte Protokolle vor
@@ -26,7 +26,7 @@ Auf X11 gibt es keine Layer-Shell; dort bleibt das gewoehnliche Fenster.
 | `--exclusive` | Platz, den andere Fenster freilassen. `0` keiner, `-1` sich ueberlappen lassen |
 | `--view` | `0` Feed, `1` Blockclock, `2` Miner, `3` Explorer, `4` Wallet, `5` Einstellungen |
 | `--bare` | ohne Reiter, Kopf- und Fusszeile -- die Ansicht allein |
-| `--id` | eigener Einstellungsspeicher (`~/.config/btcfeed/btcfeed-<name>.conf`) |
+| `--id` | eigener Einstellungsspeicher (`~/.config/orangedeck/orangedeck-<name>.conf`) |
 
 **`--id` ist der Punkt, an dem mehrere Widgets nebeneinander gehen.** Ohne ihn
 teilen sich alle dieselbe Datei und schreiben sich gegenseitig um -- mit ihm
@@ -36,44 +36,44 @@ behaelt jedes seine Ansicht, seine Sprache, seine Waehrung.
 
 Blockclock als Kachel rechts oben, ohne Reiter:
 
-    btcfeed-app --layer top --anchor top,right --width 300 --height 220 \
+    orangedeck-app --layer top --anchor top,right --width 300 --height 220 \
                 --margin 24 --view 1 --bare --id uhr
 
 Der Feed als Leiste ueber die ganze Breite, unter den Fenstern, mit
 freigehaltenem Platz:
 
-    btcfeed-app --layer bottom --anchor bottom,left,right --height 110 \
+    orangedeck-app --layer bottom --anchor bottom,left,right --height 110 \
                 --exclusive 110 --view 0 --bare --id leiste
 
 Der Miner links oben:
 
-    btcfeed-app --layer top --anchor top,left --width 300 --height 300 \
+    orangedeck-app --layer top --anchor top,left --width 300 --height 300 \
                 --margin 24 --view 2 --bare --id miner
 
 ## Beim Anmelden mitstarten
 
 **niri** (`~/.config/niri/config.kdl`):
 
-    spawn-at-startup "btcfeed-app" "--layer" "top" "--anchor" "top,right" \
+    spawn-at-startup "orangedeck-app" "--layer" "top" "--anchor" "top,right" \
         "--width" "300" "--height" "220" "--margin" "24" \
         "--view" "1" "--bare" "--id" "uhr"
 
 **Hyprland** (`~/.config/hypr/hyprland.conf`):
 
-    exec-once = btcfeed-app --layer top --anchor top,right --width 300 --height 220 --margin 24 --view 1 --bare --id uhr
+    exec-once = orangedeck-app --layer top --anchor top,right --width 300 --height 220 --margin 24 --view 1 --bare --id uhr
 
 **sway** (`~/.config/sway/config`):
 
-    exec btcfeed-app --layer top --anchor top,right --width 300 --height 220 --margin 24 --view 1 --bare --id uhr
+    exec orangedeck-app --layer top --anchor top,right --width 300 --height 220 --margin 24 --view 1 --bare --id uhr
 
 **labwc** (`~/.config/labwc/autostart`):
 
-    btcfeed-app --layer top --anchor top,right --width 300 --height 220 --margin 24 --view 1 --bare --id uhr &
+    orangedeck-app --layer top --anchor top,right --width 300 --height 220 --margin 24 --view 1 --bare --id uhr &
 
 Ueberall gilt: der Daemon muss laufen. `tools/install-links.sh` richtet ihn als
 Benutzerdienst ein, danach genuegt
 
-    systemctl --user enable --now btcfeed.service
+    systemctl --user enable --now orangedeck.service
 
 ## Leisten statt Widgets
 

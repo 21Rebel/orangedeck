@@ -890,7 +890,7 @@ Item {
                     wrapMode: Text.WordWrap
                     visible: root.val("walletEnabled", false)
                     text: Tr.t("set.walletCli", root.lang)
-                          + "\n    btcfeed --watch-add <xpub|ypub|zpub> \"Name\""
+                          + "\n    orangedeck --watch-add <xpub|ypub|zpub> \"Name\""
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.85
                     font.family: "monospace"

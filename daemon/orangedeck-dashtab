@@ -11,9 +11,9 @@ gestartet (`dms run -c <pfad>`).
 Damit fliessen DMS-Updates durch die Symlinks weiter. Nur wenn sich die beiden
 gepatchten Dateien selbst aendern, muss dieses Skript einmal neu laufen:
 
-  btcfeed-dashtab            einrichten oder auffrischen
-  btcfeed-dashtab --remove   rueckgaengig machen
-  btcfeed-dashtab --check    nachsehen, ob die Ueberlagerung noch passt
+  orangedeck-dashtab            einrichten oder auffrischen
+  orangedeck-dashtab --remove   rueckgaengig machen
+  orangedeck-dashtab --check    nachsehen, ob die Ueberlagerung noch passt
 """
 import os
 import shutil
@@ -22,15 +22,15 @@ import sys
 
 SRC = "/usr/share/quickshell/dms"
 DST = os.path.expanduser("~/.config/quickshell/dms-custom")
-QML = os.path.expanduser("~/.local/share/btcfeed/qml")
+QML = os.path.expanduser("~/.local/share/orangedeck/qml")
 DROPIN_DIR = os.path.expanduser("~/.config/systemd/user/dms.service.d")
-DROPIN = os.path.join(DROPIN_DIR, "10-btcfeed-dashtab.conf")
+DROPIN = os.path.join(DROPIN_DIR, "10-orangedeck-dashtab.conf")
 
 # Verzeichnisse, die nicht als Ganzes verlinkt werden koennen, weil darin
 # gepatchte Dateien liegen
 MIRROR = {"Modules", "Common", "Modules/DankDash"}
 
-BITCOIN_TAB = """// Bitcoin-Feed als Dashboard-Tab. Wird von btcfeed-dashtab eingehaengt.
+BITCOIN_TAB = """// Bitcoin-Feed als Dashboard-Tab. Wird von orangedeck-dashtab eingehaengt.
 //
 // Die Ansichten selbst stehen in `FeedTabs.qml` -- sie sind hier, im Popout der
 // Leisten-Pille und in der Control-Center-Kachel dieselben. Hier bleibt allein,
@@ -61,8 +61,8 @@ Item {
     // aber selbst und setzt diesen Wert von aussen (siehe `patch_popout`).
     property bool live: true
 
-    readonly property string pid: "bitcoinFeed"
-    readonly property string desktopInstance: "bitcoinFeed-1"
+    readonly property string pid: "orangedeck"
+    readonly property string desktopInstance: "orangedeck-1"
 
     // Dieselben Einstellungen wie im Fenster -- der Dashboard-Tab ist keine
     // Kurzfassung. Abgelegt werden sie in den Plugin-Einstellungen von DMS.
@@ -213,7 +213,7 @@ Item {
     Process {
         id: openWindow
 
-        command: [Quickshell.env("HOME") + "/.local/bin/btcfeed-window"]
+        command: [Quickshell.env("HOME") + "/.local/bin/orangedeck-window"]
         running: false
     }
 
@@ -492,7 +492,7 @@ def build():
     # systemd-Drop-in
     os.makedirs(DROPIN_DIR, exist_ok=True)
     with open(DROPIN, "w") as f:
-        f.write("# Von btcfeed-dashtab angelegt: DMS aus der Ueberlagerung starten\n"
+        f.write("# Von orangedeck-dashtab angelegt: DMS aus der Ueberlagerung starten\n"
                 "[Service]\nExecStart=\n"
                 "ExecStart=/usr/bin/dms run --session -c %s\n" % DST)
     subprocess.run(["systemctl", "--user", "daemon-reload"], check=False)
@@ -522,7 +522,7 @@ def check():
         if os.path.getmtime(orig) > os.path.getmtime(mine):
             print("veraltet: %s ist neuer als die gepatchte Kopie" % orig)
             ok = False
-    print("Ueberlagerung aktuell" if ok else "btcfeed-dashtab erneut aufrufen")
+    print("Ueberlagerung aktuell" if ok else "orangedeck-dashtab erneut aufrufen")
     return 0 if ok else 1
 
 

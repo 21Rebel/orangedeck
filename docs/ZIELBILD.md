@@ -57,7 +57,7 @@ Shell-Integration in jedem Fall QML bleiben muss.
 **Stattdessen als Datenquelle geforkt bzw. betrieben:**
 
 1. **Eigene mempool.space-Instanz** (`github.com/mempool/mempool`) als Backend B.
-   Der entscheidende Vorteil: `btcfeed` spricht diese API bereits, und der Wirt
+   Der entscheidende Vorteil: `orangedeck` spricht diese API bereits, und der Wirt
    ist schon eine Variable — `WS_URL = f"wss://{HOST}/api/v1/ws"`. Der Wechsel
    auf den eigenen Node ist damit eine Konfigurationszeile, kein neuer Stack.
 2. **bitfeeds Elixir-Server**, unveraendert per Docker, nur falls sich zeigt,
@@ -68,9 +68,9 @@ Shell-Integration in jedem Fall QML bleiben muss.
 
 ## Aufbau: drei Schichten, drei Ziele aus einer Quelle
 
-### Schicht 1 — `btcfeedd`, der Datendienst
+### Schicht 1 — `orangedeckd`, der Datendienst
 
-Aus dem heutigen `~/.local/bin/btcfeed` (515 Zeilen) wird ein Dienst mit
+Aus dem heutigen `~/.local/bin/orangedeck` (515 Zeilen) wird ein Dienst mit
 austauschbaren Quellen. Alle Quellen sind einzeln abschaltbar.
 
     source_mempool   mempool.space ODER eigene Instanz — nur HOST unterscheidet sie
@@ -80,16 +80,16 @@ austauschbaren Quellen. Alle Quellen sind einzeln abschaltbar.
     source_price     Kurs fuer Fiat-Umrechnung und BlockClock
 
 Ausgabe auf **zwei Wegen**:
-- `state.json` in `$XDG_RUNTIME_DIR/btcfeed/` — wie heute, lokal, tmpfs
+- `state.json` in `$XDG_RUNTIME_DIR/orangedeck/` — wie heute, lokal, tmpfs
 - **WebSocket auf einem Port** — neu, und die Voraussetzung fuer Android:
   das Tablet hat keinen lokalen Daemon, es holt sich alles vom Rechner im Netz.
   Wahlweise verbindet es sich auch direkt gegen mempool.space.
 
 Betrieb als systemd-User-Unit. (Nebenbefund vom 01.09.: der Daemon laeuft
-derzeit als loser Prozess, `systemctl --user is-active btcfeed` meldet
+derzeit als loser Prozess, `systemctl --user is-active orangedeck` meldet
 `inactive` — beim Umbau gleich miterledigen.)
 
-### Schicht 2 — `btcfeed-ui`, die Darstellung
+### Schicht 2 — `orangedeck-ui`, die Darstellung
 
 Ein Satz QML-Dateien fuer alle drei Ziele.
 
@@ -154,7 +154,7 @@ Daraus folgt hart:
 - **Kein Server von uns.** Keine Telemetrie, keine Nutzungszahlen, keine
   Absturzberichte, kein Konto, keine Registrierung.
 - **Die Loopback-Schnittstelle bindet auf `127.0.0.1`** (`SERVE_ADDR` in
-  `daemon/btcfeed`). Ein Tablet im eigenen Netz erreicht sie erst, wenn der
+  `daemon/orangedeck`). Ein Tablet im eigenen Netz erreicht sie erst, wenn der
   Benutzer die Adresse ausdruecklich aendert — der Daemon schreibt dann eine
   Warnung. Nach aussen angeboten wird nichts von selbst.
 - **Der Dienst nimmt nichts entgegen.** Nur `GET`, nur drei Pfade, kein
@@ -201,7 +201,7 @@ und die MinerView (Best-Difficulty des Bitaxe gegen die Netzschwierigkeit).
 
 **Liquid: faellt praktisch von selbst an.** `liquid.network` fuehrt dieselbe
 API-Form. Geprueft: `/api/blocks/tip/height` → 4.043.120 und
-`/api/v1/fees/recommended` antworten wie erwartet. Weil `HOST` in `btcfeed`
+`/api/v1/fees/recommended` antworten wie erwartet. Weil `HOST` in `orangedeck`
 bereits eine Variable ist, ist die Umschaltung auf Liquid **derselbe
 Handgriff wie die Umschaltung auf einen eigenen Node** — eine
 Konfigurationszeile, dieselbe Grafik. Das ist die billigste der drei Ebenen.
@@ -236,7 +236,7 @@ Die ersten sechs Schritte brauchen **keinen Bitcoin-Node**.
        Fehler mit. Klein.
     1. [ERLEDIGT 01.09.2026] FeedState.qml entkoppeln. DER Schluesselschritt --
        danach ist die gesamte Grafik plattformunabhaengig.
-    2. btcfeedd: Quell-Adapter, systemd-Unit. (Die Netzschnittstelle steht
+    2. orangedeckd: Quell-Adapter, systemd-Unit. (Die Netzschnittstelle steht
        bereits: Loopback-HTTP, siehe unten.)
     3. [App ERLEDIGT 01.09.2026, Flatpak offen] Eigenstaendige Qt-App +
        Flatpak. Damit ist "beliebiger Linux-Desktop" erreicht.
@@ -287,7 +287,7 @@ alten Bindungen sind so ersetzt:
 |---|---|
 | `Quickshell.env` | entfaellt — der Ort steckt in `endpoint` |
 | `FileView` | `XMLHttpRequest` gegen die Loopback-Schnittstelle |
-| `Process` | entfaellt — Shell und `btcfeed-window` starten den Daemon ohnehin |
+| `Process` | entfaellt — Shell und `orangedeck-window` starten den Daemon ohnehin |
 
 **Warum HTTP und nicht `file://`:** Qt sperrt lesenden Dateizugriff per
 XMLHttpRequest hinter der Umgebungsvariablen `QML_XHR_ALLOW_FILE_READ=1`. Am
@@ -316,10 +316,10 @@ Sie bindet **dieselben Dateien** aus `ui/qml/` ein, kopiert nichts, und laeuft
 ohne Quickshell und ohne DMS.
 
 Nachgewiesen am 01.09.2026: eigenes Fenster auf dem Desktop (app_id damals
-`dev.21rebel.btcfeed-app`, seit dem 02.09.2026 ausdruecklich
-`store._21rebel.btcfeed`), zwei stehende Verbindungen zum Daemon auf
+`dev.21rebel.orangedeck-app`, seit dem 02.09.2026 ausdruecklich
+`store._21rebel.orangedeck`), zwei stehende Verbindungen zum Daemon auf
 `127.0.0.1:21021` (Zustand und Block), **3,0 % CPU** ueber sechs Sekunden
-gemessen. Einstellungen liegen portabel in `~/.config/btcfeed/btcfeed.conf`.
+gemessen. Einstellungen liegen portabel in `~/.config/orangedeck/orangedeck.conf`.
 
 Portiert wurde `shell/quickshell/shell.qml`:
 
@@ -408,9 +408,9 @@ Der weitaus guenstigste Weg, und er kommt fast geschenkt: **der Daemon gibt
 seinen Zustand in dem Format aus, das die verbreiteten Leisten ohnehin lesen.**
 Kein Fenster, kein Protokoll, kein Compositor-Sonderfall.
 
-    btcfeed --waybar      JSON fuer das custom-Modul von Waybar
-    btcfeed --polybar     Zeile fuer Polybar / i3blocks
-    btcfeed --genmon      XML fuer das XFCE-Genmon-Modul
+    orangedeck --waybar      JSON fuer das custom-Modul von Waybar
+    orangedeck --polybar     Zeile fuer Polybar / i3blocks
+    orangedeck --genmon      XML fuer das XFCE-Genmon-Modul
 
 Damit hat jeder, der Waybar, Polybar, i3blocks oder XFCE benutzt, die Anzeige
 in der Leiste -- ohne dass wir eine einzige Leiste selbst bauen. **Waybar ist
