@@ -47,9 +47,11 @@ Item {
     id: root
 
     // Die uebrigen Dashboard-Seiten sind 410 hoch; DankDashPopout nimmt aber
-    // die Hoehe dieser Seite (`bitcoinLoader.item?.implicitHeight`). Der Feed
-    // braucht mehr: unter 390 nutzbarer Hoehe faellt die Legende weg.
-    implicitHeight: 460
+    // die Hoehe dieser Seite (`bitcoinLoader.item?.implicitHeight`). Diese
+    // braucht mehr: bei 460 blieben der BlockClock nach Raendern und
+    // Reiterzeile 409 Punkte, und davon wurde die Kurskurve zum Strich. Mit
+    // 520 sind es 469 -- genug fuer die Kurve samt Zeitachse.
+    implicitHeight: 520
 
     // **`Item.visible` genuegt hier nicht.** Wird das Popout-Fenster
     // geschlossen, bleibt `visible` an den Elementen darin wahr -- die

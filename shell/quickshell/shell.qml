@@ -39,6 +39,8 @@ ShellRoot {
         property bool showBlock: true
         property bool clockSpark: true
         property bool clockTime: false
+        property bool clockPrice: true
+        property string priceSpan: "30d"
         property bool minerChart: true
         property bool minerDomains: true
         property bool minerBoard: true
@@ -103,6 +105,8 @@ ShellRoot {
             "showBlock": showBlock,
             "clockSpark": clockSpark,
             "clockTime": clockTime,
+            "clockPrice": clockPrice,
+            "priceSpan": priceSpan,
             "minerChart": minerChart,
             "minerDomains": minerDomains,
             "minerBoard": minerBoard,
@@ -156,6 +160,10 @@ ShellRoot {
                 clockSpark = value;
             else if (key === "clockTime")
                 clockTime = value;
+            else if (key === "clockPrice")
+                clockPrice = value;
+            else if (key === "priceSpan")
+                priceSpan = value;
             else if (key === "minerChart")
                 minerChart = value;
             else if (key === "minerDomains")
@@ -205,6 +213,8 @@ ShellRoot {
                 "showBlock": showBlock,
                 "clockSpark": clockSpark,
                 "clockTime": clockTime,
+                "clockPrice": clockPrice,
+                "priceSpan": priceSpan,
                 "minerChart": minerChart,
                 "minerDomains": minerDomains,
                 "minerBoard": minerBoard,
@@ -268,6 +278,10 @@ ShellRoot {
                         win.clockSpark = v.clockSpark;
                     if (typeof v.clockTime === "boolean")
                         win.clockTime = v.clockTime;
+                    if (typeof v.clockPrice === "boolean")
+                        win.clockPrice = v.clockPrice;
+                    if (typeof v.priceSpan === "string")
+                        win.priceSpan = v.priceSpan;
                     if (typeof v.minerChart === "boolean")
                         win.minerChart = v.minerChart;
                     if (typeof v.minerDomains === "boolean")
@@ -364,6 +378,11 @@ ShellRoot {
             showBars: win.clockBars
             showSpark: win.clockSpark
             showTime: win.clockTime
+            showPrice: win.clockPrice
+            priceSpan: win.priceSpan
+            onPriceSpanRequested: function (sp) {
+                win.priceSpan = sp;
+            }
             bigFields: win.bigFields
             bigRotate: win.bigRotate
         }

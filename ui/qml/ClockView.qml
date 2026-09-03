@@ -35,6 +35,7 @@ Item {
     property string priceSpan: "30d"
 
     signal priceSpanRequested(string s)
+
     property bool showTime: false
     property string lang: "de"
     // Was gross in der Mitte steht. Mehrere Eintraege wechseln sich ab --
@@ -157,7 +158,16 @@ Item {
     Flickable {
         id: flick
 
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        // **Die Spalte hoert dort auf, wo die Kurve anfaengt.** Sie mittig zu
+        // setzen und der Kurve den Platz nur rechnerisch abzuziehen genuegte
+        // nicht: ist die Spalte hoeher als der Rest, laeuft sie ueber die
+        // Kurve. So bekommt sie eine eigene Flaeche und rollt darin, statt zu
+        // ueberzeichnen.
+        anchors.bottom: kurve.visible ? kurve.top : parent.bottom
+        anchors.bottomMargin: kurve.visible ? root.scaleUnit * 0.3 : 0
         clip: true
         contentWidth: width
         contentHeight: body.implicitHeight + root.scaleUnit
@@ -168,10 +178,12 @@ Item {
 
         width: parent.width * 0.86
         x: (flick.width - width) / 2
+        // **Die Kurve steht nicht in dieser Spalte, sondern unter ihr.** In der
+        // Spalte war sie ein Posten unter sieben und wurde jedes Mal als
+        // erster abgeschnitten -- die Spalte fuellte die Flaeche schon vorher
+        // genau aus. Jetzt bekommt die Kurve ihren Platz zuerst, und der Rest
+        // mittet sich in dem, was uebrig bleibt.
         y: Math.max(0, (flick.height - implicitHeight) / 2)
-        // Enger, sobald die Kurve dazukommt -- sie ist der grosse Posten in
-        // dieser Spalte, und die Zeitachse unter ihr darf nicht abgeschnitten
-        // werden. Sechs Fugen mal sechs Punkte sind genau die Zeile.
         spacing: root.scaleUnit * (kurve.visible ? 0.35 : 0.5)
 
         // -------------------------------------------------------- Uhrzeit
@@ -411,6 +423,9 @@ Item {
                 ctx.stroke();
             }
         }
+        }
+    }
+
 
         // ----------------------------------------------- Kursverlauf
         // Braucht Hoehe, sonst ist eine Kurve nicht zu lesen. In flachen
@@ -421,30 +436,39 @@ Item {
         // waechst selbst mit der Hoehe (`height / 16`); `height >= scaleUnit * 22`
         // heisst damit `height >= 1,375 * height` und ist nie erfuellt. Genau
         // daran war die Kurve zuerst unsichtbar.
-        PriceChart {
-            id: kurve
+    PriceChart {
+        id: kurve
 
-            width: parent.width
-            height: Math.max(root.scaleUnit * 5.5, root.height * 0.28)
-            visible: root.showPrice && root.height >= 420
-            live: root.visible
-            feed: root.feed
-            lang: root.lang
-            currency: root.currency
-            span: root.priceSpan
-            // Kleiner als die Kennzahlen darueber: die Beschriftung einer
-            // Kurve ist Beiwerk, keine Aussage.
-            baseFont: root.scaleUnit * 0.5
-            textColor: root.textColor
-            dimColor: root.dimColor
-            accentColor: root.accentColor
-            lineColor: Qt.rgba(root.dimColor.r, root.dimColor.g, root.dimColor.b, 0.35)
-            onSpanRequested: function (sp) {
-                root.priceSpanRequested(sp);
-            }
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.margins: root.width * 0.07
+        anchors.bottomMargin: root.scaleUnit * 0.4
+        // Gut ein Viertel der Flaeche, gedeckelt: mehr braucht eine Kurve
+        // nicht, und im Dashboard-Format haengt genau daran, ob ueber ihr noch
+        // die Halving-Zeile steht oder die Spalte gerollt werden muss.
+        height: Math.max(90, Math.min(root.height * 0.26, root.scaleUnit * 7))
+        // 420 war zu hoch gegriffen -- **gemessen** bleiben der BlockClock
+        // im Dashboard-Tab 409 Punkte (460 Tabhoehe minus Raender und
+        // Reiterzeile), und die Kurve fiel damit ausgerechnet dort weg,
+        // wo sie am ehesten gebraucht wird. Ab 330 traegt sie noch: die
+        // Kurve selbst behaelt rund hundert Punkte Hoehe.
+        visible: root.showPrice && root.height >= 330
+        live: root.visible
+        feed: root.feed
+        lang: root.lang
+        currency: root.currency
+        span: root.priceSpan
+        // Kleiner als die Kennzahlen darueber: die Beschriftung einer
+        // Kurve ist Beiwerk, keine Aussage.
+        baseFont: root.scaleUnit * 0.5
+        textColor: root.textColor
+        dimColor: root.dimColor
+        accentColor: root.accentColor
+        lineColor: Qt.rgba(root.dimColor.r, root.dimColor.g, root.dimColor.b, 0.35)
+        onSpanRequested: function (sp) {
+            root.priceSpanRequested(sp);
         }
-    }
-
     }
 
     // Bei fehlender Verbindung nicht luegen, sondern es sagen

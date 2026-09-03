@@ -122,19 +122,28 @@ Item {
     }
 
     // ------------------------------------------------------------ Kopfzeile
-    Column {
+    //
+    // **Flach wird nebeneinander.** Gestapelt kostet der Kopf zwei Zeilen, und
+    // die fehlen der Kurve: im Dashboard-Tab blieben ihr davon noch vierzig
+    // Punkte, Hoechst- und Tiefstwert lagen uebereinander.
+    readonly property bool flach: root.height < 200
+
+    Grid {
         id: kopf
 
         anchors.left: parent.left
         anchors.top: parent.top
-        spacing: 1
+        columns: root.flach ? 2 : 1
+        rowSpacing: 1
+        columnSpacing: root.baseFont * 0.6
+        verticalItemAlignment: Grid.AlignVCenter
 
         Text {
             text: root.punkte.length
                   ? Tr.price1(root.punkte[root.punkte.length - 1][1], root.zeichen, root.lang)
                   : "–"
             color: root.textColor
-            font.pixelSize: root.baseFont * 1.5
+            font.pixelSize: root.baseFont * (root.flach ? 1.2 : 1.5)
             font.weight: Font.DemiBold
         }
 
