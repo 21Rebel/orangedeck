@@ -487,6 +487,118 @@ Item {
         "replacements": "/v1/replacements"
     })
 
+    // ------------------------------------------------------- Kursverlauf
+    // Ohne Dienst gibt es niemanden, der ausduennt -- das muss hier passieren.
+    // Die Vollform sind 1,5 MB und 33.299 Punkte; sie wird **einmal** geholt
+    // und im Speicher gehalten, danach kostet jeder Zeitraum nur noch Rechnen.
+    property var __preise: null
+    property real __preiseTs: 0
+    // Dieselben Zeitraeume und dieselbe Obergrenze wie im Dienst
+    readonly property var __spans: ({ "24h": 86400, "7d": 604800, "30d": 2592000,
+                                      "90d": 7776000, "1y": 31536000, "max": 0 })
+    readonly property int __maxPunkte: 360
+
+    function prices(span, cur, done) {
+        var alt = Date.now() / 1000 - root.__preiseTs > 3600;
+        if (root.__preise && !alt) {
+            done(root.__preisReihe(span, cur), null);
+            return;
+        }
+        root.__get("/v1/historical-price?currency=EUR", function (txt) {
+            var d;
+            try {
+                d = JSON.parse(txt);
+            } catch (e) {
+                done(null, "Antwort nicht lesbar");
+                return;
+            }
+            var roh = d.prices || [], punkte = [];
+            for (var i = 0; i < roh.length; i++) {
+                var x = roh[i];
+                // **-1 heisst "kein Wert"**, nicht "minus ein Euro". 295 der
+                // 33.299 Punkte tragen ihn. Ungefiltert zieht ein einziger die
+                // ganze Kurve nach unten.
+                var e = (x.EUR > 0) ? x.EUR : 0;
+                var u = (x.USD > 0) ? x.USD : 0;
+                if (x.time && (e || u))
+                    punkte.push([x.time, e, u]);
+            }
+            punkte.sort(function (a, b) {
+                return a[0] - b[0];
+            });
+            root.__preise = { "points": punkte, "rates": d.exchangeRates || ({}) };
+            root.__preiseTs = Date.now() / 1000;
+            done(root.__preisReihe(span, cur), null);
+        }, function () {
+            // Ein alter Verlauf ist besser als gar keiner
+            if (root.__preise)
+                done(root.__preisReihe(span, cur), null);
+            else
+                done(null, "nicht erreichbar");
+        });
+    }
+
+    function __preisReihe(span, cur) {
+        var alle = root.__preise.points, w = String(cur || "eur").toLowerCase();
+        var dauer = root.__spans[span] || 0;
+        var punkte = alle;
+        if (dauer) {
+            var grenze = Date.now() / 1000 - dauer;
+            punkte = [];
+            for (var i = 0; i < alle.length; i++) {
+                if (alle[i][0] >= grenze)
+                    punkte.push(alle[i]);
+            }
+        }
+        if (!punkte.length)
+            return { "span": span, "cur": w, "points": [], "converted": false };
+
+        // **Erst die Waehrung, dann ausduennen.** Andersherum faellt ein ganzes
+        // Fach aus, wenn ausgerechnet der gewaehlte Punkt in dieser Waehrung
+        // keinen Wert hat -- und das sind bei EUR fast dreihundert.
+        //
+        // Nur EUR und USD stehen wirklich im Datensatz. Die uebrigen fuenf
+        // entstehen aus dem USD-Wert mit dem **heutigen** Wechselkurs -- ueber
+        // Jahre ist das eine Umrechnung, keine Wahrheit. Die Antwort sagt es.
+        var umgerechnet = (w !== "eur" && w !== "usd");
+        var reihe = [], j, kurs = 1;
+        if (umgerechnet) {
+            kurs = root.__preise.rates["USD" + w.toUpperCase()];
+            if (!kurs)
+                return { "span": span, "cur": w, "points": [], "converted": true };
+        }
+        var sp = (w === "eur") ? 1 : 2;
+        for (j = 0; j < punkte.length; j++) {
+            if (punkte[j][sp] > 0) {
+                reihe.push([punkte[j][0], umgerechnet
+                            ? Math.round(punkte[j][2] * kurs * 100) / 100
+                            : punkte[j][sp]]);
+            }
+        }
+        if (!reihe.length)
+            return { "span": span, "cur": w, "points": [], "converted": umgerechnet };
+
+        // Faecher gleicher Breite, aus jedem ein Punkt -- **nicht** jeder n-te.
+        // Die Abstaende sind ungleich (stuendlich, taeglich, woechentlich), da
+        // verzerrt jede feste Schrittweite die Zeitachse.
+        if (reihe.length > root.__maxPunkte) {
+            var t0 = reihe[0][0], t1 = reihe[reihe.length - 1][0];
+            var breite = Math.max(1, (t1 - t0) / root.__maxPunkte);
+            var gewaehlt = [], letztes = -1;
+            for (var k = 0; k < reihe.length; k++) {
+                var fach = Math.floor((reihe[k][0] - t0) / breite);
+                if (fach !== letztes) {
+                    gewaehlt.push(reihe[k]);
+                    letztes = fach;
+                }
+            }
+            if (gewaehlt[gewaehlt.length - 1][0] !== t1)
+                gewaehlt.push(reihe[reihe.length - 1]);
+            reihe = gewaehlt;
+        }
+        return { "span": span, "cur": w, "points": reihe, "converted": umgerechnet };
+    }
+
     function lookup(kind, arg, done) {
         if (kind === "projectedtiles") {
             // Jede Abfrage verlaengert das Mithoeren; hoert die Ansicht auf zu

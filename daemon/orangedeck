@@ -78,6 +78,24 @@ STATE_FILE = os.path.join(STATE_DIR, "state.json")
 BLOCK_FILE = os.path.join(STATE_DIR, "block.json")
 LOCK_FILE = os.path.join(STATE_DIR, "orangedeck.lock")
 
+# Kursverlauf. Die Vollform ist 1,5 MB und reicht bis Juli 2010 zurueck:
+# stuendlich fuer die letzten rund vier Jahre, davor taeglich und woechentlich
+# (33.299 Punkte). Sie aendert sich nur am oberen Ende -- also einmal holen,
+# auf die Platte legen und stuendlich nachziehen. Der Zustand liegt im tmpfs
+# und waere nach jedem Neustart weg; hierfuer ist das der falsche Ort.
+# $CACHE_DIRECTORY setzt systemd (CacheDirectory= in der Unit) -- ohne sie
+# waere das Verzeichnis unter ProtectHome=read-only nicht beschreibbar.
+CACHE_DIR = (os.environ.get("CACHE_DIRECTORY")
+             or os.path.join(os.environ.get("XDG_CACHE_HOME")
+                             or os.path.expanduser("~/.cache"), "orangedeck"))
+PRICE_FILE = os.path.join(CACHE_DIR, "prices.json")
+PRICE_MAX_AGE = 3600
+# Wie viele Punkte hoechstens an die Oberflaeche gehen. Am 02.09. gemessen:
+# 634 kB alle zwei Sekunden kosteten 6 % CPU allein fuers `JSON.parse`. Ein
+# Diagramm von 800 Punkten Breite hat von 33.299 Punkten nichts -- ausgeduennt
+# wird deshalb hier, nicht dort.
+PRICE_POINTS = 360
+
 WRITE_INTERVAL = 0.4      # Sekunden zwischen zwei Schreibvorgaengen
 RECENT_KEEP = 120         # wie viele frische TX im Zustand liegen bleiben
 # Felder, die sich hoechstens im Minutentakt aendern. Sie machen fast die
@@ -697,6 +715,133 @@ def http_json(path, timeout=15):
 
 
 # --------------------------------------------------------------------------
+# Kursverlauf
+# --------------------------------------------------------------------------
+_price_lock = threading.Lock()
+_prices = {"ts": 0, "points": [], "rates": {}}
+
+# Zeitraeume, die die Oberflaeche anbietet. 0 heisst: alles, was da ist.
+SPANS = {"24h": 86400, "7d": 604800, "30d": 2592000,
+         "90d": 7776000, "1y": 31536000, "max": 0}
+
+
+def fetch_prices():
+    """Den Verlauf holen und als Zahlenfelder ablegen.
+
+    Aus `[{"time": t, "EUR": e, "USD": u}, ...]` wird `[[t, e, u], ...]` --
+    dieselben Zahlen, aber ohne die Schluessel bei jedem Punkt. Das halbiert
+    die Datei und spart beim Lesen den Umweg ueber Woerterbuecher.
+    """
+    d = http_json("/v1/historical-price?currency=EUR", timeout=60)
+    punkte = []
+    for x in d.get("prices") or []:
+        t = x.get("time")
+        e, u = x.get("EUR") or 0, x.get("USD") or 0
+        # **-1 heisst "kein Wert".** 295 der 33.299 Punkte tragen ihn, meist
+        # im EUR-Feld bei gueltigem USD-Feld. Ungefiltert zieht eine einzige
+        # -1 die ganze Kurve nach unten: der Tiefstwert stand bei -1 Euro und
+        # die Veraenderung ueber den Gesamtzeitraum bei -6.966.100 %.
+        e = e if e > 0 else 0
+        u = u if u > 0 else 0
+        if t and (e or u):
+            punkte.append([int(t), round(e, 2), round(u, 2)])
+    punkte.sort(key=lambda x: x[0])
+    return {"ts": time.time(), "points": punkte,
+            "rates": d.get("exchangeRates") or {}}
+
+
+def price_history():
+    """Der Verlauf, aus dem Speicher, von der Platte oder frisch geholt."""
+    with _price_lock:
+        jung = time.time() - _prices["ts"] < PRICE_MAX_AGE
+        if _prices["points"] and jung:
+            return _prices
+        if not _prices["points"]:
+            try:
+                with open(PRICE_FILE) as f:
+                    d = json.load(f)
+                if d.get("points"):
+                    _prices.update(d)
+                    jung = time.time() - _prices["ts"] < PRICE_MAX_AGE
+            except (OSError, ValueError):
+                pass
+        if not jung:
+            try:
+                d = fetch_prices()
+            except Exception as e:
+                # Ein alter Verlauf ist besser als gar keiner: nur der obere
+                # Rand fehlt, und den fuellt der laufende Kurs.
+                sys.stderr.write("Kursverlauf nicht erreichbar: %s\n" % e)
+                return _prices
+            _prices.update(d)
+            try:
+                os.makedirs(CACHE_DIR, exist_ok=True)
+                tmp = PRICE_FILE + ".tmp"
+                with open(tmp, "w") as f:
+                    json.dump(_prices, f, separators=(",", ":"))
+                os.replace(tmp, PRICE_FILE)
+            except OSError as e:
+                sys.stderr.write("Kursverlauf nicht zu sichern: %s\n" % e)
+        return _prices
+
+
+def price_series(span, cur):
+    """Ein Zeitraum, ausgeduennt und in der gewuenschten Waehrung.
+
+    **Nur EUR und USD stehen wirklich im Datensatz.** Die uebrigen fuenf
+    entstehen aus dem USD-Wert mit dem *heutigen* Wechselkurs -- fuer einen
+    Verlauf ueber Jahre ist das nicht die Wahrheit, sondern eine Umrechnung.
+    Die Antwort sagt das mit `umgerechnet`, damit die Oberflaeche es
+    dazuschreiben kann.
+    """
+    d = price_history()
+    punkte = d["points"]
+    cur = (cur or "eur").lower()
+    dauer = SPANS.get(span, 0)
+    if dauer:
+        grenze = time.time() - dauer
+        punkte = [p for p in punkte if p[0] >= grenze]
+    if not punkte:
+        return {"span": span, "cur": cur, "points": [], "converted": False}
+
+    # **Erst die Waehrung, dann ausduennen.** Andersherum faellt ein ganzes
+    # Fach aus, wenn ausgerechnet der gewaehlte Punkt in dieser Waehrung keinen
+    # Wert hat -- und das sind bei EUR fast dreihundert.
+    umgerechnet = cur not in ("eur", "usd")
+    if not umgerechnet:
+        i = 1 if cur == "eur" else 2
+        reihe = [[p[0], p[i]] for p in punkte if p[i] > 0]
+    else:
+        kurs = (d["rates"] or {}).get("USD" + cur.upper())
+        if not kurs:
+            return {"span": span, "cur": cur, "points": [], "converted": True}
+        reihe = [[p[0], round(p[2] * kurs, 2)] for p in punkte if p[2] > 0]
+    if not reihe:
+        return {"span": span, "cur": cur, "points": [], "converted": umgerechnet}
+
+    # Ausduennen: der Zeitraum wird in gleich breite Faecher geteilt, aus jedem
+    # kommt ein Punkt. **Nicht jeder n-te Punkt** -- die Abstaende sind
+    # ungleich (stuendlich, taeglich, woechentlich), und dann verzerrt jede
+    # feste Schrittweite die Zeitachse.
+    if len(reihe) > PRICE_POINTS:
+        t0, t1 = reihe[0][0], reihe[-1][0]
+        breite = max(1, (t1 - t0) / PRICE_POINTS)
+        gewaehlt, letztes = [], -1
+        for p in reihe:
+            fach = int((p[0] - t0) / breite)
+            if fach != letztes:
+                gewaehlt.append(p)
+                letztes = fach
+        if gewaehlt[-1][0] != reihe[-1][0]:
+            gewaehlt.append(reihe[-1])
+        reihe = gewaehlt
+
+    return {"span": span, "cur": cur, "points": reihe,
+            "converted": umgerechnet,
+            "ts": round(d["ts"], 2)}
+
+
+# --------------------------------------------------------------------------
 # Zustand
 # --------------------------------------------------------------------------
 class Feed:
@@ -1156,6 +1301,19 @@ class _Handler(BaseHTTPRequestHandler):
                         self._send(json.dumps({"error": err[0]}), err[1])
                     else:
                         self._send(body)
+            elif path == "/prices":
+                # `?span=24h|7d|30d|90d|1y|max&cur=eur` -- beides freiwillig.
+                # Bewusst **nicht** im Zustand: der wird 2,5-mal je Sekunde
+                # geschrieben, der Verlauf aendert sich stuendlich einmal.
+                span, cur = "30d", "eur"
+                for teil in (zerlegt.query or "").split("&"):
+                    name, _, wert = teil.partition("=")
+                    if name == "span" and wert in SPANS:
+                        span = wert
+                    elif name == "cur" and wert.isalpha() and len(wert) == 3:
+                        cur = wert.lower()
+                self._send(json.dumps(price_series(span, cur),
+                                      separators=(",", ":")))
             elif path == "/wallets":
                 # Absichtlich nicht im Zustand: die Wallet-Angaben sind rund
                 # 8 kB und aendern sich alle fuenf Minuten, der Zustand wird

@@ -88,6 +88,8 @@ Item {
     property bool clockBars: SettingsData.getPluginSetting(pid, "clockBars", true)
     property bool clockSpark: SettingsData.getPluginSetting(pid, "clockSpark", true)
     property bool clockTime: SettingsData.getPluginSetting(pid, "clockTime", false)
+    property bool clockPrice: SettingsData.getPluginSetting(pid, "clockPrice", true)
+    property string priceSpan: SettingsData.getPluginSetting(pid, "priceSpan", "30d")
     property bool minerChart: SettingsData.getPluginSetting(pid, "minerChart", true)
     property bool minerDomains: SettingsData.getPluginSetting(pid, "minerDomains", true)
     property bool minerBoard: SettingsData.getPluginSetting(pid, "minerBoard", true)
@@ -125,6 +127,8 @@ Item {
         "clockBars": clockBars,
         "clockSpark": clockSpark,
         "clockTime": clockTime,
+        "clockPrice": clockPrice,
+        "priceSpan": priceSpan,
         "clockFields": clockFields,
         "bigFields": bigFields,
         "bigRotate": bigRotate,

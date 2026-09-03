@@ -85,6 +85,8 @@ Item {
             "clockBars": root.get("clockBars", true),
             "clockSpark": root.get("clockSpark", true),
             "clockTime": root.get("clockTime", false),
+            "clockPrice": root.get("clockPrice", true),
+            "priceSpan": root.get("priceSpan", "30d"),
             "clockFields": root.getList("clockFieldsRaw", ""),
             "bigFields": root.getList("bigFieldsRaw", "height"),
             "bigRotate": root.get("bigRotate", 0),

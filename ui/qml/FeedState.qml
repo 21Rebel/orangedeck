@@ -155,6 +155,22 @@ Item {
         }
     }
 
+    // Kursverlauf. `span` ist einer von 24h, 7d, 30d, 90d, 1y, max.
+    //
+    // **Nicht im Zustand**, und zwar mit Absicht: der wird zweieinhalbmal je
+    // Sekunde geholt, der Verlauf aendert sich stuendlich einmal. Er kommt
+    // deshalb nur, wenn jemand die Kurve auch ansieht.
+    function prices(span, cur, done) {
+        if (root.direkt) {
+            if (direkt.item)
+                direkt.item.prices(span, cur, done);
+            else
+                done(null, "Direktbezug nicht bereit");
+            return;
+        }
+        root.getJson("/prices?span=" + span + "&cur=" + cur, done);
+    }
+
     // Einzelabfrage fuer den Explorer. Geht ueber den Daemon, nicht direkt
     // nach draussen -- er kennt die Datenquelle (mempool.space oder ein
     // eigener Node) und puffert die Antworten.

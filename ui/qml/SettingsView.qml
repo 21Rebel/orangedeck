@@ -668,6 +668,16 @@ Item {
                 }
 
                 Zeile {
+                    label: Tr.t("set.priceChart", root.lang)
+                    help: Tr.t("set.priceChartHelp", root.lang)
+
+                    Schalter {
+                        an: root.val("clockPrice", true)
+                        onUmgelegt: root.changed("clockPrice", !root.val("clockPrice", true))
+                    }
+                }
+
+                Zeile {
                     label: Tr.t("set.clockTime", root.lang)
                     help: Tr.t("set.clockTimeHelp", root.lang)
 

@@ -70,6 +70,8 @@ Window {
     property bool showBlock: true
     property bool clockSpark: true
     property bool clockTime: false
+    property bool clockPrice: true
+    property string priceSpan: "30d"
     property bool minerChart: true
     property bool minerDomains: true
     property bool minerBoard: true
@@ -133,6 +135,8 @@ Window {
         property alias showBlock: win.showBlock
         property alias clockSpark: win.clockSpark
         property alias clockTime: win.clockTime
+        property alias clockPrice: win.clockPrice
+        property alias priceSpan: win.priceSpan
         property alias minerChart: win.minerChart
         property alias minerDomains: win.minerDomains
         property alias minerBoard: win.minerBoard
@@ -235,6 +239,10 @@ Window {
             win.clockSpark = value;
         else if (key === "clockTime")
             win.clockTime = value;
+        else if (key === "clockPrice")
+            win.clockPrice = value;
+        else if (key === "priceSpan")
+            win.priceSpan = value;
         else if (key === "minerChart")
             win.minerChart = value;
         else if (key === "minerDomains")
@@ -282,6 +290,8 @@ Window {
         "showBlock": win.showBlock,
         "clockSpark": win.clockSpark,
         "clockTime": win.clockTime,
+        "clockPrice": win.clockPrice,
+        "priceSpan": win.priceSpan,
         "minerChart": win.minerChart,
         "minerDomains": win.minerDomains,
         "minerBoard": win.minerBoard,
@@ -365,6 +375,11 @@ Window {
         showBars: win.clockBars
         showSpark: win.clockSpark
         showTime: win.clockTime
+        showPrice: win.clockPrice
+        priceSpan: win.priceSpan
+        onPriceSpanRequested: function (sp) {
+            win.priceSpan = sp;
+        }
         bigFields: win.bigFields
         bigRotate: win.bigRotate
     }

@@ -29,6 +29,12 @@ Item {
     property string currency: "eur"
     property bool showBars: true
     property bool showSpark: true
+    // Der Kursverlauf unter den Kennzahlen. Der Wirt haelt den Zeitraum,
+    // damit er ueber Sitzungen bleibt.
+    property bool showPrice: true
+    property string priceSpan: "30d"
+
+    signal priceSpanRequested(string s)
     property bool showTime: false
     property string lang: "de"
     // Was gross in der Mitte steht. Mehrere Eintraege wechseln sich ab --
@@ -163,7 +169,10 @@ Item {
         width: parent.width * 0.86
         x: (flick.width - width) / 2
         y: Math.max(0, (flick.height - implicitHeight) / 2)
-        spacing: root.scaleUnit * 0.5
+        // Enger, sobald die Kurve dazukommt -- sie ist der grosse Posten in
+        // dieser Spalte, und die Zeitachse unter ihr darf nicht abgeschnitten
+        // werden. Sechs Fugen mal sechs Punkte sind genau die Zeile.
+        spacing: root.scaleUnit * (kurve.visible ? 0.35 : 0.5)
 
         // -------------------------------------------------------- Uhrzeit
         // Fuer ein Tablet an der Wand: dann ist es auch eine Uhr. Der
@@ -194,7 +203,13 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.bigValue(root.bigNow)
             color: root.accentColor
-            font.pixelSize: root.scaleUnit * 3.4
+            // **Die Kurve bekommt ihren Platz von hier.** Die Spalte fuellte
+            // die Flaeche vorher genau aus; kommt der Kursverlauf dazu, lief
+            // sie unten heraus und die Ansicht musste gerollt werden -- fuer
+            // eine Uhr an der Wand der falsche Weg. Der grosse Wert gibt
+            // stattdessen ein Viertel seiner Hoehe ab und bleibt auch dann
+            // die groesste Zahl im Bild.
+            font.pixelSize: root.scaleUnit * (kurve.visible ? 2.3 : 3.4)
             font.bold: true
         }
 
@@ -359,7 +374,14 @@ Item {
 
             width: parent.width
             height: root.scaleUnit * 1.8
-            visible: root.showSpark && (root.hr.series || []).length > 1
+            // **Nur eine Kurve in dieser Ansicht.** Ist der Kursverlauf da,
+            // tritt die Hashratekurve zurueck: zwei uebereinandergestapelte
+            // Linien sind in einer Uhr Rauschen, und der Platz reicht ohnehin
+            // nicht fuer beide. Die Hashrate steht ausserdem im Miner-Reiter,
+            // der Kurs nirgends sonst. Wer sie hier will, schaltet den
+            // Kursverlauf ab.
+            visible: root.showSpark && !kurve.visible
+                     && (root.hr.series || []).length > 1
 
             Connections {
                 target: root
@@ -387,6 +409,38 @@ Item {
                 ctx.strokeStyle = root.accentColor;
                 ctx.lineWidth = Math.max(1.5, root.scaleUnit * 0.09);
                 ctx.stroke();
+            }
+        }
+
+        // ----------------------------------------------- Kursverlauf
+        // Braucht Hoehe, sonst ist eine Kurve nicht zu lesen. In flachen
+        // Flaechen -- Leistenpopout, kleines Desktop-Widget -- bleibt sie
+        // deshalb weg, statt zu einem Strich zusammenzufallen.
+        //
+        // **Die Schwelle steht in Bildpunkten, nicht in `scaleUnit`.** Der
+        // waechst selbst mit der Hoehe (`height / 16`); `height >= scaleUnit * 22`
+        // heisst damit `height >= 1,375 * height` und ist nie erfuellt. Genau
+        // daran war die Kurve zuerst unsichtbar.
+        PriceChart {
+            id: kurve
+
+            width: parent.width
+            height: Math.max(root.scaleUnit * 5.5, root.height * 0.28)
+            visible: root.showPrice && root.height >= 420
+            live: root.visible
+            feed: root.feed
+            lang: root.lang
+            currency: root.currency
+            span: root.priceSpan
+            // Kleiner als die Kennzahlen darueber: die Beschriftung einer
+            // Kurve ist Beiwerk, keine Aussage.
+            baseFont: root.scaleUnit * 0.5
+            textColor: root.textColor
+            dimColor: root.dimColor
+            accentColor: root.accentColor
+            lineColor: Qt.rgba(root.dimColor.r, root.dimColor.g, root.dimColor.b, 0.35)
+            onSpanRequested: function (sp) {
+                root.priceSpanRequested(sp);
             }
         }
     }

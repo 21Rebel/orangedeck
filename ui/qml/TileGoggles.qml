@@ -39,6 +39,10 @@ Column {
     property color accentColor: "#f7931a"
     property real uiFont: 13
     property string lang: "de"
+    // Was vor den Knoepfen steht. Der Umschalter wird nicht nur fuer Farben
+    // benutzt, sondern auch fuer die Zeitraeume der Kurskurve -- dort waere
+    // "Farbe:" schlicht falsch. Ein leerer Wert laesst die Beschriftung weg.
+    property string labelKey: "color.label"
 
     signal picked(string mode)
 
@@ -51,7 +55,9 @@ Column {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: Tr.t("color.label", root.lang)
+            visible: root.labelKey !== ""
+            width: visible ? implicitWidth : 0
+            text: root.labelKey === "" ? "" : Tr.t(root.labelKey, root.lang)
             color: root.dimColor
             font.pixelSize: root.uiFont * 0.8
         }

@@ -154,6 +154,11 @@ Item {
         showBars: root.o("clockBars", true)
         showSpark: root.o("clockSpark", true)
         showTime: root.o("clockTime", false)
+        showPrice: root.o("clockPrice", true)
+        priceSpan: root.o("priceSpan", "30d")
+        onPriceSpanRequested: function (sp) {
+            root.optRequested("priceSpan", sp);
+        }
         bigFields: root.o("bigFields", ["height"])
         bigRotate: root.o("bigRotate", 0)
         textColor: root.textColor
