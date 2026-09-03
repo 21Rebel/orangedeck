@@ -923,27 +923,41 @@ _klines_lock = threading.Lock()
 _klines = {}   # (raster, anzahl) -> (zeitpunkt, kerzen)
 
 
-def klines(spanne, symbol="BTCUSDT"):
+def klines(spanne, symbol="BTCUSDT", von=0, bis=0):
     """Fertige Kerzen der Boerse fuer einen Zeitraum.
 
-    Gepuffert je Raster: ein Tagesraster muss nicht alle zwei Sekunden neu
-    geholt werden, ein Minutenraster schon eher. Faellt die Boerse aus, kommt
-    der letzte Stand zurueck -- ein alter Kurs ist besser als ein leeres Bild.
+    Ohne `von`/`bis` endet das Fenster **jetzt** -- das ist der Regelfall. Mit
+    beiden wird ein Fenster in der Vergangenheit geholt; das Raster sucht sich
+    dann nach dessen Laenge, damit auch dort rund zweihundert Kerzen
+    herauskommen.
+
+    Gepuffert je Raster und Fenster: ein Tagesraster muss nicht alle zwei
+    Sekunden neu geholt werden, ein Minutenraster schon eher. **Ein Fenster in
+    der Vergangenheit aendert sich gar nicht mehr** und wird deshalb lange
+    gehalten. Faellt die Boerse aus, kommt der letzte Stand zurueck -- ein
+    alter Kurs ist besser als ein leeres Bild.
     """
-    if isinstance(spanne, tuple):
+    if von and bis and bis > von:
+        raster, anzahl = raster_fuer(bis - von)
+    elif isinstance(spanne, tuple):
         raster, anzahl = spanne
     else:
         raster, anzahl = KLINE_SPANS.get(spanne, KLINE_SPANS["24h"])
-    schluessel = (symbol, raster, anzahl)
-    ttl = KLINE_CACHE_TTL.get(raster, 60)
+    schluessel = (symbol, raster, anzahl, von, bis)
+    # Vergangenes ist abgeschlossen -- eine Stunde Puffer schadet dort nicht.
+    ttl = 3600 if bis and bis < time.time() - 120 else KLINE_CACHE_TTL.get(raster, 60)
     with _klines_lock:
         eintrag = _klines.get(schluessel)
         if eintrag and time.time() - eintrag[0] < ttl:
             return eintrag[1]
     try:
-        req = urllib.request.Request(
-            "https://api.binance.com/api/v3/klines?symbol=%s&interval=%s&limit=%d"
-            % (symbol, raster, anzahl), headers={"User-Agent": UA})
+        url = ("https://api.binance.com/api/v3/klines?symbol=%s&interval=%s&limit=%d"
+               % (symbol, raster, min(1000, anzahl)))
+        if von and bis and bis > von:
+            url += "&startTime=%d&endTime=%d" % (int(von) * 1000, int(bis) * 1000)
+        elif bis:
+            url += "&endTime=%d" % (int(bis) * 1000)
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
         with urllib.request.urlopen(req, timeout=20) as r:
             roh = json.loads(r.read().decode())
     except Exception as e:
@@ -1621,6 +1635,7 @@ class _Handler(BaseHTTPRequestHandler):
                 # sie von selbst wieder zu.
                 MARKT.gefragt()
                 spanne, eigen, band_seit, waehrung = "24h", 0, 0, "usd"
+                von = bis = 0
                 for teil in (zerlegt.query or "").split("&"):
                     name, _, wert = teil.partition("=")
                     try:
@@ -1632,9 +1647,25 @@ class _Handler(BaseHTTPRequestHandler):
                             band_seit = max(0, int(wert))
                         elif name == "cur" and wert.isalpha() and len(wert) == 3:
                             waehrung = wert.lower()
+                        elif name == "from":
+                            von = max(0, int(wert))
+                        elif name == "to":
+                            bis = max(0, int(wert))
                     except ValueError:
                         pass
-                if spanne == "custom" and eigen:
+                if von and bis and bis > von:
+                    # Ausdruecklich von ... bis -- der Zeitraum ergibt sich
+                    # daraus, der Name spielt dann keine Rolle mehr.
+                    kerzen = klines(None, von=von, bis=bis)
+                elif bis:
+                    # Dieselbe Fensterlaenge, aber frueher zu Ende: das ist
+                    # das Verschieben auf der Zeitachse.
+                    laenge = eigen if (spanne == "custom" and eigen) else 0
+                    if laenge:
+                        kerzen = klines(None, von=bis - laenge, bis=bis)
+                    else:
+                        kerzen = klines(spanne, bis=bis)
+                elif spanne == "custom" and eigen:
                     kerzen = klines(raster_fuer(eigen))
                 else:
                     kerzen = klines(spanne)

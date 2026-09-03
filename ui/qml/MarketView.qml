@@ -89,6 +89,41 @@ Item {
     property int zoomSekunden: 0
     property bool zoomAusstehend: false
 
+    // ------------------------------------------------- Fenster in der Zeit
+    // **0 heisst: bis jetzt.** Das ist der Regelfall und bleibt es; alles
+    // andere ist ein Fenster in der Vergangenheit. Beim Ziehen und am
+    // Schieber wandert es, die Laenge bleibt.
+    property int fensterEnde: 0
+    // Ausdrueckliches Fenster von ... bis. Ist es gesetzt, gilt weder
+    // Zeitraum noch Fensterende.
+    property int vonZeit: 0
+    property int bisZeit: 0
+    // Waehrend des Ziehens: um wie viele Bildpunkte das Bild verschoben ist
+    property real ziehVersatz: 0
+
+    // Binance hat BTCUSDT am 31.07.2017 aufgenommen -- frueher gibt es nichts.
+    readonly property int beginn: 1501459200
+    readonly property int jetzt: Math.round(Date.now() / 1000)
+    readonly property int endeEffektiv: root.fensterEnde > 0 ? root.fensterEnde : root.jetzt
+    readonly property bool inVergangenheit: root.fensterEnde > 0 || root.bisZeit > 0
+
+    function fensterSetzen(ende) {
+        var min = root.beginn + root.sichtSekunden;
+        var max = root.jetzt;
+        var e = Math.round(Math.max(min, Math.min(max, ende)));
+        root.fensterEnde = (e >= max - 60) ? 0 : e;
+        root.vonZeit = 0;
+        root.bisZeit = 0;
+        nachfassen.restart();
+    }
+
+    function zurueckZurGegenwart() {
+        root.fensterEnde = 0;
+        root.vonZeit = 0;
+        root.bisZeit = 0;
+        root.holen();
+    }
+
     readonly property int sichtSekunden: root.zoomSekunden > 0
         ? root.zoomSekunden
         : (root.range === "custom" ? root.customSecs : root.sekundenVon(root.range))
@@ -124,10 +159,14 @@ Item {
 
         interval: 250
         onTriggered: {
-            root.zoomAusstehend = false;
-            if (root.range !== "custom")
-                root.rangeRequested("custom");
-            root.customSecsRequested(root.zoomSekunden);
+            if (root.zoomAusstehend) {
+                root.zoomAusstehend = false;
+                if (root.range !== "custom")
+                    root.rangeRequested("custom");
+                root.customSecsRequested(root.zoomSekunden);
+            } else {
+                root.holen();
+            }
         }
     }
 
@@ -164,9 +203,18 @@ Item {
     // das Fadenkreuz zwangslaeufig ein zweites Mal -- und irgendwann anders.
     readonly property real padR: mass.implicitWidth + 8
     readonly property real padB: root.baseFont * 1.4
-    readonly property real bandHoehe: root.showTape
+    // **Kein Band, solange das Bild in der Vergangenheit steht.** Das Band ist
+    // live; neben Kerzen von vor einem halben Jahr stuenden dort Preise von
+    // heute, und die Kopfzeile zeigte den einen Wert, das Band den anderen.
+    // Zwei Wahrheiten nebeneinander sind schlimmer als eine fehlende.
+    readonly property bool bandDa: root.showTape && !root.inVergangenheit
+    readonly property real bandHoehe: root.bandDa
                                       ? Math.min(root.height * 0.28, root.baseFont * 11)
                                       : 0
+    // Der Schieber unter der Zeitachse. In sehr flachen Flaechen faellt er
+    // weg -- dort ist die Kurve selbst schon knapp.
+    readonly property bool schieberDa: root.height >= 260
+    readonly property real schieberHoehe: root.schieberDa ? root.baseFont * 1.7 : 0
     readonly property real feldBreite: Math.max(1, leinwand.width - root.padR)
     readonly property real volHoehe: (leinwand.height - root.padB) * 0.26
     readonly property real preisHoehe: leinwand.height - root.padB - root.volHoehe
@@ -199,6 +247,9 @@ Item {
             return;
         var pfad = "/market?range=" + root.range
                  + (root.range === "custom" ? "&secs=" + root.customSecs : "")
+                 + (root.vonZeit && root.bisZeit
+                    ? "&from=" + root.vonZeit + "&to=" + root.bisZeit
+                    : (root.fensterEnde ? "&to=" + root.fensterEnde : ""))
                  + "&tape=" + root.bandNr
                  + "&cur=" + root.currency;
         root.feed.getJson(pfad, function (d, err) {
@@ -245,7 +296,10 @@ Item {
     Timer {
         interval: 1000
         repeat: true
-        running: root.live && root.visible
+        // Ein Fenster in der Vergangenheit aendert sich nicht mehr -- es
+        // jede Sekunde neu zu holen waere Unfug. Das Band laeuft dann auch
+        // nicht weiter; es zeigt die Gegenwart, das Bild die Vergangenheit.
+        running: root.live && root.visible && !root.inVergangenheit
         onTriggered: root.holen()
     }
 
@@ -278,6 +332,37 @@ Item {
         }
 
 
+
+        // Steht das Fenster in der Vergangenheit, fuehrt ein Klick zurueck.
+        // Ohne den kaeme man vom Schieben nur muehsam wieder heim.
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.inVergangenheit
+            width: heimText.implicitWidth + root.baseFont
+            height: Math.round(root.baseFont * 1.7)
+            radius: height / 2
+            color: heimMaus.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
+            border.width: 1
+            border.color: root.accentColor
+
+            Text {
+                id: heimText
+
+                anchors.centerIn: parent
+                text: Tr.t("market.now", root.lang)
+                color: root.accentColor
+                font.pixelSize: root.baseFont - 2
+            }
+
+            MouseArea {
+                id: heimMaus
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.zurueckZurGegenwart()
+            }
+        }
 
         // Steht die Kurve in einer anderen Waehrung als der der Boerse, sagt
         // sie es -- gerechnet wird mit dem heutigen Kurs, auch fuer Kerzen von
@@ -357,7 +442,8 @@ Item {
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.range === "custom"
-            width: root.baseFont * 5
+            width: (root.vonZeit && root.bisZeit) ? root.baseFont * 15
+                                                  : root.baseFont * 5
             height: Math.round(root.baseFont * 2.0)
             radius: height / 2
             color: "transparent"
@@ -373,11 +459,32 @@ Item {
                 color: root.textColor
                 font.pixelSize: root.baseFont
                 selectByMouse: true
-                text: root.eigenText(root.customSecs)
+                text: (root.vonZeit && root.bisZeit)
+                      ? Qt.formatDateTime(new Date(root.vonZeit * 1000), "dd.MM.yyyy")
+                        + ".." + Qt.formatDateTime(new Date(root.bisZeit * 1000), "dd.MM.yyyy")
+                      : root.eigenText(root.customSecs)
                 onAccepted: {
+                    // Zwei Punkte trennen ein ausdrueckliches Fenster:
+                    // "01.01.2021..31.03.2021". Ohne sie ist es eine Laenge,
+                    // die bis jetzt reicht.
+                    if (text.indexOf("..") >= 0) {
+                        var teile = text.split("..");
+                        var a = root.datumSekunden(teile[0]);
+                        var b = root.datumSekunden(teile[1]);
+                        if (a > 0 && b > a) {
+                            root.vonZeit = a;
+                            root.bisZeit = b;
+                            root.fensterEnde = 0;
+                            root.holen();
+                        }
+                        return;
+                    }
                     var sek = root.eigenSekunden(text);
-                    if (sek > 0)
+                    if (sek > 0) {
+                        root.vonZeit = 0;
+                        root.bisZeit = 0;
                         root.customSecsRequested(sek);
+                    }
                 }
             }
         }
@@ -414,6 +521,21 @@ Item {
         return Math.round(zahl * (faktor[m[2]] || 86400));
     }
 
+    // "31.03.2021" oder "2021-03-31" -> Sekunden. Ohne Uhrzeit gilt der
+    // Tagesbeginn in der Zeitzone des Rechners.
+    function datumSekunden(text) {
+        var t = String(text).trim();
+        var m = t.match(/^([0-9]{1,2})\.([0-9]{1,2})\.([0-9]{4})$/);
+        if (m)
+            return Math.round(new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1,
+                                       parseInt(m[1], 10)).getTime() / 1000);
+        m = t.match(/^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})$/);
+        if (m)
+            return Math.round(new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1,
+                                       parseInt(m[3], 10)).getTime() / 1000);
+        return 0;
+    }
+
     function eigenText(sek) {
         if (sek % 31536000 === 0)
             return (sek / 31536000) + "y";
@@ -439,7 +561,7 @@ Item {
         anchors.topMargin: Math.max(kopf.height, wahl.height)
                            + root.baseFont * 0.25 + ablesen.implicitHeight
                            + root.baseFont * 0.35
-        anchors.bottomMargin: root.bandHoehe
+        anchors.bottomMargin: root.bandHoehe + root.schieberHoehe
         antialiasing: false
 
         onPaint: {
@@ -448,6 +570,11 @@ Item {
             var n = root.sicht.length;
             if (n < 1)
                 return;
+            // Waehrend des Ziehens wandert das ganze Bild mit; was rechts oder
+            // links fehlt, ist noch nicht geholt und bleibt leer, statt
+            // erfunden zu werden.
+            if (root.ziehVersatz !== 0)
+                ctx.translate(root.ziehVersatz, 0);
 
             var breiteGesamt = root.feldBreite;
             var kerzeBreite = Math.max(1, root.kerzeBreite);
@@ -622,9 +749,46 @@ Item {
         anchors.fill: leinwand
         anchors.rightMargin: root.padR
         hoverEnabled: true
-        acceptedButtons: Qt.NoButton
+        // Ziehen verschiebt das Fenster in der Zeit. Die Ansicht folgt dabei
+        // sofort -- verschoben wird das gezeichnete Bild --, geholt wird erst,
+        // wenn die Hand loslaesst.
+        acceptedButtons: Qt.LeftButton
+        cursorShape: druck ? Qt.ClosedHandCursor : Qt.ArrowCursor
+
+        property bool druck: false
+        property real griffX: 0
+
+        onPressed: function (m) {
+            zeigerFeld.druck = true;
+            zeigerFeld.griffX = m.x;
+        }
+
+        onReleased: {
+            if (!zeigerFeld.druck)
+                return;
+            zeigerFeld.druck = false;
+            if (Math.abs(root.ziehVersatz) >= 2) {
+                // Nach rechts gezogen heisst: zurueck in die Vergangenheit.
+                var proPunkt = root.sichtSekunden / Math.max(1, root.feldBreite);
+                root.fensterSetzen(root.endeEffektiv - root.ziehVersatz * proPunkt);
+            }
+            root.ziehVersatz = 0;
+            leinwand.requestPaint();
+        }
+
+        onCanceled: {
+            zeigerFeld.druck = false;
+            root.ziehVersatz = 0;
+            leinwand.requestPaint();
+        }
 
         onPositionChanged: function (m) {
+            if (zeigerFeld.druck) {
+                root.ziehVersatz = m.x - zeigerFeld.griffX;
+                root.zeiger = -1;
+                leinwand.requestPaint();
+                return;
+            }
             root.zeiger = root.indexBei(m.x);
             root.zeigerY = m.y;
         }
@@ -738,6 +902,87 @@ Item {
         }
     }
 
+    // ------------------------------------------------ Schieber der Zeit
+    // Die ganze Breite ist die ganze Geschichte -- vom ersten Handelstag bei
+    // Binance bis jetzt. Der Griff ist das gezeigte Fenster: er sagt zugleich,
+    // **wo** man ist und **wie viel** man sieht. Ziehen verschiebt, ein Klick
+    // daneben springt.
+    Item {
+        id: schieber
+
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.rightMargin: root.padR
+        anchors.bottom: bandFeld.visible ? bandFeld.top : parent.bottom
+        height: root.schieberHoehe
+        visible: root.schieberDa
+
+        readonly property real gesamt: Math.max(1, root.jetzt - root.beginn)
+        readonly property real anteil: Math.min(1, root.sichtSekunden / gesamt)
+        readonly property real griffBreite: Math.max(10, width * anteil)
+        readonly property real griffX: {
+            var start = root.endeEffektiv - root.sichtSekunden;
+            var t = (start - root.beginn) / schieber.gesamt;
+            return Math.max(0, Math.min(width - schieber.griffBreite, t * width));
+        }
+
+        // Ein Zeitpunkt aus einer Stelle auf der Leiste
+        function zeitBei(x) {
+            return root.beginn + schieber.gesamt * Math.max(0, Math.min(1, x / width));
+        }
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            height: Math.max(3, root.baseFont * 0.35)
+            radius: height / 2
+            color: root.lineColor
+        }
+
+        Rectangle {
+            id: griff
+
+            x: schieber.griffX
+            width: schieber.griffBreite
+            anchors.verticalCenter: parent.verticalCenter
+            height: Math.max(7, root.baseFont * 0.8)
+            radius: height / 2
+            color: griffMaus.pressed || griffMaus.containsMouse
+                   ? root.accentColor : root.dimColor
+
+            MouseArea {
+                id: griffMaus
+
+                anchors.fill: parent
+                anchors.margins: -4
+                hoverEnabled: true
+                cursorShape: Qt.SizeHorCursor
+                drag.target: griff
+                drag.axis: Drag.XAxis
+                drag.minimumX: 0
+                drag.maximumX: schieber.width - griff.width
+                drag.threshold: 0
+
+                onPositionChanged: {
+                    if (!drag.active)
+                        return;
+                    // Der Griff steht fuer den **Anfang** des Fensters
+                    root.fensterSetzen(schieber.zeitBei(griff.x) + root.sichtSekunden);
+                }
+            }
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            // Neben den Griff geklickt: dorthin springen, Fenstermitte auf
+            // die angeklickte Stelle.
+            onClicked: function (m) {
+                root.fensterSetzen(schieber.zeitBei(m.x) + root.sichtSekunden / 2);
+            }
+        }
+    }
+
     // -------------------------------------------------- Laufendes Band
     // Die Trades, wie sie hereinkommen -- juengster oben. Der Dienst hebt nur
     // auf, was ueber tausend Dollar liegt, und schickt je Abfrage nur das
@@ -749,7 +994,7 @@ Item {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         height: root.bandHoehe
-        visible: root.showTape
+        visible: root.bandDa
         clip: true
         spacing: 0
         boundsBehavior: Flickable.StopAtBounds
