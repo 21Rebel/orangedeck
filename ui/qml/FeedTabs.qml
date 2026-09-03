@@ -64,11 +64,20 @@ Item {
     // der Miner steht im Heimnetz, die Wallet-Ableitung ist Rechenarbeit des
     // Dienstes. Ein Reiter, hinter dem nichts sein kann, ist schlimmer als
     // keiner.
+    // 6 ist der Markt. Er steht hinter dem Explorer und **nur mit Dienst**:
+    // die Boersenstroeme werden dort zu Kerzen verdichtet, im Direktbezug
+    // gibt es niemanden, der das tut. Ein Reiter, hinter dem nichts sein
+    // kann, ist schlimmer als keiner -- dieselbe Regel wie bei Miner und
+    // Wallet.
+    readonly property bool canMarket: root.feed && !root.feed.direkt
+
     readonly property var tabViews: {
         var v = [0, 1];
         if (root.feed && root.feed.canMiner)
             v.push(2);
         v.push(3);
+        if (root.canMarket)
+            v.push(6);
         if (root.walletEnabled && root.feed && root.feed.canWallet)
             v.push(4);
         v.push(5);
@@ -80,6 +89,8 @@ Item {
         if (root.feed && root.feed.canMiner)
             l.push(Tr.t("tab.miner", root.lang));
         l.push(Tr.t("tab.explorer", root.lang));
+        if (root.canMarket)
+            l.push(Tr.t("tab.market", root.lang));
         if (root.walletEnabled && root.feed && root.feed.canWallet)
             l.push(Tr.t("tab.wallet", root.lang));
         l.push(Tr.t("tab.settings", root.lang));
@@ -112,6 +123,8 @@ Item {
     }
 
     FeedPanel {
+        id: halde
+
         visible: root.live && root.view === 0
         anchors.fill: parent
         anchors.topMargin: root.tabSpace
@@ -205,6 +218,26 @@ Item {
         }
     }
 
+    MarketView {
+        visible: root.live && root.view === 6 && root.canMarket
+        // Nur abfragen, wenn der Reiter auch offen ist -- jede Abfrage haelt
+        // im Dienst die Boersenstroeme am Leben.
+        live: visible
+        anchors.fill: parent
+        anchors.topMargin: root.tabSpace
+        feed: root.feed
+        lang: root.lang
+        timeframe: root.o("marketTf", 5)
+        baseFont: root.baseFont
+        textColor: root.textColor
+        dimColor: root.dimColor
+        accentColor: root.accentColor
+        lineColor: root.lineColor
+        onTimeframeRequested: function (tf) {
+            root.optRequested("marketTf", tf);
+        }
+    }
+
     WatchView {
         visible: root.live && root.view === 4 && root.walletEnabled
         // Nur nachfragen, wenn die Ansicht auch zu sehen ist
@@ -240,6 +273,12 @@ Item {
         onChanged: function (key, value) {
             root.optRequested(key, value);
         }
+    }
+
+    // Die Blockanimation von Hand ausloesen -- das Fenster legt sie auf die
+    // Taste b, zum Pruefen ohne zehn Minuten Wartezeit.
+    function triggerBlockAnimation() {
+        halde.triggerBlockAnimation();
     }
 
     // Der Miner traegt zwei Knoepfe, die im Dashboard nicht bei ihm, sondern in

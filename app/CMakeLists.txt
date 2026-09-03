@@ -38,6 +38,7 @@ set(SHARED_QML
     ../ui/qml/MinerView.qml
     ../ui/qml/MinerChart.qml
     ../ui/qml/PriceChart.qml
+    ../ui/qml/MarketView.qml
     ../ui/qml/ViewTabs.qml
     ../ui/qml/FeedTabs.qml
     ../ui/qml/InfoPopup.qml

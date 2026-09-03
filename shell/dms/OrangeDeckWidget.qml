@@ -87,6 +87,7 @@ PluginComponent {
             "clockTime": root.get("clockTime", false),
             "clockPrice": root.get("clockPrice", true),
             "priceSpan": root.get("priceSpan", "30d"),
+            "marketTf": root.get("marketTf", 5),
             "clockFields": root.getList("clockFieldsRaw", ""),
             "bigFields": root.getList("bigFieldsRaw", "height"),
             "bigRotate": root.get("bigRotate", 0),

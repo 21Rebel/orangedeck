@@ -41,6 +41,7 @@ ShellRoot {
         property bool clockTime: false
         property bool clockPrice: true
         property string priceSpan: "30d"
+        property int marketTf: 5
         property bool minerChart: true
         property bool minerDomains: true
         property bool minerBoard: true
@@ -55,34 +56,15 @@ ShellRoot {
         // 0 Feed, 1 BlockClock, 2 Miner, 3 Explorer, 4 Wallet, 5 Einstellungen
         property int view: 0
 
-        // Zwei Reiter fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit:
-        // der Miner steht im Heimnetz und die Wallet-Ableitung ist Rechenarbeit des
-        // Dienstes. Ein Reiter, hinter dem nichts sein kann, ist schlimmer als keiner.
-        readonly property var tabViews: {
-            var v = [0, 1];
-            if (feedState.canMiner)
-                v.push(2);
-            v.push(3);
-            if (walletEnabled && feedState.canWallet)
-                v.push(4);
-            v.push(5);
-            return v;
-        }
-        readonly property var tabLabels: {
-            var l = [Tr.t("tab.feed", lang), Tr.t("tab.clock", lang)];
-            if (feedState.canMiner)
-                l.push(Tr.t("tab.miner", lang));
-            l.push(Tr.t("tab.explorer", lang));
-            if (walletEnabled && feedState.canWallet)
-                l.push(Tr.t("tab.wallet", lang));
-            l.push(Tr.t("tab.settings", lang));
-            return l;
-        }
-
-        onTabViewsChanged: {
-            if (win.tabViews.indexOf(win.view) < 0)
-                win.view = 0;
-        }
+        // Welche Reiter es gibt, rechnet `FeedTabs` -- samt Rueckfall auf den
+        // Feed, wenn die gemerkte Ansicht gerade keinen Reiter hat. Hier stand
+        // dieselbe Rechnung vorher ein zweites Mal.
+        //
+        // Drei fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit:
+        // der Miner steht im Heimnetz, die Wallet-Ableitung ist Rechenarbeit
+        // des Dienstes, und die Boersentrades werden dort zu Kerzen
+        // verdichtet. Ein Reiter, hinter dem nichts sein kann, ist schlimmer
+        // als keiner.
 
         readonly property var opts: ({
             "bgOpacity": bgOpacity,
@@ -107,6 +89,7 @@ ShellRoot {
             "clockTime": clockTime,
             "clockPrice": clockPrice,
             "priceSpan": priceSpan,
+            "marketTf": marketTf,
             "minerChart": minerChart,
             "minerDomains": minerDomains,
             "minerBoard": minerBoard,
@@ -164,6 +147,8 @@ ShellRoot {
                 clockPrice = value;
             else if (key === "priceSpan")
                 priceSpan = value;
+            else if (key === "marketTf")
+                marketTf = value;
             else if (key === "minerChart")
                 minerChart = value;
             else if (key === "minerDomains")
@@ -215,6 +200,7 @@ ShellRoot {
                 "clockTime": clockTime,
                 "clockPrice": clockPrice,
                 "priceSpan": priceSpan,
+                "marketTf": marketTf,
                 "minerChart": minerChart,
                 "minerDomains": minerDomains,
                 "minerBoard": minerBoard,
@@ -282,6 +268,8 @@ ShellRoot {
                         win.clockPrice = v.clockPrice;
                     if (typeof v.priceSpan === "string")
                         win.priceSpan = v.priceSpan;
+                    if (typeof v.marketTf === "number")
+                        win.marketTf = v.marketTf;
                     if (typeof v.minerChart === "boolean")
                         win.minerChart = v.minerChart;
                     if (typeof v.minerDomains === "boolean")
@@ -314,140 +302,30 @@ ShellRoot {
             mode: win.dataSource
         }
 
-        // Dieselben fuenf Ansichten wie in der eigenstaendigen Anwendung.
-        // Zwei Fenster mit verschiedenem Inhalt waren nur verwirrend -- die
-        // geteilten Bausteine haengen an nichts ausser Qt Quick, also laufen
-        // sie hier genauso.
-        ViewTabs {
+        // **Alle Ansichten stehen in `FeedTabs`** -- dasselbe Bauteil wie im
+        // Fenster, im Dashboard, im Popout und auf dem Desktop. Vorher
+        // verdrahtete dieses Fenster sie selbst; genau daran fehlte hier der
+        // Kursverlauf, obwohl er ueberall sonst schon stand.
+        FeedTabs {
             id: tabs
 
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
+            anchors.fill: parent
+            anchors.margins: 14
             anchors.topMargin: 8
-            labels: win.tabLabels
-            current: win.tabViews.indexOf(win.view)
-            fontSize: 13
-            z: 30
-            onPicked: function (i) {
-                win.view = win.tabViews[i];
-                win.save();
-            }
-        }
-
-        FeedPanel {
-            id: panel
-
-            visible: win.view === 0
-            anchors.fill: parent
-            anchors.margins: 14
-            anchors.topMargin: tabs.height + 14
             feed: feedState
-            lang: win.lang
-            baseFont: 13
-            colorMode: win.colorMode
-            onColorModeRequested: function (m) {
-                win.colorMode = m;
-                win.save();
-            }
-            sizeMode: win.sizeMode
-            headerVisible: win.showHeader
-            footerVisible: win.showFooter
-            blockVisible: win.showBlock
-            currency: win.currency
-            infoVisible: win.showInfo
-            legendVisible: win.showLegend
-            rulerVisible: win.showRuler
-            frostedInfo: win.frosted
-            frostedBlur: win.frosted
-            density: win.density
-            onTxActivated: function (txid) {
-                win.view = 3;
-                explorer.go("tx", txid);
-            }
-        }
-
-        ClockView {
-            visible: win.view === 1
-            anchors.fill: parent
-            anchors.margins: 14
-            anchors.topMargin: tabs.height + 14
-            feed: feedState
-            lang: win.lang
-            fields: win.clockFields
-            currency: win.currency
-            showBars: win.clockBars
-            showSpark: win.clockSpark
-            showTime: win.clockTime
-            showPrice: win.clockPrice
-            priceSpan: win.priceSpan
-            onPriceSpanRequested: function (sp) {
-                win.priceSpan = sp;
-            }
-            bigFields: win.bigFields
-            bigRotate: win.bigRotate
-        }
-
-        MinerView {
-            visible: win.view === 2
-            anchors.fill: parent
-            anchors.margins: 14
-            anchors.topMargin: tabs.height + 14
-            feed: feedState
-            lang: win.lang
-            metricKeys: win.minerFields
-            showChart: win.minerChart
-            showDomains: win.minerDomains
-            showBoard: win.minerBoard
-        }
-
-        ExplorerView {
-            id: explorer
-
-            visible: win.view === 3
-            anchors.fill: parent
-            anchors.margins: 14
-            anchors.topMargin: tabs.height + 14
-            feed: feedState
-            lang: win.lang
-            tileColorMode: win.tileColorMode
-            currency: win.currency
-            homeParts: win.explorerParts
-            homePanels: win.explorerPanels
-            trackProjected: win.explorerLive
-            onTileColorModeRequested: function (m) {
-                win.tileColorMode = m;
-                win.save();
-            }
-        }
-
-        SettingsView {
-            visible: win.view === 5
-            anchors.fill: parent
-            anchors.margins: 14
-            anchors.topMargin: tabs.height + 14
             opts: win.opts
-            lang: win.lang
-            onChanged: function (key, value) {
+            view: win.view
+            tabsVisible: !win.bare
+            windowedSettings: true
+            minerActions: !win.bare
+            gap: 6
+            tabFont: 13
+            baseFont: 13
+            onOptRequested: function (key, value) {
                 win.setOpt(key, value);
             }
-        }
-
-        WatchView {
-            visible: win.view === 4 && win.walletEnabled
-            live: visible
-            anchors.fill: parent
-            anchors.margins: 14
-            anchors.topMargin: tabs.height + 14
-            feed: feedState
-            lang: win.lang
-            currency: win.currency
-            onTxPicked: function (txid) {
-                win.view = 3;
-                explorer.go("tx", txid);
-            }
-            onAddressPicked: function (adr) {
-                win.view = 3;
-                explorer.go("address", adr);
+            onViewRequested: function (v) {
+                win.view = v;
             }
         }
 
@@ -480,7 +358,7 @@ ShellRoot {
                     win.save();
                     break;
                 case Qt.Key_B:
-                    panel.triggerBlockAnimation();
+                    tabs.triggerBlockAnimation();
                     break;
                 case Qt.Key_I:
                     win.showInfo = !win.showInfo;
@@ -493,8 +371,8 @@ ShellRoot {
                 case Qt.Key_5:
                 case Qt.Key_6:
                     var n = event.key - Qt.Key_1;
-                    if (n < win.tabViews.length) {
-                        win.view = win.tabViews[n];
+                    if (n < tabs.tabViews.length) {
+                        win.view = tabs.tabViews[n];
                         win.save();
                     }
                     break;

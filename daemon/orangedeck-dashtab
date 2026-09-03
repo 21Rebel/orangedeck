@@ -92,6 +92,7 @@ Item {
     property bool clockTime: SettingsData.getPluginSetting(pid, "clockTime", false)
     property bool clockPrice: SettingsData.getPluginSetting(pid, "clockPrice", true)
     property string priceSpan: SettingsData.getPluginSetting(pid, "priceSpan", "30d")
+    property int marketTf: SettingsData.getPluginSetting(pid, "marketTf", 5)
     property bool minerChart: SettingsData.getPluginSetting(pid, "minerChart", true)
     property bool minerDomains: SettingsData.getPluginSetting(pid, "minerDomains", true)
     property bool minerBoard: SettingsData.getPluginSetting(pid, "minerBoard", true)
@@ -131,6 +132,7 @@ Item {
         "clockTime": clockTime,
         "clockPrice": clockPrice,
         "priceSpan": priceSpan,
+        "marketTf": marketTf,
         "clockFields": clockFields,
         "bigFields": bigFields,
         "bigRotate": bigRotate,

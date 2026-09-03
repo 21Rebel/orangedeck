@@ -715,6 +715,181 @@ def http_json(path, timeout=15):
 
 
 # --------------------------------------------------------------------------
+# Marktdaten: Trades der Boersen, zu Kerzen verdichtet
+# --------------------------------------------------------------------------
+#
+# Die erste Quelle in diesem Programm, die **nicht** an der Kette haengt.
+# Vorbild ist aggr.trade; uebernommen ist davon nichts ausser dem Gedanken --
+# aggr steht unter GPL-3.0, dieses Repo unter MIT. Die Schnittstellen der
+# Boersen gehoeren niemandem, sie sind oeffentlich und ohne Schluessel
+# erreichbar.
+#
+# **Verdichtet wird hier, nicht in der Oberflaeche.** Ein reger Markt schickt
+# hunderte Trades je Sekunde aus mehreren Boersen; die Oberflaeche bekommt
+# fertige Kerzen. Dieselbe Regel wie beim Kursverlauf und beim geplanten
+# Block, und sie ist hier zweimal gemessen worden.
+#
+# **Und nur, solange jemand hinsieht.** Die Verbindungen kommen erst mit der
+# ersten Abfrage und gehen wieder, wenn zwei Minuten lang keine mehr kam. Ein
+# Dashboard, das den ganzen Tag offen steht, soll nicht rund um die Uhr zwei
+# Boersenstroeme mitlaufen lassen.
+
+MARKET_SECONDS = 3600     # eine Stunde Sekundenkerzen im Ring
+MARKET_LINGER = 120       # so lange nach der letzten Abfrage bleibt der Strom
+MARKET_MAX_CANDLES = 400  # mehr zeichnet keine Oberflaeche sinnvoll
+
+
+def _binance_trades(msg):
+    """{"e":"aggTrade","T":ms,"p":"81250.1","q":"0.01","m":true}
+
+    `m` heisst "der Kaeufer war der Market Maker" -- der **Angreifer** war dann
+    ein Verkaeufer. Die Seite ist also umgekehrt zu dem, was der Name nahelegt.
+    """
+    if msg.get("e") != "aggTrade":
+        return
+    try:
+        yield (float(msg["T"]) / 1000.0, float(msg["p"]), float(msg["q"]),
+               not msg.get("m"))
+    except (KeyError, TypeError, ValueError):
+        return
+
+
+def _bybit_trades(msg):
+    """{"topic":"publicTrade.BTCUSDT","data":[{"T":ms,"p":"..","v":"..","S":"Buy"}]}"""
+    if not str(msg.get("topic", "")).startswith("publicTrade"):
+        return
+    for t in msg.get("data") or []:
+        try:
+            yield (float(t["T"]) / 1000.0, float(t["p"]), float(t["v"]),
+                   t.get("S") == "Buy")
+        except (KeyError, TypeError, ValueError):
+            continue
+
+
+# Zwei Boersen genuegen fuer den Anfang: eine mit dem groessten Volumen, eine
+# als Gegenprobe. Beide ohne Schluessel, beide ohne Anmeldung.
+MARKETS = (
+    {"id": "binance", "name": "Binance",
+     "url": "wss://stream.binance.com:9443/ws/btcusdt@aggTrade",
+     "sub": None, "parse": _binance_trades},
+    {"id": "bybit", "name": "Bybit",
+     "url": "wss://stream.bybit.com/v5/public/spot",
+     "sub": {"op": "subscribe", "args": ["publicTrade.BTCUSDT"]},
+     "parse": _bybit_trades},
+)
+
+
+class Market:
+    """Sekundenkerzen aus den Trades aller Boersen zusammen.
+
+    Ein Ring aus `MARKET_SECONDS` Faechern, eines je Sekunde. Groebere Raster
+    entstehen beim Abfragen durch Zusammenfassen -- so wird **einmal**
+    verdichtet, und jedes Raster bleibt moeglich.
+    """
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.sekunden = {}        # Sekunde -> [o, h, l, c, vKauf, vVerkauf]
+        self.letzte_abfrage = 0.0
+        self.online = {}          # Boersenkennung -> True/False
+        self.trades = 0
+
+    def add(self, ts, preis, menge, kauf):
+        sek = int(ts)
+        with self.lock:
+            k = self.sekunden.get(sek)
+            if k is None:
+                k = [preis, preis, preis, preis, 0.0, 0.0]
+                self.sekunden[sek] = k
+            else:
+                k[1] = max(k[1], preis)
+                k[2] = min(k[2], preis)
+                k[3] = preis
+            k[4 if kauf else 5] += menge
+            self.trades += 1
+            # Alte Faecher wegwerfen -- ohne das waechst der Ring endlos
+            if len(self.sekunden) > MARKET_SECONDS + 120:
+                grenze = sek - MARKET_SECONDS
+                for alt in [x for x in self.sekunden if x < grenze]:
+                    del self.sekunden[alt]
+
+    def gefragt(self):
+        """Jede Abfrage haelt die Stroeme am Leben."""
+        self.letzte_abfrage = time.time()
+
+    def erwuenscht(self):
+        return time.time() - self.letzte_abfrage < MARKET_LINGER
+
+    def kerzen(self, raster, anzahl):
+        """Sekundenfaecher zu Kerzen von `raster` Sekunden zusammenfassen."""
+        raster = max(1, int(raster))
+        anzahl = max(1, min(MARKET_MAX_CANDLES, int(anzahl)))
+        with self.lock:
+            roh = sorted(self.sekunden.items())
+        if not roh:
+            return []
+        gruppen = {}
+        for sek, k in roh:
+            fach = sek - (sek % raster)
+            g = gruppen.get(fach)
+            if g is None:
+                gruppen[fach] = [k[0], k[1], k[2], k[3], k[4], k[5]]
+            else:
+                g[1] = max(g[1], k[1])
+                g[2] = min(g[2], k[2])
+                g[3] = k[3]
+                g[4] += k[4]
+                g[5] += k[5]
+        aus = []
+        for fach in sorted(gruppen)[-anzahl:]:
+            o, h, l, c, vk, vv = gruppen[fach]
+            aus.append([fach, round(o, 2), round(h, 2), round(l, 2), round(c, 2),
+                        round(vk, 4), round(vv, 4)])
+        return aus
+
+
+MARKT = Market()
+
+
+def run_market(quelle):
+    """Ein Faden je Boerse. Verbindet erst, wenn jemand hinsieht."""
+    backoff = 2
+    while True:
+        if not MARKT.erwuenscht():
+            MARKT.online[quelle["id"]] = False
+            time.sleep(2)
+            continue
+        ws = None
+        try:
+            ws = WebSocket(quelle["url"], timeout=30)
+            if quelle["sub"]:
+                ws.send(json.dumps(quelle["sub"]))
+            MARKT.online[quelle["id"]] = True
+            backoff = 2
+            while MARKT.erwuenscht():
+                raw = ws.recv()
+                if raw is None:
+                    continue
+                try:
+                    msg = json.loads(raw)
+                except ValueError:
+                    continue
+                for ts, preis, menge, kauf in quelle["parse"](msg):
+                    MARKT.add(ts, preis, menge, kauf)
+        except Exception as e:
+            MARKT.online[quelle["id"]] = False
+            sys.stderr.write("Markt %s: %s\n" % (quelle["id"], e))
+            time.sleep(backoff)
+            backoff = min(60, backoff * 2)
+        finally:
+            if ws is not None:
+                try:
+                    ws.close()
+                except Exception:
+                    pass
+
+
+# --------------------------------------------------------------------------
 # Kursverlauf
 # --------------------------------------------------------------------------
 _price_lock = threading.Lock()
@@ -1301,6 +1476,29 @@ class _Handler(BaseHTTPRequestHandler):
                         self._send(json.dumps({"error": err[0]}), err[1])
                     else:
                         self._send(body)
+            elif path == "/market":
+                # `?tf=<sekunden>&n=<anzahl>` -- jede Abfrage haelt die
+                # Boersenstroeme am Leben; bleibt sie zwei Minuten aus, gehen
+                # sie von selbst wieder zu.
+                MARKT.gefragt()
+                tf, anzahl = 5, 180
+                for teil in (zerlegt.query or "").split("&"):
+                    name, _, wert = teil.partition("=")
+                    try:
+                        if name == "tf":
+                            tf = max(1, min(3600, int(wert)))
+                        elif name == "n":
+                            anzahl = int(wert)
+                    except ValueError:
+                        pass
+                self._send(json.dumps({
+                    "tf": tf,
+                    "candles": MARKT.kerzen(tf, anzahl),
+                    "sources": [{"id": q["id"], "name": q["name"],
+                                 "online": bool(MARKT.online.get(q["id"]))}
+                                for q in MARKETS],
+                    "trades": MARKT.trades,
+                }, separators=(",", ":")))
             elif path == "/prices":
                 # `?span=24h|7d|30d|90d|1y|max&cur=eur` -- beides freiwillig.
                 # Bewusst **nicht** im Zustand: der wird 2,5-mal je Sekunde
@@ -2467,6 +2665,9 @@ def main():
     serve_local(feed)
     threading.Thread(target=run_extras, args=(feed,), daemon=True).start()
     threading.Thread(target=run_watch, args=(feed,), daemon=True).start()
+    # Ein Faden je Boerse. Sie schlafen, bis jemand den Markt-Reiter oeffnet.
+    for _quelle in MARKETS:
+        threading.Thread(target=run_market, args=(_quelle,), daemon=True).start()
 
     backoff = 2
     rest_deadline = 0.0

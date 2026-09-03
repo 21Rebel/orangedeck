@@ -72,6 +72,8 @@ Window {
     property bool clockTime: false
     property bool clockPrice: true
     property string priceSpan: "30d"
+    // Raster im Markt-Reiter, in Sekunden
+    property int marketTf: 5
     property bool minerChart: true
     property bool minerDomains: true
     property bool minerBoard: true
@@ -137,6 +139,7 @@ Window {
         property alias clockTime: win.clockTime
         property alias clockPrice: win.clockPrice
         property alias priceSpan: win.priceSpan
+        property alias marketTf: win.marketTf
         property alias minerChart: win.minerChart
         property alias minerDomains: win.minerDomains
         property alias minerBoard: win.minerBoard
@@ -162,39 +165,14 @@ Window {
             win.view = 0;
     }
 
-    // Welche Reiter es gibt und welche Ansicht dahinter steckt.
+    // Welche Reiter es gibt, rechnet `FeedTabs` -- samt Rueckfall auf den
+    // Feed, wenn die gemerkte Ansicht gerade keinen Reiter hat. Hier stand das
+    // vorher ein zweites Mal.
     //
     // Zwei fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit: der
-    // Miner steht im Heimnetz und die Wallet-Ableitung ist Rechenarbeit des
-    // Dienstes. Ein Reiter, hinter dem nichts sein kann, ist schlimmer als
-    // keiner.
-    readonly property var tabViews: {
-        var v = [0, 1];
-        if (feedState.canMiner)
-            v.push(2);
-        v.push(3);
-        if (win.walletEnabled && feedState.canWallet)
-            v.push(4);
-        v.push(5);
-        return v;
-    }
-    readonly property var tabLabels: {
-        var l = [Tr.t("tab.feed", win.lang), Tr.t("tab.clock", win.lang)];
-        if (feedState.canMiner)
-            l.push(Tr.t("tab.miner", win.lang));
-        l.push(Tr.t("tab.explorer", win.lang));
-        if (win.walletEnabled && feedState.canWallet)
-            l.push(Tr.t("tab.wallet", win.lang));
-        l.push(Tr.t("tab.settings", win.lang));
-        return l;
-    }
-
-    // Steht die Ansicht auf einem Reiter, den es gerade nicht gibt, zurueck
-    // auf den Feed -- sonst bliebe eine leere Seite stehen.
-    onTabViewsChanged: {
-        if (win.tabViews.indexOf(win.view) < 0)
-            win.view = 0;
-    }
+    // Miner steht im Heimnetz, die Wallet-Ableitung ist Rechenarbeit des
+    // Dienstes, und der Markt wird dort verdichtet. Ein Reiter, hinter dem
+    // nichts sein kann, ist schlimmer als keiner.
 
     // Eine Einstellung setzen. Alles laeuft hier durch, damit es nur eine
     // Stelle gibt, an der etwas geaendert wird.
@@ -243,6 +221,8 @@ Window {
             win.clockPrice = value;
         else if (key === "priceSpan")
             win.priceSpan = value;
+        else if (key === "marketTf")
+            win.marketTf = value;
         else if (key === "minerChart")
             win.minerChart = value;
         else if (key === "minerDomains")
@@ -292,6 +272,7 @@ Window {
         "clockTime": win.clockTime,
         "clockPrice": win.clockPrice,
         "priceSpan": win.priceSpan,
+        "marketTf": win.marketTf,
         "minerChart": win.minerChart,
         "minerDomains": win.minerDomains,
         "minerBoard": win.minerBoard,
@@ -310,147 +291,35 @@ Window {
         mode: win.effSource
     }
 
-    // Ein unsichtbares Element behaelt seine Hoehe -- ohne diese Zeile
-    // haetten die nackten Widgets oben einen leeren Streifen in Reiterhoehe.
-    readonly property real tabSpace: tabs.visible ? tabs.height : 0
-
-    // Umschalten auch mit der Maus, nicht nur mit 1/2/3
-    ViewTabs {
+    // **Alle Ansichten stehen in `FeedTabs`** -- dasselbe Bauteil wie im
+    // Dashboard, im Popout und auf dem Desktop. Vorher verdrahtete dieses
+    // Fenster sie selbst, und genau daran fehlte der Wallet-Ansicht ihre
+    // Sprache und der BlockClock der Kursverlauf: was hier dazukam, kam
+    // dort nicht an, und umgekehrt.
+    FeedTabs {
         id: tabs
 
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
+        anchors.fill: parent
+        anchors.margins: 14
         anchors.topMargin: 8
-        visible: !win.bare
-        labels: win.tabLabels
-        current: win.tabViews.indexOf(win.view)
-        fontSize: 13
-        z: 30
-        onPicked: function (i) {
-            win.view = win.tabViews[i];
-        }
-    }
-
-    FeedPanel {
-        id: panel
-
-        visible: win.view === 0
-        anchors.fill: parent
-        anchors.margins: 14
-        anchors.topMargin: win.tabSpace + 14
         feed: feedState
-        lang: win.lang
-        baseFont: 13
-        // Klick auf eine Kachel fuehrt in den Explorer
-        onTxActivated: function (txid) {
-            win.view = 3;
-            explorer.go("tx", txid);
-        }
-        colorMode: win.colorMode
-        onColorModeRequested: function (m) {
-            win.colorMode = m;
-        }
-        sizeMode: win.sizeMode
-        headerVisible: win.showHeader && !win.bare
-        footerVisible: win.showFooter && !win.bare
-        blockVisible: win.showBlock
-        currency: win.currency
-        infoVisible: win.showInfo
-        legendVisible: win.showLegend
-        rulerVisible: win.showRuler
-        frostedInfo: win.frosted
-        frostedBlur: win.frosted
-        density: win.density
-    }
-
-    ClockView {
-        visible: win.view === 1
-        anchors.fill: parent
-        anchors.margins: 14
-        anchors.topMargin: win.tabSpace + 14
-        feed: feedState
-        lang: win.lang
-        fields: win.clockFields
-        currency: win.currency
-        showBars: win.clockBars
-        showSpark: win.clockSpark
-        showTime: win.clockTime
-        showPrice: win.clockPrice
-        priceSpan: win.priceSpan
-        onPriceSpanRequested: function (sp) {
-            win.priceSpan = sp;
-        }
-        bigFields: win.bigFields
-        bigRotate: win.bigRotate
-    }
-
-    ExplorerView {
-        id: explorer
-
-        visible: win.view === 3
-        anchors.fill: parent
-        anchors.margins: 14
-        anchors.topMargin: win.tabSpace + 14
-        feed: feedState
-        lang: win.lang
-        tileColorMode: win.tileColorMode
-        currency: win.currency
-        homeParts: win.explorerParts
-        homePanels: win.explorerPanels
-        trackProjected: win.explorerLive
-        onTileColorModeRequested: function (m) {
-            win.tileColorMode = m;
-        }
-    }
-
-    MinerView {
-        visible: win.view === 2
-        // Im nackten Widget bleiben Info- und Web-Knopf weg
-        showActions: !win.bare
-        anchors.fill: parent
-        anchors.margins: 14
-        anchors.topMargin: win.tabSpace + 14
-        feed: feedState
-        lang: win.lang
-        metricKeys: win.minerFields
-        showChart: win.minerChart
-        showDomains: win.minerDomains
-        showBoard: win.minerBoard
-    }
-
-    SettingsView {
-        visible: win.view === 5
-        anchors.fill: parent
-        anchors.margins: 14
-        anchors.topMargin: win.tabSpace + 14
         opts: win.opts
-        lang: win.lang
-        onChanged: function (key, value) {
+        view: win.view
+        // Im nackten Widget bleibt die Reiterzeile weg -- und mit ihr der
+        // Platz, den sie braucht.
+        tabsVisible: !win.bare
+        // Deckkraft und Startansicht gehoeren dem Fenster, also stehen sie
+        // hier auch in den Einstellungen.
+        windowedSettings: true
+        minerActions: !win.bare
+        gap: 6
+        tabFont: 13
+        baseFont: 13
+        onOptRequested: function (key, value) {
             win.setOpt(key, value);
         }
-    }
-
-    WatchView {
-        visible: win.view === 4 && win.walletEnabled
-        // Nur nachfragen, solange die Ansicht auch zu sehen ist
-        live: visible
-        anchors.fill: parent
-        anchors.margins: 14
-        anchors.topMargin: win.tabSpace + 14
-        feed: feedState
-        // Fehlte: die Wallet-Ansicht blieb im Fenster auf Deutsch, waehrend
-        // Dashboard und Popout ihre Sprache bekamen. Genau die Art Fehler, die
-        // das gemeinsame `FeedTabs` verhindert -- das Fenster verdrahtet die
-        // Ansichten als einziger Wirt noch selbst.
-        lang: win.lang
-        onTxPicked: function (txid) {
-            win.view = 3;
-            explorer.go("tx", txid);
-        }
-        currency: win.currency
-        onAddressPicked: function (adr) {
-            win.view = 3;
-            explorer.go("address", adr);
+        onViewRequested: function (v) {
+            win.view = v;
         }
     }
 
@@ -484,7 +353,7 @@ Window {
                 hint.flash();
                 break;
             case Qt.Key_B:
-                panel.triggerBlockAnimation();
+                tabs.triggerBlockAnimation();
                 break;
             case Qt.Key_I:
                 win.showInfo = !win.showInfo;
@@ -499,8 +368,8 @@ Window {
                 // Die Ziffer zaehlt die **sichtbaren** Reiter ab -- ist die
                 // Wallet-Ansicht aus, ruecken die dahinter auf.
                 var n = event.key - Qt.Key_1;
-                if (n < win.tabViews.length) {
-                    win.view = win.tabViews[n];
+                if (n < tabs.tabViews.length) {
+                    win.view = tabs.tabViews[n];
                     hint.flash();
                 }
                 break;
