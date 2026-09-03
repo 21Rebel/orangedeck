@@ -90,11 +90,6 @@ Item {
     // Werte lassen sie flacher ansetzen und in der Mitte steiler laufen.
     property real swing: 0.78
     property real edgeGap: Math.max(2, labelSize * 0.3)
-    // Pfeilspitze am rechten Ende, damit die Richtung erkennbar ist.
-    // **Fuer alle Baender gleich lang und bewusst kurz** -- eine lange Spitze
-    // laesst das Band vorn duenner wirken, als es ist, und verschieden lange
-    // Spitzen machen die rechte Kante unruhig.
-    property real arrowLen: Math.max(4, Math.min(width * 0.014, labelSize * 0.8))
     // Abstand des Pfeils vom rechten Rand -- ohne ihn klebt er an der Kante.
     property real edgeMargin: Math.max(4, Math.min(width * 0.012, labelSize))
 
@@ -104,9 +99,10 @@ Item {
     // Original macht das genauso (die kurzen Balken links und rechts am
     // Fluss auf mempool.space).
     property real stubLen: Math.max(10, Math.min(width * 0.075, 90))
-    // Die Luecke zwischen Anschlussstueck und Band -- ohne sie verschmelzen
-    // beide und die Kerbe verliert ihre Wirkung.
-    property real stubGap: Math.max(2, labelSize * 0.28)
+    // **Keine Luecke zwischen Anschlussstueck und Band.** Vorher stand dort
+    // eine, damit die Kerbe sich abhob -- im Original ist es genau umgekehrt:
+    // beides ist **ein durchgehendes Band**, und die Kerbe allein trennt die
+    // beiden Teile. Sie ist das einzige Trennende, an beiden Enden.
 
     // **Ein Winkel fuer beide Enden.** Vorher war die Spitze rechts auf eine
     // feste Laenge gedeckelt und der Pfeil links wuchs mit der Banddicke -- an
@@ -404,11 +400,11 @@ Item {
 
             var w = width;
             // Links: Anschlussstueck, Luecke, dann erst das Band mit der Kerbe.
-            var xIn = root.stubLen + root.stubGap;
+            var xIn = root.stubLen;
             var xL = xIn + root.connector;
             var xC = w * 0.5;
-            var xEnd = w - root.edgeMargin - root.stubLen - root.stubGap;
-            var xR = xEnd - root.arrowLen - root.connector;
+            var xEnd = w - root.edgeMargin - root.stubLen;
+            var xR = xEnd - root.connector;
             // Die beiden Seiten stossen in der Mitte aneinander -- ein halber
             // Bildpunkt Ueberlappung, damit dort keine Naht bleibt.
             var seam = 0.75;
@@ -469,34 +465,27 @@ Item {
                 }
                 cEdge = b.edgeY + b.hEdge / 2;
                 cMid = b.midY + b.hMid / 2;
-                var tip = root.tipFor(b.hEdge);
-                var xT = xEnd - tip;
 
+                // **Keine Spitze mehr.** Das Band laeuft stumpf bis an den
+                // Block am Rand, und der haengt unmittelbar daran -- getrennt
+                // allein durch die Kerbe, genau wie am linken Ende. Vorher
+                // standen hier drei Teile: Band, Spitze, Luecke, Block.
                 ctx.strokeStyle = g;
                 ctx.lineWidth = b.hEdge;
                 ctx.beginPath();
                 ctx.moveTo(xC - seam, cMid);
                 canvas.curve(ctx, xC - seam, cMid, xR, cEdge);
-                ctx.lineTo(xT, cEdge);
+                ctx.lineTo(xEnd, cEdge);
                 ctx.stroke();
 
-                // Die Spitze als eigenes Dreieck -- ein Strich kann nicht
-                // spitz zulaufen. Ein halber Bildpunkt Ueberlappung, damit
-                // zwischen Strich und Dreieck keine Naht bleibt.
-                ctx.fillStyle = g;
-                ctx.beginPath();
-                ctx.moveTo(xT - 0.5, cEdge - b.hEdge / 2);
-                ctx.lineTo(xEnd, cEdge);
-                ctx.lineTo(xT - 0.5, cEdge + b.hEdge / 2);
-                ctx.closePath();
-                ctx.fill();
-                // Dieselbe Kerbe wie am Eingang, kurz vor der Spitze -- so
-                // sehen beide Enden gleich aus.
-                canvas.notch(ctx, xT - tip, cEdge, tip, b.hEdge);
-                // Und dahinter das Anschlussstueck, das nach aussen ausblendet
-                canvas.stub(ctx, w - root.edgeMargin - root.stubLen, root.stubLen,
-                            cEdge, b.hEdge,
+                // Erst der Block, dann die Kerbe: sie schneidet heraus, was
+                // schon steht, und muss deshalb zuletzt kommen -- sonst
+                // fuellt der Block sie wieder auf.
+                canvas.stub(ctx, xEnd, root.stubLen, cEdge, b.hEdge,
                             b.fee ? root.feeColor : root.flowColor(1), true, lit);
+                // Die Kerbe sitzt auf der Naht: die Schenkel an der Kante des
+                // Bandes, die Spitze im Block. Dieselbe wie am Eingang.
+                canvas.notch(ctx, xEnd, cEdge, root.tipFor(b.hEdge), b.hEdge);
             }
 
             if (root.fee > 0 && root.bandsOut.length) {
