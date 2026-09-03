@@ -966,6 +966,30 @@ def klines(spanne, symbol="BTCUSDT"):
     return aus
 
 
+def markt_kurs(feed, cur):
+    """Umrechnungsfaktor von Dollar in `cur`.
+
+    **Die Boerse rechnet in USDT, nicht in Dollar** -- der Unterschied liegt
+    im Promillebereich und wird hier ignoriert; alles andere waere eine
+    Genauigkeit, die die Daten nicht hergeben.
+
+    Der Faktor kommt aus dem laufenden Kurs, den mempool.space in sieben
+    Waehrungen mitschickt: `price[cur] / price[usd]`. Das ist der **heutige**
+    Kurs, auch fuer Kerzen von 2017 -- fuer einen Verlauf ueber Jahre ist das
+    eine Umrechnung, keine Wahrheit. Die Antwort sagt es mit `converted`.
+    """
+    cur = (cur or "usd").lower()
+    if cur == "usd":
+        return 1.0, False
+    p = feed.price or {}
+    if p.get(cur) and p.get("usd"):
+        return float(p[cur]) / float(p["usd"]), True
+    # Ersatzweise die Kurse aus dem Verlauf -- sie liegen ohnehin im Puffer
+    kurse = (price_history().get("rates") or {})
+    k = kurse.get("USD" + cur.upper())
+    return (float(k), True) if k else (1.0, False)
+
+
 def run_market(quelle):
     """Ein Faden je Boerse. Verbindet erst, wenn jemand hinsieht."""
     backoff = 2
@@ -1596,7 +1620,7 @@ class _Handler(BaseHTTPRequestHandler):
                 # Boersenstroeme am Leben; bleibt sie zwei Minuten aus, gehen
                 # sie von selbst wieder zu.
                 MARKT.gefragt()
-                spanne, eigen, band_seit = "24h", 0, 0
+                spanne, eigen, band_seit, waehrung = "24h", 0, 0, "usd"
                 for teil in (zerlegt.query or "").split("&"):
                     name, _, wert = teil.partition("=")
                     try:
@@ -1606,6 +1630,8 @@ class _Handler(BaseHTTPRequestHandler):
                             eigen = max(300, min(400000000, int(wert)))
                         elif name == "tape":
                             band_seit = max(0, int(wert))
+                        elif name == "cur" and wert.isalpha() and len(wert) == 3:
+                            waehrung = wert.lower()
                     except ValueError:
                         pass
                 if spanne == "custom" and eigen:
@@ -1613,8 +1639,18 @@ class _Handler(BaseHTTPRequestHandler):
                 else:
                     kerzen = klines(spanne)
                 band, band_letzte = MARKT.band_seit(band_seit)
+                kurs, umgerechnet = markt_kurs(self.feed, waehrung)
+                if kurs != 1.0:
+                    # Preise umrechnen, Mengen nicht -- die sind in Bitcoin.
+                    kerzen = [[k[0], round(k[1] * kurs, 2), round(k[2] * kurs, 2),
+                               round(k[3] * kurs, 2), round(k[4] * kurs, 2), k[5]]
+                              for k in kerzen]
+                    band = [[t[0], t[1], round(t[2] * kurs, 2),
+                             round(t[3] * kurs), t[4], t[5]] for t in band]
                 self._send(json.dumps({
                     "range": spanne,
+                    "cur": waehrung,
+                    "converted": umgerechnet,
                     "candles": kerzen,
                     "tape": band,
                     "tapeLast": band_letzte,

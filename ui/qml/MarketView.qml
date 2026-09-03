@@ -38,6 +38,7 @@ Item {
     property color panelColor: "#16161f"
     property real baseFont: 12
 
+    readonly property string zeichen: Money.symbol(root.currency)
     readonly property color upColor: "#5cb946"
     readonly property color downColor: "#d33f3f"
 
@@ -64,6 +65,9 @@ Item {
     property var kerzen: []
     property var quellen: []
     property int tradeZahl: 0
+    // Wahr, wenn die Kerzen aus Dollar umgerechnet sind -- ueber Jahre ist
+    // das eine Umrechnung zum heutigen Kurs, keine Wahrheit.
+    property bool umgerechnet: false
     property string fehler: ""
     // Das Band: nur was seit `bandNr` dazukam wird geholt und angehaengt.
     property var band: []
@@ -195,7 +199,8 @@ Item {
             return;
         var pfad = "/market?range=" + root.range
                  + (root.range === "custom" ? "&secs=" + root.customSecs : "")
-                 + "&tape=" + root.bandNr;
+                 + "&tape=" + root.bandNr
+                 + "&cur=" + root.currency;
         root.feed.getJson(pfad, function (d, err) {
             if (err || !d) {
                 root.fehler = err || "nicht erreichbar";
@@ -210,6 +215,7 @@ Item {
                 root.zoomSekunden = 0;
             root.quellen = d.sources || [];
             root.tradeZahl = d.trades || 0;
+            root.umgerechnet = d.converted === true;
             // Nur das Neue anhaengen und vorne abschneiden -- der Dienst
             // schickt seit `bandNr` ohnehin nur das, was dazukam.
             if ((d.tape || []).length) {
@@ -222,6 +228,13 @@ Item {
     }
 
     onRangeChanged: root.holen()
+    onCurrencyChanged: {
+        // Die Preise im Band sind in der alten Waehrung -- sie stehen sonst
+        // neben den neuen Kerzen und niemand sieht, dass sie nicht passen.
+        root.band = [];
+        root.bandNr = 0;
+        root.holen();
+    }
     onCustomSecsChanged: if (root.range === "custom") root.holen()
     onLiveChanged: if (root.live) root.holen()
     Component.onCompleted: root.holen()
@@ -247,7 +260,7 @@ Item {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: root.letzterPreis
-                  ? Tr.price1(root.letzterPreis, "$", root.lang) : "–"
+                  ? Tr.price1(root.letzterPreis, root.zeichen, root.lang) : "–"
             color: root.textColor
             font.pixelSize: root.baseFont * 1.5
             font.weight: Font.DemiBold
@@ -265,6 +278,19 @@ Item {
         }
 
 
+
+        // Steht die Kurve in einer anderen Waehrung als der der Boerse, sagt
+        // sie es -- gerechnet wird mit dem heutigen Kurs, auch fuer Kerzen von
+        // 2017. **Nicht unten links**: dort steht der Anfang der Zeitachse,
+        // und der Hinweis lag genau darauf.
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.umgerechnet && root.sicht.length > 0
+            text: Tr.t("price.converted", root.lang)
+            color: root.dimColor
+            font.pixelSize: root.baseFont - 3
+            opacity: 0.8
+        }
 
         // Welche Boerse gerade haengt -- ohne das sieht man einer flachen
         // Kurve nicht an, ob der Markt ruhig ist oder die Verbindung weg.
@@ -542,11 +568,23 @@ Item {
     }
 
     // Bei einem Tag sagt ein Datum nichts, bei neun Jahren eine Uhrzeit nichts.
+    // **Aber die Jahreszahl gehoert dazu**, sobald ueberhaupt ein Datum steht:
+    // "31.10." allein ist bei einem Zeitraum, der Jahre umfassen kann, keine
+    // Angabe, sondern ein Raten.
     function uhrzeit(ts) {
-        var kurz = (root.range === "1h" || root.range === "12h" || root.range === "24h");
-        var lang = (root.range === "1y" || root.range === "all");
+        var sek = root.sichtSekunden;
+        if (sek <= 86400 * 2)
+            return Qt.formatDateTime(new Date(ts * 1000), "HH:mm");
+        if (sek <= 86400 * 400)
+            return Qt.formatDateTime(new Date(ts * 1000), "dd.MM.yy");
+        return Qt.formatDateTime(new Date(ts * 1000), "MM.yyyy");
+    }
+
+    // In der Ablesezeile ist Platz -- dort steht das volle Datum mit Uhrzeit.
+    function zeitpunkt(ts) {
         return Qt.formatDateTime(new Date(ts * 1000),
-                                 kurz ? "HH:mm" : (lang ? "MM.yyyy" : "dd.MM."));
+                                 root.sichtSekunden <= 86400 * 2 ? "dd.MM.yyyy  HH:mm"
+                                                                 : "dd.MM.yyyy");
     }
 
     // **Das Ablesen steht in einer eigenen Zeile.** In der Kopfzeile wuchs es
@@ -567,7 +605,7 @@ Item {
             if (!root.zeigerDa)
                 return "";
             var k = root.sicht[root.zeiger];
-            return root.uhrzeit(k[0]) + "    O " + Tr.group(k[1], root.lang)
+            return root.zeitpunkt(k[0]) + "    O " + Tr.group(k[1], root.lang)
                  + "   H " + Tr.group(k[2], root.lang)
                  + "   L " + Tr.group(k[3], root.lang)
                  + "   C " + Tr.group(k[4], root.lang);
@@ -766,7 +804,7 @@ Item {
                 anchors.right: parent.right
                 anchors.rightMargin: root.padR + 6
                 anchors.verticalCenter: parent.verticalCenter
-                text: "$ " + Tr.group(zeile.modelData[3], root.lang)
+                text: root.zeichen + " " + Tr.group(zeile.modelData[3], root.lang)
                 color: root.textColor
                 font.pixelSize: root.baseFont - 2
                 font.family: "monospace"
