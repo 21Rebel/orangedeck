@@ -20,7 +20,7 @@ Android-Fassung, die ein Tablet zur BlockClock macht — siehe `docs/ZIELBILD.md
     shell/quickshell/ eigenes Fenster
     tools/            install-links.sh verlinkt das System gegen dieses Repo
     upstream/bitfeed/ das Original, per git subtree (MIT, siehe NOTICE.md)
-    packaging/        noch leer: Flatpak und Android
+    packaging/        Flatpak, Android, systemd-Dienst, Layer-Shell-Widgets
 
 ## Einrichten
 

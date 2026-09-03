@@ -6,3 +6,5 @@ packaging/android/build/
 packaging/flatpak/.flatpak-builder/
 *.pyc
 __pycache__/
+# Baulog von aqtinstall (Android-Werkzeugkette)
+aqtinstall.log

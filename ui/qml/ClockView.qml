@@ -205,8 +205,19 @@ Item {
 
         // ------------------------------------------------------ Kennzahlen
         Row {
+            id: kennzahlen
+
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: root.scaleUnit * 1.6
+            // **Die Reihe kann breiter werden als die Flaeche.** Sie ist nur
+            // mittig gesetzt, ihre Breite ist die Summe ihrer Kinder -- bei
+            // 1400 Punkten und fuenf Kennzahlen stand "914 EH/s" halb
+            // ausserhalb, links entsprechend die erste. Passt sie nicht, wird
+            // sie als Ganzes verkleinert; das faellt bei 0,95 nicht auf und
+            // ist allemal besser als eine abgeschnittene Zahl.
+            scale: implicitWidth > parent.width && implicitWidth > 0
+                   ? parent.width / implicitWidth : 1
+            transformOrigin: Item.Center
 
             Repeater {
                 model: {

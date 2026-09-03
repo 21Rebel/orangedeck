@@ -423,6 +423,11 @@ Window {
         anchors.margins: 14
         anchors.topMargin: win.tabSpace + 14
         feed: feedState
+        // Fehlte: die Wallet-Ansicht blieb im Fenster auf Deutsch, waehrend
+        // Dashboard und Popout ihre Sprache bekamen. Genau die Art Fehler, die
+        // das gemeinsame `FeedTabs` verhindert -- das Fenster verdrahtet die
+        // Ansichten als einziger Wirt noch selbst.
+        lang: win.lang
         onTxPicked: function (txid) {
             win.view = 3;
             explorer.go("tx", txid);
