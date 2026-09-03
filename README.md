@@ -86,3 +86,12 @@ Startzeilen stehen in `packaging/widgets/README.md`.
 - `docs/STAND.md` — offene Punkte, zuerst hier nachsehen
 - `docs/DOKUMENTATION.md` — Mechanik und alle Stolperfallen
 - `NOTICE.md` — Herkunft und Lizenzen
+
+## Lizenz
+
+MIT, Copyright 2026 21Rebel — Text in `LICENSE`.
+
+Unter `upstream/bitfeed/` liegt bitfeed selbst, ebenfalls MIT, Copyright
+mononaut (`LICENSE-bitfeed`). Zwei Dateien in `ui/qml/` sind Portierungen
+daraus. Herkunft und Umfang stehen in `NOTICE.md` — bitte vor jeder
+Weitergabe lesen, die MIT-Lizenz verlangt beide Urhebervermerke.

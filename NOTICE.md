@@ -4,7 +4,11 @@ Dieses Repo vereint zwei Dinge:
 
 ## 1. Eigener Code
 
-`daemon/`, `ui/qml/`, `shell/`, `tools/`, `docs/` — hier entstanden.
+`daemon/`, `ui/qml/`, `shell/`, `tools/`, `docs/`, `app/`, `packaging/` — hier
+entstanden. **Lizenz: MIT, Copyright 2026 21Rebel**, Text in `LICENSE`.
+
+Dieselbe Lizenz wie bitfeed, und das mit Absicht: die beiden portierten
+Dateien unten stehen damit unter derselben Bedingung wie ihre Vorlage.
 
 Zwei Dateien darin sind **Portierungen aus bitfeed**, keine Nachempfindungen,
 und als solche in ihren Dateikoepfen gekennzeichnet:
