@@ -241,6 +241,11 @@ Item {
 
         DropDown {
             anchors.verticalCenter: parent.verticalCenter
+            // **Der Rahmen ist die Ansicht, nicht die Reihe.** Ohne das haelt
+            // sich die Liste an die Reihe, in der sie steht, und zeichnet
+            // ungehindert darueber hinaus -- im Dashboard-Tab landete sie
+            // dadurch neben der Flaeche.
+            bounds: root
             model: root.zeitraeume
             current: root.range
             uiFont: root.baseFont

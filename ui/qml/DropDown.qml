@@ -18,6 +18,13 @@ Item {
     property bool offen: false
     // Wie viele Zeilen die aufgeklappte Liste hoechstens zeigt
     property int maxZeilen: 9
+    // **Der Rahmen, in dem die Liste bleiben muss.** In QML zeichnet ein Kind
+    // ungehindert ueber die Grenzen seines Elternteils hinaus -- im
+    // Dashboard-Tab stand die Liste dadurch neben der Flaeche, im
+    // durchsichtigen Rand des Popout-Fensters. Sie wird deshalb an diesem
+    // Element ausgerichtet: seitlich hineingeschoben, und nach oben
+    // aufgeklappt, wenn unten kein Platz mehr ist.
+    property Item bounds: root.parent
 
     property color textColor: "#e6e0e9"
     property color dimColor: "#9a94a6"
@@ -27,6 +34,35 @@ Item {
     property real uiFont: 12
 
     signal picked(string key)
+
+    readonly property real zeilenHoehe: Math.round(root.uiFont * 2.0)
+    readonly property real listeHoehe: Math.min(root.maxZeilen, root.model.length)
+                                       * root.zeilenHoehe + 6
+    readonly property real listeBreite: Math.max(feld.width,
+                                                 inhalt.breiteste + root.uiFont * 2)
+    // Lage des Feldes im Bezugsrahmen.
+    //
+    // **Nicht als Bindung.** `mapToItem` liest die Lage einmal aus und meldet
+    // sich nie wieder -- eine Bindung darauf rechnet mit dem Stand vom
+    // Erzeugen, als die Anker noch nicht aufgeloest waren. Ein Feld unten in
+    // der Flaeche hielt sich dadurch fuer eines oben und legte seine Liste an
+    // die falsche Stelle. Gemessen wird deshalb beim Aufklappen -- dann, wenn
+    // es darauf ankommt, und nur dann.
+    property point lage: Qt.point(0, 0)
+
+    function lageMessen() {
+        if (root.bounds)
+            root.lage = root.mapToItem(root.bounds, 0, 0);
+    }
+
+    onOffenChanged: if (root.offen) root.lageMessen()
+    onWidthChanged: if (root.offen) root.lageMessen()
+    onHeightChanged: if (root.offen) root.lageMessen()
+    Component.onCompleted: root.lageMessen()
+    // Unten kein Platz, oben schon -> nach oben aufklappen
+    readonly property bool nachOben: root.bounds
+        && root.lage.y + feld.height + root.listeHoehe + 3 > root.bounds.height
+        && root.lage.y - root.listeHoehe - 3 >= 0
 
     implicitWidth: feld.implicitWidth
     implicitHeight: feld.height
@@ -109,12 +145,21 @@ Item {
     Rectangle {
         id: liste
 
-        anchors.top: feld.bottom
-        anchors.topMargin: 3
-        anchors.right: feld.right
-        width: Math.max(feld.width, inhalt.breiteste + root.uiFont * 2)
-        height: Math.min(root.maxZeilen, root.model.length) * zeilenHoehe + 6
-        readonly property real zeilenHoehe: Math.round(root.uiFont * 2.0)
+        // Rechtsbuendig unter dem Feld -- aber nur, solange das im Rahmen
+        // bleibt. Sonst wird sie hineingeschoben.
+        x: {
+            var wunsch = feld.width - root.listeBreite;
+            if (!root.bounds)
+                return wunsch;
+            var imRahmen = root.lage.x + wunsch;
+            var geklemmt = Math.max(0, Math.min(root.bounds.width - root.listeBreite,
+                                                imRahmen));
+            return geklemmt - root.lage.x;
+        }
+        y: root.nachOben ? -root.listeHoehe - 3 : feld.height + 3
+        width: root.listeBreite
+        height: root.listeHoehe
+        readonly property real zeilenHoehe: root.zeilenHoehe
         radius: root.uiFont * 0.5
         color: root.flaecheColor
         border.width: 1
