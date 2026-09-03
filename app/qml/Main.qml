@@ -76,6 +76,8 @@ Window {
     property string marketRange: "24h"
     property string marketKind: "candles"
     property int marketSecs: 259200
+    property bool marketCross: true
+    property bool marketTape: true
     property bool minerChart: true
     property bool minerDomains: true
     property bool minerBoard: true
@@ -144,6 +146,8 @@ Window {
         property alias marketRange: win.marketRange
         property alias marketKind: win.marketKind
         property alias marketSecs: win.marketSecs
+        property alias marketCross: win.marketCross
+        property alias marketTape: win.marketTape
         property alias minerChart: win.minerChart
         property alias minerDomains: win.minerDomains
         property alias minerBoard: win.minerBoard
@@ -231,6 +235,10 @@ Window {
             win.marketKind = value;
         else if (key === "marketSecs")
             win.marketSecs = value;
+        else if (key === "marketCross")
+            win.marketCross = value;
+        else if (key === "marketTape")
+            win.marketTape = value;
         else if (key === "minerChart")
             win.minerChart = value;
         else if (key === "minerDomains")
@@ -283,6 +291,8 @@ Window {
         "marketRange": win.marketRange,
         "marketKind": win.marketKind,
         "marketSecs": win.marketSecs,
+        "marketCross": win.marketCross,
+        "marketTape": win.marketTape,
         "minerChart": win.minerChart,
         "minerDomains": win.minerDomains,
         "minerBoard": win.minerBoard,

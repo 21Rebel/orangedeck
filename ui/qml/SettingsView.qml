@@ -345,14 +345,17 @@ Item {
         anchors.top: parent.top
         labels: [Tr.t("set.general", root.lang), Tr.t("tab.feed", root.lang),
                  Tr.t("tab.clock", root.lang), Tr.t("tab.miner", root.lang),
-                 Tr.t("tab.explorer", root.lang), Tr.t("tab.wallet", root.lang)]
-        current: ["allgemein", "feed", "clock", "miner", "explorer", "wallet"].indexOf(root.tab)
+                 Tr.t("tab.explorer", root.lang), Tr.t("tab.market", root.lang),
+                 Tr.t("tab.wallet", root.lang)]
+        current: ["allgemein", "feed", "clock", "miner", "explorer", "markt",
+                  "wallet"].indexOf(root.tab)
         fontSize: root.uiFont
         textColor: root.textColor
         dimColor: root.dimColor
         accentColor: root.accentColor
         onPicked: function (i) {
-            root.tab = ["allgemein", "feed", "clock", "miner", "explorer", "wallet"][i];
+            root.tab = ["allgemein", "feed", "clock", "miner", "explorer", "markt",
+                        "wallet"][i];
         }
     }
 
@@ -803,6 +806,32 @@ Item {
                     Schalter {
                         an: root.val("explorerLive", true)
                         onUmgelegt: root.changed("explorerLive", !root.val("explorerLive", true))
+                    }
+                }
+            }
+
+            // ------------------------------------------------------ Markt
+            Column {
+                width: parent.width
+                visible: root.tab === "markt"
+
+                Zeile {
+                    label: Tr.t("set.crosshair", root.lang)
+                    help: Tr.t("set.crosshairHelp", root.lang)
+
+                    Schalter {
+                        an: root.val("marketCross", true)
+                        onUmgelegt: root.changed("marketCross", !root.val("marketCross", true))
+                    }
+                }
+
+                Zeile {
+                    label: Tr.t("set.tape", root.lang)
+                    help: Tr.t("set.tapeHelp", root.lang)
+
+                    Schalter {
+                        an: root.val("marketTape", true)
+                        onUmgelegt: root.changed("marketTape", !root.val("marketTape", true))
                     }
                 }
             }

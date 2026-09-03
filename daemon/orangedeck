@@ -31,6 +31,7 @@ http://127.0.0.1:21021/state, /block und /health an -- nur lesend und nur
 lokal. ORANGEDECK_ADDR und ORANGEDECK_PORT aendern das, siehe Kommentar dort.
 """
 import base64
+import collections
 import fcntl
 import hashlib
 import hmac
@@ -756,6 +757,13 @@ KLINE_CACHE_TTL = {"1m": 20, "5m": 60, "15m": 120, "1h": 300,
                    "4h": 600, "1d": 1800, "1w": 3600}
 
 MARKET_SECONDS = 3600     # eine Stunde Sekundenkerzen im Ring
+# Das Band unter dem Graphen: wie viele Trades aufgehoben werden und ab
+# welchem Gegenwert einer ueberhaupt hineinkommt.
+MARKET_TAPE_KEEP = 400
+# Gemessen: ueber 10.000 Dollar kamen in einer halben Minute sieben Trades --
+# fuer ein laufendes Band zu duenn. Bei tausend fuellt es sich, und wie stark
+# eine Zeile heraussticht, entscheidet ohnehin ihr Betrag.
+MARKET_TAPE_MIN = 1000    # Dollar
 MARKET_LINGER = 120       # so lange nach der letzten Abfrage bleibt der Strom
 MARKET_MAX_CANDLES = 400  # mehr zeichnet keine Oberflaeche sinnvoll
 
@@ -814,10 +822,24 @@ class Market:
         self.letzte_abfrage = 0.0
         self.online = {}          # Boersenkennung -> True/False
         self.trades = 0
+        # Die letzten Trades einzeln, fuer das Band unter dem Graphen.
+        # **Mit laufender Nummer**: die Oberflaeche fragt `seit` und bekommt
+        # nur, was seitdem dazukam -- wie beim Zustand. Alles andere waere bei
+        # hunderten Trades je Sekunde Unfug.
+        self.band = collections.deque(maxlen=MARKET_TAPE_KEEP)
+        self.band_nr = 0
 
-    def add(self, ts, preis, menge, kauf):
+    def add(self, ts, preis, menge, kauf, quelle=""):
         sek = int(ts)
+        wert = preis * menge
         with self.lock:
+            # Ins Band nur, was auch etwas bedeutet. Ohne Schwelle waere es
+            # eine Wand aus Zehn-Dollar-Zeilen, durch die niemand sieht.
+            if wert >= MARKET_TAPE_MIN:
+                self.band_nr += 1
+                self.band.append([self.band_nr, round(ts, 2), round(preis, 2),
+                                  round(wert), 1 if kauf else 0, quelle])
+
             k = self.sekunden.get(sek)
             if k is None:
                 k = [preis, preis, preis, preis, 0.0, 0.0]
@@ -840,6 +862,13 @@ class Market:
 
     def erwuenscht(self):
         return time.time() - self.letzte_abfrage < MARKET_LINGER
+
+    def band_seit(self, nr, hoechstens=120):
+        """Die Trades, die seit `nr` dazukamen -- juengste zuletzt."""
+        with self.lock:
+            neu = [t for t in self.band if t[0] > nr]
+            letzte = self.band[-1][0] if self.band else 0
+        return neu[-hoechstens:], letzte
 
     def kerzen(self, raster, anzahl):
         """Sekundenfaecher zu Kerzen von `raster` Sekunden zusammenfassen."""
@@ -961,7 +990,7 @@ def run_market(quelle):
                 except ValueError:
                     continue
                 for ts, preis, menge, kauf in quelle["parse"](msg):
-                    MARKT.add(ts, preis, menge, kauf)
+                    MARKT.add(ts, preis, menge, kauf, quelle["id"])
         except Exception as e:
             MARKT.online[quelle["id"]] = False
             sys.stderr.write("Markt %s: %s\n" % (quelle["id"], e))
@@ -1567,7 +1596,7 @@ class _Handler(BaseHTTPRequestHandler):
                 # Boersenstroeme am Leben; bleibt sie zwei Minuten aus, gehen
                 # sie von selbst wieder zu.
                 MARKT.gefragt()
-                spanne, eigen = "24h", 0
+                spanne, eigen, band_seit = "24h", 0, 0
                 for teil in (zerlegt.query or "").split("&"):
                     name, _, wert = teil.partition("=")
                     try:
@@ -1575,15 +1604,20 @@ class _Handler(BaseHTTPRequestHandler):
                             spanne = wert
                         elif name == "secs":
                             eigen = max(300, min(400000000, int(wert)))
+                        elif name == "tape":
+                            band_seit = max(0, int(wert))
                     except ValueError:
                         pass
                 if spanne == "custom" and eigen:
                     kerzen = klines(raster_fuer(eigen))
                 else:
                     kerzen = klines(spanne)
+                band, band_letzte = MARKT.band_seit(band_seit)
                 self._send(json.dumps({
                     "range": spanne,
                     "candles": kerzen,
+                    "tape": band,
+                    "tapeLast": band_letzte,
                     "sources": [{"id": q["id"], "name": q["name"],
                                  "online": bool(MARKT.online.get(q["id"]))}
                                 for q in MARKETS],

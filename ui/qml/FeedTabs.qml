@@ -235,6 +235,8 @@ Item {
         range: root.o("marketRange", "24h")
         kind: root.o("marketKind", "candles")
         customSecs: root.o("marketSecs", 259200)
+        crosshair: root.o("marketCross", true)
+        showTape: root.o("marketTape", true)
         baseFont: root.baseFont
         textColor: root.textColor
         dimColor: root.dimColor

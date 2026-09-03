@@ -26,6 +26,9 @@ Item {
     property string range: "24h"
     property string kind: "candles"      // candles | line
     property int customSecs: 259200      // drei Tage als Vorgabe
+    // Fadenkreuz und laufendes Band -- beides einschaltbar
+    property bool crosshair: true
+    property bool showTape: true
     property bool live: true
 
     property color textColor: "#e6e0e9"
@@ -62,6 +65,12 @@ Item {
     property var quellen: []
     property int tradeZahl: 0
     property string fehler: ""
+    // Das Band: nur was seit `bandNr` dazukam wird geholt und angehaengt.
+    property var band: []
+    property int bandNr: 0
+    // Welche Kerze unter dem Zeiger liegt, und wo er steht
+    property int zeiger: -1
+    property real zeigerY: 0
 
     readonly property real hoch: {
         var m = -Infinity;
@@ -90,11 +99,48 @@ Item {
     readonly property real letzterPreis: root.kerzen.length
                                          ? root.kerzen[root.kerzen.length - 1][4] : 0
 
+    // ------------------------------------------------------------ Geometrie
+    // **Einmal gerechnet, dreifach benutzt**: von der Leinwand, vom Fadenkreuz
+    // und vom Ablesen am Zeiger. Lag die Rechnung im Zeichenblock, rechnete
+    // das Fadenkreuz zwangslaeufig ein zweites Mal -- und irgendwann anders.
+    readonly property real padR: mass.implicitWidth + 8
+    readonly property real padB: root.baseFont * 1.4
+    readonly property real bandHoehe: root.showTape
+                                      ? Math.min(root.height * 0.28, root.baseFont * 11)
+                                      : 0
+    readonly property real feldBreite: Math.max(1, leinwand.width - root.padR)
+    readonly property real volHoehe: (leinwand.height - root.padB) * 0.26
+    readonly property real preisHoehe: leinwand.height - root.padB - root.volHoehe
+                                       - root.baseFont * 0.4
+    readonly property real padT: root.baseFont * 0.2
+    readonly property real spanne: {
+        var d = root.hoch - root.tief;
+        return d > 0 ? d : Math.max(1, root.hoch * 0.0002);
+    }
+    readonly property real kerzeBreite: root.kerzen.length
+                                        ? root.feldBreite / root.kerzen.length : 1
+
+    function yPreis(v) {
+        return root.padT + root.preisHoehe * (1 - (v - root.tief) / root.spanne);
+    }
+
+    function preisBei(y) {
+        return root.tief + root.spanne * (1 - (y - root.padT) / root.preisHoehe);
+    }
+
+    function indexBei(x) {
+        if (!root.kerzen.length)
+            return -1;
+        var i = Math.floor(x / root.kerzeBreite);
+        return Math.max(0, Math.min(root.kerzen.length - 1, i));
+    }
+
     function holen() {
         if (!root.feed || !root.live)
             return;
         var pfad = "/market?range=" + root.range
-                 + (root.range === "custom" ? "&secs=" + root.customSecs : "");
+                 + (root.range === "custom" ? "&secs=" + root.customSecs : "")
+                 + "&tape=" + root.bandNr;
         root.feed.getJson(pfad, function (d, err) {
             if (err || !d) {
                 root.fehler = err || "nicht erreichbar";
@@ -104,6 +150,13 @@ Item {
             root.kerzen = d.candles || [];
             root.quellen = d.sources || [];
             root.tradeZahl = d.trades || 0;
+            // Nur das Neue anhaengen und vorne abschneiden -- der Dienst
+            // schickt seit `bandNr` ohnehin nur das, was dazukam.
+            if ((d.tape || []).length) {
+                var neu = root.band.concat(d.tape);
+                root.band = neu.slice(-60);
+                root.bandNr = d.tapeLast || root.bandNr;
+            }
             leinwand.requestPaint();
         });
     }
@@ -140,14 +193,32 @@ Item {
             font.weight: Font.DemiBold
         }
 
-        // Wie viel schon durchgelaufen ist. **Nicht unten rechts** -- dort
-        // stand es genau auf der Uhrzeit der Zeitachse ("14:19:5553 Trades").
+        // Am Zeiger die Kerze, sonst wie viel durchgelaufen ist. **Nicht unten
+        // rechts** -- dort stand es genau auf der Uhrzeit der Zeitachse
+        // ("14:19:5553 Trades").
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.tradeZahl > 0
+            visible: !root.zeigerDa && root.tradeZahl > 0
             text: Tr.t("market.trades", root.lang, Tr.group(root.tradeZahl, root.lang))
             color: root.dimColor
             font.pixelSize: root.baseFont - 2
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.zeigerDa
+            text: {
+                if (!root.zeigerDa)
+                    return "";
+                var k = root.kerzen[root.zeiger];
+                return root.uhrzeit(k[0]) + "   O " + Tr.group(k[1], root.lang)
+                     + "  H " + Tr.group(k[2], root.lang)
+                     + "  L " + Tr.group(k[3], root.lang)
+                     + "  C " + Tr.group(k[4], root.lang);
+            }
+            color: root.textColor
+            font.pixelSize: root.baseFont - 2
+            font.family: "monospace"
         }
 
         // Welche Boerse gerade haengt -- ohne das sieht man einer flachen
@@ -293,12 +364,8 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.topMargin: Math.max(kopf.height, wahl.height) + root.baseFont * 0.6
+        anchors.bottomMargin: root.bandHoehe
         antialiasing: false
-
-        readonly property real padR: mass.implicitWidth + 8
-        readonly property real padB: root.baseFont * 1.4
-        // Das untere Drittel gehoert dem Volumen
-        readonly property real volHoehe: (height - padB) * 0.26
 
         onPaint: {
             var ctx = getContext("2d");
@@ -307,17 +374,16 @@ Item {
             if (n < 1)
                 return;
 
-            var breiteGesamt = width - padR;
-            var kerzeBreite = Math.max(1, breiteGesamt / n);
+            var breiteGesamt = root.feldBreite;
+            var kerzeBreite = Math.max(1, root.kerzeBreite);
             var koerper = Math.max(1, Math.min(kerzeBreite * 0.7, kerzeBreite - 1));
-            var preisHoehe = height - padB - volHoehe - root.baseFont * 0.4;
+            var preisHoehe = root.preisHoehe;
             var lo = root.tief, hi = root.hoch;
-            var spanne = hi - lo;
-            if (spanne <= 0)
-                spanne = Math.max(1, hi * 0.0002);
+            var spanne = root.spanne;
+            var padB = root.padB, volHoehe = root.volHoehe;
 
             function yPreis(v) {
-                return root.baseFont * 0.2 + preisHoehe * (1 - (v - lo) / spanne);
+                return root.yPreis(v);
             }
 
             // Waagerechte Hilfslinien und die Preisachse rechts
@@ -342,19 +408,18 @@ Item {
             // Bei neun Jahren in einem Bild ist eine Kerze ein Strich; dann
             // sagt die Linie mehr. Bei einer Stunde ist es umgekehrt.
             if (root.kind === "line") {
-                var g = ctx.createLinearGradient(0, root.baseFont * 0.2, 0,
-                                                 root.baseFont * 0.2 + preisHoehe);
+                var g = ctx.createLinearGradient(0, root.padT, 0, root.padT + preisHoehe);
                 g.addColorStop(0, Qt.rgba(root.accentColor.r, root.accentColor.g,
                                           root.accentColor.b, 0.28));
                 g.addColorStop(1, Qt.rgba(root.accentColor.r, root.accentColor.g,
                                           root.accentColor.b, 0));
                 ctx.fillStyle = g;
                 ctx.beginPath();
-                ctx.moveTo(kerzeBreite / 2, root.baseFont * 0.2 + preisHoehe);
+                ctx.moveTo(kerzeBreite / 2, root.padT + preisHoehe);
                 for (i = 0; i < n; i++)
                     ctx.lineTo(i * kerzeBreite + kerzeBreite / 2, yPreis(root.kerzen[i][4]));
                 ctx.lineTo((n - 1) * kerzeBreite + kerzeBreite / 2,
-                           root.baseFont * 0.2 + preisHoehe);
+                           root.padT + preisHoehe);
                 ctx.closePath();
                 ctx.fill();
 
@@ -435,6 +500,113 @@ Item {
                                  kurz ? "HH:mm" : (lang ? "MM.yyyy" : "dd.MM."));
     }
 
+    // ------------------------------------------- Zoom, Zeiger, Fadenkreuz
+    MouseArea {
+        id: zeigerFeld
+
+        anchors.fill: leinwand
+        anchors.rightMargin: root.padR
+        hoverEnabled: true
+        acceptedButtons: Qt.NoButton
+
+        onPositionChanged: function (m) {
+            root.zeiger = root.indexBei(m.x);
+            root.zeigerY = m.y;
+        }
+        onExited: root.zeiger = -1
+
+        // **Das Rad bedient den eigenen Zeitraum.** Hineindrehen verkuerzt
+        // ihn, herausdrehen verlaengert ihn -- und weil der Dienst das Raster
+        // zum Zeitraum sucht, kommen immer rund zweihundert Kerzen heraus,
+        // egal wie tief man hineingeht. Ein fester Zeitraum wird beim ersten
+        // Dreh zum eigenen: alles andere waere ein Umschalter, der sich beim
+        // Zoomen selbst widerspricht.
+        //
+        // **Ein `WheelHandler`, kein `onWheel` an der MouseArea.** Die steht
+        // hier auf `acceptedButtons: Qt.NoButton`, weil sie nur ueberfahren
+        // und nicht geklickt werden soll -- ob sie damit noch Raddrehungen
+        // bekommt, ist genau die Art Zusicherung, die man nicht pruefen kann,
+        // ohne ein Rad zu drehen. Der Handler ist dafuer gebaut.
+        WheelHandler {
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            onWheel: function (rad) {
+                var jetzt = root.range === "custom" ? root.customSecs
+                                                    : root.sekundenVon(root.range);
+                var faktor = rad.angleDelta.y > 0 ? 1 / 1.35 : 1.35;
+                var neu = Math.round(Math.max(300, Math.min(400000000, jetzt * faktor)));
+                if (root.range !== "custom")
+                    root.rangeRequested("custom");
+                root.customSecsRequested(neu);
+            }
+        }
+    }
+
+    // Wie lang ein benannter Zeitraum ist -- fuer den ersten Dreh am Rad
+    function sekundenVon(r) {
+        switch (r) {
+        case "1h":
+            return 3600;
+        case "12h":
+            return 43200;
+        case "24h":
+            return 86400;
+        case "7d":
+            return 604800;
+        case "30d":
+            return 2592000;
+        case "1y":
+            return 31536000;
+        case "all":
+            // Binance beginnt am 31.07.2017
+            return Math.round(Date.now() / 1000) - 1501459200;
+        }
+        return root.customSecs;
+    }
+
+    readonly property bool zeigerDa: root.zeiger >= 0 && root.zeiger < root.kerzen.length
+
+    // Senkrechte durch die Kerze unter dem Zeiger
+    Rectangle {
+        visible: root.crosshair && root.zeigerDa
+        x: leinwand.x + (root.zeiger + 0.5) * root.kerzeBreite
+        y: leinwand.y + root.padT
+        width: 1
+        height: root.preisHoehe
+        color: root.dimColor
+        opacity: 0.7
+    }
+
+    // Waagerechte auf Hoehe des Zeigers
+    Rectangle {
+        visible: root.crosshair && root.zeigerDa
+        x: leinwand.x
+        y: leinwand.y + root.zeigerY
+        width: root.feldBreite
+        height: 1
+        color: root.dimColor
+        opacity: 0.7
+    }
+
+    // Der Preis an der Waagerechten, rechts auf der Achse
+    Rectangle {
+        visible: root.crosshair && root.zeigerDa
+        x: leinwand.x + root.feldBreite + 2
+        y: leinwand.y + root.zeigerY - height / 2
+        width: preisMarke.implicitWidth + 8
+        height: preisMarke.implicitHeight + 4
+        radius: 3
+        color: root.accentColor
+
+        Text {
+            id: preisMarke
+
+            anchors.centerIn: parent
+            text: Tr.group(root.preisBei(root.zeigerY), root.lang)
+            color: "#11131f"
+            font.pixelSize: root.baseFont - 2
+        }
+    }
+
     // Nur zum Messen der Preisachse
     Text {
         id: mass
@@ -448,6 +620,98 @@ Item {
         target: root
         function onKerzenChanged() {
             leinwand.requestPaint();
+        }
+    }
+
+    // -------------------------------------------------- Laufendes Band
+    // Die Trades, wie sie hereinkommen -- juengster oben. Der Dienst hebt nur
+    // auf, was ueber tausend Dollar liegt, und schickt je Abfrage nur das
+    // Neue; hier stehen die letzten, so viele wie Platz ist.
+    Column {
+        id: bandFeld
+
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: root.bandHoehe
+        visible: root.showTape
+        spacing: 0
+        clip: true
+
+        Item {
+            width: 1
+            height: root.baseFont * 0.4
+        }
+
+        Repeater {
+            model: {
+                var n = Math.max(0, Math.floor((root.bandHoehe - root.baseFont * 0.4)
+                                               / Math.round(root.baseFont * 1.35)));
+                return root.band.slice(-n).reverse();
+            }
+
+            Item {
+                id: zeile
+
+                required property var modelData
+
+                width: bandFeld.width
+                height: Math.round(root.baseFont * 1.35)
+
+                // Wie stark eine Zeile heraussticht, entscheidet ihr Betrag.
+                // Unter zehntausend bleibt sie ein Strich am Rand, darueber
+                // faerbt sie sich durch -- so sieht man Grosses, ohne dass
+                // Kleines verschwindet.
+                readonly property real wucht: Math.max(0, Math.min(1,
+                    (zeile.modelData[3] - 1000) / 99000))
+
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.rightMargin: root.padR
+                    color: zeile.modelData[4] ? root.upColor : root.downColor
+                    opacity: 0.10 + zeile.wucht * 0.5
+                }
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Qt.formatDateTime(new Date(zeile.modelData[1] * 1000), "HH:mm:ss")
+                    color: root.dimColor
+                    font.pixelSize: root.baseFont - 3
+                    font.family: "monospace"
+                }
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: root.baseFont * 5
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Tr.group(zeile.modelData[2], root.lang)
+                    color: root.textColor
+                    font.pixelSize: root.baseFont - 2
+                    font.family: "monospace"
+                }
+
+                Text {
+                    anchors.right: parent.right
+                    anchors.rightMargin: root.padR + 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "$ " + Tr.group(zeile.modelData[3], root.lang)
+                    color: root.textColor
+                    font.pixelSize: root.baseFont - 2
+                    font.family: "monospace"
+                    font.bold: zeile.wucht > 0.4
+                }
+
+                Text {
+                    anchors.right: parent.right
+                    anchors.rightMargin: root.padR + root.baseFont * 7
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: zeile.modelData[5]
+                    color: root.dimColor
+                    font.pixelSize: root.baseFont - 3
+                }
+            }
         }
     }
 
