@@ -1,19 +1,38 @@
-# orangedeck
+# OrangeDeck
 
-Live-Ansicht des Bitcoin-Mempools nach dem Vorbild von
-[bitfeed.live](https://bitfeed.live): Block in der Mitte, Mempool als Halde
-unten, neue Transaktionen fallen von oben hinein.
+Ein Bitcoin-Dashboard fuer Linux und Android.
 
-Heute laeuft das als Integration in die DankMaterialShell (Leistenpille,
-Control-Center-Kachel, Desktop-Widget, Dashboard-Tab, eigenes Fenster). Das
-Ziel ist eine portable Qt-Anwendung fuer jeden Linux-Desktop plus eine
-Android-Fassung, die ein Tablet zur BlockClock macht — siehe `docs/ZIELBILD.md`.
+Angefangen hat es als Live-Ansicht des Mempools nach dem Vorbild von
+[bitfeed.live](https://bitfeed.live) -- Block in der Mitte, Mempool als Halde
+unten, neue Transaktionen fallen von oben hinein. Dazugekommen sind sechs
+weitere Ansichten:
+
+    Feed         der Mempool als Halde, Kacheln nach Alter, Gebuehr oder Art
+    BlockClock   Blockhoehe gross, Kennzahlen, Kursverlauf bis 2013 zurueck
+    Miner        AxeOS und cgminer im Heimnetz, Hashrate und Freigaben
+    Explorer     Suche, Transaktionsfluss, Bloecke, geplante Bloecke
+    Markt        Kerzen aus den Trades von Binance und Bybit, laufendes Band
+    Wallet       watch-only ueber xpub, ypub oder zpub
+    Einstellungen
+
+Jede Ansicht laesst sich einzeln abschalten, und jede laeuft in fuenf
+Umgebungen: als eigenstaendiges Fenster, als Quickshell-Fenster, als
+Dashboard-Tab, im Popout der Leistenpille und als Desktop-Widget. Verdrahtet
+sind sie **einmal**, in `ui/qml/FeedTabs.qml`.
+
+Ziel bleibt eine portable Qt-Anwendung fuer jeden Linux-Desktop plus eine
+Android-Fassung, die ein Tablet zur Wanduhr macht — siehe `docs/ZIELBILD.md`.
+
+Die Daten kommen von [mempool.space](https://mempool.space) (kein eigener Node
+noetig) und, allein fuer den Markt-Reiter, von den oeffentlichen
+Handelsstroemen von Binance und Bybit. Ohne Schluessel, ohne Anmeldung.
 
 ## Aufbau
 
     daemon/           orangedeck (Python, stdlib): holt die Daten, bietet sie
                       unter http://127.0.0.1:21021 an
-    ui/qml/           die Grafik. Haengt nur an QtQuick -- kein Quickshell
+    ui/qml/           die Grafik. Haengt nur an QtQuick -- kein Quickshell,
+                      kein Qt Quick Controls (sonst laeuft es nicht ueberall)
     app/              eigenstaendige Qt-Anwendung (CMake), laeuft auf jedem
                       Linux-Desktop und ist die Grundlage fuer Android
     shell/dms/        DMS-Plugin

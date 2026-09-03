@@ -4,6 +4,197 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## UEBERGABE 03.09.2026, Abend
+
+21 Commits. Der Tag hatte drei Teile: erst die Luecken schliessen, die vom
+02.09. offen waren, dann die Veroeffentlichung, dann zwei neue Ansichten.
+
+### Das Wichtigste zuerst
+
+**Das Projekt heisst jetzt OrangeDeck und ist oeffentlich:**
+https://github.com/21Rebel/orangedeck -- MIT, Copyright 2026 21Rebel.
+
+Der alte Name `btcfeed` war einen Buchstaben von `bitfeed` entfernt, dem
+Projekt, aus dem `mondrian.js` und `colors.js` portiert sind; das las sich wie
+ein Klon. Umbenannt wurden 394 Vorkommen in 33 Dateien, 13 Dateinamen und vier
+Pfade ausserhalb des Repos (Dienst, Befehle, Plugin-Verzeichnis,
+`~/.config/orangedeck`). Die Einstellungen sind mitgezogen worden, Sicherungen
+liegen als `*.bak-umbenennung` in `~/.config/DankMaterialShell/`.
+
+**Vor dem ersten Push wurden alle 84 Commits auf `satoshoe@pm.me`
+umgeschrieben** (`git filter-branch`, Autor und Committer). Der Klarname stand
+vorher in jedem Commit und waere mit dem Push oeffentlich gewesen. Nachher
+geprueft: ueber alle 327 Commits null Treffer. `user.email` ist im Repo lokal
+gesetzt, global steht weiter der Klarname.
+
+### Was heute dazugekommen ist
+
+- **Kursverlauf** in der BlockClock: sechs Zeitraeume von 24 Stunden bis Max,
+  Daten von mempool.space, im Dienst auf 360 Punkte ausgeduennt (16 Jahre in
+  7,5 kB statt 1,5 MB). Laeuft auch im Direktbezug.
+- **Markt-Reiter** (neu, der siebte): Kerzen aus den Live-Trades von Binance
+  und Bybit, Zeitraeume von 1 Stunde bis "Alles" aus den fertigen Kerzen der
+  Boerse, Umschalter Kerzen/Kurve, Zoom am Rad, Fadenkreuz mit Ablesen,
+  laufendes Band der Trades, Waehrungsumrechnung, und ein Fenster in der
+  Vergangenheit ueber Schieber, Ziehen oder "01.01.2021..31.03.2021".
+- **Alle Ansichten stehen jetzt einmal** in `ui/qml/FeedTabs.qml`. Vorher
+  verdrahteten fuenf Wirte sie einzeln; genau daran fehlte der Wallet-Ansicht
+  ihre Sprache und der BlockClock der Kursverlauf.
+- **Jeder Reiter laesst sich abschalten** -- der Schalter steht im
+  Einstellungsabschnitt des jeweiligen Reiters. Die Einstellungen selbst
+  bleiben immer sichtbar.
+- **Popout der Leisten-Pille, Control-Center-Kachel und Desktop-Widget**
+  zeigen alle Ansichten und lesen alle Einstellungen. Vorher: nur der Feed und
+  vier von dreissig Einstellungen.
+- **Der Fluss im Explorer** entspricht jetzt der Vorlage: Kerbe im 45-Grad-
+  Winkel, durchgehender Verlauf, keine Naht und keine Zacken.
+- `ui/qml/DropDown.qml` ist neu -- selbst gebaut, weil das Projekt kein Qt
+  Quick Controls benutzt.
+
+### Entschieden
+
+- **MIT**, dieselbe Lizenz wie bitfeed. Damit stehen die beiden portierten
+  Dateien unter derselben Bedingung wie ihre Vorlage.
+- **aggr.trade ist GPL-3.0.** Uebernommen wurde der Gedanke, kein Code -- die
+  Schnittstellen der Boersen gehoeren niemandem. Das muss so bleiben, sonst
+  waere OrangeDeck zwingend GPL.
+- **Der Markt ist die erste Quelle ausserhalb der Kette.** Bisher hing alles
+  an mempool.space.
+- **Verdichtet wird immer im Dienst**, nie in der Oberflaeche. Gilt fuer den
+  Kursverlauf, die Kerzen und das Band.
+- **Die Boersenstroeme laufen nur, solange jemand hinsieht** -- sie kommen mit
+  der ersten Abfrage und gehen nach zwei Minuten ohne eine wieder.
+
+### Offene Punkte, in der Reihenfolge fuer morgen
+
+1. **Pruef-VMs.** Die Abbilder liegen fertig in `~/VMs`: `fedora-kde-44.iso`
+   (3,4 GB) und `ubuntu-24.04.4.iso` (6,7 GB), beide byte-genau geprueft.
+   **Beides sind Live-Systeme** -- nichts installieren, direkt hineinbooten.
+   Ubuntu bewusst 24.04 und nicht 26.04: das ist das "altes Qt"-Ende.
+2. **APK aufs Handy.** Braucht `sudo usermod -aG adbusers satoshoe` und das
+   Kabel. Auf dem Handy gibt es keinen Dienst -- der Direktbezug ist der Weg.
+   **Der Markt-Reiter faellt dort weg** (niemand verdichtet), der Kursverlauf
+   nicht.
+3. **Mit echter Maus pruefen**, was offscreen nicht ging: Zoom am Rad, Ziehen
+   im Graphen, Schieber-Griff. Die Geometrie stimmt im Bild, das Verhalten am
+   Eingabegeraet ist ungeprueft.
+4. **Etappe 3 des Marktes**: CVD (die Grundlage liegt -- Kauf- und
+   Verkaufsvolumen stehen je Sekundenfach getrennt), Liquidationen (eigene
+   Verbindungen zu den Futures-Stroemen), Tonsignal bei grossen Trades.
+5. **"BlockClock" ist ein Produktname von Coinkite** (BlockClock Mini/Micro).
+   Als Reitername grenzwertig -- "Blockuhr" oder "Uhr" waere sauber. Betrifft
+   dreizehn Sprachen.
+6. **`shell/dms/plugin.json` nennt als Autor "satoshoe"**, das Repo laeuft
+   unter 21Rebel. Angleichen oder bewusst so lassen.
+7. **Windows und macOS** ueber GitHub Actions. Dem 21Rebel-Token fehlt dafuer
+   der `workflow`-Scope: einmal `gh auth refresh -s workflow`. Vorher die
+   Schriftnamen "monospace" und "sans-serif" durch Ersatzketten ersetzen --
+   das sind fontconfig-Namen.
+8. **Flathub.**
+9. **Kleinigkeit von gestern, weiter offen**: das Suchfeld im Explorer bekommt
+   beim Oeffnen keinen Eingabefokus.
+10. **`vonZeit`/`bisZeit` im Markt werden nicht gespeichert** -- ein
+    ausdrueckliches Fenster ist nach einem Neustart weg. Zeitraum, Darstellung
+    und Zoom werden gemerkt.
+
+### Wie man morgen anfaengt
+
+    cd ~/Schreibtisch/orangedeck
+    git log --oneline -8
+    systemctl --user status orangedeck
+    curl -s http://127.0.0.1:21021/health
+
+**Nach jeder Aenderung an den geteilten QML-Dateien:**
+
+    tools/install-links.sh              # Shell und Dashboard (Verweise)
+    python3 daemon/orangedeck-dashtab   # DMS-Ueberlagerung neu bauen
+    systemctl --user restart dms
+    cmake --build build                 # die eigenstaendige Anwendung
+    flatpak-builder --user --install --force-clean \
+        build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
+
+Die letzten beiden tragen eine **Kopie**, keinen Verweis. Und das
+**Quickshell-Fenster laedt nicht von selbst nach** -- einmal schliessen und
+neu oeffnen.
+
+**Der Push geht nur ueber den Zugangshelfer im Repo.** `gh` steht auf dieser
+Maschine oft auf Shopatch; `.git/config` holt den Token von 21Rebel unabhaengig
+davon. Die leere erste `helper =`-Zeile setzt die geerbte Liste zurueck und ist
+der Kern -- ohne sie antwortet der globale Helfer zuerst.
+
+### Die Erkenntnisse von heute
+
+**Fuenfmal dieselbe Familie von QML-Fallen**, alle im Zusammenspiel von
+Elternteil und Kind. Sie stehen als Begruendung im Code, hier zum
+Nachschlagen:
+
+1. **Ein unsichtbares Element behaelt seine Hoehe.** Zweimal getroffen: einmal
+   beim Platz fuer die Reiterzeile, einmal beim Platz fuer die Kurskurve.
+2. **Ein Kind zeichnet ungehindert ueber die Grenzen seines Elternteils
+   hinaus.** Die aufgeklappte Liste stand dadurch neben dem Dashboard, im
+   durchsichtigen Rand des Popout-Fensters.
+3. **Ein Kind in einem Positionierer wird mitgereiht.** Die Fangflaeche des
+   Auswahlfeldes hing an einer `Row`; beim Aufklappen blies `anchors.fill` sie
+   auf die Reihenbreite auf, die Reihe wuchs, und Feld und Umschalter wanderten
+   aus dem Bild.
+4. **`z` ordnet nur unter Geschwistern.** Die Liste lag in der Reihe, die
+   Fangflaeche daneben im Rahmen -- also ueber der Liste. Jeder Klick traf sie,
+   die Auswahl liess sich nicht umstellen.
+5. **Seiteneffekte in einer Bindung rechnen genau einmal.** `mapToItem` meldet
+   sich nie wieder, und eine Funktion, die einen gemeinsamen Messtext umsetzt,
+   ebenso wenig. Beides sah beim ersten Zeichnen richtig aus.
+
+**Eine Schwelle in `scaleUnit` war nie erfuellbar.** `height >= scaleUnit * 22`
+sollte flache Flaechen ausnehmen; `scaleUnit` ist aber selbst `height / 16`,
+die Bedingung heisst also `height >= 1,375 * height`. Schwellen gehoeren in
+Bildpunkte.
+
+**Und die Flaeche misst man, statt sie zu schaetzen.** Die Kurve fiel im
+Dashboard weg, weil ich 420 verlangt hatte und dort 409 uebrig blieben. Beim
+naechsten Einbau zuerst nachsehen, welche Flaeche die Wirte wirklich haben.
+
+**`qml6` verschluckt hier seine Meldungen** -- auch echte Fehler, mit einem
+absichtlichen Nullzeiger geprueft. Ein "keine Fehler" aus dem Terminal beweist
+nichts; nur ein gezeichnetes Bild beweist etwas. `qmllint` meldet dagegen
+zuverlaessig Syntaxfehler und ist der schnelle Vorabtest.
+
+**-1 heisst "kein Wert".** 295 der 33.299 Punkte im Kursverlauf von
+mempool.space tragen ihn, meist im EUR-Feld bei gueltigem USD-Feld.
+Ungefiltert stand der Tiefstwert bei -1 Euro und die Veraenderung ueber den
+Gesamtzeitraum bei -6.966.100 %. Daraus folgt die Reihenfolge: **erst die
+Waehrung waehlen und Luecken werfen, dann ausduennen** -- andersherum faellt
+ein ganzes Fach aus, wenn ausgerechnet sein Punkt leer ist.
+
+**Ausgeduennt wird in Faechern gleicher Breite, nicht als jeder n-te Punkt.**
+Die Abstaende sind ungleich (stuendlich, taeglich, woechentlich), und eine
+feste Schrittweite verzerrt die Zeitachse.
+
+**Wo die Daten wirklich anfangen**: EUR-Kurse bei mempool.space ab Oktober
+2013, USD ab 2010; BTCUSDT bei Binance ab dem 31.07.2017. "Alles" heisst also
+je nach Ansicht etwas anderes, und das gehoert dazugeschrieben.
+
+**Eine Netzabfrage je Radrastung ruckelt.** Der Zoom hing an einer Abfrage pro
+Rastung; das Bild kam versetzt zur Bewegung. Sofort zeichnen aus dem, was da
+ist, und 250 ms nach der letzten Rastung nachfragen.
+
+**Was den Dienst betrifft:**
+
+- `ProtectHome=read-only` sperrt auch `~/.cache`. Erst `CacheDirectory=` in
+  der Unit legt das Verzeichnis an und setzt `$CACHE_DIRECTORY`.
+- Der WebSocket-Klient im Dienst ist allgemein gehalten -- eine zweite Quelle
+  anzuhaengen kostete fast nichts.
+- Beim Einbau des Bandes war `collections` nicht eingebunden. Der Fehler waere
+  erst beim ersten Trade aufgeschlagen; ein Blick auf die Importzeilen hat ihn
+  vor dem Start gefunden.
+
+**DankDashPopout leitet seine Breite aus der `implicitWidth` der gezeigten
+Seite ab** (Zeile 238 und 364). Ein `Item` hat von sich aus keine -- die Seite
+setzt sie jetzt selbst und beschneidet sich.
+
+**Zwei GitHub-Konten auf dieser Maschine.** `gh auth switch` schaltet global;
+laeuft in einer anderen Sitzung etwas gegen Shopatch, kippt es zurueck und der
+Push wird abgelehnt. Der Zugangshelfer im Repo loest das, siehe oben.
+
 ## UEBERGABE 02.09.2026, Abend
 
 ### Was heute dazugekommen ist
