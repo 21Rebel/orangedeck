@@ -31,10 +31,11 @@ PluginSettings {
     SelectionSetting {
         settingKey: "colorMode"
         label: "Farbe nach"
-        description: "Alter: orange beim Eintreffen, blau nach 60 Sekunden (wie im Original). Gebühr: türkis bis violett nach sat/vByte."
+        description: "Alter: orange beim Eintreffen, blau nach 60 Sekunden (wie im Original). Gebühr: türkis bis violett nach sat/vByte. Art: eine Farbe je Transaktionsart."
         options: [
             {label: "Alter", value: "age"},
-            {label: "Gebührenrate", value: "fee"}
+            {label: "Gebührenrate", value: "fee"},
+            {label: "Art", value: "type"}
         ]
         defaultValue: "age"
     }

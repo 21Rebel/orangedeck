@@ -47,7 +47,13 @@ Item {
     // In flachen Flaechen (Dashboard-Tab) nur das Noetigste, sonst laeuft die
     // Spalte in die Halde hinein
     readonly property bool infoCompact: height < 520
-    readonly property bool showLegend: legendVisible && width >= 420 && height >= 420
+    // 420 war zu hoch gegriffen: der Dashboard-Tab ist 410 hoch und bekam
+    // dadurch **nie** eine Legende -- und mit ihr auch nicht den Umschalter
+    // darunter. Gemessen passt sie samt Umschalter ab 330 in die Flaeche.
+    readonly property bool showLegend: legendVisible && width >= 420 && height >= 330
+    // In flachen Flaechen rueckt sie dichter an die Oberkante, sonst reicht
+    // der Platz unter ihr nicht mehr fuer den Umschalter.
+    readonly property bool legendTight: height < 460
     readonly property var tip: feed ? feed.tip : ({})
     readonly property var nextBlock: feed ? feed.nextBlock : ({})
     readonly property var block: feed ? feed.block : ({})
@@ -228,7 +234,12 @@ Item {
 
         anchors.left: canvasView.left
         anchors.top: canvasView.top
-        anchors.topMargin: Math.round(canvasView.height * (root.infoCompact ? 0.03 : 0.10))
+        // **Nicht blosse Prozente.** `FrostedPanel` traegt 8 Pixel Rand nach
+        // aussen -- bei 3 % einer flachen Flaeche stossen der Kasten der
+        // Kopfzeile und der der Blockangaben aneinander. Der Mindestabstand
+        // haelt zwischen beiden eine sichtbare Fuge frei.
+        anchors.topMargin: Math.max(Math.round(root.baseFont * 1.6),
+                                    Math.round(canvasView.height * (root.infoCompact ? 0.03 : 0.10)))
         width: Math.min(160, root.width * 0.22)
         spacing: 2
         visible: root.showInfo && root.block.height !== undefined
@@ -323,7 +334,7 @@ Item {
 
         anchors.right: canvasView.right
         anchors.top: canvasView.top
-        anchors.topMargin: Math.round(canvasView.height * 0.10)
+        anchors.topMargin: Math.round(canvasView.height * (root.legendTight ? 0.04 : 0.10))
         spacing: 4
         visible: root.showLegend
 

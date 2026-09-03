@@ -41,7 +41,10 @@ import "strings.js" as Tr
 Item {
     id: root
 
-    implicitHeight: 410
+    // Die uebrigen Dashboard-Seiten sind 410 hoch; DankDashPopout nimmt aber
+    // die Hoehe dieser Seite (`bitcoinLoader.item?.implicitHeight`). Der Feed
+    // braucht mehr: unter 390 nutzbarer Hoehe faellt die Legende weg.
+    implicitHeight: 460
 
     // **`Item.visible` genuegt hier nicht.** Wird das Popout-Fenster
     // geschlossen, bleibt `visible` an den Elementen darin wahr -- die
@@ -52,6 +55,11 @@ Item {
     // `Window.window.visible` half auch nicht. Der Popout kennt seinen Zustand
     // aber selbst und setzt diesen Wert von aussen (siehe `patch_popout`).
     property bool live: true
+
+    // Oberkante des Inhalts: unter der Reiterzeile, mit Luft dazwischen.
+    // Vorher stand an sechs Stellen `tabs.height + 4` -- vier Pixel, und der
+    // Inhalt klebte oben wie unten.
+    readonly property real contentTop: tabs.y + tabs.height + Theme.spacingM
 
     readonly property string pid: "bitcoinFeed"
     readonly property string desktopInstance: "bitcoinFeed-1"
@@ -216,7 +224,7 @@ Item {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.leftMargin: Theme.spacingS
-        anchors.topMargin: 2
+        anchors.topMargin: Theme.spacingS
         labels: root.tabLabels
         current: root.tabViews.indexOf(root.view)
         fontSize: Theme.fontSizeSmall
@@ -233,7 +241,7 @@ Item {
         visible: root.live && root.view === 1
         anchors.fill: parent
         anchors.margins: Theme.spacingS
-        anchors.topMargin: tabs.height + 4
+        anchors.topMargin: root.contentTop
         feed: feedState
         lang: root.lang
         currency: root.currency
@@ -254,7 +262,7 @@ Item {
         visible: root.live && root.view === 3
         anchors.fill: parent
         anchors.margins: Theme.spacingS
-        anchors.topMargin: tabs.height + 4
+        anchors.topMargin: root.contentTop
         feed: feedState
         lang: root.lang
         currency: root.currency
@@ -274,7 +282,7 @@ Item {
         visible: root.live && root.view === 5
         anchors.fill: parent
         anchors.margins: Theme.spacingS
-        anchors.topMargin: tabs.height + 4
+        anchors.topMargin: root.contentTop
         opts: root.opts
         lang: root.lang
         // Deckkraft und Startansicht gehoeren dem Fenster -- im Dashboard
@@ -294,7 +302,7 @@ Item {
         live: visible
         anchors.fill: parent
         anchors.margins: Theme.spacingS
-        anchors.topMargin: tabs.height + 4
+        anchors.topMargin: root.contentTop
         feed: feedState
         lang: root.lang
         currency: root.currency
@@ -317,7 +325,7 @@ Item {
         visible: root.live && root.view === 2
         anchors.fill: parent
         anchors.margins: Theme.spacingS
-        anchors.topMargin: tabs.height + 4
+        anchors.topMargin: root.contentTop
         // Die Knoepfe stellt hier die Leiste oben rechts -- dort kann sie
         // nichts ueberdecken.
         showActions: false
@@ -336,7 +344,7 @@ Item {
         visible: root.live && root.view === 0
         anchors.fill: parent
         anchors.margins: Theme.spacingS
-        anchors.topMargin: tabs.height + 4
+        anchors.topMargin: root.contentTop
         feed: feedState
         lang: root.lang
         headerVisible: root.showHeader
@@ -377,7 +385,8 @@ Item {
 
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: 2
+        anchors.rightMargin: Theme.spacingXS
+        anchors.topMargin: Theme.spacingXXS
         spacing: 2
 
         DankActionButton {
