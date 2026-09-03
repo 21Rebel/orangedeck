@@ -42,6 +42,10 @@ Item {
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
     property color lineColor: "#2a2a38"
+    // Untergrund fuer aufklappende Flaechen (Auswahlfelder). In DMS ist das
+    // dessen eigene Flaechenfarbe -- damit traegt das Auswahlfeld dieselbe
+    // Deckkraft wie die Einstellungen daneben, statt eine eigene zu erfinden.
+    property color panelColor: "#16161f"
     property real baseFont: 13
     property real tabFont: 12
     property real gap: 8
@@ -227,6 +231,7 @@ Item {
         anchors.topMargin: root.tabSpace
         feed: root.feed
         lang: root.lang
+        panelColor: root.panelColor
         range: root.o("marketRange", "24h")
         kind: root.o("marketKind", "candles")
         customSecs: root.o("marketSecs", 259200)

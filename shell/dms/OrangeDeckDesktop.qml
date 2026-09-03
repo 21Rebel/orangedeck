@@ -150,5 +150,6 @@ Item {
         dimColor: Theme.surfaceVariantText
         accentColor: Theme.primary
         lineColor: Theme.outlineMedium
+        panelColor: Theme.surfaceContainerHighest
     }
 }

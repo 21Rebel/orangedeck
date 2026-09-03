@@ -170,6 +170,7 @@ PluginComponent {
                 dimColor: Theme.surfaceVariantText
                 accentColor: Theme.primary
                 lineColor: Theme.outlineMedium
+                panelColor: Theme.surfaceContainerHighest
                 onOptRequested: function (key, value) {
                     root.setOpt(key, value);
                 }

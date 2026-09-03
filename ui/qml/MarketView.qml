@@ -32,6 +32,7 @@ Item {
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
     property color lineColor: "#2a2a38"
+    property color panelColor: "#16161f"
     property real baseFont: 12
 
     readonly property color upColor: "#5cb946"
@@ -246,6 +247,7 @@ Item {
             // ungehindert darueber hinaus -- im Dashboard-Tab landete sie
             // dadurch neben der Flaeche.
             bounds: root
+            flaecheColor: root.panelColor
             model: root.zeitraeume
             current: root.range
             uiFont: root.baseFont

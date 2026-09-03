@@ -155,18 +155,26 @@ Item {
     Rectangle {
         id: liste
 
+        // **Im selben Elternteil wie die Fangflaeche.** `z` ordnet nur unter
+        // Geschwistern: lag die Liste in der Reihe und die Fangflaeche daneben
+        // im Rahmen, so lag die Fangflaeche ueber der ganzen Reihe -- jeder
+        // Klick auf einen Eintrag traf sie und klappte bloss zu. Die Auswahl
+        // liess sich dadurch gar nicht umstellen.
+        parent: root.bounds ? root.bounds : root
+
         // Rechtsbuendig unter dem Feld -- aber nur, solange das im Rahmen
         // bleibt. Sonst wird sie hineingeschoben.
         x: {
             var wunsch = feld.width - root.listeBreite;
             if (!root.bounds)
                 return wunsch;
-            var imRahmen = root.lage.x + wunsch;
-            var geklemmt = Math.max(0, Math.min(root.bounds.width - root.listeBreite,
-                                                imRahmen));
-            return geklemmt - root.lage.x;
+            return Math.max(0, Math.min(root.bounds.width - root.listeBreite,
+                                        root.lage.x + wunsch));
         }
-        y: root.nachOben ? -root.listeHoehe - 3 : feld.height + 3
+        y: {
+            var unter = root.nachOben ? -root.listeHoehe - 3 : feld.height + 3;
+            return root.bounds ? root.lage.y + unter : unter;
+        }
         width: root.listeBreite
         height: root.listeHoehe
         readonly property real zeilenHoehe: root.zeilenHoehe
