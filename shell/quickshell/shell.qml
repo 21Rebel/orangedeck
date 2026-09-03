@@ -46,6 +46,11 @@ ShellRoot {
         property int marketSecs: 259200
         property bool marketCross: true
         property bool marketTape: true
+        property bool showFeed: true
+        property bool showClock: true
+        property bool showMiner: true
+        property bool showExplorer: true
+        property bool showMarket: true
         property bool minerChart: true
         property bool minerDomains: true
         property bool minerBoard: true
@@ -98,6 +103,11 @@ ShellRoot {
             "marketSecs": marketSecs,
             "marketCross": marketCross,
             "marketTape": marketTape,
+            "showFeed": showFeed,
+            "showClock": showClock,
+            "showMiner": showMiner,
+            "showExplorer": showExplorer,
+            "showMarket": showMarket,
             "minerChart": minerChart,
             "minerDomains": minerDomains,
             "minerBoard": minerBoard,
@@ -165,6 +175,16 @@ ShellRoot {
                 marketCross = value;
             else if (key === "marketTape")
                 marketTape = value;
+            else if (key === "showFeed")
+                showFeed = value;
+            else if (key === "showClock")
+                showClock = value;
+            else if (key === "showMiner")
+                showMiner = value;
+            else if (key === "showExplorer")
+                showExplorer = value;
+            else if (key === "showMarket")
+                showMarket = value;
             else if (key === "minerChart")
                 minerChart = value;
             else if (key === "minerDomains")
@@ -221,6 +241,11 @@ ShellRoot {
                 "marketSecs": marketSecs,
                 "marketCross": marketCross,
                 "marketTape": marketTape,
+                "showFeed": showFeed,
+                "showClock": showClock,
+                "showMiner": showMiner,
+                "showExplorer": showExplorer,
+                "showMarket": showMarket,
                 "minerChart": minerChart,
                 "minerDomains": minerDomains,
                 "minerBoard": minerBoard,
@@ -298,6 +323,16 @@ ShellRoot {
                         win.marketCross = v.marketCross;
                     if (typeof v.marketTape === "boolean")
                         win.marketTape = v.marketTape;
+                    if (typeof v.showFeed === "boolean")
+                        win.showFeed = v.showFeed;
+                    if (typeof v.showClock === "boolean")
+                        win.showClock = v.showClock;
+                    if (typeof v.showMiner === "boolean")
+                        win.showMiner = v.showMiner;
+                    if (typeof v.showExplorer === "boolean")
+                        win.showExplorer = v.showExplorer;
+                    if (typeof v.showMarket === "boolean")
+                        win.showMarket = v.showMarket;
                     if (typeof v.minerChart === "boolean")
                         win.minerChart = v.minerChart;
                     if (typeof v.minerDomains === "boolean")

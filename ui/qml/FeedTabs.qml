@@ -75,12 +75,24 @@ Item {
     // Wallet.
     readonly property bool canMarket: root.feed && !root.feed.direkt
 
+    // **Jeder Reiter laesst sich abschalten.** Wer keinen Miner hat, braucht
+    // den Reiter nicht; wer nur den Mempool sehen will, den Markt nicht. Was
+    // technisch nicht geht (Miner, Wallet und Markt im Direktbezug), faellt
+    // ohnehin weg -- der Schalter kommt oben drauf, er kann nichts erzwingen.
+    //
+    // Die Einstellungen bleiben immer. Sonst schaltet man den letzten Reiter
+    // ab und kommt an keinen Schalter mehr heran.
     readonly property var tabViews: {
-        var v = [0, 1];
-        if (root.feed && root.feed.canMiner)
+        var v = [];
+        if (root.o("showFeed", true))
+            v.push(0);
+        if (root.o("showClock", true))
+            v.push(1);
+        if (root.feed && root.feed.canMiner && root.o("showMiner", true))
             v.push(2);
-        v.push(3);
-        if (root.canMarket)
+        if (root.o("showExplorer", true))
+            v.push(3);
+        if (root.canMarket && root.o("showMarket", true))
             v.push(6);
         if (root.walletEnabled && root.feed && root.feed.canWallet)
             v.push(4);
@@ -88,16 +100,22 @@ Item {
         return v;
     }
 
+    // Dieselbe Reihenfolge wie `tabViews` -- aus einer Tabelle gelesen, damit
+    // die beiden nicht auseinanderlaufen koennen.
+    readonly property var tabNamen: ({
+        "0": Tr.t("tab.feed", root.lang),
+        "1": Tr.t("tab.clock", root.lang),
+        "2": Tr.t("tab.miner", root.lang),
+        "3": Tr.t("tab.explorer", root.lang),
+        "4": Tr.t("tab.wallet", root.lang),
+        "5": Tr.t("tab.settings", root.lang),
+        "6": Tr.t("tab.market", root.lang)
+    })
+
     readonly property var tabLabels: {
-        var l = [Tr.t("tab.feed", root.lang), Tr.t("tab.clock", root.lang)];
-        if (root.feed && root.feed.canMiner)
-            l.push(Tr.t("tab.miner", root.lang));
-        l.push(Tr.t("tab.explorer", root.lang));
-        if (root.canMarket)
-            l.push(Tr.t("tab.market", root.lang));
-        if (root.walletEnabled && root.feed && root.feed.canWallet)
-            l.push(Tr.t("tab.wallet", root.lang));
-        l.push(Tr.t("tab.settings", root.lang));
+        var l = [];
+        for (var i = 0; i < root.tabViews.length; i++)
+            l.push(root.tabNamen[String(root.tabViews[i])]);
         return l;
     }
 

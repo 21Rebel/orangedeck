@@ -487,6 +487,16 @@ Item {
                 visible: root.tab === "feed"
 
                 Zeile {
+                    label: Tr.t("set.showTab", root.lang)
+                    help: Tr.t("set.showTabHelp", root.lang)
+
+                    Schalter {
+                        an: root.val("showFeed", true)
+                        onUmgelegt: root.changed("showFeed", !root.val("showFeed", true))
+                    }
+                }
+
+                Zeile {
                     label: Tr.t("set.tileColor", root.lang)
                     help: Tr.t("set.tileColorHelp", root.lang)
 
@@ -596,6 +606,16 @@ Item {
                 visible: root.tab === "clock"
 
                 Zeile {
+                    label: Tr.t("set.showTab", root.lang)
+                    help: Tr.t("set.showTabHelp", root.lang)
+
+                    Schalter {
+                        an: root.val("showClock", true)
+                        onUmgelegt: root.changed("showClock", !root.val("showClock", true))
+                    }
+                }
+
+                Zeile {
                     label: Tr.t("set.metrics", root.lang)
                     help: Tr.t("set.metricsClockHelp", root.lang)
 
@@ -697,6 +717,16 @@ Item {
                 visible: root.tab === "miner"
 
                 Zeile {
+                    label: Tr.t("set.showTab", root.lang)
+                    help: Tr.t("set.showTabHelp", root.lang)
+
+                    Schalter {
+                        an: root.val("showMiner", true)
+                        onUmgelegt: root.changed("showMiner", !root.val("showMiner", true))
+                    }
+                }
+
+                Zeile {
                     label: Tr.t("set.metrics", root.lang)
                     help: Tr.t("set.metricsMinerHelp", root.lang)
 
@@ -749,6 +779,16 @@ Item {
             Column {
                 width: parent.width
                 visible: root.tab === "explorer"
+
+                Zeile {
+                    label: Tr.t("set.showTab", root.lang)
+                    help: Tr.t("set.showTabHelp", root.lang)
+
+                    Schalter {
+                        an: root.val("showExplorer", true)
+                        onUmgelegt: root.changed("showExplorer", !root.val("showExplorer", true))
+                    }
+                }
 
                 Zeile {
                     label: Tr.t("set.explorerColor", root.lang)
@@ -814,6 +854,16 @@ Item {
             Column {
                 width: parent.width
                 visible: root.tab === "markt"
+
+                Zeile {
+                    label: Tr.t("set.showTab", root.lang)
+                    help: Tr.t("set.showTabHelp", root.lang)
+
+                    Schalter {
+                        an: root.val("showMarket", true)
+                        onUmgelegt: root.changed("showMarket", !root.val("showMarket", true))
+                    }
+                }
 
                 Zeile {
                     label: Tr.t("set.crosshair", root.lang)

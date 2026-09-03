@@ -68,20 +68,75 @@ Item {
     // Das Band: nur was seit `bandNr` dazukam wird geholt und angehaengt.
     property var band: []
     property int bandNr: 0
+    // Juengster Trade oben. Einmal gedreht statt in jeder Zeile gerechnet.
+    readonly property var bandUmgekehrt: root.band.slice().reverse()
     // Welche Kerze unter dem Zeiger liegt, und wo er steht
     property int zeiger: -1
     property real zeigerY: 0
 
+    // ---------------------------------------------------------------- Zoom
+    // **Sofort zeichnen, spaeter holen.** Jede Radrastung loeste vorher eine
+    // Abfrage aus: der Dienst suchte ein neues Raster, holte womoeglich bei
+    // der Boerse nach, und das Bild kam versetzt zur Bewegung zurueck -- es
+    // ruckelte, und man traf nichts. Jetzt zoomt die Ansicht augenblicklich
+    // in die Kerzen, die sie schon hat, und fragt erst nach, wenn die Hand
+    // stillhaelt. Dann kommt das passende Raster und `zoomSekunden` faellt
+    // wieder weg.
+    property int zoomSekunden: 0
+    property bool zoomAusstehend: false
+
+    readonly property int sichtSekunden: root.zoomSekunden > 0
+        ? root.zoomSekunden
+        : (root.range === "custom" ? root.customSecs : root.sekundenVon(root.range))
+
+    // Die Kerzen, die gezeichnet werden. Beim Zoomen ein Ausschnitt der
+    // geholten, sonst alle.
+    readonly property var sicht: {
+        if (root.zoomSekunden <= 0 || !root.kerzen.length)
+            return root.kerzen;
+        var bis = root.kerzen[root.kerzen.length - 1][0];
+        var ab = bis - root.zoomSekunden;
+        var aus = [];
+        for (var i = 0; i < root.kerzen.length; i++) {
+            if (root.kerzen[i][0] >= ab)
+                aus.push(root.kerzen[i]);
+        }
+        // Unter drei Kerzen ist nichts mehr zu sehen -- dann lieber warten,
+        // bis das feinere Raster da ist.
+        return aus.length >= 3 ? aus : root.kerzen;
+    }
+
+    function zoomen(faktor) {
+        var jetzt = root.sichtSekunden;
+        root.zoomSekunden = Math.round(Math.max(300, Math.min(400000000,
+                                                              jetzt * faktor)));
+        root.zoomAusstehend = true;
+        nachfassen.restart();
+        leinwand.requestPaint();
+    }
+
+    Timer {
+        id: nachfassen
+
+        interval: 250
+        onTriggered: {
+            root.zoomAusstehend = false;
+            if (root.range !== "custom")
+                root.rangeRequested("custom");
+            root.customSecsRequested(root.zoomSekunden);
+        }
+    }
+
     readonly property real hoch: {
         var m = -Infinity;
-        for (var i = 0; i < root.kerzen.length; i++)
-            m = Math.max(m, root.kerzen[i][2]);
+        for (var i = 0; i < root.sicht.length; i++)
+            m = Math.max(m, root.sicht[i][2]);
         return m === -Infinity ? 0 : m;
     }
     readonly property real tief: {
         var m = Infinity;
-        for (var i = 0; i < root.kerzen.length; i++)
-            m = Math.min(m, root.kerzen[i][3]);
+        for (var i = 0; i < root.sicht.length; i++)
+            m = Math.min(m, root.sicht[i][3]);
         return m === Infinity ? 0 : m;
     }
     // Die Kerzen der Boerse tragen **ein** Volumen, die Live-Faecher des
@@ -92,12 +147,12 @@ Item {
 
     readonly property real maxVol: {
         var m = 0;
-        for (var i = 0; i < root.kerzen.length; i++)
-            m = Math.max(m, root.volumen(root.kerzen[i]));
+        for (var i = 0; i < root.sicht.length; i++)
+            m = Math.max(m, root.volumen(root.sicht[i]));
         return m;
     }
-    readonly property real letzterPreis: root.kerzen.length
-                                         ? root.kerzen[root.kerzen.length - 1][4] : 0
+    readonly property real letzterPreis: root.sicht.length
+                                         ? root.sicht[root.sicht.length - 1][4] : 0
 
     // ------------------------------------------------------------ Geometrie
     // **Einmal gerechnet, dreifach benutzt**: von der Leinwand, vom Fadenkreuz
@@ -117,8 +172,8 @@ Item {
         var d = root.hoch - root.tief;
         return d > 0 ? d : Math.max(1, root.hoch * 0.0002);
     }
-    readonly property real kerzeBreite: root.kerzen.length
-                                        ? root.feldBreite / root.kerzen.length : 1
+    readonly property real kerzeBreite: root.sicht.length
+                                        ? root.feldBreite / root.sicht.length : 1
 
     function yPreis(v) {
         return root.padT + root.preisHoehe * (1 - (v - root.tief) / root.spanne);
@@ -129,10 +184,10 @@ Item {
     }
 
     function indexBei(x) {
-        if (!root.kerzen.length)
+        if (!root.sicht.length)
             return -1;
         var i = Math.floor(x / root.kerzeBreite);
-        return Math.max(0, Math.min(root.kerzen.length - 1, i));
+        return Math.max(0, Math.min(root.sicht.length - 1, i));
     }
 
     function holen() {
@@ -148,6 +203,11 @@ Item {
             }
             root.fehler = "";
             root.kerzen = d.candles || [];
+            // Die geholten Kerzen sind jetzt genau der gewuenschte Ausschnitt
+            // -- weiter zuzuschneiden waere doppelt. Nur waehrend einer noch
+            // laufenden Geste bleibt der oertliche Zoom stehen.
+            if (!root.zoomAusstehend)
+                root.zoomSekunden = 0;
             root.quellen = d.sources || [];
             root.tradeZahl = d.trades || 0;
             // Nur das Neue anhaengen und vorne abschneiden -- der Dienst
@@ -204,22 +264,7 @@ Item {
             font.pixelSize: root.baseFont - 2
         }
 
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.zeigerDa
-            text: {
-                if (!root.zeigerDa)
-                    return "";
-                var k = root.kerzen[root.zeiger];
-                return root.uhrzeit(k[0]) + "   O " + Tr.group(k[1], root.lang)
-                     + "  H " + Tr.group(k[2], root.lang)
-                     + "  L " + Tr.group(k[3], root.lang)
-                     + "  C " + Tr.group(k[4], root.lang);
-            }
-            color: root.textColor
-            font.pixelSize: root.baseFont - 2
-            font.family: "monospace"
-        }
+
 
         // Welche Boerse gerade haengt -- ohne das sieht man einer flachen
         // Kurve nicht an, ob der Markt ruhig ist oder die Verbindung weg.
@@ -363,14 +408,18 @@ Item {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        anchors.topMargin: Math.max(kopf.height, wahl.height) + root.baseFont * 0.6
+        // Der Platz der Ablesezeile bleibt frei, auch wenn sie leer ist --
+        // sonst huepft der Graph bei jedem Ueberfahren um eine Zeilenhoehe.
+        anchors.topMargin: Math.max(kopf.height, wahl.height)
+                           + root.baseFont * 0.25 + ablesen.implicitHeight
+                           + root.baseFont * 0.35
         anchors.bottomMargin: root.bandHoehe
         antialiasing: false
 
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
-            var n = root.kerzen.length;
+            var n = root.sicht.length;
             if (n < 1)
                 return;
 
@@ -417,7 +466,7 @@ Item {
                 ctx.beginPath();
                 ctx.moveTo(kerzeBreite / 2, root.padT + preisHoehe);
                 for (i = 0; i < n; i++)
-                    ctx.lineTo(i * kerzeBreite + kerzeBreite / 2, yPreis(root.kerzen[i][4]));
+                    ctx.lineTo(i * kerzeBreite + kerzeBreite / 2, yPreis(root.sicht[i][4]));
                 ctx.lineTo((n - 1) * kerzeBreite + kerzeBreite / 2,
                            root.padT + preisHoehe);
                 ctx.closePath();
@@ -430,16 +479,16 @@ Item {
                 for (i = 0; i < n; i++) {
                     var xl = i * kerzeBreite + kerzeBreite / 2;
                     if (i === 0)
-                        ctx.moveTo(xl, yPreis(root.kerzen[i][4]));
+                        ctx.moveTo(xl, yPreis(root.sicht[i][4]));
                     else
-                        ctx.lineTo(xl, yPreis(root.kerzen[i][4]));
+                        ctx.lineTo(xl, yPreis(root.sicht[i][4]));
                 }
                 ctx.stroke();
             }
 
             // ---- Kerzen ----------------------------------------------------
             for (i = 0; i < n; i++) {
-                k = root.kerzen[i];
+                k = root.sicht[i];
                 x = i * kerzeBreite + (kerzeBreite - koerper) / 2;
                 steigt = k[4] >= k[1];
                 farbe = steigt ? root.upColor : root.downColor;
@@ -486,9 +535,9 @@ Item {
             // Zeitachse: Anfang und Ende
             ctx.fillStyle = root.dimColor;
             ctx.textAlign = "left";
-            ctx.fillText(root.uhrzeit(root.kerzen[0][0]), 0, height - 2);
+            ctx.fillText(root.uhrzeit(root.sicht[0][0]), 0, height - 2);
             ctx.textAlign = "right";
-            ctx.fillText(root.uhrzeit(root.kerzen[n - 1][0]), breiteGesamt, height - 2);
+            ctx.fillText(root.uhrzeit(root.sicht[n - 1][0]), breiteGesamt, height - 2);
         }
     }
 
@@ -498,6 +547,34 @@ Item {
         var lang = (root.range === "1y" || root.range === "all");
         return Qt.formatDateTime(new Date(ts * 1000),
                                  kurz ? "HH:mm" : (lang ? "MM.yyyy" : "dd.MM."));
+    }
+
+    // **Das Ablesen steht in einer eigenen Zeile.** In der Kopfzeile wuchs es
+    // mit jedem Wert und schob sich unter die Boersenpunkte und die Knoepfe --
+    // vier Zahlen mit Beschriftung sind schlicht breiter als der Platz neben
+    // dem Preis.
+    Text {
+        id: ablesen
+
+        anchors.left: parent.left
+        anchors.right: wahl.left
+        anchors.rightMargin: root.baseFont
+        anchors.top: parent.top
+        anchors.topMargin: Math.max(kopf.height, wahl.height) + root.baseFont * 0.25
+        visible: root.zeigerDa
+        elide: Text.ElideRight
+        text: {
+            if (!root.zeigerDa)
+                return "";
+            var k = root.sicht[root.zeiger];
+            return root.uhrzeit(k[0]) + "    O " + Tr.group(k[1], root.lang)
+                 + "   H " + Tr.group(k[2], root.lang)
+                 + "   L " + Tr.group(k[3], root.lang)
+                 + "   C " + Tr.group(k[4], root.lang);
+        }
+        color: root.textColor
+        font.pixelSize: root.baseFont - 2
+        font.family: "monospace"
     }
 
     // ------------------------------------------- Zoom, Zeiger, Fadenkreuz
@@ -530,13 +607,13 @@ Item {
         WheelHandler {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: function (rad) {
-                var jetzt = root.range === "custom" ? root.customSecs
-                                                    : root.sekundenVon(root.range);
-                var faktor = rad.angleDelta.y > 0 ? 1 / 1.35 : 1.35;
-                var neu = Math.round(Math.max(300, Math.min(400000000, jetzt * faktor)));
-                if (root.range !== "custom")
-                    root.rangeRequested("custom");
-                root.customSecsRequested(neu);
+                // Ein Rasterschritt sind 120 Achtelgrad; ein Rollfeld meldet
+                // feinere Schritte. Beides ueber denselben Faktor, damit sich
+                // Maus und Rollfeld gleich anfuehlen.
+                var schritte = rad.angleDelta.y / 120;
+                if (!schritte)
+                    return;
+                root.zoomen(Math.pow(1 / 1.35, schritte));
             }
         }
     }
@@ -563,7 +640,7 @@ Item {
         return root.customSecs;
     }
 
-    readonly property bool zeigerDa: root.zeiger >= 0 && root.zeiger < root.kerzen.length
+    readonly property bool zeigerDa: root.zeiger >= 0 && root.zeiger < root.sicht.length
 
     // Senkrechte durch die Kerze unter dem Zeiger
     Rectangle {
@@ -618,7 +695,7 @@ Item {
 
     Connections {
         target: root
-        function onKerzenChanged() {
+        function onSichtChanged() {
             leinwand.requestPaint();
         }
     }
@@ -627,7 +704,7 @@ Item {
     // Die Trades, wie sie hereinkommen -- juengster oben. Der Dienst hebt nur
     // auf, was ueber tausend Dollar liegt, und schickt je Abfrage nur das
     // Neue; hier stehen die letzten, so viele wie Platz ist.
-    Column {
+    ListView {
         id: bandFeld
 
         anchors.left: parent.left
@@ -635,82 +712,74 @@ Item {
         anchors.bottom: parent.bottom
         height: root.bandHoehe
         visible: root.showTape
-        spacing: 0
         clip: true
+        spacing: 0
+        boundsBehavior: Flickable.StopAtBounds
+        // Der juengste Trade steht oben. Wer zurueckblaettert, soll dabei
+        // nicht von jedem neuen Trade wieder nach oben gerissen werden --
+        // deshalb kein Nachfuehren der Lage.
+        model: root.bandUmgekehrt
 
-        Item {
-            width: 1
-            height: root.baseFont * 0.4
-        }
+        delegate: Item {
+            id: zeile
 
-        Repeater {
-            model: {
-                var n = Math.max(0, Math.floor((root.bandHoehe - root.baseFont * 0.4)
-                                               / Math.round(root.baseFont * 1.35)));
-                return root.band.slice(-n).reverse();
+            required property var modelData
+
+            width: bandFeld.width
+            height: Math.round(root.baseFont * 1.35)
+
+            // Wie stark eine Zeile heraussticht, entscheidet ihr Betrag.
+            // Unter zehntausend bleibt sie ein Strich am Rand, darueber
+            // faerbt sie sich durch -- so sieht man Grosses, ohne dass
+            // Kleines verschwindet.
+            readonly property real wucht: Math.max(0, Math.min(1,
+                (zeile.modelData[3] - 1000) / 99000))
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.rightMargin: root.padR
+                color: zeile.modelData[4] ? root.upColor : root.downColor
+                opacity: 0.10 + zeile.wucht * 0.5
             }
 
-            Item {
-                id: zeile
+            Text {
+                anchors.left: parent.left
+                anchors.leftMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
+                text: Qt.formatDateTime(new Date(zeile.modelData[1] * 1000), "HH:mm:ss")
+                color: root.dimColor
+                font.pixelSize: root.baseFont - 3
+                font.family: "monospace"
+            }
 
-                required property var modelData
+            Text {
+                anchors.left: parent.left
+                anchors.leftMargin: root.baseFont * 5
+                anchors.verticalCenter: parent.verticalCenter
+                text: Tr.group(zeile.modelData[2], root.lang)
+                color: root.textColor
+                font.pixelSize: root.baseFont - 2
+                font.family: "monospace"
+            }
 
-                width: bandFeld.width
-                height: Math.round(root.baseFont * 1.35)
+            Text {
+                anchors.right: parent.right
+                anchors.rightMargin: root.padR + 6
+                anchors.verticalCenter: parent.verticalCenter
+                text: "$ " + Tr.group(zeile.modelData[3], root.lang)
+                color: root.textColor
+                font.pixelSize: root.baseFont - 2
+                font.family: "monospace"
+                font.bold: zeile.wucht > 0.4
+            }
 
-                // Wie stark eine Zeile heraussticht, entscheidet ihr Betrag.
-                // Unter zehntausend bleibt sie ein Strich am Rand, darueber
-                // faerbt sie sich durch -- so sieht man Grosses, ohne dass
-                // Kleines verschwindet.
-                readonly property real wucht: Math.max(0, Math.min(1,
-                    (zeile.modelData[3] - 1000) / 99000))
-
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.rightMargin: root.padR
-                    color: zeile.modelData[4] ? root.upColor : root.downColor
-                    opacity: 0.10 + zeile.wucht * 0.5
-                }
-
-                Text {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 4
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Qt.formatDateTime(new Date(zeile.modelData[1] * 1000), "HH:mm:ss")
-                    color: root.dimColor
-                    font.pixelSize: root.baseFont - 3
-                    font.family: "monospace"
-                }
-
-                Text {
-                    anchors.left: parent.left
-                    anchors.leftMargin: root.baseFont * 5
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Tr.group(zeile.modelData[2], root.lang)
-                    color: root.textColor
-                    font.pixelSize: root.baseFont - 2
-                    font.family: "monospace"
-                }
-
-                Text {
-                    anchors.right: parent.right
-                    anchors.rightMargin: root.padR + 6
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "$ " + Tr.group(zeile.modelData[3], root.lang)
-                    color: root.textColor
-                    font.pixelSize: root.baseFont - 2
-                    font.family: "monospace"
-                    font.bold: zeile.wucht > 0.4
-                }
-
-                Text {
-                    anchors.right: parent.right
-                    anchors.rightMargin: root.padR + root.baseFont * 7
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: zeile.modelData[5]
-                    color: root.dimColor
-                    font.pixelSize: root.baseFont - 3
-                }
+            Text {
+                anchors.right: parent.right
+                anchors.rightMargin: root.padR + root.baseFont * 7
+                anchors.verticalCenter: parent.verticalCenter
+                text: zeile.modelData[5]
+                color: root.dimColor
+                font.pixelSize: root.baseFont - 3
             }
         }
     }
@@ -721,7 +790,7 @@ Item {
         width: parent.width * 0.8
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.WordWrap
-        visible: !root.kerzen.length
+        visible: !root.sicht.length
         text: root.fehler !== "" ? Tr.t("market.failed", root.lang, root.fehler)
                                  : Tr.t("market.waiting", root.lang)
         color: root.dimColor

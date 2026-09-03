@@ -78,6 +78,11 @@ Window {
     property int marketSecs: 259200
     property bool marketCross: true
     property bool marketTape: true
+    property bool showFeed: true
+    property bool showClock: true
+    property bool showMiner: true
+    property bool showExplorer: true
+    property bool showMarket: true
     property bool minerChart: true
     property bool minerDomains: true
     property bool minerBoard: true
@@ -148,6 +153,11 @@ Window {
         property alias marketSecs: win.marketSecs
         property alias marketCross: win.marketCross
         property alias marketTape: win.marketTape
+        property alias showFeed: win.showFeed
+        property alias showClock: win.showClock
+        property alias showMiner: win.showMiner
+        property alias showExplorer: win.showExplorer
+        property alias showMarket: win.showMarket
         property alias minerChart: win.minerChart
         property alias minerDomains: win.minerDomains
         property alias minerBoard: win.minerBoard
@@ -239,6 +249,16 @@ Window {
             win.marketCross = value;
         else if (key === "marketTape")
             win.marketTape = value;
+        else if (key === "showFeed")
+            win.showFeed = value;
+        else if (key === "showClock")
+            win.showClock = value;
+        else if (key === "showMiner")
+            win.showMiner = value;
+        else if (key === "showExplorer")
+            win.showExplorer = value;
+        else if (key === "showMarket")
+            win.showMarket = value;
         else if (key === "minerChart")
             win.minerChart = value;
         else if (key === "minerDomains")
@@ -293,6 +313,11 @@ Window {
         "marketSecs": win.marketSecs,
         "marketCross": win.marketCross,
         "marketTape": win.marketTape,
+        "showFeed": win.showFeed,
+        "showClock": win.showClock,
+        "showMiner": win.showMiner,
+        "showExplorer": win.showExplorer,
+        "showMarket": win.showMarket,
         "minerChart": win.minerChart,
         "minerDomains": win.minerDomains,
         "minerBoard": win.minerBoard,

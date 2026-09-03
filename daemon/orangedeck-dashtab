@@ -107,6 +107,11 @@ Item {
     property int marketSecs: SettingsData.getPluginSetting(pid, "marketSecs", 259200)
     property bool marketCross: SettingsData.getPluginSetting(pid, "marketCross", true)
     property bool marketTape: SettingsData.getPluginSetting(pid, "marketTape", true)
+    property bool showFeed: SettingsData.getPluginSetting(pid, "showFeed", true)
+    property bool showClock: SettingsData.getPluginSetting(pid, "showClock", true)
+    property bool showMiner: SettingsData.getPluginSetting(pid, "showMiner", true)
+    property bool showExplorer: SettingsData.getPluginSetting(pid, "showExplorer", true)
+    property bool showMarket: SettingsData.getPluginSetting(pid, "showMarket", true)
     property bool minerChart: SettingsData.getPluginSetting(pid, "minerChart", true)
     property bool minerDomains: SettingsData.getPluginSetting(pid, "minerDomains", true)
     property bool minerBoard: SettingsData.getPluginSetting(pid, "minerBoard", true)
@@ -151,6 +156,11 @@ Item {
         "marketSecs": marketSecs,
         "marketCross": marketCross,
         "marketTape": marketTape,
+        "showFeed": showFeed,
+        "showClock": showClock,
+        "showMiner": showMiner,
+        "showExplorer": showExplorer,
+        "showMarket": showMarket,
         "clockFields": clockFields,
         "bigFields": bigFields,
         "bigRotate": bigRotate,
