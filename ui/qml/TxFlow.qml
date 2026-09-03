@@ -111,9 +111,7 @@ Item {
     // **Ein Winkel fuer beide Enden.** Vorher war die Spitze rechts auf eine
     // feste Laenge gedeckelt und der Pfeil links wuchs mit der Banddicke -- an
     // einem dicken Band trafen dadurch zwei verschiedene Steigungen aufeinander.
-    // Jetzt haengt beides an derselben Formel, der Winkel ist damit ueberall
-    // gleich: atan((h/2) / (h * headRatio)), bei headRatio 1,1 also rund 24
-    // Grad zur Achse.
+    // Jetzt haengt beides an derselben Formel: atan((h/2) / (h * headRatio)).
     function tipFor(thickness) {
         return root.headFor(thickness);
     }
@@ -122,10 +120,24 @@ Item {
     // `markerUnits="strokeWidth"`, sie wachsen also mit der Banddicke -- an
     // duennen Faeden sieht man sie kaum, an dicken deutlich. Sie zeigen, dass
     // sich die Kette von dort aus weiterverfolgen laesst.
-    property real headRatio: 1.1
+    // **0,55 ist aus dem Original ausgerechnet, nicht geschaetzt.** Dort ist der
+    // Pfeil ein SVG-Marker mit `viewBox="-5 -5 10 10"`, `markerWidth="1.5"`,
+    // `markerHeight="1"` und `markerUnits="strokeWidth"`. Bei der voreingestellten
+    // Erhaltung des Seitenverhaeltnisses gilt der kleinere der beiden Massstaebe,
+    // also 1/10 der Banddicke je Einheit: die Kerbe ist zehn Einheiten hoch (die
+    // volle Dicke) und fuenf tief -- **eine halbe Banddicke, also 45 Grad**. Mit
+    // 1,1 lag der Winkel bei 24 Grad, die Kerbe war viel zu spitz.
+    property real headRatio: 0.55
 
     function headFor(thickness) {
-        return Math.max(2, Math.min(connector * 0.9, thickness * root.headRatio));
+        // Der Deckel haelt die Kerbe im geraden Stueck. Er lag bei 0,9 mal dem
+        // Anschluss und griff schon bei mittleren Baendern -- der Winkel wurde
+        // dadurch flacher als die 45 Grad der Vorlage, genau was er nicht soll.
+        // Das dickste Band misst `trunkH`, hoechstens `labelSize * 5`, der
+        // Anschluss `labelSize * 2`: 0,55 * 5 / 2 = 1,375. Mit 1,4 greift der
+        // Deckel im Regelfall nicht mehr, und die Kerbe darf hoechstens in den
+        // flachen Anfang der Kurve hineinreichen.
+        return Math.max(2, Math.min(connector * 1.4, thickness * root.headRatio));
     }
     // Oben und unten bleibt Platz -- der Fluss soll frei liegen, nicht am
     // Bildrand kleben.
@@ -345,7 +357,12 @@ Item {
                 return;
             var alt = ctx.globalCompositeOperation;
             ctx.globalCompositeOperation = "destination-out";
-            ctx.lineWidth = Math.max(1, Math.min(2.5, thickness * 0.12));
+            // Im Original ist die Kerbe keine Linie, sondern die **Luecke**
+            // zwischen dem Klotz am Bandanfang und dem Band selbst -- sie
+            // waechst also mit der Dicke. Nachgemessen an der Vorlage sind das
+            // rund 8 % der Banddicke; 2,5 Bildpunkte Deckel liessen davon an
+            // einem dicken Band ein Haar uebrig.
+            ctx.lineWidth = Math.max(1, Math.min(10, thickness * 0.08));
             ctx.lineJoin = "miter";
             ctx.strokeStyle = "#000000";
             ctx.beginPath();
