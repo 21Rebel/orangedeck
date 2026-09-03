@@ -623,7 +623,7 @@ Netzes gehoert nicht in einen Hintergrunddienst; er passiert nur auf Zuruf.
 
 ### Am echten Geraet geprueft (01.09.2026)
 
-Bitaxe Gamma 601, AxeOS v2.14.2 unter `http://192.168.100.9`:
+Bitaxe Gamma 601, AxeOS v2.14.2, im Heimnetz erreichbar:
 
     Hashrate     1060 GH/s geglaettet, 1048 im Moment, 1071 erwartet
     beste Freigabe 295.580.247  ->  1 zu 425.627
