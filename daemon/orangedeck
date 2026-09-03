@@ -734,6 +734,27 @@ def http_json(path, timeout=15):
 # Dashboard, das den ganzen Tag offen steht, soll nicht rund um die Uhr zwei
 # Boersenstroeme mitlaufen lassen.
 
+# Zeitraeume der Marktansicht. Zu jedem gehoert das Raster, in dem die Boerse
+# ihre Kerzen liefert -- so kommen ueberall zwischen 60 und 400 Kerzen heraus,
+# egal ob eine Stunde oder neun Jahre gezeigt werden.
+#
+# **Die Live-Trades reichen dafuer nicht.** Der Dienst haelt eine Stunde
+# Sekundenfaecher; 7 Tage oder ein Jahr kann er daraus nicht bauen. Fuer alles
+# ausser dem laufenden Fach kommen die Kerzen deshalb fertig von der Boerse.
+KLINE_SPANS = {
+    "1h":  ("1m", 60),
+    "12h": ("5m", 144),
+    "24h": ("15m", 96),
+    "7d":  ("1h", 168),
+    "30d": ("4h", 180),
+    "1y":  ("1d", 365),
+    # BTCUSDT bei Binance beginnt am 31.07.2017 -- davor gab es die Boerse
+    # nicht. "Alles" heisst hier also 2017, nicht 2009.
+    "all": ("1w", 1000),
+}
+KLINE_CACHE_TTL = {"1m": 20, "5m": 60, "15m": 120, "1h": 300,
+                   "4h": 600, "1d": 1800, "1w": 3600}
+
 MARKET_SECONDS = 3600     # eine Stunde Sekundenkerzen im Ring
 MARKET_LINGER = 120       # so lange nach der letzten Abfrage bleibt der Strom
 MARKET_MAX_CANDLES = 400  # mehr zeichnet keine Oberflaeche sinnvoll
@@ -849,6 +870,71 @@ class Market:
 
 
 MARKT = Market()
+
+
+# Fuer einen selbst gewaehlten Zeitraum wird das Raster gesucht, das etwa
+# zweihundert Kerzen ergibt -- die Leiter ist die von Binance.
+KLINE_LADDER = (("1m", 60), ("3m", 180), ("5m", 300), ("15m", 900),
+                ("30m", 1800), ("1h", 3600), ("2h", 7200), ("4h", 14400),
+                ("6h", 21600), ("12h", 43200), ("1d", 86400),
+                ("3d", 259200), ("1w", 604800))
+
+
+def raster_fuer(sekunden):
+    """Raster und Anzahl fuer einen beliebigen Zeitraum."""
+    ziel = 200
+    for name, laenge in KLINE_LADDER:
+        if sekunden / laenge <= 400:
+            anzahl = max(20, min(1000, int(round(sekunden / laenge))))
+            return name, anzahl
+    return "1w", 1000
+
+
+_klines_lock = threading.Lock()
+_klines = {}   # (raster, anzahl) -> (zeitpunkt, kerzen)
+
+
+def klines(spanne, symbol="BTCUSDT"):
+    """Fertige Kerzen der Boerse fuer einen Zeitraum.
+
+    Gepuffert je Raster: ein Tagesraster muss nicht alle zwei Sekunden neu
+    geholt werden, ein Minutenraster schon eher. Faellt die Boerse aus, kommt
+    der letzte Stand zurueck -- ein alter Kurs ist besser als ein leeres Bild.
+    """
+    if isinstance(spanne, tuple):
+        raster, anzahl = spanne
+    else:
+        raster, anzahl = KLINE_SPANS.get(spanne, KLINE_SPANS["24h"])
+    schluessel = (symbol, raster, anzahl)
+    ttl = KLINE_CACHE_TTL.get(raster, 60)
+    with _klines_lock:
+        eintrag = _klines.get(schluessel)
+        if eintrag and time.time() - eintrag[0] < ttl:
+            return eintrag[1]
+    try:
+        req = urllib.request.Request(
+            "https://api.binance.com/api/v3/klines?symbol=%s&interval=%s&limit=%d"
+            % (symbol, raster, anzahl), headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            roh = json.loads(r.read().decode())
+    except Exception as e:
+        sys.stderr.write("Kerzen %s: %s\n" % (spanne, e))
+        with _klines_lock:
+            eintrag = _klines.get(schluessel)
+        return eintrag[1] if eintrag else []
+    aus = []
+    for k in roh:
+        try:
+            # [Oeffnungszeit, O, H, L, C, Volumen, ...] -- der Rest interessiert
+            # nicht und wird gar nicht erst weitergereicht.
+            aus.append([int(k[0]) // 1000, round(float(k[1]), 2),
+                        round(float(k[2]), 2), round(float(k[3]), 2),
+                        round(float(k[4]), 2), round(float(k[5]), 3)])
+        except (IndexError, TypeError, ValueError):
+            continue
+    with _klines_lock:
+        _klines[schluessel] = (time.time(), aus)
+    return aus
 
 
 def run_market(quelle):
@@ -1481,19 +1567,23 @@ class _Handler(BaseHTTPRequestHandler):
                 # Boersenstroeme am Leben; bleibt sie zwei Minuten aus, gehen
                 # sie von selbst wieder zu.
                 MARKT.gefragt()
-                tf, anzahl = 5, 180
+                spanne, eigen = "24h", 0
                 for teil in (zerlegt.query or "").split("&"):
                     name, _, wert = teil.partition("=")
                     try:
-                        if name == "tf":
-                            tf = max(1, min(3600, int(wert)))
-                        elif name == "n":
-                            anzahl = int(wert)
+                        if name == "range" and (wert in KLINE_SPANS or wert == "custom"):
+                            spanne = wert
+                        elif name == "secs":
+                            eigen = max(300, min(400000000, int(wert)))
                     except ValueError:
                         pass
+                if spanne == "custom" and eigen:
+                    kerzen = klines(raster_fuer(eigen))
+                else:
+                    kerzen = klines(spanne)
                 self._send(json.dumps({
-                    "tf": tf,
-                    "candles": MARKT.kerzen(tf, anzahl),
+                    "range": spanne,
+                    "candles": kerzen,
                     "sources": [{"id": q["id"], "name": q["name"],
                                  "online": bool(MARKT.online.get(q["id"]))}
                                 for q in MARKETS],

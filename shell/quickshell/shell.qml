@@ -41,7 +41,9 @@ ShellRoot {
         property bool clockTime: false
         property bool clockPrice: true
         property string priceSpan: "30d"
-        property int marketTf: 5
+        property string marketRange: "24h"
+        property string marketKind: "candles"
+        property int marketSecs: 259200
         property bool minerChart: true
         property bool minerDomains: true
         property bool minerBoard: true
@@ -89,7 +91,9 @@ ShellRoot {
             "clockTime": clockTime,
             "clockPrice": clockPrice,
             "priceSpan": priceSpan,
-            "marketTf": marketTf,
+            "marketRange": marketRange,
+            "marketKind": marketKind,
+            "marketSecs": marketSecs,
             "minerChart": minerChart,
             "minerDomains": minerDomains,
             "minerBoard": minerBoard,
@@ -147,8 +151,12 @@ ShellRoot {
                 clockPrice = value;
             else if (key === "priceSpan")
                 priceSpan = value;
-            else if (key === "marketTf")
-                marketTf = value;
+            else if (key === "marketRange")
+                marketRange = value;
+            else if (key === "marketKind")
+                marketKind = value;
+            else if (key === "marketSecs")
+                marketSecs = value;
             else if (key === "minerChart")
                 minerChart = value;
             else if (key === "minerDomains")
@@ -200,7 +208,9 @@ ShellRoot {
                 "clockTime": clockTime,
                 "clockPrice": clockPrice,
                 "priceSpan": priceSpan,
-                "marketTf": marketTf,
+                "marketRange": marketRange,
+                "marketKind": marketKind,
+                "marketSecs": marketSecs,
                 "minerChart": minerChart,
                 "minerDomains": minerDomains,
                 "minerBoard": minerBoard,
@@ -268,8 +278,12 @@ ShellRoot {
                         win.clockPrice = v.clockPrice;
                     if (typeof v.priceSpan === "string")
                         win.priceSpan = v.priceSpan;
-                    if (typeof v.marketTf === "number")
-                        win.marketTf = v.marketTf;
+                    if (typeof v.marketRange === "string")
+                        win.marketRange = v.marketRange;
+                    if (typeof v.marketKind === "string")
+                        win.marketKind = v.marketKind;
+                    if (typeof v.marketSecs === "number")
+                        win.marketSecs = v.marketSecs;
                     if (typeof v.minerChart === "boolean")
                         win.minerChart = v.minerChart;
                     if (typeof v.minerDomains === "boolean")

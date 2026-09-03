@@ -92,7 +92,9 @@ Item {
     property bool clockTime: SettingsData.getPluginSetting(pid, "clockTime", false)
     property bool clockPrice: SettingsData.getPluginSetting(pid, "clockPrice", true)
     property string priceSpan: SettingsData.getPluginSetting(pid, "priceSpan", "30d")
-    property int marketTf: SettingsData.getPluginSetting(pid, "marketTf", 5)
+    property string marketRange: SettingsData.getPluginSetting(pid, "marketRange", "24h")
+    property string marketKind: SettingsData.getPluginSetting(pid, "marketKind", "candles")
+    property int marketSecs: SettingsData.getPluginSetting(pid, "marketSecs", 259200)
     property bool minerChart: SettingsData.getPluginSetting(pid, "minerChart", true)
     property bool minerDomains: SettingsData.getPluginSetting(pid, "minerDomains", true)
     property bool minerBoard: SettingsData.getPluginSetting(pid, "minerBoard", true)
@@ -132,7 +134,9 @@ Item {
         "clockTime": clockTime,
         "clockPrice": clockPrice,
         "priceSpan": priceSpan,
-        "marketTf": marketTf,
+        "marketRange": marketRange,
+        "marketKind": marketKind,
+        "marketSecs": marketSecs,
         "clockFields": clockFields,
         "bigFields": bigFields,
         "bigRotate": bigRotate,

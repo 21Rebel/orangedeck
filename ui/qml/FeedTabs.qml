@@ -227,14 +227,22 @@ Item {
         anchors.topMargin: root.tabSpace
         feed: root.feed
         lang: root.lang
-        timeframe: root.o("marketTf", 5)
+        range: root.o("marketRange", "24h")
+        kind: root.o("marketKind", "candles")
+        customSecs: root.o("marketSecs", 259200)
         baseFont: root.baseFont
         textColor: root.textColor
         dimColor: root.dimColor
         accentColor: root.accentColor
         lineColor: root.lineColor
-        onTimeframeRequested: function (tf) {
-            root.optRequested("marketTf", tf);
+        onRangeRequested: function (r) {
+            root.optRequested("marketRange", r);
+        }
+        onKindRequested: function (k) {
+            root.optRequested("marketKind", k);
+        }
+        onCustomSecsRequested: function (sek) {
+            root.optRequested("marketSecs", sek);
         }
     }
 

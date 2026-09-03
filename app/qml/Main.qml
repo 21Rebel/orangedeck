@@ -72,8 +72,10 @@ Window {
     property bool clockTime: false
     property bool clockPrice: true
     property string priceSpan: "30d"
-    // Raster im Markt-Reiter, in Sekunden
-    property int marketTf: 5
+    // Markt-Reiter: Zeitraum, Darstellung, eigener Zeitraum in Sekunden
+    property string marketRange: "24h"
+    property string marketKind: "candles"
+    property int marketSecs: 259200
     property bool minerChart: true
     property bool minerDomains: true
     property bool minerBoard: true
@@ -139,7 +141,9 @@ Window {
         property alias clockTime: win.clockTime
         property alias clockPrice: win.clockPrice
         property alias priceSpan: win.priceSpan
-        property alias marketTf: win.marketTf
+        property alias marketRange: win.marketRange
+        property alias marketKind: win.marketKind
+        property alias marketSecs: win.marketSecs
         property alias minerChart: win.minerChart
         property alias minerDomains: win.minerDomains
         property alias minerBoard: win.minerBoard
@@ -221,8 +225,12 @@ Window {
             win.clockPrice = value;
         else if (key === "priceSpan")
             win.priceSpan = value;
-        else if (key === "marketTf")
-            win.marketTf = value;
+        else if (key === "marketRange")
+            win.marketRange = value;
+        else if (key === "marketKind")
+            win.marketKind = value;
+        else if (key === "marketSecs")
+            win.marketSecs = value;
         else if (key === "minerChart")
             win.minerChart = value;
         else if (key === "minerDomains")
@@ -272,7 +280,9 @@ Window {
         "clockTime": win.clockTime,
         "clockPrice": win.clockPrice,
         "priceSpan": win.priceSpan,
-        "marketTf": win.marketTf,
+        "marketRange": win.marketRange,
+        "marketKind": win.marketKind,
+        "marketSecs": win.marketSecs,
         "minerChart": win.minerChart,
         "minerDomains": win.minerDomains,
         "minerBoard": win.minerBoard,

@@ -21,8 +21,11 @@ Item {
     property var feed: null
     property string lang: "de"
     property string currency: "usd"
-    // Raster in Sekunden -- der Wirt haelt es
-    property int timeframe: 5
+    // Zeitraum: 1h | 12h | 24h | 7d | 30d | 1y | all | custom -- der Wirt haelt
+    // ihn, ebenso die Darstellung und den selbst gewaehlten Zeitraum.
+    property string range: "24h"
+    property string kind: "candles"      // candles | line
+    property int customSecs: 259200      // drei Tage als Vorgabe
     property bool live: true
 
     property color textColor: "#e6e0e9"
@@ -34,14 +37,24 @@ Item {
     readonly property color upColor: "#5cb946"
     readonly property color downColor: "#d33f3f"
 
-    signal timeframeRequested(int tf)
+    signal rangeRequested(string r)
+    signal kindRequested(string k)
+    signal customSecsRequested(int secs)
 
-    readonly property var rasters: [
-        { "k": "1", "l": Tr.t("market.1s", root.lang) },
-        { "k": "5", "l": Tr.t("market.5s", root.lang) },
-        { "k": "15", "l": Tr.t("market.15s", root.lang) },
-        { "k": "60", "l": Tr.t("market.1m", root.lang) },
-        { "k": "300", "l": Tr.t("market.5m", root.lang) }
+    readonly property var zeitraeume: [
+        { "k": "1h", "l": Tr.t("market.1h", root.lang) },
+        { "k": "12h", "l": Tr.t("market.12h", root.lang) },
+        { "k": "24h", "l": Tr.t("market.24h", root.lang) },
+        { "k": "7d", "l": Tr.t("market.7d", root.lang) },
+        { "k": "30d", "l": Tr.t("market.30d", root.lang) },
+        { "k": "1y", "l": Tr.t("market.1y", root.lang) },
+        { "k": "all", "l": Tr.t("market.all", root.lang) },
+        { "k": "custom", "l": Tr.t("market.custom", root.lang) }
+    ]
+
+    readonly property var darstellungen: [
+        { "k": "candles", "l": Tr.t("market.candles", root.lang) },
+        { "k": "line", "l": Tr.t("market.line", root.lang) }
     ]
 
     property var kerzen: []
@@ -61,10 +74,16 @@ Item {
             m = Math.min(m, root.kerzen[i][3]);
         return m === Infinity ? 0 : m;
     }
+    // Die Kerzen der Boerse tragen **ein** Volumen, die Live-Faecher des
+    // Dienstes zwei (Kauf und Verkauf getrennt). Beide Formen kommen hier an.
+    function volumen(k) {
+        return k.length > 6 ? k[5] + k[6] : (k[5] || 0);
+    }
+
     readonly property real maxVol: {
         var m = 0;
         for (var i = 0; i < root.kerzen.length; i++)
-            m = Math.max(m, root.kerzen[i][5] + root.kerzen[i][6]);
+            m = Math.max(m, root.volumen(root.kerzen[i]));
         return m;
     }
     readonly property real letzterPreis: root.kerzen.length
@@ -73,7 +92,9 @@ Item {
     function holen() {
         if (!root.feed || !root.live)
             return;
-        root.feed.getJson("/market?tf=" + root.timeframe + "&n=180", function (d, err) {
+        var pfad = "/market?range=" + root.range
+                 + (root.range === "custom" ? "&secs=" + root.customSecs : "");
+        root.feed.getJson(pfad, function (d, err) {
             if (err || !d) {
                 root.fehler = err || "nicht erreichbar";
                 return;
@@ -86,7 +107,8 @@ Item {
         });
     }
 
-    onTimeframeChanged: root.holen()
+    onRangeChanged: root.holen()
+    onCustomSecsChanged: if (root.range === "custom") root.holen()
     onLiveChanged: if (root.live) root.holen()
     Component.onCompleted: root.holen()
 
@@ -156,26 +178,103 @@ Item {
         }
     }
 
-    TileGoggles {
+    Row {
         id: wahl
 
         anchors.right: parent.right
         anchors.top: parent.top
-        width: Math.min(parent.width, root.baseFont * 19)
-        alignRight: true
-        labelKey: ""
-        modes: root.rasters
-        mode: String(root.timeframe)
-        counts: []
-        total: 0
-        lang: root.lang
-        textColor: root.textColor
-        dimColor: root.dimColor
-        accentColor: root.accentColor
-        uiFont: root.baseFont
-        onPicked: function (m) {
-            root.timeframeRequested(parseInt(m, 10));
+        spacing: root.baseFont * 0.5
+        z: 50
+
+        // Kerze oder Kurve. **Nur hier** -- der Kursverlauf in der BlockClock
+        // kann keine Kerzen zeigen: die Reihe von mempool.space kennt nur
+        // Schlusskurse, kein Hoch und Tief.
+        TileGoggles {
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.baseFont * 9.5
+            alignRight: true
+            labelKey: ""
+            modes: root.darstellungen
+            mode: root.kind
+            counts: []
+            total: 0
+            lang: root.lang
+            textColor: root.textColor
+            dimColor: root.dimColor
+            accentColor: root.accentColor
+            uiFont: root.baseFont
+            onPicked: function (m) {
+                root.kindRequested(m);
+            }
         }
+
+        // Eigener Zeitraum: eine Zahl mit Einheit, etwa "72h" oder "90d".
+        // Ein Kalender mit Von und Bis waere ein eigenes Bauteil; hierfuer
+        // genuegt, was man ohnehin tippen wuerde.
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.range === "custom"
+            width: root.baseFont * 5
+            height: Math.round(root.baseFont * 2.0)
+            radius: height / 2
+            color: "transparent"
+            border.width: 1
+            border.color: eingabe.activeFocus ? root.accentColor : root.lineColor
+
+            TextInput {
+                id: eingabe
+
+                anchors.fill: parent
+                anchors.leftMargin: root.baseFont * 0.7
+                verticalAlignment: TextInput.AlignVCenter
+                color: root.textColor
+                font.pixelSize: root.baseFont
+                selectByMouse: true
+                text: root.eigenText(root.customSecs)
+                onAccepted: {
+                    var sek = root.eigenSekunden(text);
+                    if (sek > 0)
+                        root.customSecsRequested(sek);
+                }
+            }
+        }
+
+        DropDown {
+            anchors.verticalCenter: parent.verticalCenter
+            model: root.zeitraeume
+            current: root.range
+            uiFont: root.baseFont
+            textColor: root.textColor
+            dimColor: root.dimColor
+            accentColor: root.accentColor
+            lineColor: root.lineColor
+            onPicked: function (k) {
+                root.rangeRequested(k);
+            }
+        }
+    }
+
+    // "72h" -> 259200. Einheiten: m Minuten, h Stunden, d Tage, w Wochen,
+    // y Jahre. Ohne Einheit gelten Tage.
+    function eigenSekunden(text) {
+        var m = String(text).trim().toLowerCase().match(/^([0-9]+(?:[.,][0-9]+)?)\s*([mhdwy]?)$/);
+        if (!m)
+            return 0;
+        var zahl = parseFloat(m[1].replace(",", "."));
+        var faktor = { "m": 60, "h": 3600, "d": 86400, "w": 604800, "y": 31536000 };
+        return Math.round(zahl * (faktor[m[2]] || 86400));
+    }
+
+    function eigenText(sek) {
+        if (sek % 31536000 === 0)
+            return (sek / 31536000) + "y";
+        if (sek % 604800 === 0)
+            return (sek / 604800) + "w";
+        if (sek % 86400 === 0)
+            return (sek / 86400) + "d";
+        if (sek % 3600 === 0)
+            return (sek / 3600) + "h";
+        return Math.round(sek / 60) + "m";
     }
 
     // --------------------------------------------------------------- Kerzen
@@ -230,38 +329,85 @@ Item {
                 ctx.fillText(Tr.group(wert, root.lang), breiteGesamt + 6, y + 4);
             }
 
-            // Kerzen
-            for (var i = 0; i < n; i++) {
-                var k = root.kerzen[i];
-                var x = i * kerzeBreite + (kerzeBreite - koerper) / 2;
-                var mitte = i * kerzeBreite + kerzeBreite / 2;
-                var steigt = k[4] >= k[1];
-                var farbe = steigt ? root.upColor : root.downColor;
+            var i, k, x, farbe, steigt;
 
-                // Docht
-                ctx.strokeStyle = farbe;
-                ctx.lineWidth = 1;
+            // ---- Kurve statt Kerzen ---------------------------------------
+            // Bei neun Jahren in einem Bild ist eine Kerze ein Strich; dann
+            // sagt die Linie mehr. Bei einer Stunde ist es umgekehrt.
+            if (root.kind === "line") {
+                var g = ctx.createLinearGradient(0, root.baseFont * 0.2, 0,
+                                                 root.baseFont * 0.2 + preisHoehe);
+                g.addColorStop(0, Qt.rgba(root.accentColor.r, root.accentColor.g,
+                                          root.accentColor.b, 0.28));
+                g.addColorStop(1, Qt.rgba(root.accentColor.r, root.accentColor.g,
+                                          root.accentColor.b, 0));
+                ctx.fillStyle = g;
                 ctx.beginPath();
-                ctx.moveTo(Math.round(mitte) + 0.5, yPreis(k[2]));
-                ctx.lineTo(Math.round(mitte) + 0.5, yPreis(k[3]));
+                ctx.moveTo(kerzeBreite / 2, root.baseFont * 0.2 + preisHoehe);
+                for (i = 0; i < n; i++)
+                    ctx.lineTo(i * kerzeBreite + kerzeBreite / 2, yPreis(root.kerzen[i][4]));
+                ctx.lineTo((n - 1) * kerzeBreite + kerzeBreite / 2,
+                           root.baseFont * 0.2 + preisHoehe);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.strokeStyle = root.accentColor;
+                ctx.lineWidth = 1.6;
+                ctx.lineJoin = "round";
+                ctx.beginPath();
+                for (i = 0; i < n; i++) {
+                    var xl = i * kerzeBreite + kerzeBreite / 2;
+                    if (i === 0)
+                        ctx.moveTo(xl, yPreis(root.kerzen[i][4]));
+                    else
+                        ctx.lineTo(xl, yPreis(root.kerzen[i][4]));
+                }
                 ctx.stroke();
+            }
 
-                // Koerper -- mindestens ein Bildpunkt, sonst verschwindet eine
-                // Kerze ohne Bewegung ganz
-                var yO = yPreis(Math.max(k[1], k[4]));
-                var yC = yPreis(Math.min(k[1], k[4]));
-                ctx.fillStyle = farbe;
-                ctx.fillRect(x, yO, koerper, Math.max(1, yC - yO));
+            // ---- Kerzen ----------------------------------------------------
+            for (i = 0; i < n; i++) {
+                k = root.kerzen[i];
+                x = i * kerzeBreite + (kerzeBreite - koerper) / 2;
+                steigt = k[4] >= k[1];
+                farbe = steigt ? root.upColor : root.downColor;
 
-                // Volumen darunter, Kauf und Verkauf gestapelt
+                if (root.kind === "candles") {
+                    var mitte = i * kerzeBreite + kerzeBreite / 2;
+
+                    // Docht
+                    ctx.strokeStyle = farbe;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.round(mitte) + 0.5, yPreis(k[2]));
+                    ctx.lineTo(Math.round(mitte) + 0.5, yPreis(k[3]));
+                    ctx.stroke();
+
+                    // Koerper -- mindestens ein Bildpunkt, sonst verschwindet
+                    // eine Kerze ohne Bewegung ganz
+                    var yO = yPreis(Math.max(k[1], k[4]));
+                    var yC = yPreis(Math.min(k[1], k[4]));
+                    ctx.fillStyle = farbe;
+                    ctx.fillRect(x, yO, koerper, Math.max(1, yC - yO));
+                }
+
+                // ---- Volumen darunter -------------------------------------
                 if (root.maxVol > 0) {
                     var basis = height - padB;
-                    var hKauf = volHoehe * (k[5] / root.maxVol);
-                    var hVerk = volHoehe * (k[6] / root.maxVol);
-                    ctx.fillStyle = root.upColor;
-                    ctx.fillRect(x, basis - hKauf, koerper, hKauf);
-                    ctx.fillStyle = root.downColor;
-                    ctx.fillRect(x, basis - hKauf - hVerk, koerper, hVerk);
+                    if (k.length > 6) {
+                        // Live-Faecher: Kauf und Verkauf gestapelt
+                        var hKauf = volHoehe * (k[5] / root.maxVol);
+                        var hVerk = volHoehe * (k[6] / root.maxVol);
+                        ctx.fillStyle = root.upColor;
+                        ctx.fillRect(x, basis - hKauf, koerper, hKauf);
+                        ctx.fillStyle = root.downColor;
+                        ctx.fillRect(x, basis - hKauf - hVerk, koerper, hVerk);
+                    } else {
+                        // Boersenkerze: ein Volumen, eingefaerbt nach Richtung
+                        var hVol = volHoehe * (root.volumen(k) / root.maxVol);
+                        ctx.fillStyle = farbe;
+                        ctx.fillRect(x, basis - hVol, koerper, hVol);
+                    }
                 }
             }
 
@@ -274,9 +420,12 @@ Item {
         }
     }
 
+    // Bei einem Tag sagt ein Datum nichts, bei neun Jahren eine Uhrzeit nichts.
     function uhrzeit(ts) {
+        var kurz = (root.range === "1h" || root.range === "12h" || root.range === "24h");
+        var lang = (root.range === "1y" || root.range === "all");
         return Qt.formatDateTime(new Date(ts * 1000),
-                                 root.timeframe >= 60 ? "HH:mm" : "HH:mm:ss");
+                                 kurz ? "HH:mm" : (lang ? "MM.yyyy" : "dd.MM."));
     }
 
     // Nur zum Messen der Preisachse
