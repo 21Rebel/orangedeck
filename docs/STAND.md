@@ -83,21 +83,26 @@ dms`. Zum Nachsehen: `tools/install-links.sh --check`.
 Live-System enthaelt ueberhaupt kein Qt. **Der richtige Test dort ist nicht
 "baut es", sondern "laeuft das Flatpak"** -- das bringt sein eigenes Qt mit.
 
+### Veroeffentlicht
+
+**Der Stand vom 04.09.2026 ist gepusht** (`26cfa96..6295c6c`). Der
+Zugangshelfer im Repo hat gegriffen, obwohl `gh` global auf Shopatch stand --
+genau wofuer er da ist. Zum Nachschlagen: [[github-zwei-konten]] gilt
+unveraendert.
+
 ### Offene Punkte
 
-1. **Der Push.** 22 Commits, seit `98a80198` nichts veroeffentlicht. Nur ueber
-   den Zugangshelfer im Repo.
-2. **Windows und macOS** ueber GitHub Actions. Die Workflow-Dateien fehlen
+1. **Windows und macOS** ueber GitHub Actions. Die Workflow-Dateien fehlen
    ganz. Schreiben geht, pruefen nicht -- sie laufen erst auf GitHub, und der
    Push dafuer braucht einmal `gh auth refresh -s workflow`.
-3. **Pruef-VMs**, jetzt anders gedacht: `flatpak build-bundle` erzeugt eine
+2. **Pruef-VMs**, jetzt anders gedacht: `flatpak build-bundle` erzeugt eine
    einzelne Datei, die sich in der Live-ISO ohne Flathub installieren laesst.
    Kein Bau in der VM.
-4. **Flathub.** Die Metadaten bestehen `appstreamcli validate` seit heute.
-5. **Etappe 3, Rest**: Tonsignal bei grossen Trades. Braucht QtMultimedia --
+3. **Flathub.** Die Metadaten bestehen `appstreamcli validate` seit heute.
+4. **Etappe 3, Rest**: Tonsignal bei grossen Trades. Braucht QtMultimedia --
    eine neue Abhaengigkeit fuer Anwendung, Flatpak und Android. Viel Gewicht
    fuer einen Piepser, deshalb liegen gelassen.
-6. **Kleinigkeit**: auf dem hohen, schmalen Android-Bildschirm steht die Halde
+5. **Kleinigkeit**: auf dem hohen, schmalen Android-Bildschirm steht die Halde
    als schraege Flaeche statt als Rechteck. Keine Fehlfunktion, aber ein
    Seitenverhaeltnis, das die Packung so noch nicht gesehen hat.
 
