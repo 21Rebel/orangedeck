@@ -66,6 +66,10 @@ Damit sind der Suchfokus, der CVD, die Schriften und das gemerkte Marktfenster
 - **Autor in `plugin.json` auf 21Rebel** (Punkt 6), wie das Repo.
 - **Ersatzketten fuer die Schriften** (Vorarbeit zu Punkt 7). Siehe unten.
 - **Der CVD** (Punkt 4, erster Teil). Siehe unten.
+- **Die Bindungsschleife in `TileGoggles.qml`** ist weg. Ein `width:
+  implicitWidth` an einem Text ist eine Schleife, und ein `Row` ueberspringt
+  unsichtbare Kinder ohnehin -- die Zeile war ueberfluessig. Alter Bestand;
+  aufgefallen ist sie erst, weil Qt jetzt redet.
 
 ### Der CVD
 
@@ -145,9 +149,7 @@ neu oeffnen.
    der `workflow`-Scope: einmal `gh auth refresh -s workflow`. Die Schriften
    sind vorbereitet.
 6. **Flathub.**
-7. **`TileGoggles.qml:59` meldet eine Bindungsschleife** fuer `width` --
-   alter Bestand, faellt jetzt nur auf, weil Qt endlich redet.
-8. **Fuenf Commits liegen unveroeffentlicht**, seit `98a80198` nichts
+7. **Sieben Commits liegen unveroeffentlicht**, seit `98a80198` nichts
    gepusht. Der Push geht nur ueber den Zugangshelfer im Repo.
 
 ### Wie man anfaengt

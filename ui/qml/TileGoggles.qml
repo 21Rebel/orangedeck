@@ -55,8 +55,10 @@ Column {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
+            // Kein `width` von Hand: ein `Row` ueberspringt unsichtbare Kinder
+            // ohnehin, und `width: implicitWidth` an einem Text ist eine
+            // Bindungsschleife -- Qt meldete sie bei jedem Start.
             visible: root.labelKey !== ""
-            width: visible ? implicitWidth : 0
             text: root.labelKey === "" ? "" : Tr.t(root.labelKey, root.lang)
             color: root.dimColor
             font.pixelSize: root.uiFont * 0.8
