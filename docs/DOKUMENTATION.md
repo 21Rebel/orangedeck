@@ -2245,3 +2245,36 @@ Monaten. Richtig ist die Spanne, die `sicht` **wirklich** abdeckt
 im Bild nachsehen, was beim Ziehen passiert, ohne dass eine Maus im Spiel
 sein muss. **Pruefstaende sind Werkzeug, kein Bestandteil**:
 `tools/install-links.sh` nimmt `Pruefstand*` von der Verteilung aus.
+
+
+## Die Einheit richtet sich nach der Groesse, nicht nach der Teilbarkeit
+
+Im Feld des eigenen Zeitraums stand nach dem Zoomen "12215m". Das ist richtig
+und trotzdem unbrauchbar -- niemand rechnet das in achteinhalb Tage um.
+
+Der Grund war die Auswahlregel: `eigenText()` fragte, ob die Sekunden **glatt
+teilbar** sind (`sek % 86400 === 0`), und nur dann kam die passende Einheit.
+Beim Zoomen ist keine Zahl glatt, also fiel jede Spanne bis auf die Minuten
+durch. Getippte Werte wie "7d" sahen gut aus, gezoomte nie.
+
+Jetzt entscheidet die Groesse: Minuten unter einer Stunde, Stunden bis zwei
+Tage, Tage bis zu einem Jahr, danach Jahre. Gerundet wird **nur die
+Anzeige** -- ab zehn ganzzahlig, darunter eine Nachkommastelle, und die faellt
+weg, wenn sie eine Null waere. Der Wert dahinter bleibt genau, das Bild
+springt beim Zoomen also nicht.
+
+Zwei Feinheiten, beide am Pruefstand gefunden:
+
+- **Die erste Schwelle liegt knapp unter der Stunde, nicht auf ihr.** Bei
+  genau 3600 rundete eine Spanne von 3599 Sekunden auf "60m" statt auf "1h".
+  Wo gerundet wird, muss die Schwelle vor der Rundungsgrenze liegen.
+- **Wochen kommen nicht mehr vor**, obwohl das Feld sie als Eingabe weiter
+  annimmt. Die Zeitraeume der Ansicht heissen 1h, 12h, 24h, 7d, 30d und 1y --
+  in dieser Sprache gibt es keine Wochen, und "26w" neben "30d" waeren zwei
+  Masseinheiten fuer dieselbe Groessenordnung. Getipptes "12w" wird angenommen
+  und als "84d" zurueckgegeben.
+
+`ui/qml/PruefstandZeittext.qml` faehrt zwanzig Spannen von einer Minute bis
+neun Jahre durch, zeigt die Beschriftung und liest sie mit `eigenSekunden()`
+wieder ein -- die Abweichung liegt ueberall unter einem Prozent. Dass die
+Ausgabe im Terminal ankommt, liegt an `QT_ASSUME_STDERR_HAS_CONSOLE=1`.

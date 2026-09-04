@@ -721,16 +721,42 @@ Item {
         return 0;
     }
 
+    // Was im Feld steht, muss man lesen koennen.
+    //
+    // Vorher entschied die **Teilbarkeit** ueber die Einheit: nur was glatt
+    // durch ein Jahr, eine Woche, einen Tag oder eine Stunde ging, bekam die
+    // passende: alles andere fiel auf Minuten durch. Beim Zoomen ist keine
+    // Zahl glatt, und dann stand dort "12215m" -- richtig, und trotzdem
+    // unbrauchbar; niemand rechnet das in achteinhalb Tage um.
+    //
+    // Jetzt entscheidet die **Groesse**: die groesste Einheit, in der noch
+    // etwas Ganzes uebrigbleibt. 36 Stunden liest sich besser als 1,5 Tage.
+    //
+    // **Wochen kommen nicht vor**, obwohl das Feld sie als Eingabe annimmt:
+    // die Zeitraeume der Ansicht heissen 1h, 12h, 24h, 7d, 30d und 1y -- in
+    // dieser Sprache gibt es keine Wochen, und "26w" neben "30d" waeren zwei
+    // Masseinheiten fuer dieselbe Groessenordnung. Getipptes "12w" wird
+    // angenommen und als "84d" zurueckgegeben.
+    //
+    // Die erste Schwelle liegt knapp unter der Stunde, nicht auf ihr: sonst
+    // rundet eine Spanne von 3599 Sekunden auf "60m" statt auf "1h".
     function eigenText(sek) {
-        if (sek % 31536000 === 0)
-            return (sek / 31536000) + "y";
-        if (sek % 604800 === 0)
-            return (sek / 604800) + "w";
-        if (sek % 86400 === 0)
-            return (sek / 86400) + "d";
-        if (sek % 3600 === 0)
-            return (sek / 3600) + "h";
-        return Math.round(sek / 60) + "m";
+        if (sek < 3570)
+            return root.rundText(sek / 60) + "m";
+        if (sek < 86400 * 2)
+            return root.rundText(sek / 3600) + "h";
+        if (sek < 31536000)
+            return root.rundText(sek / 86400) + "d";
+        return root.rundText(sek / 31536000) + "y";
+    }
+
+    // Grob gerundet, damit es sauber aussieht: ab zehn ganzzahlig, darunter
+    // eine Nachkommastelle -- und die faellt weg, wenn sie eine Null waere.
+    // **Gerundet wird nur die Anzeige**, der Wert dahinter bleibt genau.
+    function rundText(wert) {
+        if (wert >= 10 || Math.abs(wert - Math.round(wert)) < 0.05)
+            return Tr.group(Math.round(wert), root.lang);
+        return Tr.fixed(wert, 1, root.lang);
     }
 
     // --------------------------------------------------------------- Kerzen

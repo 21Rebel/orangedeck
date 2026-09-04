@@ -68,6 +68,9 @@ Damit sind der Suchfokus, der CVD, die Schriften und das gemerkte Marktfenster
 - **Ersatzketten fuer die Schriften** (Vorarbeit zu Punkt 7). Siehe unten.
 - **Der CVD** (Punkt 4, erster Teil). Siehe unten.
 - **Der Schieber der Zeitachse zieht ohne Verzoegerung.** Siehe unten.
+- **Die Beschriftung des eigenen Zeitraums** waehlt die Einheit nach der
+  Groesse statt nach der Teilbarkeit. Nach dem Zoomen stand dort "12215m";
+  jetzt "8,5d".
 - **Die Bindungsschleife in `TileGoggles.qml`** ist weg. Ein `width:
   implicitWidth` an einem Text ist eine Schleife, und ein `Row` ueberspringt
   unsichtbare Kinder ohnehin -- die Zeile war ueberfluessig. Alter Bestand;
@@ -179,8 +182,10 @@ neu oeffnen.
    der `workflow`-Scope: einmal `gh auth refresh -s workflow`. Die Schriften
    sind vorbereitet.
 6. **Flathub.**
-7. **Zehn Commits liegen unveroeffentlicht**, seit `98a80198` nichts
+7. **Elf Commits liegen unveroeffentlicht**, seit `98a80198` nichts
    gepusht. Der Push geht nur ueber den Zugangshelfer im Repo.
+8. **Das Flatpak ist seit dem Zeittext wieder einen Commit hinterher** -- es
+   traegt eine Kopie.
 
 ### Wie man anfaengt
 
