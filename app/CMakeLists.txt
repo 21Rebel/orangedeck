@@ -23,6 +23,15 @@ endif()
 # androiddeployqt nur mit, was auch gebraucht wird.
 find_package(Qt6 QUIET COMPONENTS WebSockets)
 
+# **Die ABI-Liste muss stehen, bevor das Ziel angelegt wird.** Danach ist sie
+# fuer Qt leer ("The list of Android ABIs is empty"), und die Folgefehler
+# lesen sich ganz anders ("not a valid android executable target"), weil aus
+# dem Ziel dann eine gewoehnliche ausfuehrbare Datei statt einer Bibliothek
+# wird. Der alte Baubaum hatte den Wert nur zufaellig im Puffer stehen.
+if(ANDROID AND NOT QT_ANDROID_ABIS)
+    set(QT_ANDROID_ABIS "${ANDROID_ABI}")
+endif()
+
 qt_add_executable(orangedeck-app src/main.cpp)
 
 # Die geteilten Dateien liegen ausserhalb dieses Verzeichnisses. Ohne
