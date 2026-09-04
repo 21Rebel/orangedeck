@@ -4,6 +4,120 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## UEBERGABE 04.09.2026, Nachmittag
+
+Der Vormittag steht unten. Am Nachmittag kam **das Pruefen selbst** dazu --
+und es hat sofort Fehler gefunden, die im Standbild jahrelang richtig
+aussahen.
+
+### Zwei Werkzeuge, die alles Weitere tragen
+
+**Echte Maus- und Tastenereignisse: `tools/xtest.py`.** `python-xlib` und
+`libXtst` liegen hier ohnehin. Damit lassen sich in den Xvfb, in dem ohnehin
+abgebildet wird, Bewegung, Druck, Rad und Ziehen einspeisen -- **und Abzuege
+machen, waehrend eine Taste gehalten wird**. Nicht in der Sitzung des
+Nutzers: wiederholbar und stoerungsfrei.
+
+**Android im Emulator.** Emulator und Systemabbild nachgeladen (~5 GB), AVD
+angelegt, laeuft headless mit KVM. **Das x86_64-Abbild uebersetzt ARM**
+(`ro.product.cpu.abilist` = `x86_64,arm64-v8a`), unsere arm64-APK laeuft dort
+in voller Geschwindigkeit. Damit braucht Punkt 2 der alten Liste kein Kabel,
+kein `usermod` und kein Telefon mehr.
+
+### Was dabei gefunden wurde
+
+**Der Griff des Schiebers liess sich nie ziehen.** Die Klickflaeche stand als
+letztes Kind, hinter dem Griff -- in QML bekommt das spaetere Geschwister die
+Ereignisse zuerst, und sie hat jeden Druck geschluckt. Jede Geste wurde zu
+einem Klick an der Loslass-Stelle. **Damit ist die ganze Schieber-Vorschau
+vom Vormittag nie angesprungen.** Im Bild war es nicht zu sehen, weil das
+Ergebnis plausibel aussieht.
+
+**Das Android-APK hatte kein TLS.** Qt liefert fuer Android kein OpenSSL mit;
+ohne es ist die App auf einem Geraet vollstaendig funktionslos, weil
+mempool.space nur https und wss spricht. Auf dem Schreibtisch faellt es nie
+auf. **Das APK vom 02.09. war unbrauchbar, und niemand konnte es sehen.**
+
+**`dataSource` stand auf Android auf "daemon"** -- ein Benutzerdienst, den es
+auf einem Telefon nie gibt. Erster Start: "keine Verbindung zum Feed".
+
+**Der Android-Baubaum zeigte auf `btcfeed/app`**, und ohne `ANDROID_NDK_ROOT`
+richtet CMake gar nicht auf Android aus -- mit einer Meldung, die in die Irre
+fuehrt ("not a valid android executable target", waehrend die ABI-Liste leer
+ist).
+
+**Die Kopfzeile des Marktes ueberlagerte sich im Popout**, seit der
+Unterreiter sie nach rechts geschoben hat. Vom Nutzer gemeldet.
+
+### Was sonst dazukam
+
+- **Liquidationen** als eigener Unterreiter: Long/Short-Verhaeltnis aus drei
+  Boersen, Histogramm der wirklich gehoerten Liquidationen. Mitgeschrieben in
+  `~/.cache/orangedeck/liquidations.json`, weil es sie nirgends rueckwirkend
+  zu kaufen gibt.
+- **Heatmap** als dritter Unterreiter: das Coinglass-Modell selbst gerechnet
+  (deren Schnittstelle kostet 699 $/Monat, die Zutaten sind frei). Sichtbar
+  als SCHAETZUNG gekennzeichnet, Annahmen im Klartext genannt.
+- **Zeitspannen lesbar**: "12215m" heisst jetzt "8,5d".
+
+### Wichtige Erkenntnisse zum Nachschlagen
+
+**Wer oben liegt, bekommt zuerst -- und "oben" ist in QML, wer spaeter
+steht.** Dieselbe Familie wie die `z`-Falle vom 03.09.
+
+**Ein Standbild zeigt Geometrie, kein Verhalten.** Alles, was an einem Zeiger
+haengt, braucht einen Zeiger.
+
+**Wo eine Grenze erreicht ist, zeigt man das Moegliche und nennt die Grenze --
+nicht nichts.** Die Heatmap lehnte lange Zeitraeume erst ab; jetzt schneidet
+sie auf dreissig Tage zurecht und sagt es.
+
+**Eine neue geteilte QML-Datei bricht die laufende Shell sofort**, sobald
+etwas auf sie verweist -- nicht erst beim naechsten Neustart. Und
+`plugin-scan reload` hilft dabei **nicht**: eine *geaenderte* Datei sieht die
+Shell sofort, eine *neu hinzugekommene* erst nach `systemctl --user restart
+dms`. Zum Nachsehen: `tools/install-links.sh --check`.
+
+**Ubuntu 24.04 kann dieses Projekt nicht bauen.** Zwanzig Dateien benutzen
+`pragma ComponentBehavior: Bound` (ab Qt 6.5), noble liefert 6.4.2, und das
+Live-System enthaelt ueberhaupt kein Qt. **Der richtige Test dort ist nicht
+"baut es", sondern "laeuft das Flatpak"** -- das bringt sein eigenes Qt mit.
+
+### Offene Punkte
+
+1. **Der Push.** 22 Commits, seit `98a80198` nichts veroeffentlicht. Nur ueber
+   den Zugangshelfer im Repo.
+2. **Windows und macOS** ueber GitHub Actions. Die Workflow-Dateien fehlen
+   ganz. Schreiben geht, pruefen nicht -- sie laufen erst auf GitHub, und der
+   Push dafuer braucht einmal `gh auth refresh -s workflow`.
+3. **Pruef-VMs**, jetzt anders gedacht: `flatpak build-bundle` erzeugt eine
+   einzelne Datei, die sich in der Live-ISO ohne Flathub installieren laesst.
+   Kein Bau in der VM.
+4. **Flathub.** Die Metadaten bestehen `appstreamcli validate` seit heute.
+5. **Etappe 3, Rest**: Tonsignal bei grossen Trades. Braucht QtMultimedia --
+   eine neue Abhaengigkeit fuer Anwendung, Flatpak und Android. Viel Gewicht
+   fuer einen Piepser, deshalb liegen gelassen.
+6. **Kleinigkeit**: auf dem hohen, schmalen Android-Bildschirm steht die Halde
+   als schraege Flaeche statt als Rechteck. Keine Fehlfunktion, aber ein
+   Seitenverhaeltnis, das die Packung so noch nicht gesehen hat.
+
+### Wie man Android prueft
+
+    tools/openssl-android.sh arm64-v8a        # einmal, dauert ~15 min
+    cmake -S app -B build-android \
+      -DCMAKE_TOOLCHAIN_FILE=$HOME/Qt/6.11.2/android_arm64_v8a/lib/cmake/Qt6/qt.toolchain.cmake \
+      -DANDROID_SDK_ROOT=$HOME/Android/sdk \
+      -DANDROID_NDK_ROOT=$HOME/Android/sdk/ndk/27.2.12479018 \
+      -DANDROID_PLATFORM=android-28 -DQT_HOST_PATH=/usr -DCMAKE_BUILD_TYPE=Release
+    rm -rf build-android/android-build      # sonst bleiben alte Bibliotheken drin
+    cmake --build build-android --target apk
+    apksigner sign --ks ~/.android/debug.keystore --ks-pass pass:android \
+        --ks-key-alias androiddebugkey --out /tmp/od.apk \
+        build-android/android-build/orangedeck-app.apk
+    emulator -avd orangedeck -no-window -no-audio -gpu swiftshader_indirect -port 5556 &
+    adb -s emulator-5556 install -r /tmp/od.apk
+    adb -s emulator-5556 logcat -d | grep -i ssl      # muss leer sein
+
 ## UEBERGABE 04.09.2026, Vormittag
 
 Acht Commits. Abgearbeitet sind vier der offenen Punkte vom 03.09. (5, 6, 9,
