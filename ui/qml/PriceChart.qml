@@ -10,6 +10,7 @@
 import QtQuick
 import "money.js" as Money
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 Item {
     id: root
@@ -242,7 +243,7 @@ Item {
 
             // Hoechst- und Tiefstwert an den linken Rand
             ctx.fillStyle = root.dimColor;
-            ctx.font = (root.baseFont - 2) + "px sans-serif";
+            ctx.font = (root.baseFont - 2) + "px " + Fonts.sansCss();
             ctx.textAlign = "left";
             ctx.fillText(Tr.price1(root.maxWert, root.zeichen, root.lang), 0, padT + root.baseFont * 0.7);
             ctx.fillText(Tr.price1(root.minWert, root.zeichen, root.lang), 0, height - padB - 2);

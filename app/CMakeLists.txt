@@ -63,6 +63,7 @@ set(SHARED_QML
     ../ui/qml/strings.js
     ../ui/qml/mondrian.js
     ../ui/qml/colors.js
+    ../ui/qml/fonts.js
 )
 # Main.qml gehoert dazu: liegt es im Ressourcenbaum unter qml/, waehrend die
 # geteilten Dateien in der Modulwurzel sitzen, findet es sie nicht mehr
@@ -74,7 +75,7 @@ foreach(f ${SHARED_QML} qml/Main.qml)
 endforeach()
 
 qt_add_qml_module(orangedeck-app
-    URI BtcFeed
+    URI OrangeDeck
     VERSION 1.0
     QML_FILES qml/Main.qml ${SHARED_QML}
 )

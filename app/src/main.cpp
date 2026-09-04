@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
     if (p.isSet(oQuelle))
         start.insert(QStringLiteral("forcedSource"), p.value(oQuelle));
     engine.setInitialProperties(start);
-    engine.loadFromModule("BtcFeed", "Main");
+    engine.loadFromModule("OrangeDeck", "Main");
 
     const auto wurzeln = engine.rootObjects();
     if (wurzeln.isEmpty())

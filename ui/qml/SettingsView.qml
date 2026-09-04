@@ -11,6 +11,7 @@
 import QtQuick
 import "money.js" as Money
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 pragma ComponentBehavior: Bound
 
@@ -982,7 +983,7 @@ Item {
                           + "\n    orangedeck --watch-add <xpub|ypub|zpub> \"Name\""
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.85
-                    font.family: "monospace"
+                    font.family: Fonts.mono()
                 }
             }
         }

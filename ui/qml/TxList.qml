@@ -13,6 +13,7 @@
 import QtQuick
 import "txtype.js" as TxType
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 pragma ComponentBehavior: Bound
 
@@ -152,7 +153,7 @@ Column {
                     text: zeile.modelData.t
                     color: root.textColor
                     font.pixelSize: root.uiFont * 0.85
-                    font.family: "monospace"
+                    font.family: Fonts.mono()
                 }
 
                 Text {

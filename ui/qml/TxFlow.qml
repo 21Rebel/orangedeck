@@ -22,6 +22,7 @@
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 pragma ComponentBehavior: Bound
 
@@ -520,7 +521,7 @@ Item {
 
             if (root.fee > 0 && root.bandsOut.length) {
                 var fb = root.bandsOut[0];
-                ctx.font = root.labelSize + "px sans-serif";
+                ctx.font = root.labelSize + "px " + Fonts.sansCss();
                 ctx.fillStyle = root.dimColor;
                 ctx.textAlign = "right";
                 var ty = fb.edgeY - root.labelSize * 0.45;
@@ -638,7 +639,7 @@ Item {
                 text: Tr.t("flow.tx", root.lang) + "  " + root.txid
                 color: root.dimColor
                 font.pixelSize: root.labelSize * 0.92
-                font.family: "monospace"
+                font.family: Fonts.mono()
             }
 
             Text {
@@ -661,7 +662,7 @@ Item {
                 text: tip.adresse
                 color: root.dimColor
                 font.pixelSize: root.labelSize * 0.92
-                font.family: "monospace"
+                font.family: Fonts.mono()
             }
         }
     }

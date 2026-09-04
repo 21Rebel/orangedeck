@@ -14,6 +14,7 @@
 import QtQuick
 import "money.js" as Money
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 Item {
     id: root
@@ -616,7 +617,7 @@ Item {
             // Waagerechte Hilfslinien und die Preisachse rechts
             ctx.strokeStyle = root.lineColor;
             ctx.fillStyle = root.dimColor;
-            ctx.font = (root.baseFont - 2) + "px sans-serif";
+            ctx.font = (root.baseFont - 2) + "px " + Fonts.sansCss();
             ctx.textAlign = "left";
             ctx.lineWidth = 1;
             for (var g = 0; g <= 4; g++) {
@@ -764,7 +765,7 @@ Item {
         }
         color: root.textColor
         font.pixelSize: root.baseFont - 2
-        font.family: "monospace"
+        font.family: Fonts.mono()
     }
 
     // ------------------------------------------- Zoom, Zeiger, Fadenkreuz
@@ -1057,7 +1058,7 @@ Item {
                 text: Qt.formatDateTime(new Date(zeile.modelData[1] * 1000), "HH:mm:ss")
                 color: root.dimColor
                 font.pixelSize: root.baseFont - 3
-                font.family: "monospace"
+                font.family: Fonts.mono()
             }
 
             Text {
@@ -1067,7 +1068,7 @@ Item {
                 text: Tr.group(zeile.modelData[2], root.lang)
                 color: root.textColor
                 font.pixelSize: root.baseFont - 2
-                font.family: "monospace"
+                font.family: Fonts.mono()
             }
 
             Text {
@@ -1077,7 +1078,7 @@ Item {
                 text: root.zeichen + " " + Tr.group(zeile.modelData[3], root.lang)
                 color: root.textColor
                 font.pixelSize: root.baseFont - 2
-                font.family: "monospace"
+                font.family: Fonts.mono()
                 font.bold: zeile.wucht > 0.4
             }
 

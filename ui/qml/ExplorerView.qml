@@ -9,6 +9,7 @@ import QtQuick
 import "search.js" as Search
 import "txtype.js" as TxType
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 pragma ComponentBehavior: Bound
 
@@ -433,7 +434,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 color: root.textColor
                 font.pixelSize: root.uiFont
-                font.family: "monospace"
+                font.family: Fonts.mono()
                 selectByMouse: true
                 clip: true
                 onAccepted: root.submit(text)
@@ -676,7 +677,7 @@ Item {
                     text: root.result.txid
                     color: root.accentColor
                     font.pixelSize: root.scaleUnit * 0.8
-                    font.family: "monospace"
+                    font.family: Fonts.mono()
 
                     MouseArea {
                         anchors.fill: parent
@@ -883,7 +884,7 @@ Item {
                                         : Tr.t("tx.coinbase", root.lang)
                                     color: root.textColor
                                     font.pixelSize: root.scaleUnit * 0.6
-                                    font.family: "monospace"
+                                    font.family: Fonts.mono()
                                 }
 
                                 Text {
@@ -958,7 +959,7 @@ Item {
                                         || ("(" + (voutRow.modelData.scriptpubkey_type || "unbekannt") + ")")
                                     color: root.textColor
                                     font.pixelSize: root.scaleUnit * 0.6
-                                    font.family: "monospace"
+                                    font.family: Fonts.mono()
                                 }
 
                                 Row {
@@ -1191,7 +1192,7 @@ Item {
                     text: root.result.id
                     color: root.dimColor
                     font.pixelSize: root.scaleUnit * 0.62
-                    font.family: "monospace"
+                    font.family: Fonts.mono()
 
                     MouseArea {
                         anchors.fill: parent
@@ -1448,7 +1449,7 @@ Item {
                     text: root.result.address
                     color: root.accentColor
                     font.pixelSize: root.scaleUnit * 0.8
-                    font.family: "monospace"
+                    font.family: Fonts.mono()
 
                     MouseArea {
                         anchors.fill: parent
@@ -1536,7 +1537,7 @@ Item {
                             text: atxRow.modelData.txid
                             color: root.textColor
                             font.pixelSize: root.scaleUnit * 0.6
-                            font.family: "monospace"
+                            font.family: Fonts.mono()
                         }
 
                         Text {

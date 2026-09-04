@@ -6,6 +6,7 @@ import "colors.js" as Palette
 import "money.js" as Money
 import "strings.js" as Tr
 import "txtype.js" as TxType
+import "fonts.js" as Fonts
 
 Item {
     id: root
@@ -357,7 +358,7 @@ Item {
                     text: modelData
                     color: root.dimColor
                     font.pixelSize: root.baseFont - 2
-                    font.family: "monospace"
+                    font.family: Fonts.mono()
                 }
 
                 Item {
@@ -669,7 +670,7 @@ Item {
                     ? Tr.t("tip.txid", root.lang, String(tip.tx.t).substring(0, 20) + "…") : ""
                 color: root.textColor
                 font.pixelSize: root.baseFont - 1
-                font.family: "monospace"
+                font.family: Fonts.mono()
             }
 
             // Gehoert die Transaktion zu einer beobachteten Wallet, ist das

@@ -6,6 +6,7 @@
 import QtQuick
 import "money.js" as Money
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 pragma ComponentBehavior: Bound
 
@@ -210,7 +211,7 @@ Column {
                         text: trow.modelData.t || ""
                         color: root.textColor
                         font.pixelSize: root.uiFont * 0.85
-                        font.family: "monospace"
+                        font.family: Fonts.mono()
                     }
 
                     Text {

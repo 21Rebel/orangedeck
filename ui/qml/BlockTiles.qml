@@ -25,6 +25,7 @@ import "mondrian.js" as Mondrian
 import "colors.js" as Palette
 import "txtype.js" as TxType
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 pragma ComponentBehavior: Bound
 
@@ -566,7 +567,7 @@ Item {
                 text: tipCol.d ? String(tipCol.d[0]).substring(0, 20) + "…" : ""
                 color: "#f2eef8"
                 font.pixelSize: root.labelSize
-                font.family: "monospace"
+                font.family: Fonts.mono()
             }
 
             Text {

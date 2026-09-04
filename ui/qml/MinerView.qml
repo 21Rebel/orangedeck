@@ -11,6 +11,7 @@
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 pragma ComponentBehavior: Bound
 
@@ -232,7 +233,7 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             color: root.accentColor
             font.pixelSize: root.scaleUnit * 0.62
-            font.family: "monospace"
+            font.family: Fonts.mono()
         }
 
         Text {

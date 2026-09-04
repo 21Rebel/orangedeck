@@ -14,6 +14,7 @@
 import QtQuick
 import "money.js" as Money
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 pragma ComponentBehavior: Bound
 
@@ -205,7 +206,7 @@ Item {
                             text: Tr.t("wallet.cmdAdd", root.lang)
                             color: root.accentColor
                             font.pixelSize: root.uiFont
-                            font.family: "monospace"
+                            font.family: Fonts.mono()
                         }
 
                         Text {
@@ -214,7 +215,7 @@ Item {
                                   + Tr.t("wallet.cmdRestart", root.lang)
                             color: root.dimColor
                             font.pixelSize: root.uiFont * 0.9
-                            font.family: "monospace"
+                            font.family: Fonts.mono()
                         }
                     }
                 }
@@ -399,7 +400,7 @@ Item {
                         text: root.one ? root.one.nextRecv : ""
                         color: root.textColor
                         font.pixelSize: root.uiFont
-                        font.family: "monospace"
+                        font.family: Fonts.mono()
                     }
 
                     CopyButton {
@@ -505,7 +506,7 @@ Item {
                                 text: zeile.modelData.t
                                 color: root.textColor
                                 font.pixelSize: root.uiFont * 0.85
-                                font.family: "monospace"
+                                font.family: Fonts.mono()
                             }
 
                             Text {
@@ -598,7 +599,7 @@ Item {
                                 text: adrZeile.modelData.a
                                 color: root.textColor
                                 font.pixelSize: root.uiFont * 0.85
-                                font.family: "monospace"
+                                font.family: Fonts.mono()
                             }
 
                             Text {

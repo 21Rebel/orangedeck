@@ -8,6 +8,7 @@
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 pragma ComponentBehavior: Bound
 
@@ -70,7 +71,7 @@ Item {
             color: root.textColor
             font.pixelSize: root.fontSize
             font.bold: true
-            font.family: "serif"
+            font.family: Fonts.serif()
         }
 
         MouseArea {

@@ -8,6 +8,7 @@
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 pragma ComponentBehavior: Bound
 
@@ -379,7 +380,7 @@ Grid {
                     // Waagerechte Hilfslinien mit Beschriftung
                     ctx.strokeStyle = Qt.rgba(1, 1, 1, 0.07);
                     ctx.fillStyle = root.dimColor;
-                    ctx.font = (root.uiFont * 0.68) + "px sans-serif";
+                    ctx.font = (root.uiFont * 0.68) + "px " + Fonts.sansCss();
                     ctx.textAlign = "right";
                     ctx.lineWidth = 1;
                     for (var g = 0; g <= 2; g++) {
@@ -510,7 +511,7 @@ Grid {
                             text: rrow.newTx.txid || ""
                             color: root.textColor
                             font.pixelSize: root.uiFont * 0.78
-                            font.family: "monospace"
+                            font.family: Fonts.mono()
                         }
 
                         Text {

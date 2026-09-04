@@ -7,6 +7,7 @@
 // gar keinen Verlauf.
 import QtQuick
 import "strings.js" as Tr
+import "fonts.js" as Fonts
 
 Item {
     id: root
@@ -143,7 +144,7 @@ Item {
 
             // Beschriftung **in der Farbe der jeweiligen Kurve** -- sonst ist
             // nicht zu erkennen, welche Achse zu welcher Linie gehoert.
-            ctx.font = root.labelSize + "px sans-serif";
+            ctx.font = root.labelSize + "px " + Fonts.sansCss();
             if (hRange) {
                 ctx.fillStyle = root.lineColor;
                 ctx.textAlign = "left";
