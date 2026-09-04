@@ -41,6 +41,23 @@ Item {
     property real baseFont: 12
 
     readonly property bool hatDaten: root.hoechst > 0 && root.zellen.length > 0
+    readonly property real letzterKurs: root.schlusskurse.length
+        ? root.schlusskurse[root.schlusskurse.length - 1] : 0
+
+    // **Die Seite steht in der Lage, nicht in der Farbe** -- und zwar
+    // zwingend, nicht als Konvention.
+    //
+    // Ein Long-Niveau liegt unter seinem Eroeffnungskurs. Laege der Kurs
+    // heute darunter, haette er es durchschritten -- dann waere es nach der
+    // Abraeum-Regel weg. Also liegt **jedes ueberlebende Long-Niveau unter
+    // dem Kurs** und jedes Short-Niveau darueber. Nachgemessen ueber dreissig
+    // Tage samt einem Sprung von 64.000 auf 78.000: 49 belegte Stufen, null
+    // Fehler, 0,0 % des Betrags falsch eingeordnet.
+    //
+    // Rot und Gruen wuerden hier also nichts hinzufuegen, was die Kurslinie
+    // nicht schon sagt -- und Coinglass macht es aus demselben Grund nicht
+    // (ihre Schnittstelle liefert je Zelle nur einen Betrag, keine Seite).
+    // Was fehlte, war nur, dass man die Regel **sieht**.
 
     // Die Hebelstufen als Text, damit die Annahme dasteht statt im Quelltext
     // zu verschwinden: "5x 30 %, 10x 30 %, ..."
@@ -233,6 +250,53 @@ Item {
             }
         }
 
+        // Wo der Kurs gerade steht -- die Linie, an der sich Long und Short
+        // scheiden. Die laufende Kurve zeigt es ueber die ganze Zeit, diese
+        // Marke sagt es fuer den Augenblick.
+        Item {
+            id: kursMarke
+
+            visible: root.hatDaten && root.letzterKurs > 0
+                     && root.yAchse.length > 1
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            y: {
+                if (root.yAchse.length < 2)
+                    return 0;
+                var tief = root.yAchse[0];
+                var hoch = root.yAchse[root.yAchse.length - 1];
+                if (hoch <= tief)
+                    return 0;
+                var t = (hoch - root.letzterKurs) / (hoch - tief);
+                return Math.max(0, Math.min(1, t)) * bild.height;
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                color: root.accentColor
+                opacity: 0.55
+            }
+
+            Text {
+                anchors.right: parent.right
+                anchors.bottom: parent.top
+                anchors.bottomMargin: 1
+                text: "▲ " + Tr.t("market.shortsShort", root.lang)
+                color: root.accentColor
+                font.pixelSize: Math.max(7, root.baseFont - 3)
+            }
+
+            Text {
+                anchors.right: parent.right
+                anchors.top: parent.bottom
+                anchors.topMargin: 1
+                text: "▼ " + Tr.t("market.longsShort", root.lang)
+                color: root.accentColor
+                font.pixelSize: Math.max(7, root.baseFont - 3)
+            }
+        }
+
         // Preisachse links
         Repeater {
             model: root.hatDaten ? root.yAchse : []
@@ -327,7 +391,8 @@ Item {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: Tr.t("market.heatPriceLine", root.lang)
+            text: Tr.t("market.heatPriceLine", root.lang) + "  ·  "
+                  + Tr.t("market.heatSides", root.lang)
             color: root.dimColor
             font.pixelSize: Math.max(7, root.baseFont - 3)
         }

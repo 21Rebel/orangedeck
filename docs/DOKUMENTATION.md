@@ -2532,3 +2532,40 @@ Farbstreifen der Legende benutzt. Zweimal dieselbe Rechnung waere eine
 Legende, die irgendwann nicht mehr zum Bild passt -- und eine falsche Legende
 ist schlimmer als keine. Dazu ein Strich in Weiss mit der Beschriftung
 "Kurs", damit die Linie im Bild nicht geraten werden muss.
+
+
+### Long oder Short steht in der **Lage**, nicht in der Farbe
+
+Die naheliegende Frage: warum nicht rot fuer Long-Niveaus und gruen fuer
+Short-Niveaus, wie im Reiter daneben?
+
+Weil es nichts hinzufuegen wuerde. **Jedes ueberlebende Long-Niveau liegt
+unter dem Kurs und jedes Short-Niveau darueber** -- und das ist keine
+Konvention, sondern folgt zwingend aus der Abraeum-Regel des Modells:
+
+> Ein Long-Niveau liegt unter seinem Eroeffnungskurs. Laege der Kurs heute
+> darunter, muesste er es durchschritten haben -- dann waere es abgeraeumt
+> und stuende nicht mehr im Bild. Fuer Shorts gilt es spiegelbildlich.
+
+Nachgemessen statt nur behauptet: ueber 24 Stunden, 7 Tage und 30 Tage --
+letzteres samt einem Kurssprung von 64.000 auf 78.000, der die Regel haette
+brechen muessen, wenn sie nur eine Faustregel waere:
+
+| Fenster | belegte Stufen | Lageregel falsch | Betrag falsch eingeordnet |
+|---|---|---|---|
+| 24h | 23 | 0 | 0,0 % |
+| 7d | 26 | 0 | 0,0 % |
+| 30d | 49 | 0 | 0,0 % |
+
+Coinglass macht es aus demselben Grund einfarbig: ihre Schnittstelle liefert
+je Zelle nur **einen** Betrag, keine Seite, und ihre eigene Anleitung sagt
+"Cluster ueber dem Kurs sind Short-Liquidationen, darunter Long".
+
+Was gefehlt hat, war nicht Farbe, sondern dass man die Regel **sieht**. Also
+eine Marke auf Kurshoehe mit "▲ Shorts" darueber und "▼ Longs" darunter, und
+derselbe Satz in der Legende. Die laufende Kurslinie sagt es ohnehin fuer
+jeden Zeitpunkt -- was ueber ihr liegt, ist Short, was darunter liegt, Long.
+
+**Nebenbei ein Argument gegen Rot/Gruen, das unabhaengig davon gilt:** rot
+gegen gruen ist das schlechteste Paar fuer Farbenblinde. Wo die Information
+schon in der Geometrie steht, ist sie dort besser aufgehoben.
