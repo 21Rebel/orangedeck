@@ -29,7 +29,9 @@ Item {
     property real hoechst: 0
     property var schlusskurse: []
     property var hebel: []
-    property bool zuLang: false
+    // Wahr, wenn der gewaehlte Zeitraum laenger war als das Modell reicht
+    // und deshalb zurechtgeschnitten wurde.
+    property bool beschnitten: false
     property int maxTage: 30
 
     property color textColor: "#e6e0e9"
@@ -47,6 +49,22 @@ Item {
         for (var i = 0; i < root.hebel.length; i++)
             t.push(root.hebel[i][0] + "× " + Math.round(root.hebel[i][1] * 100) + " %");
         return t.join(" · ");
+    }
+
+    // **Die Farbe an einer Stelle.** Bewusst eine Funktion und nicht zweimal
+    // dieselbe Rechnung: sonst laufen Bild und Legende irgendwann
+    // auseinander, und eine Legende, die nicht stimmt, ist schlimmer als
+    // keine.
+    //
+    // `t` ist der Anteil am hoechsten Wert, mit **Wurzelkennlinie** statt
+    // linear -- die Betraege gehen ueber drei Groessenordnungen, linear waere
+    // alles ausser der hellsten Zelle schwarz.
+    function farbeFuer(anteil) {
+        var t = Math.pow(Math.max(0, Math.min(1, anteil)), 0.45);
+        return Qt.rgba(Math.min(1, 0.35 + t * 0.65),
+                       Math.max(0, Math.min(1, (t - 0.35) * 1.5)),
+                       Math.max(0, (t - 0.8) * 2.5),
+                       Math.min(0.95, 0.12 + t));
     }
 
     function geld(v) {
@@ -119,6 +137,17 @@ Item {
             font.pixelSize: root.baseFont - 3
             font.family: Fonts.mono()
         }
+
+        // **Ein anderer Zeitraum als der gewaehlte gehoert gesagt.** Sonst
+        // liest man Baender von dreissig Tagen als Baender von fuenf Jahren.
+        Text {
+            width: parent.width
+            visible: root.beschnitten
+            wrapMode: Text.WordWrap
+            text: Tr.t("market.heatClamped", root.lang, root.maxTage)
+            color: root.accentColor
+            font.pixelSize: root.baseFont - 3
+        }
     }
 
     // ---------------------------------------------------------- Das Bild
@@ -128,8 +157,9 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: kopf.bottom
-        anchors.bottom: parent.bottom
+        anchors.bottom: legende.visible ? legende.top : parent.bottom
         anchors.topMargin: root.baseFont * 0.6
+        anchors.bottomMargin: legende.visible ? root.baseFont * 0.3 : 0
 
         readonly property real achse: root.baseFont * 4.2
         readonly property real feld: Math.max(10, width - achse - root.baseFont * 0.5)
@@ -140,8 +170,7 @@ Item {
             width: parent.width * 0.8
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
-            text: root.zuLang ? Tr.t("market.heatTooLong", root.lang, root.maxTage)
-                              : Tr.t("market.heatEmpty", root.lang)
+            text: Tr.t("market.heatEmpty", root.lang)
             color: root.dimColor
             font.pixelSize: root.baseFont - 1
         }
@@ -171,13 +200,9 @@ Item {
                 // hellsten Zelle schwarz.
                 for (var i = 0; i < n; i++) {
                     var z = root.zellen[i];
-                    var t = Math.pow(z[2] / root.hoechst, 0.45);
                     // Von dunkelrot ueber orange nach gelb -- dieselbe
                     // Richtung wie die Waerme, die der Name verspricht.
-                    var r = Math.min(1, 0.35 + t * 0.65);
-                    var g = Math.max(0, Math.min(1, (t - 0.35) * 1.5));
-                    var b = Math.max(0, (t - 0.8) * 2.5);
-                    ctx.fillStyle = Qt.rgba(r, g, b, Math.min(0.95, 0.12 + t));
+                    ctx.fillStyle = root.farbeFuer(z[2] / root.hoechst);
                     // Die Stufe 0 liegt unten: y-Achse umgedreht
                     ctx.fillRect(Math.floor(z[0] * bw),
                                  Math.floor((stufen - 1 - z[1]) * bh),
@@ -237,20 +262,81 @@ Item {
             }
         }
 
-        // Massstab: was die hellste Zelle bedeutet
+    }
+
+    // ---------------------------------------------------------- Legende
+    // Ohne sie ist das Bild huebsch und stumm: niemand weiss, ob hell viel
+    // oder wenig heisst, und die weisse Linie koennte alles sein.
+    Row {
+        id: legende
+
+        visible: root.hatDaten
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        spacing: root.baseFont * 0.5
+
         Text {
-            visible: root.hatDaten
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            anchors.rightMargin: root.baseFont * 0.3
-            text: Tr.t("market.heatScale", root.lang,
-                       root.zeichen + " " + root.geld(root.hoechst))
+            anchors.verticalCenter: parent.verticalCenter
+            text: Tr.t("market.heatLittle", root.lang)
+            color: root.dimColor
+            font.pixelSize: Math.max(7, root.baseFont - 3)
+        }
+
+        // Der Verlauf kommt aus **derselben** Funktion wie das Bild
+        Canvas {
+            id: verlauf
+
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.baseFont * 8
+            height: Math.max(6, root.baseFont * 0.7)
+            antialiasing: false
+
+            onPaint: {
+                var ctx = getContext("2d");
+                ctx.reset();
+                var schritte = 48;
+                for (var i = 0; i < schritte; i++) {
+                    ctx.fillStyle = root.farbeFuer(i / (schritte - 1));
+                    ctx.fillRect(i * width / schritte, 0,
+                                 width / schritte + 1, height);
+                }
+            }
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: Tr.t("market.heatMuch", root.lang) + "  "
+                  + root.zeichen + " " + root.geld(root.hoechst)
+            color: root.dimColor
+            font.pixelSize: Math.max(7, root.baseFont - 3)
+        }
+
+        Item {
+            width: root.baseFont
+            height: 1
+        }
+
+        // Damit die weisse Linie nicht geraten werden muss
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.baseFont * 1.6
+            height: 2
+            color: "#ffffff"
+            opacity: 0.85
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: Tr.t("market.heatPriceLine", root.lang)
             color: root.dimColor
             font.pixelSize: Math.max(7, root.baseFont - 3)
         }
     }
 
-    onZellenChanged: leinwand.requestPaint()
+    onZellenChanged: {
+        leinwand.requestPaint();
+        verlauf.requestPaint();
+    }
     onWidthChanged: leinwand.requestPaint()
     onHeightChanged: leinwand.requestPaint()
 }

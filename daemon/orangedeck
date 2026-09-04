@@ -2242,25 +2242,49 @@ class _Handler(BaseHTTPRequestHandler):
                             waehrung = wert.lower()
                     except ValueError:
                         pass
-                if spanne == "custom" and eigen:
-                    kerzen = klines(raster_fuer(eigen))
-                else:
-                    kerzen = klines(spanne)
                 # **Dreissig Tage sind die Grenze**, weiter zurueck gibt
                 # Binance den Verlauf des offenen Interesses nicht mehr her.
-                # Ein leeres Bild mit Begruendung ist besser als ein
-                # erfundenes.
-                zu_lang = bool(kerzen) and (
-                    kerzen[-1][0] - kerzen[0][0] > OI_MAX_TAGE * 86400)
-                d = ({"yAxis": [], "cells": [], "max": 0} if zu_lang
-                     else heatmap(kerzen))
+                #
+                # Statt abzulehnen wird **zurechtgeschnitten**: wer ein
+                # Fenster von fuenf Jahren offen hat, will nicht eine
+                # Begruendung sehen, sondern das, was geht. Die Antwort sagt
+                # mit `clamped`, dass sie einen anderen Zeitraum zeigt als
+                # den gewaehlten -- verschwiegen waere das eine Luege.
+                gewuenscht = (eigen if (spanne == "custom" and eigen)
+                              else KLINE_SPANS.get(spanne, ("", 0))[1]
+                              * {"1m": 60, "3m": 180, "5m": 300, "15m": 900,
+                                 "30m": 1800, "1h": 3600, "2h": 7200,
+                                 "4h": 14400, "6h": 21600, "12h": 43200,
+                                 "1d": 86400, "3d": 259200,
+                                 "1w": 604800}.get(
+                                     KLINE_SPANS.get(spanne, ("1h", 0))[0], 3600))
+                grenze = OI_MAX_TAGE * 86400
+                zu_lang = gewuenscht > grenze
+                # **Weniger Spalten als beim Kurs.** `raster_fuer` zielt auf
+                # bis zu 400 Kerzen; hier ist jede Spalte 64 Zellen breit,
+                # und 360 Spalten waren 249 kB fuer ein Bild, das in kein
+                # Popout so fein hineinpasst. Rund 180 genuegen.
+                def raster_heat(sekunden):
+                    for name, laenge in KLINE_LADDER:
+                        if sekunden / laenge <= 200:
+                            return name, max(20, min(1000,
+                                                     int(round(sekunden / laenge))))
+                    return "1w", 1000
+                if zu_lang:
+                    kerzen = klines(raster_heat(grenze))
+                elif spanne == "custom" and eigen:
+                    kerzen = klines(raster_heat(eigen))
+                else:
+                    kerzen = klines(raster_heat(
+                        gewuenscht if gewuenscht > 0 else 86400))
+                d = heatmap(kerzen)
                 kurs, umgerechnet = markt_kurs(self.feed, waehrung)
                 if kurs != 1.0:
                     d["yAxis"] = [round(y * kurs, 2) for y in d["yAxis"]]
                     d["cells"] = [[c[0], c[1], round(c[2] * kurs)] for c in d["cells"]]
                     d["max"] = round(d["max"] * kurs)
                 d["converted"] = umgerechnet
-                d["tooLong"] = zu_lang
+                d["clamped"] = zu_lang
                 d["maxDays"] = OI_MAX_TAGE
                 d["times"] = [k[0] for k in kerzen]
                 d["closes"] = [k[4] * kurs for k in kerzen] if kurs != 1.0 \

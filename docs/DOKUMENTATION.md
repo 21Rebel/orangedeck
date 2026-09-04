@@ -2492,8 +2492,17 @@ damit eine zweite Annahme auf der ersten.
 
 **Dreissig Tage.** Binance haelt den Verlauf des offenen Interesses nur so
 lange vor -- gemessen: `5m` reicht 1,7 Tage, `1h` 20,8 Tage, `1d` 30,0 Tage.
-Fuer ein laengeres Fenster gibt es das Modell nicht, und die Antwort sagt das
-mit `tooLong` statt ein leeres Bild zu zeigen.
+
+Der erste Anlauf **lehnte** ein laengeres Fenster ab und zeigte nur eine
+Begruendung. Das war zu streng: der Nutzer hatte einen eigenen Zeitraum von
+5,2 Jahren stehen und bekam damit eine leere Flaeche, ohne zu wissen, was er
+tun soll. Jetzt wird **zurechtgeschnitten** -- gezeigt werden die letzten
+dreissig Tage --, und die Antwort sagt es mit `clamped`, die Ansicht mit einer
+Zeile in Akzentfarbe. Verschwiegen waere es eine Luege: Baender von dreissig
+Tagen liest man sonst als Baender von fuenf Jahren.
+
+**Merksatz: wo eine Grenze erreicht ist, zeigt man das Moegliche und nennt
+die Grenze -- nicht nichts.**
 
 ### Aufwand
 
@@ -2510,3 +2519,16 @@ dem offenen Interesse aendert, gehoert dort nicht hinein.
 Gezeichnet wird mit einer **Wurzelkennlinie** (`^0.45`), nicht linear: die
 Betraege gehen ueber drei Groessenordnungen, und linear waere alles ausser
 der hellsten Zelle schwarz.
+
+Die Spaltenzahl ist bewusst kleiner als beim Kurs: `raster_fuer` zielt auf bis
+zu 400 Kerzen, hier ist aber jede Spalte 64 Zellen breit. 360 Spalten waren
+249 kB fuer ein Bild, das in kein Popout so fein hineinpasst; mit rund 180
+sind es 105 kB.
+
+### Die Legende zeichnet aus derselben Funktion wie das Bild
+
+`farbeFuer(anteil)` steht einmal da und wird von der Leinwand **und** vom
+Farbstreifen der Legende benutzt. Zweimal dieselbe Rechnung waere eine
+Legende, die irgendwann nicht mehr zum Bild passt -- und eine falsche Legende
+ist schlimmer als keine. Dazu ein Strich in Weiss mit der Beschriftung
+"Kurs", damit die Linie im Bild nicht geraten werden muss.

@@ -1253,7 +1253,7 @@ Item {
         hoechst: root.heat.max || 0
         schlusskurse: root.heat.closes || []
         hebel: (root.heat.model && root.heat.model.leverage) || []
-        zuLang: root.heat.tooLong === true
+        beschnitten: root.heat.clamped === true
         maxTage: root.heat.maxDays || 30
         textColor: root.textColor
         dimColor: root.dimColor
