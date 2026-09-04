@@ -8,3 +8,4 @@ packaging/flatpak/.flatpak-builder/
 __pycache__/
 # Baulog von aqtinstall (Android-Werkzeugkette)
 aqtinstall.log
+build-openssl-android/

@@ -93,6 +93,34 @@ qt_add_qml_module(orangedeck-app
 
 target_link_libraries(orangedeck-app PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick)
 
+# **Auf Android muss OpenSSL mit ins APK.** Qt liefert es dort nicht mit, und
+# ohne es meldet das Geraet nur "No functional TLS backend was found" -- die
+# App ist dann vollstaendig funktionslos, weil mempool.space nur https und wss
+# spricht. Auf dem Schreibtisch faellt das nicht auf: dort wird das
+# System-OpenSSL benutzt.
+#
+# Gebaut wird es mit `tools/openssl-android.sh` aus dem offiziellen Quelltext,
+# Pruefsumme gegen die Angabe des Projekts. Das Ergebnis liegt ausserhalb des
+# Repos; fehlt es, wird trotzdem gebaut -- nur eben ohne TLS, und diese
+# Meldung sagt es.
+if(ANDROID)
+    set(_ossl "${CMAKE_CURRENT_SOURCE_DIR}/../build-openssl-android/${ANDROID_ABI}")
+    # Die Namen sind nicht frei waehlbar: Qts TLS-Plugin sucht auf Android
+    # nach `libssl_3.so` und `libcrypto_3.so` (Vorgabe von
+    # `ANDROID_OPENSSL_SUFFIX`). Heissen sie anders, findet es sie nicht --
+    # auch wenn sie im APK liegen.
+    if(EXISTS "${_ossl}/libssl_3.so" AND EXISTS "${_ossl}/libcrypto_3.so")
+        set_property(TARGET orangedeck-app APPEND PROPERTY QT_ANDROID_EXTRA_LIBS
+            "${_ossl}/libcrypto_3.so" "${_ossl}/libssl_3.so")
+        message(STATUS "orangedeck: OpenSSL fuer ${ANDROID_ABI} wird mitgepackt")
+    else()
+        message(WARNING
+            "orangedeck: kein OpenSSL fuer ${ANDROID_ABI} -- das APK bekommt "
+            "KEIN TLS und ist auf dem Geraet unbrauchbar. Bauen mit:\n"
+            "    tools/openssl-android.sh ${ANDROID_ABI}")
+    endif()
+endif()
+
 if(Qt6WebSockets_FOUND)
     target_link_libraries(orangedeck-app PRIVATE Qt6::WebSockets)
     message(STATUS "orangedeck: QtWebSockets vorhanden, Direktbezug steht bereit")

@@ -2613,3 +2613,101 @@ setzen, womit sich die Breite des Popouts nachstellen laesst.
 
 So gefunden: der Griff oben, und der Ueberlappungsfehler in der Kopfzeile
 bei 695 Punkten Breite.
+
+
+## Android im Emulator -- und das TLS-Loch, das er aufgedeckt hat
+
+Am 04.09.2026 eingerichtet. Damit braucht der Android-Test **kein Telefon,
+kein Kabel und kein `usermod`**.
+
+### Der Aufbau
+
+Alles war schon da ausser Emulator und Systemabbild:
+
+    sdkmanager "emulator" "system-images;android-34;google_apis;x86_64"
+    avdmanager create avd -n orangedeck -k "system-images;android-34;google_apis;x86_64" -d pixel_6
+    emulator -avd orangedeck -no-window -no-audio -gpu swiftshader_indirect -port 5556
+
+**Das x86_64-Abbild uebersetzt ARM.** `ro.product.cpu.abilist` meldet
+`x86_64,arm64-v8a` -- unsere arm64-APK laeuft dort mit KVM, in voller
+Geschwindigkeit. Ein arm64-Abbild waere nicht noetig.
+
+Das APK muss **signiert** sein, sonst lehnt Android es ab
+(`INSTALL_PARSE_FAILED_NO_CERTIFICATES`). Fuer den Emulator genuegt der
+Debug-Schluessel:
+
+    apksigner sign --ks ~/.android/debug.keystore --ks-pass pass:android ...
+
+### Zwei Fehler im Bau
+
+Der alte Baubaum zeigte auf `/home/satoshoe/Schreibtisch/btcfeed/app` -- den
+Pfad gibt es seit der Umbenennung nicht mehr.
+
+Und ohne `ANDROID_NDK_ROOT` richtet CMake **gar nicht auf Android aus**.
+Die Meldung fuehrt dabei in die Irre: sie lautet "Target ... is not a valid
+android executable target" und "only works on Module targets", waehrend die
+Ursache eine leere ABI-Liste ist. Die muss stehen, **bevor** das Ziel angelegt
+wird -- sonst wird daraus eine gewoehnliche ausfuehrbare Datei statt der
+Bibliothek, die die Java-Huelle laedt.
+
+### `dataSource` stand auf Android auf "daemon"
+
+Der Dienst ist ein Benutzerdienst auf einem Linux-Rechner. Auf einem Telefon
+kann er nicht laufen, und 127.0.0.1:21021 antwortet dort nie. Wer die App
+frisch startete, bekam **"keine Verbindung zum Feed" als Willkommensgruss**
+und musste die Einstellung erst finden. Der Direktbezug ist dort kein
+Sonderfall, sondern der Regelfall -- jetzt die Vorgabe
+(`Qt.platform.os === "android"`).
+
+### Das eigentliche Loch: kein TLS
+
+Danach stand die App immer noch leer da, und erst `logcat` sagte warum:
+
+    qt.network.ssl: No functional TLS backend was found
+    QSslSocket::connectToHostEncrypted: TLS initialization failed
+
+**Qt liefert fuer Android kein OpenSSL mit.** Ohne es ist die App auf einem
+Geraet vollstaendig funktionslos -- mempool.space spricht nur https und wss.
+Auf dem Schreibtisch faellt es nie auf, weil dort das System-OpenSSL benutzt
+wird. Das APK war damit seit dem 02.09.2026 unbrauchbar, ohne dass es jemand
+sehen konnte.
+
+`tools/openssl-android.sh` baut es aus dem **offiziellen Quelltext**
+(openssl.org, 3.5.8 LTS), Pruefsumme **vor** dem Auspacken gegen die Angabe
+des Projekts. Qts eigene Doku verweist auf vorkompilierte Bibliotheken von
+Dritten; die wandern dann in eine veroeffentlichte App und lassen sich kaum
+pruefen. Das passt nicht zu dem, was fuer die Wallet-Ansicht gilt.
+
+### Die Namen sind nicht frei waehlbar
+
+Beim ersten Anlauf lagen `libssl.so` und `libcrypto.so` im APK -- und Qt fand
+sie trotzdem nicht. **Das TLS-Plugin sucht `libssl_3.so` und
+`libcrypto_3.so`**; der Name haengt an `ANDROID_OPENSSL_SUFFIX`, dessen
+Vorgabe `_3` ist. Ein leerer Wert der Variablen hilft nicht: Qt nimmt dann
+wieder die Vorgabe.
+
+Umbenennen waere die naheliegende Abkuerzung und eine schlechte: SONAME und
+`NEEDED` blieben auf den alten Namen stehen. Man muesste beides mit
+`patchelf` nachziehen -- oder **beide** Namenspaare mitliefern, und dann
+laegen zwei OpenSSL-Instanzen im selben Prozess, mit getrennten
+Fehlerschlangen und getrenntem Zufallszustand. Bei einer Kryptobibliothek ist
+das keine Kleinigkeit.
+
+Deshalb wird der **erzeugte Makefile umgeschrieben, bevor gebaut wird**.
+Danach stimmt alles von selbst:
+
+    libcrypto_3.so   SONAME=libcrypto_3.so
+    libssl_3.so      SONAME=libssl_3.so   NEEDED=libcrypto_3.so
+
+**Und `build-android/android-build` muss vor dem Neupacken weg.**
+androiddeployqt raeumt dort nicht auf: nach dem Umbenennen lagen beide Paare
+im APK, genau der Zustand, den die ganze Muehe vermeiden sollte.
+
+### Ergebnis
+
+Android 14, Direktbezug, kein Dienst: Block 965.505, 93.592 im Mempool,
+5,34 sat/vB, die Halde faellt voll. APK 52 MB, null TLS-Meldungen.
+
+Eine Beobachtung fuer spaeter: auf dem hohen, schmalen Bildschirm steht die
+Halde als schraege Flaeche statt als Rechteck. Das ist keine Fehlfunktion,
+aber ein Seitenverhaeltnis, das die Packung so noch nicht gesehen hat.
