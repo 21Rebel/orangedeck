@@ -439,7 +439,7 @@ Item {
                         von: 0.15
                         bis: 1
                         schritt: 0.05
-                        wert: root.val("bgOpacity", 0.82)
+                        wert: root.val("bgOpacity", 1.0)
                         onGezogen: function (w) {
                             root.changed("bgOpacity", w);
                         }

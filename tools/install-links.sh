@@ -31,8 +31,8 @@ if [ "${1:-}" = "--check" ]; then
     done
     case "$f" in
       *.qml)
-        grep -q "ui/qml/$f\b" "$R/app/CMakeLists.txt" \
-          || { echo "fehlt in app/CMakeLists.txt: $f"; fehlt=1; } ;;
+        grep -q "ui/qml/$f\b" "$R/CMakeLists.txt" \
+          || { echo "fehlt in CMakeLists.txt: $f"; fehlt=1; } ;;
     esac
   done
   if [ "$fehlt" = "0" ]; then

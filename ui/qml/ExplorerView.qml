@@ -439,6 +439,18 @@ Item {
                 clip: true
                 onAccepted: root.submit(text)
 
+                // **Escape gibt den Fokus wieder her.** Ohne das sitzt man
+                // fest: der Wirt gibt den Fokus erst frei, wenn der Explorer
+                // unsichtbar wird -- unsichtbar wird er per Tastenkuerzel --
+                // und die Kuerzel schluckt dieses Feld. Am 04.09.2026 in der
+                // Pruef-VM aufgefallen, wo nur die Tastatur zur Verfuegung
+                // stand; mit Maus faellt es nie auf, weil man den Reiter
+                // einfach anklickt.
+                Keys.onEscapePressed: {
+                    field.focus = false;
+                    root.searchFocusReleased();
+                }
+
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: field.text.length === 0

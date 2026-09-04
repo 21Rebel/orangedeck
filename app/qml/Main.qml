@@ -24,6 +24,13 @@ Window {
 
     // Deckkraft macht das Fenster selbst; ob geblurrt wird, entscheidet der
     // Compositor. Kacheln und Schrift bleiben deckend.
+    //
+    // **Die Vorgabe ist deckend.** Der milchige Eindruck entsteht erst, wenn
+    // der Compositor hinter dem Fenster weichzeichnet -- niri tut das hier,
+    // GNOME und die meisten anderen tun es nicht. Dort heisst 0,82 nur:
+    // man liest das Fenster dahinter mit, quer durch die Graphen. In der
+    // Pruef-VM am 04.09.2026 stand das Terminal mitten im Mempool. Wer den
+    // milchigen Look will, holt ihn mit einem Zug am Regler oder mit `-`.
     color: Qt.rgba(0.043, 0.043, 0.071, win.bgOpacity)
 
     property string colorMode: "age"
@@ -32,7 +39,7 @@ Window {
     property bool showLegend: true
     property bool showRuler: true
     property bool frosted: true
-    property real bgOpacity: 0.82
+    property real bgOpacity: 1.0
     property real density: 1.0
     // -1 heisst: die zuletzt benutzte Ansicht. Sonst faengt das Fenster
     // immer bei derselben an und merkt sich gar nichts mehr.

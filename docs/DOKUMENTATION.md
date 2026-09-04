@@ -2913,3 +2913,81 @@ das Komma, `shift-4` fuer `$`, `spc` fuer das Leerzeichen. Fehlt eines in der
 Tabelle, wird es stillschweigend verschluckt: aus `lsblk -o NAME,LABEL,SIZE`
 wurde `NAMELABELSIZE`, und lsblk meldete eine unbekannte Spalte. Der Fehler
 sieht dann nach einem Problem im Gast aus und liegt in der Fernsteuerung.
+
+## Was die Pruef-VM gefunden hat (04.09.2026)
+
+Der Lauf auf einem frischen Ubuntu 24.04 hat zwei Fehler zutage gefoerdert,
+die auf dem Entwicklungsrechner strukturell unsichtbar sind. Beide haben
+dieselbe Ursache: **hier fehlt etwas, was dort immer da ist.**
+
+### Der Explorer als Sackgasse
+
+Das Suchfeld nimmt den Fokus, sobald der Explorer sichtbar wird -- das ist
+gewollt, man will lostippen koennen. Hergegeben wurde er nur in
+`onVisibleChanged`, also wenn der Explorer **unsichtbar** wird. Unsichtbar
+wird er durch ein Reiter-Kuerzel. Und genau das schluckt das Suchfeld, weil
+die Reiter auf `1`--`6` liegen. Ein geschlossener Ring:
+
+    Explorer sichtbar  ->  Feld hat Fokus  ->  Ziffer landet im Feld
+           ^                                            |
+           +--------- Reiter wechselt nie <-------------+
+
+Mit Maus faellt das nie auf: man klickt den Reiter an, der Explorer wird
+unsichtbar, der Fokus kommt zurueck. In der VM gab es nur die Tastatur --
+und damit war die Anwendung nach einem Besuch im Explorer nicht mehr
+bedienbar. `Keys.onEscapePressed` am Feld gibt den Fokus jetzt her.
+
+Der allgemeine Fall dahinter: **ein Fokus, den nur ein anderer Weg wieder
+loesen kann, ist eine Falle, wenn dieser Weg ueber denselben Fokus laeuft.**
+Jedes Feld, das Tastenkuerzel verdeckt, braucht einen eigenen Ausgang.
+
+### Deckkraft setzt einen Compositor voraus
+
+`bgOpacity` stand auf 0,82. Auf diesem Rechner sieht das milchig aus, weil
+niri hinter dem Fenster weichzeichnet. **Das Weichzeichnen macht der
+Compositor, nicht die Anwendung** -- der Kommentar im Quelltext sagte das
+sogar, aber die Vorgabe zog die Folgerung nicht. GNOME zeichnet nicht weich,
+KDE nur auf Wunsch, die meisten gar nicht. Dort heisst 0,82: die Fenster
+dahinter sind lesbar, quer durch die Graphen. Im ersten Bild aus der VM stand
+das Terminal mitten im Mempool.
+
+Es gibt keinen mittleren Wert, der beides kann: jede Deckkraft unter 1 zeigt
+ohne Weichzeichner scharfen Fremdinhalt. Also ist die Vorgabe **deckend**,
+und der milchige Look ist einen Reglerzug entfernt (`-`, oder in den
+Einstellungen). Wer den Wert schon einmal gesetzt hat, behaelt seinen --
+die Vorgabe greift nur bei einer frischen Einrichtung.
+
+### Ohne Fenstermanager gibt es keinen Tastaturfokus
+
+Der Escape-Fix liess sich im Xvfb erst nicht nachweisen. Grund: in einem
+nackten X-Server laeuft nichts, was einem Fenster die Tastatur zuteilt. Ein
+Klick hilft nicht -- der bewegt nur den Zeiger. Alle Tastendruecke laufen ins
+Leere, und der Prueflauf meldet dann, das Kuerzel wirke nicht. **Ein Test,
+der aus dem falschen Grund fehlschlaegt, ist schlimmer als keiner.** Der Lauf
+setzt den Fokus jetzt selbst:
+
+    from Xlib import X
+    w.set_input_focus(X.RevertToParent, X.CurrentTime)
+
+### Was am Pruefstand lag, nicht an der Anwendung
+
+Sauber zu trennen, sonst schreibt man Ubuntu Fehler zu, die es nicht hat:
+
+| Meldung | Ursache | Trifft echte Nutzer? |
+|---|---|---|
+| `bwrap: Creating new namespace failed` | Ubuntu 24.04 sperrt unprivilegierte Namensraeume und gibt sie ueber `/etc/apparmor.d/flatpak` frei; in der Live-Sitzung laeuft `apparmor.service` nicht, das Profil war nie geladen | nein -- `apt install flatpak` laedt es |
+| `Could not initialize GLX` | `org.freedesktop.Platform.GL.default//24.08` fehlte, weil die Laufzeit als Buendel vom Host kam | nein -- Flathub liefert sie mit |
+| `No space left` beim Installieren | `/cow` der Live-Sitzung liegt im RAM (1,2 GB) | nein |
+
+Der Weg zur GL-Erweiterung ist derselbe wie bei der Laufzeit: vom Host
+buendeln, auf eine ISO, im Gast einlegen.
+
+    flatpak build-bundle --runtime /var/lib/flatpak/repo gl.flatpak \
+        org.freedesktop.Platform.GL.default 24.08
+    xorrisofs -quiet -o gl.iso -V GLEXT -J -R gl.flatpak
+
+**Der Wechseldatentraeger muss frei sein.** `change ide1-cd0` scheitert mit
+*Device is locked*, solange der Gast ihn eingehaengt hat -- erst im Gast
+`umount`, dann tauschen. `info block` sagt, welches Laufwerk gerade was haelt;
+die Antwort des Monitors kommt mit dem Echo jedes einzelnen Zeichens zurueck
+und muss von Steuerzeichen befreit werden, bevor sie lesbar ist.

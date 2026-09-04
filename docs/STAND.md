@@ -4,6 +4,70 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## UEBERGABE 04.09.2026, Nacht -- die Pruef-VM
+
+**OrangeDeck laeuft auf einem fremden System.** Ubuntu 24.04.4, frisch, ohne
+Qt 6.6+ und ohne irgendetwas aus diesem Repo: Live-Blockhoehe, Live-Kurs,
+Mempool und Gebuehrenhistogramm zeichnen sich. Damit ist der Satz vom Abend
+eingeloest -- *was nur eine Umgebung angefasst hat, ist ungeprueft*.
+
+### Zwei Fehler, die nur dort auffallen konnten
+
+**1. Wer im Explorer landet, kommt per Tastatur nicht mehr heraus.** Das
+Suchfeld nimmt den Fokus, sobald der Explorer sichtbar wird -- und gibt ihn
+erst her, wenn der Explorer *unsichtbar* wird. Unsichtbar wird er per
+Tastenkuerzel. Das Kuerzel schluckt das Feld. Ein geschlossener Ring.
+Mit Maus faellt das nie auf, weil man den Reiter einfach anklickt; in der VM
+gab es nur die Tastatur. `Keys.onEscapePressed` gibt den Fokus jetzt zurueck.
+
+**2. Die Deckkraft von 0,82 setzt einen Compositor voraus, der weichzeichnet.**
+niri tut das hier, GNOME und die meisten anderen tun es nicht. Dort heisst
+0,82 schlicht: man liest das Fenster dahinter mit. Im ersten Bild aus der VM
+stand das Terminal quer durch den Mempool. **Die Vorgabe ist jetzt deckend**;
+der milchige Look bleibt einen Reglerzug weit weg (`-` oder Einstellungen).
+Wer den Wert schon gesetzt hat -- auch dieser Rechner -- behaelt ihn.
+
+### Was am Pruefstand lag, nicht an der Anwendung
+
+Diese Unterscheidung ist wichtig, sonst schreibt man Ubuntu einen Fehler zu,
+den es nicht hat:
+
+- **`bwrap: Creating new namespace failed`.** Ubuntu 24.04 sperrt
+  unprivilegierte Namensraeume (`kernel.apparmor_restrict_unprivileged_userns
+  = 1`) und gibt sie ueber ein AppArmor-Profil wieder frei. Das Profil lag da
+  (`/etc/apparmor.d/flatpak`), war aber nie geladen: in einer Live-Sitzung
+  laeuft `apparmor.service` nicht. Ein `apparmor_parser -r` darauf, und der
+  Fehler war weg. **Auf einem installierten Ubuntu tritt das nicht auf.**
+- **`Could not initialize GLX`.** Die GL-Erweiterung
+  `org.freedesktop.Platform.GL.default//24.08` fehlte, weil die Laufzeit als
+  Buendel vom Host kam (die Netzverbindung zu Flathub brach reihenweise ab).
+  Wer von Flathub installiert, bekommt sie automatisch. Nachgereicht als
+  zweites Buendel ueber eine ISO -- danach startete die App.
+- **1,2 GB beschreibbar.** Das `/cow` der Live-Sitzung liegt im RAM. Eine
+  12-GB-qcow2 nachtraeglich eingehaengt und auf das Flatpak-Verzeichnis
+  gelegt.
+
+### Zwei Werkzeuge, die selbst falsch lagen
+
+- **`install-links.sh --check` meldete jede Datei als fehlend.** Es sah in
+  `app/CMakeLists.txt` nach -- die liegt seit dem Windows-Fix im Wurzel-
+  verzeichnis. Ein Pruefer, der immer Alarm schlaegt, ist schlechter als
+  keiner, weil man ihn nach dem dritten Mal nicht mehr liest. Pfad nachgezogen.
+- **`vm.py` konnte kein Semikolon tippen.** Dieselbe Falle wie das Komma vom
+  Nachmittag: was in der Zeichentabelle fehlt, faellt stillschweigend weg, und
+  `umount /mnt/rt; umount /mnt/d` wird zu einem einzigen unsinnigen Befehl.
+  Das sieht aus wie ein Fehler im Gast und ist einer in der Fernbedienung.
+  Die Tabelle ist jetzt vollstaendig, mit einer Zusicherung darauf.
+
+### Was der Xvfb nicht kann
+
+Der Escape-Fix liess sich im Xvfb zunaechst nicht nachweisen: **ohne
+Fenstermanager bekommt kein Fenster den Tastaturfokus**, alle Tastendruecke
+laufen ins Leere -- und der Test meldet dann faelschlich, das Kuerzel wirke
+nicht. Der Prueflauf setzt den Fokus jetzt selbst.
+
+---
+
 ## UEBERGABE 04.09.2026, Abend
 
 Nach dem Push kam die Baustrecke dazu. **Alle vier Jobs sind gruen**: Linux,
