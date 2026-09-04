@@ -2278,3 +2278,125 @@ Zwei Feinheiten, beide am Pruefstand gefunden:
 neun Jahre durch, zeigt die Beschriftung und liest sie mit `eigenSekunden()`
 wieder ein -- die Abweichung liegt ueberall unter einem Prozent. Dass die
 Ausgabe im Terminal ankommt, liegt an `QT_ASSUME_STDERR_HAS_CONSOLE=1`.
+
+
+## Liquidationen und Positionierung (`MarketLiq.qml`)
+
+Der zweite Unterreiter im Markt beantwortet zwei Fragen, die der Kurs nicht
+beantwortet: **wie stehen die anderen** und **wo mussten Positionen
+aufgeben**.
+
+### Warum ein eigener Reiter und keine Spur unter dem Kurs
+
+Der CVD laeuft von links nach rechts, weil er eine Frage ueber die **Zeit**
+beantwortet. Das Liquidations-Histogramm liegt quer, weil es eine Frage ueber
+den **Preis** beantwortet. Ein Balken auf Kurshoehe passt in kein Feld, das
+eine Zeitachse hat -- deshalb eine eigene Flaeche, nicht ein dritter Eintrag
+im Umschalter unten.
+
+Der Umschalter steht **vor** dem Kurs in derselben Zeile und kostet damit
+keine eigene Hoehe. Im Popout sind 409 Punkte alles, was es gibt.
+
+### Bewusst keine Heatmap nach Art von Coinglass
+
+Deren Bild ist **gerechnet, nicht gemessen**: aus offenem Interesse und
+*angenommenen* Hebeln (5x, 10x, 25x, 50x, 100x) wird hochgerechnet, wo
+Liquidationen laegen. Die echten Liquidationspreise offener Positionen kennt
+nur die Boerse, und niemand veroeffentlicht sie. Hier steht deshalb nur, was
+wirklich passiert ist: weniger Bild, aber jede Angabe belegbar.
+
+### Was frei zu haben ist -- und was nicht
+
+Gemessen am 04.09.2026:
+
+| | |
+|---|---|
+| Binance Futures **WebSocket** | Handshake 101, danach **0 Bytes in 12 s** |
+| Binance Futures **REST** | antwortet normal |
+| OKX `liquidation-orders` | liefert, alle Swaps auf einmal |
+| Bybit `allLiquidation.BTCUSDT` | liefert |
+| Bybit `liquidation.BTCUSDT` | `error:handler not found` -- gibt es nicht mehr |
+| BitMEX `liquidation` | verbindet, trennt nach 8 s |
+| Deribit `trades.*.raw` | braucht Anmeldung |
+
+Die Binance-Messung ist eindeutig: auch `markPrice@1s`, das jede Sekunde
+sendet, brachte null Nachrichten, waehrend der Spot-Strom im selben Test 376
+lieferte -- auf Byte-Ebene gegengeprueft, mit und ohne Browser-Kennung.
+**Gesperrt ist der Strom, nicht die Boerse**: das Long/Short-Verhaeltnis von
+`fapi.binance.com` kommt an.
+
+### Vier Fallen, alle gemessen
+
+**Ein Liquidationsstrom ist minutenlang still.** Ein Handelsstrom traegt sich
+durch seinen eigenen Verkehr; hier passiert oft eine Viertelstunde nichts.
+Bybit trennt eine untaetige Verbindung, und **ohne Ping merkt man das nicht
+einmal** -- die Leseschleife laeuft ins Nichts. Der erste Versuch hier meldete
+"fuenf Minuten keine Liquidation"; in Wahrheit war die Verbindung nach
+dreissig Sekunden weg. `run_liquidationen` ist deshalb nicht `run_market` mit
+anderem Parser, sondern hat einen eigenen Herzschlag.
+
+**Bybit verwirft den ganzen Abo-Antrag, wenn ein Thema darin ungueltig ist.**
+`allLiquidation` **und** `liquidation` zusammen angefragt: `success:false`,
+und zwar fuer beide. Themen einzeln abonnieren oder wenigstens einzeln
+pruefen.
+
+**`sz` bei OKX sind Kontrakte, keine Bitcoin.** Fuer BTC-USDT-SWAP ist ein
+Kontrakt 0,01 BTC (`ctVal` aus `/api/v5/public/instruments`, `ctMult` 1). Wer
+das uebersieht, zeigt hundertfach zu grosse Betraege. Und der Filter
+`instFamily` wird von OKX **stillschweigend ignoriert** -- die Bestaetigung
+kommt ohne ihn zurueck, und es kommen weiter RIVER, CHIP und DASH. Gefiltert
+wird auf `instId`.
+
+**Die Seite steht bei beiden Boersen fuer die Position, nicht fuer die
+Zwangsorder.** Das stand hier erst falsch herum und fiel nur auf, **weil eine
+zweite Quelle danebenlag**: waehrend einer Kaskade meldete OKX durchgehend
+Longs, Bybit durchgehend Shorts -- bei fallendem Kurs, wo nur Longs
+liquidiert werden. Am rohen Strom nachgesehen: Kurs faellt von 78.719 auf
+78.651, jede Bybit-Nachricht traegt `S: "Buy"`, und die Liquidationspreise
+(78.460, 78.454, ...) liegen **unter** dem Markt -- so wird ein Long
+glattgestellt. Mit nur einer Quelle waere die Anzeige jahrelang verkehrt
+herum gestanden.
+
+### Auch die leeren Preisstufen gehen mit
+
+Der Dienst schickt alle 24 Stufen, auch die ohne Treffer. Wer nur die vollen
+schickt, macht aus der Preisachse eine **Liste**: die Oberflaeche verteilt
+zwei Treffer ueber die halbe Flaeche, und die Hoehe im Bild sagt nichts mehr
+ueber den Preis. Eine Achse hat gleiche Abstaende oder sie ist keine.
+
+Die Beschriftung der Achse wird ausgeduennt, nicht verkleinert: `jedeWievielte`
+rechnet aus der Zeilenhoehe, wie viele Beschriftungen nebeneinanderpassen --
+lieber jede dritte lesbar als jede unleserlich. Die Stufe am laufenden Kurs
+steht immer da, sie ist der Bezugspunkt.
+
+### Gehalten wird nach Zeit, und mitgeschrieben
+
+An einem ruhigen Tag sind es ein paar Dutzend Liquidationen, in einer Stunde
+Panik tausende. Ein Ring fester Laenge deckte im ersten Fall Tage ab und im
+zweiten Minuten -- also zwei Tage nach Zeit, mit `LIQ_KEEP` nur als Notbremse
+gegen Speicherwuchs.
+
+**Und sie werden mitgeschrieben** (`liquidations.json` im Cache-Verzeichnis,
+alle dreissig Sekunden, aber nur wenn sich etwas geaendert hat). Der Grund ist
+nicht Bequemlichkeit: Liquidationen gibt es **nirgends rueckwirkend zu
+kaufen**. Ein Neustart ohne diese Datei waere echter Datenverlust, kein
+blosses Neuladen.
+
+Das Aufraeumen alter Eintraege schneidet nur vorn ab (`popleft`, solange der
+aelteste zu alt ist). Das genuegt, weil die Marken im Wesentlichen der Reihe
+nach kommen; eine Marke mit altem Zeitstempel, die hinten angehaengt wird
+(OKX schiebt beim Verbinden Zurueckliegendes nach), bleibt bis `LIQ_KEEP`
+greift. Gefiltert wird ohnehin beim Lesen und beim Laden, das Bild stimmt
+also -- es liegt nur mehr im Speicher als noetig.
+
+### Das Verhaeltnis ist ein Konten-Anteil
+
+Alle drei Boersen nennen den Anteil der **Konten**, nicht des Kapitals. "53 %
+long" heisst, dass jedes zweite Konto long steht, nicht dass dort das halbe
+Geld liegt. Der Satz steht in der Ansicht, weil man es sonst als Uebergewicht
+liest.
+
+Dass die drei auseinanderliegen (04.09.2026: OKX 50,7 %, Bybit 53,4 %,
+Binance 50,2 %), ist kein Fehler, sondern der Punkt -- es sind drei
+verschiedene Nutzerschaften. Ein Mittelwert daraus waere eine Erfindung,
+deshalb stehen sie einzeln.

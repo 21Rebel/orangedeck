@@ -261,6 +261,7 @@ Item {
         range: root.o("marketRange", "24h")
         kind: root.o("marketKind", "candles")
         lower: root.o("marketLower", "volume")
+        sub: root.o("marketSub", "price")
         customSecs: root.o("marketSecs", 259200)
         vonZeit: root.o("marketVon", 0)
         bisZeit: root.o("marketBis", 0)
@@ -279,6 +280,9 @@ Item {
         }
         onLowerRequested: function (l) {
             root.optRequested("marketLower", l);
+        }
+        onSubRequested: function (t) {
+            root.optRequested("marketSub", t);
         }
         onCustomSecsRequested: function (sek) {
             root.optRequested("marketSecs", sek);

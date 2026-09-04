@@ -90,6 +90,7 @@ Item {
             "marketRange": root.get("marketRange", "24h"),
             "marketKind": root.get("marketKind", "candles"),
             "marketLower": root.get("marketLower", "volume"),
+            "marketSub": root.get("marketSub", "price"),
             "marketSecs": root.get("marketSecs", 259200),
             "marketVon": root.get("marketVon", 0),
             "marketBis": root.get("marketBis", 0),

@@ -28,6 +28,11 @@ Item {
     property string kind: "candles"      // candles | line
     // Was unter dem Kurs steht: die Volumenbalken oder der CVD.
     property string lower: "volume"      // volume | cvd
+    // Welcher Unterreiter offen ist. **Liquidationen fragen nach dem Preis,
+    // nicht nach der Zeit** -- ein Balken quer auf Kurshoehe passt in kein
+    // Feld, das von links nach rechts laeuft. Deshalb eine eigene Flaeche
+    // statt einer weiteren Spur unter dem Kurs.
+    property string sub: "price"         // price | liq
     property int customSecs: 259200      // drei Tage als Vorgabe
     // Fadenkreuz und laufendes Band -- beides einschaltbar
     property bool crosshair: true
@@ -49,6 +54,7 @@ Item {
     signal kindRequested(string k)
     signal customSecsRequested(int secs)
     signal lowerRequested(string l)
+    signal subRequested(string t)
     // Von und Bis gehen als Paar zurueck -- einzeln waeren sie zwischendurch
     // widerspruechlich (ein Von ohne Bis ist kein Fenster).
     signal vonBisRequested(int von, int bis)
@@ -76,6 +82,10 @@ Item {
 
     property var kerzen: []
     property var quellen: []
+    // Liquidationen und Positionierung -- siehe MarketLiq.qml
+    property var liqHist: []
+    property var ratio: []
+    property int liqSeit: 0
     property int tradeZahl: 0
     // Wahr, wenn die Kerzen aus Dollar umgerechnet sind -- ueber Jahre ist
     // das eine Umrechnung zum heutigen Kurs, keine Wahrheit.
@@ -320,13 +330,17 @@ Item {
     // live; neben Kerzen von vor einem halben Jahr stuenden dort Preise von
     // heute, und die Kopfzeile zeigte den einen Wert, das Band den anderen.
     // Zwei Wahrheiten nebeneinander sind schlimmer als eine fehlende.
+    // Alles, was zum Kursbild gehoert, faellt im Liquidationsreiter weg --
+    // Band, Schieber, Fadenkreuz. Sie beziehen sich auf eine Zeitachse, die
+    // dort nicht steht.
     readonly property bool bandDa: root.showTape && !root.inVergangenheit
+                                   && root.sub === "price"
     readonly property real bandHoehe: root.bandDa
                                       ? Math.min(root.height * 0.28, root.baseFont * 11)
                                       : 0
     // Der Schieber unter der Zeitachse. In sehr flachen Flaechen faellt er
     // weg -- dort ist die Kurve selbst schon knapp.
-    readonly property bool schieberDa: root.height >= 260
+    readonly property bool schieberDa: root.height >= 260 && root.sub === "price"
     readonly property real schieberHoehe: root.schieberDa ? root.baseFont * 1.7 : 0
     readonly property real feldBreite: Math.max(1, leinwand.width - root.padR)
     readonly property real volHoehe: (leinwand.height - root.padB) * 0.26
@@ -410,6 +424,9 @@ Item {
             if (!root.zoomAusstehend)
                 root.zoomSekunden = 0;
             root.quellen = d.sources || [];
+            root.liqHist = d.liqHist || [];
+            root.ratio = d.ratio || [];
+            root.liqSeit = d.liqSince || 0;
             root.tradeZahl = d.trades || 0;
             root.umgerechnet = d.converted === true;
             // Nur das Neue anhaengen und vorne abschneiden -- der Dienst
@@ -466,10 +483,31 @@ Item {
     }
 
     // ------------------------------------------------------------ Kopfzeile
+    // Der Umschalter steht **vor** dem Kurs, wo Reiter hingehoeren, und
+    // kostet keine eigene Zeile -- im Popout sind 409 Punkte Hoehe alles,
+    // was es gibt.
+    ViewTabs {
+        id: unterreiter
+
+        anchors.left: parent.left
+        anchors.top: parent.top
+        labels: [Tr.t("market.sub.price", root.lang), Tr.t("market.sub.liq", root.lang)]
+        current: root.sub === "liq" ? 1 : 0
+        fontSize: root.baseFont
+        textColor: root.textColor
+        dimColor: root.dimColor
+        accentColor: root.accentColor
+        z: 40
+        onPicked: function (i) {
+            root.subRequested(i === 1 ? "liq" : "price");
+        }
+    }
+
     Row {
         id: kopf
 
-        anchors.left: parent.left
+        anchors.left: unterreiter.right
+        anchors.leftMargin: root.baseFont * 1.4
         anchors.top: parent.top
         spacing: root.baseFont
 
@@ -580,6 +618,7 @@ Item {
         // kann keine Kerzen zeigen: die Reihe von mempool.space kennt nur
         // Schlusskurse, kein Hoch und Tief.
         TileGoggles {
+            visible: root.sub === "price"
             anchors.verticalCenter: parent.verticalCenter
             width: root.baseFont * 9.5
             alignRight: true
@@ -603,6 +642,7 @@ Item {
         // eine Null in der Mitte. Zwei Massstaebe in einer Flaeche liest
         // niemand.
         TileGoggles {
+            visible: root.sub === "price"
             anchors.verticalCenter: parent.verticalCenter
             width: root.baseFont * 8
             alignRight: true
@@ -763,6 +803,7 @@ Item {
     Canvas {
         id: leinwand
 
+        visible: root.sub === "price"
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
@@ -1026,6 +1067,7 @@ Item {
     MouseArea {
         id: zeigerFeld
 
+        visible: root.sub === "price"
         anchors.fill: leinwand
         anchors.rightMargin: root.padR
         hoverEnabled: true
@@ -1122,7 +1164,8 @@ Item {
         return root.customSecs;
     }
 
-    readonly property bool zeigerDa: root.zeiger >= 0 && root.zeiger < root.sicht.length
+    readonly property bool zeigerDa: root.sub === "price" && root.zeiger >= 0
+                                     && root.zeiger < root.sicht.length
 
     // Senkrechte durch die Kerze unter dem Zeiger
     Rectangle {
@@ -1164,6 +1207,28 @@ Item {
             color: "#11131f"
             font.pixelSize: root.baseFont - 2
         }
+    }
+
+    MarketLiq {
+        visible: root.sub === "liq"
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.topMargin: Math.max(kopf.height, wahl.height, unterreiter.height)
+                           + root.baseFont * 0.6
+        lang: root.lang
+        zeichen: root.zeichen
+        hist: root.liqHist
+        ratio: root.ratio
+        seit: root.liqSeit
+        preis: root.letzterPreis
+        quellen: root.quellen
+        textColor: root.textColor
+        dimColor: root.dimColor
+        accentColor: root.accentColor
+        lineColor: root.lineColor
+        baseFont: root.baseFont
     }
 
     // Nur zum Messen der Preisachse

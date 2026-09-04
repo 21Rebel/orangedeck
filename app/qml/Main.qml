@@ -77,6 +77,8 @@ Window {
     property string marketKind: "candles"
     // Volumenbalken oder CVD unter dem Kurs
     property string marketLower: "volume"
+    // Unterreiter im Markt: Kurs oder Liquidationen
+    property string marketSub: "price"
     property int marketSecs: 259200
     // Ausdrueckliches Fenster im Markt, 0 = keins
     property int marketVon: 0
@@ -156,6 +158,7 @@ Window {
         property alias marketRange: win.marketRange
         property alias marketKind: win.marketKind
         property alias marketLower: win.marketLower
+        property alias marketSub: win.marketSub
         property alias marketSecs: win.marketSecs
         property alias marketVon: win.marketVon
         property alias marketBis: win.marketBis
@@ -253,6 +256,8 @@ Window {
             win.marketKind = value;
         else if (key === "marketLower")
             win.marketLower = value;
+        else if (key === "marketSub")
+            win.marketSub = value;
         else if (key === "marketSecs")
             win.marketSecs = value;
         else if (key === "marketVon")
@@ -325,6 +330,7 @@ Window {
         "marketRange": win.marketRange,
         "marketKind": win.marketKind,
         "marketLower": win.marketLower,
+        "marketSub": win.marketSub,
         "marketSecs": win.marketSecs,
         "marketVon": win.marketVon,
         "marketBis": win.marketBis,

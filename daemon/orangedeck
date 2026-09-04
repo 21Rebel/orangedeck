@@ -90,6 +90,10 @@ CACHE_DIR = (os.environ.get("CACHE_DIRECTORY")
              or os.path.join(os.environ.get("XDG_CACHE_HOME")
                              or os.path.expanduser("~/.cache"), "orangedeck"))
 PRICE_FILE = os.path.join(CACHE_DIR, "prices.json")
+# **Liquidationen gibt es nirgends rueckwirkend zu kaufen.** Was der Dienst
+# einmal gehoert hat, ist unwiederbringlich -- ein Neustart ohne diese Datei
+# waere echter Datenverlust, kein blosses Neuladen.
+LIQ_FILE = os.path.join(CACHE_DIR, "liquidations.json")
 PRICE_MAX_AGE = 3600
 # Wie viele Punkte hoechstens an die Oberflaeche gehen. Am 02.09. gemessen:
 # 634 kB alle zwei Sekunden kosteten 6 % CPU allein fuers `JSON.parse`. Ein
@@ -764,6 +768,11 @@ MARKET_TAPE_KEEP = 400
 # fuer ein laufendes Band zu duenn. Bei tausend fuellt es sich, und wie stark
 # eine Zeile heraussticht, entscheidet ohnehin ihr Betrag.
 MARKET_TAPE_MIN = 1000    # Dollar
+# Liquidationen: gehalten wird nach **Zeit**, nicht nach Anzahl. An einem
+# ruhigen Tag sind das ein paar Dutzend, in einer Stunde Panik tausende -- ein
+# Ring fester Laenge deckte im ersten Fall Tage ab und im zweiten Minuten.
+LIQ_SEKUNDEN = 86400 * 2  # zwei Tage
+LIQ_KEEP = 20000          # Notbremse gegen Speicherwuchs
 MARKET_LINGER = 120       # so lange nach der letzten Abfrage bleibt der Strom
 MARKET_MAX_CANDLES = 400  # mehr zeichnet keine Oberflaeche sinnvoll
 
@@ -793,6 +802,98 @@ def _bybit_trades(msg):
                    t.get("S") == "Buy")
         except (KeyError, TypeError, ValueError):
             continue
+
+
+def _okx_liquidationen(msg):
+    """OKX, Kanal `liquidation-orders`.
+
+    {"arg":{"channel":"liquidation-orders","instType":"SWAP"},
+     "data":[{"instId":"BTC-USDT-SWAP","details":[
+        {"bkPx":"79445.4","sz":"0.3","posSide":"short","side":"buy","ts":"..."}]}]}
+
+    Drei Fallen, alle drei gemessen:
+
+    **`sz` sind Kontrakte, keine Bitcoin.** Fuer BTC-USDT-SWAP ist ein
+    Kontrakt 0,01 BTC (`ctVal` aus `/api/v5/public/instruments`, dazu
+    `ctMult` 1). Wer das uebersieht, zeigt hundertfach zu grosse Betraege.
+
+    **Der Kanal schuettet alle Swaps aus.** Der Filter `instFamily` wird
+    stillschweigend ignoriert -- die Bestaetigung kam ohne ihn zurueck, und
+    es kamen weiter RIVER, CHIP, DASH. Gefiltert wird deshalb hier.
+
+    **`posSide` sagt, was liquidiert wurde**, nicht `side`: `side` ist die
+    Seite der Zwangsorder und damit immer die entgegengesetzte. Ein
+    liquidierter Long wird verkauft.
+    """
+    if str(((msg.get("arg") or {}).get("channel"))) != "liquidation-orders":
+        return
+    for eintrag in msg.get("data") or []:
+        if eintrag.get("instId") != "BTC-USDT-SWAP":
+            continue
+        for d in eintrag.get("details") or []:
+            try:
+                menge = float(d["sz"]) * OKX_KONTRAKT
+                yield (float(d["ts"]) / 1000.0, float(d["bkPx"]), menge,
+                       d.get("posSide") == "long")
+            except (KeyError, TypeError, ValueError):
+                continue
+
+
+def _bybit_liquidationen(msg):
+    """Bybit, Thema `allLiquidation.BTCUSDT`.
+
+    {"topic":"allLiquidation.BTCUSDT","data":[
+       {"T":ms,"s":"BTCUSDT","S":"Buy","v":"0.024","p":"78460.40"}]}
+
+    **`S` ist die Position, nicht die Zwangsorder** -- anders als beim
+    veralteten Thema `liquidation.BTCUSDT` (das es ohnehin nicht mehr gibt:
+    "error:handler not found"). "Buy" heisst also: ein **Long** wurde
+    liquidiert.
+
+    Das stand hier erst falsch herum, und es fiel nur auf, weil eine zweite
+    Quelle danebenlag: waehrend einer Kaskade am 04.09.2026 meldete OKX
+    durchgehend Longs, Bybit durchgehend Shorts -- bei fallendem Kurs, wo nur
+    Longs liquidiert werden. Am rohen Strom nachgesehen: Kurs faellt von
+    78.719 auf 78.651, jede Nachricht traegt `S: "Buy"`, und die
+    Liquidationspreise (78.460, 78.454, ...) liegen **unter** dem Markt --
+    so wird ein Long glattgestellt, nicht ein Short.
+
+    `v` ist eine echte Menge in Bitcoin, keine Kontraktzahl.
+    """
+    if not str(msg.get("topic", "")).startswith(("allLiquidation", "liquidation")):
+        return
+    for d in msg.get("data") or []:
+        try:
+            yield (float(d["T"]) / 1000.0, float(d["p"]), float(d["v"]),
+                   d.get("S") == "Buy")
+        except (KeyError, TypeError, ValueError):
+            continue
+
+
+# Ein Kontrakt bei OKX BTC-USDT-SWAP, nachgesehen unter
+# /api/v5/public/instruments: ctVal 0,01 BTC bei ctMult 1.
+OKX_KONTRAKT = 0.01
+
+# **Binance fehlt hier mit Absicht.** `fstream.binance.com` nimmt die
+# Verbindung an (HTTP 101) und schickt dann nichts -- gemessen mit
+# `!forceOrder@arr`, mit `btcusdt@aggTrade` und mit `markPrice@1s`, das jede
+# Sekunde sendet, unabhaengig vom Handel: null Nachrichten in 15 Sekunden,
+# waehrend der Spot-Strom im selben Lauf 376 lieferte. Das ist keine ruhige
+# Boerse, das ist eine regionale Sperre des Futures-Teils. Eine Quelle, die
+# nur einen roten Punkt beitraegt, ist schlimmer als keine.
+LIQUIDATIONEN = (
+    {"id": "okx", "name": "OKX",
+     "url": "wss://ws.okx.com:8443/ws/v5/public",
+     "sub": {"op": "subscribe",
+             "args": [{"channel": "liquidation-orders", "instType": "SWAP"}]},
+     "ping": "ping", "pingtakt": 20,
+     "parse": _okx_liquidationen},
+    {"id": "bybit-liq", "name": "Bybit",
+     "url": "wss://stream.bybit.com/v5/public/linear",
+     "sub": {"op": "subscribe", "args": ["allLiquidation.BTCUSDT"]},
+     "ping": '{"op":"ping"}', "pingtakt": 18,
+     "parse": _bybit_liquidationen},
+)
 
 
 # Zwei Boersen genuegen fuer den Anfang: eine mit dem groessten Volumen, eine
@@ -899,6 +1000,204 @@ class Market:
 
 
 MARKT = Market()
+
+
+class Liquidationen:
+    """Zwangsliquidationen, wie sie hereinkommen.
+
+    **Es gibt sie nur live.** Keine der Boersen bietet sie rueckwirkend an --
+    weder Binance noch Bybit noch OKX haben dafuer einen REST-Weg, es
+    existiert allein der Strom. Was hier liegt, hat der Dienst selbst gehoert;
+    ein Fenster im Jahr 2021 bleibt zwangslaeufig leer. Das ist keine Luecke
+    im Bau, sondern die Datenlage, und die Oberflaeche sagt es auch so.
+
+    Gehalten wird nach Zeit, nicht nach Anzahl: an einem ruhigen Tag sind das
+    ein paar Dutzend, in einer Stunde Panik tausende. Ein Ring fester Laenge
+    wuerde im ersten Fall Tage abdecken und im zweiten Minuten.
+    """
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        # [ts, preis, menge, istLong, quelle] -- juengste zuletzt
+        self.liste = collections.deque(maxlen=LIQ_KEEP)
+        self.online = {}
+        self.gesehen = set()
+        # Seit wann ueberhaupt zugehoert wird. **Eine obere Schranke der
+        # Abdeckung**, keine Zusage: die Stroeme laufen nur, solange jemand
+        # hinsieht, also kann es danach Luecken geben. Vor diesem Zeitpunkt
+        # gibt es aber sicher nichts, und genau das muss die Oberflaeche
+        # sagen koennen -- sonst sieht eine leere Spur aus wie ein Fehler.
+        self.seit = 0.0
+        self.schmutzig = False
+
+    def add(self, ts, preis, menge, ist_long, quelle=""):
+        if preis <= 0 or menge <= 0:
+            return
+        # **OKX schiebt beim Verbinden Zurueckliegendes nach** -- gemessen
+        # Zeitstempel, die vierzig Minuten alt waren. Ohne Sperre stuenden
+        # dieselben Marken nach jedem Neuverbinden ein zweites Mal im Bild.
+        schluessel = (round(ts, 3), round(preis, 2), round(menge, 6), quelle)
+        with self.lock:
+            if schluessel in self.gesehen:
+                return
+            self.gesehen.add(schluessel)
+            if len(self.gesehen) > LIQ_KEEP * 2:
+                self.gesehen.clear()
+            self.liste.append([round(ts, 2), round(preis, 2), round(menge, 6),
+                               1 if ist_long else 0, quelle])
+            self.schmutzig = True
+            grenze = time.time() - LIQ_SEKUNDEN
+            while self.liste and self.liste[0][0] < grenze:
+                self.liste.popleft()
+
+    def fenster(self, von, bis, hoechstens=400):
+        """Was in einem Zeitfenster liegt -- die groessten zuerst begrenzt.
+
+        Bei einem Sturz gibt es mehr Marken als Bildpunkte. Gezeigt werden
+        dann die **groessten**: eine Liquidation ueber zehn Millionen sagt
+        etwas, tausend zu je zweihundert Dollar sagen dasselbe einmal.
+        """
+        with self.lock:
+            drin = [x for x in self.liste if von <= x[0] <= bis]
+        if len(drin) > hoechstens:
+            drin.sort(key=lambda x: x[1] * x[2], reverse=True)
+            drin = drin[:hoechstens]
+            drin.sort(key=lambda x: x[0])
+        return drin
+
+
+    def histogramm(self, von, bis, tief, hoch, stufen=24):
+        """Wieviel Dollar je Preisstufe liquidiert wurde.
+
+        **Der eigentliche Zweck der Sammlung.** Die Einzelmarken beantworten
+        "wann", das Histogramm beantwortet "wo" -- und das ist die Frage, die
+        vor dem Kurs steht: wo lagen die Positionen, die aufgeben mussten.
+
+        Aufgeteilt wird ueber die Preisspanne, die auch im Bild steht. Eine
+        eigene Skala waere ein zweites Koordinatensystem in derselben
+        Flaeche.
+        """
+        if hoch <= tief or stufen < 2:
+            return []
+        breite = (hoch - tief) / stufen
+        eimer = [[0.0, 0.0] for _ in range(stufen)]
+        with self.lock:
+            drin = [x for x in self.liste if von <= x[0] <= bis]
+        for ts, preis, menge, ist_long, _q in drin:
+            if preis < tief or preis > hoch:
+                continue
+            i = min(stufen - 1, int((preis - tief) / breite))
+            eimer[i][0 if ist_long else 1] += preis * menge
+        # **Auch die leeren Stufen gehen mit.** Wer nur die vollen schickt,
+        # macht aus der Preisachse eine Liste: die Oberflaeche verteilt dann
+        # zwei Treffer ueber die halbe Flaeche, und die Hoehe im Bild sagt
+        # nichts mehr ueber den Preis. Eine Achse hat gleiche Abstaende oder
+        # sie ist keine.
+        return [[round(tief + (i + 0.5) * breite, 2), round(lang), round(kurz)]
+                for i, (lang, kurz) in enumerate(eimer)]
+
+
+    def laden(self):
+        """Was frueher gehoert wurde, zurueckholen."""
+        try:
+            with open(LIQ_FILE) as f:
+                d = json.load(f)
+        except (OSError, ValueError):
+            return
+        grenze = time.time() - LIQ_SEKUNDEN
+        with self.lock:
+            for x in d.get("liste") or []:
+                try:
+                    if float(x[0]) >= grenze:
+                        self.liste.append(x)
+                except (IndexError, TypeError, ValueError):
+                    continue
+            self.seit = float(d.get("seit") or 0.0)
+
+    def sichern(self):
+        if not self.schmutzig:
+            return
+        with self.lock:
+            d = {"seit": round(self.seit), "liste": list(self.liste)}
+            self.schmutzig = False
+        try:
+            os.makedirs(CACHE_DIR, exist_ok=True)
+            tmp = LIQ_FILE + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(d, f, separators=(",", ":"))
+            os.replace(tmp, LIQ_FILE)
+        except OSError as e:
+            sys.stderr.write("Liquidationen nicht zu sichern: %s\n" % e)
+
+
+LIQ = Liquidationen()
+
+
+def run_liq_sichern():
+    """Alle halbe Minute wegschreiben, aber nur wenn sich etwas geaendert hat.
+
+    Nicht bei jeder Marke: in einer Kaskade sind das hunderte je Sekunde, und
+    die Datei waere dann das Teuerste am ganzen Vorgang.
+    """
+    while True:
+        time.sleep(30)
+        LIQ.sichern()
+
+
+def run_liquidationen(quelle):
+    """Ein Faden je Quelle. Wie `run_market`, aber **mit Ping**.
+
+    Der Unterschied ist wesentlich: ein Handelsstrom traegt sich durch seinen
+    eigenen Verkehr, ein Liquidationsstrom ist minutenlang still. Bybit trennt
+    eine untaetige Verbindung, und ohne Ping merkt man das nicht einmal -- die
+    Leseschleife laeuft dann ins Nichts. Genau darauf ist der erste Versuch
+    hier hereingefallen: fuenf Minuten "keine Liquidation", in Wahrheit war
+    die Verbindung nach dreissig Sekunden weg.
+    """
+    backoff = 2
+    while True:
+        if not MARKT.erwuenscht():
+            LIQ.online[quelle["id"]] = False
+            time.sleep(2)
+            continue
+        ws = None
+        try:
+            ws = WebSocket(quelle["url"], timeout=10)
+            if quelle["sub"]:
+                ws.send(json.dumps(quelle["sub"]))
+            LIQ.online[quelle["id"]] = True
+            if not LIQ.seit:
+                LIQ.seit = time.time()
+            backoff = 2
+            letzter_ping = time.time()
+            while MARKT.erwuenscht():
+                if time.time() - letzter_ping > quelle["pingtakt"]:
+                    ws.send(quelle["ping"])
+                    letzter_ping = time.time()
+                try:
+                    raw = ws.recv()
+                except socket.timeout:
+                    # Stille ist hier der Regelfall, kein Fehler
+                    continue
+                if raw is None:
+                    continue
+                try:
+                    msg = json.loads(raw)
+                except ValueError:
+                    continue
+                for ts, preis, menge, ist_long in quelle["parse"](msg):
+                    LIQ.add(ts, preis, menge, ist_long, quelle["id"])
+        except Exception as e:
+            LIQ.online[quelle["id"]] = False
+            sys.stderr.write("Liquidationen %s: %s\n" % (quelle["id"], e))
+            time.sleep(backoff)
+            backoff = min(60, backoff * 2)
+        finally:
+            if ws is not None:
+                try:
+                    ws.close()
+                except Exception:
+                    pass
 
 
 # Fuer einen selbst gewaehlten Zeitraum wird das Raster gesucht, das etwa
@@ -1048,6 +1347,76 @@ def uebersicht():
         return alt if alt else []
     with _uebersicht_lock:
         _uebersicht = (time.time(), aus)
+    return aus
+
+
+_verhaeltnis_lock = threading.Lock()
+_verhaeltnis = (0.0, [])
+
+
+def _hol_json(url, timeout=12):
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode())
+
+
+def verhaeltnis():
+    """Wie viele Konten long stehen und wie viele short, je Boerse.
+
+    **Echte Zahlen der Boersen**, keine Schaetzung -- im Unterschied zu einer
+    Liquidations-Heatmap, die es nirgends frei gibt. Drei Quellen, alle ohne
+    Schluessel, alle in rund einer Sekunde.
+
+    Bemerkenswert: **Binance antwortet hier**, obwohl sein Futures-WebSocket
+    von dieser Leitung aus stumm bleibt (Handshake 101, dann null Bytes in
+    zwoelf Sekunden -- auf Byte-Ebene nachgemessen, mit und ohne
+    Browser-Kennung, waehrend der Spot-Strom im selben Test 26 kB lieferte).
+    Gesperrt ist also der Strom, nicht die Boerse.
+
+    Alle drei nennen einen **Konten**-Anteil, nicht einen Kapitalanteil: 52 %
+    long heisst, dass jedes zweite Konto long steht, nicht dass dort das halbe
+    Geld liegt. Das gehoert dazugesagt, sonst liest man es als Uebergewicht.
+
+    Fuenf Minuten Puffer -- die Boersen rechnen selbst nur alle fuenf Minuten
+    neu.
+    """
+    global _verhaeltnis
+    with _verhaeltnis_lock:
+        wann, daten = _verhaeltnis
+        if daten and time.time() - wann < 300:
+            return daten
+    aus = []
+    try:
+        d = _hol_json("https://www.okx.com/api/v5/rubik/stat/contracts/"
+                      "long-short-account-ratio?ccy=BTC&period=5m")
+        reihe = (d.get("data") or [])[0]
+        # OKX gibt das Verhaeltnis long/short, nicht die Anteile
+        v = float(reihe[1])
+        aus.append({"id": "okx", "name": "OKX", "long": v / (1.0 + v)})
+    except Exception as e:
+        sys.stderr.write("Verhaeltnis okx: %s\n" % e)
+    try:
+        d = _hol_json("https://api.bybit.com/v5/market/account-ratio"
+                      "?category=linear&symbol=BTCUSDT&period=5min&limit=1")
+        r = ((d.get("result") or {}).get("list") or [])[0]
+        aus.append({"id": "bybit", "name": "Bybit", "long": float(r["buyRatio"])})
+    except Exception as e:
+        sys.stderr.write("Verhaeltnis bybit: %s\n" % e)
+    try:
+        d = _hol_json("https://fapi.binance.com/futures/data/"
+                      "globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1")
+        aus.append({"id": "binance", "name": "Binance",
+                    "long": float(d[-1]["longAccount"])})
+    except Exception as e:
+        sys.stderr.write("Verhaeltnis binance: %s\n" % e)
+    for x in aus:
+        x["long"] = round(max(0.0, min(1.0, x["long"])), 4)
+    if not aus:
+        with _verhaeltnis_lock:
+            _wann, alt = _verhaeltnis
+        return alt
+    with _verhaeltnis_lock:
+        _verhaeltnis = (time.time(), aus)
     return aus
 
 
@@ -1764,6 +2133,24 @@ class _Handler(BaseHTTPRequestHandler):
                 else:
                     kerzen = klines(spanne)
                 band, band_letzte = MARKT.band_seit(band_seit)
+                # Die Marken gehoeren in dasselbe Fenster wie die Kerzen --
+                # abgeleitet aus dem, was zurueckkommt, nicht aus dem, was
+                # gefragt wurde: bei "all" weiss nur die Antwort, wo sie
+                # anfaengt.
+                if kerzen:
+                    liq_von, liq_bis = kerzen[0][0], kerzen[-1][0] + 86400
+                else:
+                    liq_von, liq_bis = 0, 0
+                liq = LIQ.fenster(liq_von, liq_bis) if liq_von else []
+                # Das Histogramm ueber **dieselbe** Preisspanne wie das Bild.
+                # Aus den geholten Kerzen abgeleitet, nicht aus den Marken:
+                # sonst haette es eine eigene Skala.
+                if kerzen:
+                    liq_tief = min(k[3] for k in kerzen)
+                    liq_hoch = max(k[2] for k in kerzen)
+                    liq_hist = LIQ.histogramm(liq_von, liq_bis, liq_tief, liq_hoch)
+                else:
+                    liq_hist = []
                 kurs, umgerechnet = markt_kurs(self.feed, waehrung)
                 if kurs != 1.0:
                     # Preise umrechnen, Mengen nicht -- die sind in Bitcoin.
@@ -1776,6 +2163,14 @@ class _Handler(BaseHTTPRequestHandler):
                               for k in kerzen]
                     band = [[t[0], t[1], round(t[2] * kurs, 2),
                              round(t[3] * kurs), t[4], t[5]] for t in band]
+                    # Preise umrechnen, Mengen nicht -- die sind in Bitcoin.
+                    liq = [[x[0], round(x[1] * kurs, 2), x[2], x[3], x[4]]
+                           for x in liq]
+                    # Im Histogramm ist die Preisstufe umzurechnen, die
+                    # Dollarbetraege ebenso -- anders als bei den Mengen, die
+                    # in Bitcoin stehen.
+                    liq_hist = [[round(x[0] * kurs, 2), round(x[1] * kurs),
+                                 round(x[2] * kurs)] for x in liq_hist]
                 self._send(json.dumps({
                     "range": spanne,
                     "cur": waehrung,
@@ -1783,6 +2178,17 @@ class _Handler(BaseHTTPRequestHandler):
                     "candles": kerzen,
                     "tape": band,
                     "tapeLast": band_letzte,
+                    "liq": liq,
+                    "liqHist": liq_hist,
+                    "ratio": verhaeltnis(),
+                    # **Liquidationen gibt es nur live.** Keine Boerse bietet
+                    # sie rueckwirkend an. Damit die Oberflaeche eine leere
+                    # Spur von einer stummen Verbindung unterscheiden kann,
+                    # steht hier, seit wann zugehoert wird.
+                    "liqSince": round(LIQ.seit),
+                    "liqSources": [{"id": q["id"], "name": q["name"],
+                                    "online": bool(LIQ.online.get(q["id"]))}
+                                   for q in LIQUIDATIONEN],
                     "sources": [{"id": q["id"], "name": q["name"],
                                  "online": bool(MARKT.online.get(q["id"]))}
                                 for q in MARKETS],
@@ -2957,6 +3363,11 @@ def main():
     # Ein Faden je Boerse. Sie schlafen, bis jemand den Markt-Reiter oeffnet.
     for _quelle in MARKETS:
         threading.Thread(target=run_market, args=(_quelle,), daemon=True).start()
+    LIQ.laden()
+    for _quelle in LIQUIDATIONEN:
+        threading.Thread(target=run_liquidationen, args=(_quelle,),
+                         daemon=True).start()
+    threading.Thread(target=run_liq_sichern, daemon=True).start()
 
     backoff = 2
     rest_deadline = 0.0
