@@ -56,11 +56,20 @@ Einreichung. Beides braucht den Nutzer.
 
 ### Offene Punkte
 
-1. **Flathub einreichen.** Metadaten und Bauplan sind fertig.
-2. **Pruef-VM**: `flatpak build-bundle` liegt bereit. Der Bau in der VM
-   entfaellt -- Ubuntu 24.04 kann das Projekt nicht bauen (Qt 6.4.2 gegen
-   6.5), das Flatpak bringt sein eigenes Qt mit. In die VM muss zusaetzlich
-   die Laufzeit `org.kde.Platform 6.9`, rund 2 GB.
+1. **Pruef-VM -- zuerst, vor Flathub.** Ein Paket einzureichen, das nie auf
+   einem fremden System lief, waere genau der Fehler, den dieser Tag sechsmal
+   gefunden hat. Das Buendel liegt bereit; der Bau in der VM entfaellt --
+   Ubuntu 24.04 kann das Projekt nicht bauen (Qt 6.4.2 gegen 6.5), das
+   Flatpak bringt sein eigenes Qt mit. In die VM muss zusaetzlich die
+   Laufzeit `org.kde.Platform 6.9`, rund 2 GB.
+
+   **Am 04.09. bewusst nicht gestartet**: 12,4 von 15,7 GB Swap waren belegt,
+   frei 4,4 GB, und eine Ubuntu-Live-Sitzung will 3 bis 4 GB. Das haette die
+   Maschine ins Tauschen getrieben, waehrend niemand danebensass. Braucht ein
+   paar geschlossene Fenster.
+2. **Flathub einreichen.** Alles, was ohne GitHub-Konto geht, ist fertig --
+   Bauplan, Metadaten, fuenf Screenshots, knappe Berechtigungen. Die drei
+   verbleibenden Schritte stehen in `packaging/flathub/EINREICHEN.md`.
 3. **Etappe 3, Rest**: Tonsignal bei grossen Trades. Braucht QtMultimedia --
    nach dem OpenSSL-Fund weiss man, was eine zusaetzliche Bibliothek auf
    Android kostet.
