@@ -70,7 +70,10 @@ Damit sind der Suchfokus, der CVD, die Schriften und das gemerkte Marktfenster
 - **Der Schieber der Zeitachse zieht ohne Verzoegerung.** Siehe unten.
 - **Die Beschriftung des eigenen Zeitraums** waehlt die Einheit nach der
   Groesse statt nach der Teilbarkeit. Nach dem Zoomen stand dort "12215m";
-  jetzt "8,5d".
+  jetzt "8,5d". Wochen sind aus der Anzeige raus (als Eingabe bleiben sie) --
+  neben "30d" waeren sie eine zweite Masseinheit fuer dieselbe
+  Groessenordnung. **Falls der Nutzer sie zurueckwill: eine Zeile in
+  `eigenText`.**
 - **Die Bindungsschleife in `TileGoggles.qml`** ist weg. Ein `width:
   implicitWidth` an einem Text ist eine Schleife, und ein `Row` ueberspringt
   unsichtbare Kinder ohnehin -- die Zeile war ueberfluessig. Alter Bestand;
@@ -152,8 +155,8 @@ Mitgenommen: das QML-Modul hiess noch `BtcFeed`.
 
 Die Verweise sind aufgefrischt (`tools/install-links.sh` -- `fonts.js` ist
 neu und muss verlinkt sein, sonst laedt keine Ansicht mehr), die
-DMS-Ueberlagerung ist neu gebaut, das Flatpak ebenfalls (Stand 04.09.2026,
-13:57 UTC). **Ein Schritt fehlt und braucht eine Entscheidung**, weil er die
+DMS-Ueberlagerung ist neu gebaut, das Flatpak ebenfalls -- es traegt eine
+Kopie und wurde nach jedem Durchgang nachgezogen, zuletzt um 14:05 UTC. **Ein Schritt fehlt und braucht eine Entscheidung**, weil er die
 laufende Leiste des Nutzers neu startet:
 
     systemctl --user restart dms        # setzt den Dashboard-Tab in Kraft
@@ -182,10 +185,8 @@ neu oeffnen.
    der `workflow`-Scope: einmal `gh auth refresh -s workflow`. Die Schriften
    sind vorbereitet.
 6. **Flathub.**
-7. **Elf Commits liegen unveroeffentlicht**, seit `98a80198` nichts
-   gepusht. Der Push geht nur ueber den Zugangshelfer im Repo.
-8. **Das Flatpak ist seit dem Zeittext wieder einen Commit hinterher** -- es
-   traegt eine Kopie.
+7. **Alles seit `98a80198` liegt unveroeffentlicht** -- der ganze 04.09.
+   ist noch nicht gepusht. Der Push geht nur ueber den Zugangshelfer im Repo.
 
 ### Wie man anfaengt
 
