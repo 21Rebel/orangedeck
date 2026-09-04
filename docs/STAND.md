@@ -149,12 +149,11 @@ Mitgenommen: das QML-Modul hiess noch `BtcFeed`.
 
 Die Verweise sind aufgefrischt (`tools/install-links.sh` -- `fonts.js` ist
 neu und muss verlinkt sein, sonst laedt keine Ansicht mehr), die
-DMS-Ueberlagerung ist neu gebaut. **Zwei Schritte fehlen und brauchen eine
-Entscheidung:**
+DMS-Ueberlagerung ist neu gebaut, das Flatpak ebenfalls (Stand 04.09.2026,
+13:57 UTC). **Ein Schritt fehlt und braucht eine Entscheidung**, weil er die
+laufende Leiste des Nutzers neu startet:
 
     systemctl --user restart dms        # setzt den Dashboard-Tab in Kraft
-    flatpak-builder --user --install --force-clean \
-        build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
 
 Das Quickshell-Fenster laedt nicht von selbst nach -- einmal schliessen und
 neu oeffnen.
@@ -180,10 +179,8 @@ neu oeffnen.
    der `workflow`-Scope: einmal `gh auth refresh -s workflow`. Die Schriften
    sind vorbereitet.
 6. **Flathub.**
-7. **Acht Commits liegen unveroeffentlicht**, seit `98a80198` nichts
+7. **Zehn Commits liegen unveroeffentlicht**, seit `98a80198` nichts
    gepusht. Der Push geht nur ueber den Zugangshelfer im Repo.
-8. **Das Flatpak ist wieder veraltet** -- es traegt eine Kopie, und seit dem
-   letzten Bau kam der Schieber dazu.
 
 ### Wie man anfaengt
 
