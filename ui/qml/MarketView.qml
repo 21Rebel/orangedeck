@@ -368,6 +368,20 @@ Item {
     // Der Schieber unter der Zeitachse. In sehr flachen Flaechen faellt er
     // weg -- dort ist die Kurve selbst schon knapp.
     readonly property bool schieberDa: root.height >= 260 && root.sub === "price"
+
+    // ----------------------------------------------------- Platz im Kopf
+    // **Der Unterreiter hat die Kopfzeile nach rechts geschoben**, und im
+    // Popout liefen die Bedienelemente hinein: "31.801 $" lag ueber
+    // "10.203 Trades" lag ueber "Binance". Die Zeile wird nicht schmaler,
+    // also muss etwas weichen -- und zwar in der Reihenfolge, in der es
+    // entbehrlich ist.
+    //
+    // Der Kurs bleibt immer. Danach fallen die Boersenpunkte, dann die
+    // Trade-Zahl, dann die beiden Umschalter der Darstellung -- der
+    // Zeitraum bleibt, ohne ihn ist der Reiter nicht mehr bedienbar.
+    readonly property bool platzQuellen: root.width > root.baseFont * 66
+    readonly property bool platzTrades: root.width > root.baseFont * 56
+    readonly property bool platzUmschalter: root.width > root.baseFont * 44
     readonly property real schieberHoehe: root.schieberDa ? root.baseFont * 1.7 : 0
     readonly property real feldBreite: Math.max(1, leinwand.width - root.padR)
     readonly property real volHoehe: (leinwand.height - root.padB) * 0.26
@@ -537,7 +551,14 @@ Item {
 
         anchors.left: unterreiter.right
         anchors.leftMargin: root.baseFont * 1.4
+        // **Ein rechter Anker mit `clip`** als letzte Sicherung: was trotz
+        // aller Stufen nicht passt, wird abgeschnitten statt uebereinander
+        // gezeichnet. Ein halber Text ist unschoen, zwei uebereinander sind
+        // unlesbar.
+        anchors.right: wahl.left
+        anchors.rightMargin: root.baseFont * 0.6
         anchors.top: parent.top
+        clip: true
         spacing: root.baseFont
 
         Text {
@@ -554,7 +575,7 @@ Item {
         // ("14:19:5553 Trades").
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            visible: !root.zeigerDa && root.tradeZahl > 0
+            visible: root.platzTrades && !root.zeigerDa && root.tradeZahl > 0
             text: Tr.t("market.trades", root.lang, Tr.group(root.tradeZahl, root.lang))
             color: root.dimColor
             font.pixelSize: root.baseFont - 2
@@ -609,7 +630,7 @@ Item {
         // Welche Boerse gerade haengt -- ohne das sieht man einer flachen
         // Kurve nicht an, ob der Markt ruhig ist oder die Verbindung weg.
         Repeater {
-            model: root.quellen
+            model: root.platzQuellen ? root.quellen : []
 
             Row {
                 required property var modelData
@@ -647,7 +668,7 @@ Item {
         // kann keine Kerzen zeigen: die Reihe von mempool.space kennt nur
         // Schlusskurse, kein Hoch und Tief.
         TileGoggles {
-            visible: root.sub === "price"
+            visible: root.sub === "price" && root.platzUmschalter
             anchors.verticalCenter: parent.verticalCenter
             width: root.baseFont * 9.5
             alignRight: true
@@ -671,7 +692,7 @@ Item {
         // eine Null in der Mitte. Zwei Massstaebe in einer Flaeche liest
         // niemand.
         TileGoggles {
-            visible: root.sub === "price"
+            visible: root.sub === "price" && root.platzUmschalter
             anchors.verticalCenter: parent.verticalCenter
             width: root.baseFont * 8
             alignRight: true
