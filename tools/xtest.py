@@ -11,6 +11,9 @@ fuer die Sitzung des Nutzers.
 
 Braucht `python-xlib` und `libXtst`.
 """
+import sys
+import time
+
 from Xlib import display, X
 from Xlib.ext import xtest
 
@@ -53,6 +56,29 @@ def rad(hoch=True, mal=1):
         xtest.fake_input(d, X.ButtonPress, taste); d.sync()
         xtest.fake_input(d, X.ButtonRelease, taste); d.sync()
         time.sleep(0.05)
+
+# Tippen: XTEST kennt nur Tastencodes, keine Zeichen. Der Weg fuehrt ueber
+# das Keysym und die Tastaturbelegung des Servers.
+def taste(name):
+    from Xlib import XK
+    ks = XK.string_to_keysym(name)
+    code = d.keysym_to_keycode(ks)
+    xtest.fake_input(d, X.KeyPress, code)
+    xtest.fake_input(d, X.KeyRelease, code)
+    d.sync()
+    time.sleep(0.03)
+
+
+def tippe(text):
+    for z in text:
+        name = {".": "period", ",": "comma", "-": "minus", " ": "space",
+                ":": "colon", "/": "slash"}.get(z)
+        if name is None and z.isdigit():
+            name = z
+        if name is None:
+            name = z
+        taste(name)
+
 
 def ziehen(x0, y0, x1, y1, schritte=25):
     maus_nach(x0, y0); time.sleep(0.15)
