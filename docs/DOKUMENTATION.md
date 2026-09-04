@@ -2711,3 +2711,51 @@ Android 14, Direktbezug, kein Dienst: Block 965.505, 93.592 im Mempool,
 Eine Beobachtung fuer spaeter: auf dem hohen, schmalen Bildschirm steht die
 Halde als schraege Flaeche statt als Rechteck. Das ist keine Fehlfunktion,
 aber ein Seitenverhaeltnis, das die Packung so noch nicht gesehen hat.
+
+
+## Zwei Flatpak-Bauplaene, und warum es zwei sein muessen
+
+Bis zum 04.09.2026 gab es nur einen, und der baute aus dem Arbeitsverzeichnis
+(`type: dir`, `path: ../..`). Der Kommentar darin nannte den Grund: *solange
+es kein oeffentliches Verzeichnis gibt.* **Diese Bedingung ist seit dem
+03.09. hinfaellig** -- das Repo ist oeffentlich --, der Bauplan war es aber
+noch.
+
+Zwei Dinge waeren daran gescheitert:
+
+- **Flathub nimmt so einen Bauplan nicht an.** Dort muss die Quelle ein
+  festgenagelter Commit sein. Ein Zweigname genuegt nicht: dann baut jeder
+  Lauf etwas anderes, und niemand kann sagen, welcher Quelltext in einem
+  ausgelieferten Paket steckt.
+- **Ein CI-Laeufer hat kein Arbeitsverzeichnis.** Er klont das Repo; `path:
+  ../..` zeigt dort ins Leere. Ein Windows- oder macOS-Workflow waere sofort
+  darauf gelaufen, ebenso ein Flatpak-Bau in Actions.
+
+Jetzt liegen zwei nebeneinander:
+
+| | |
+|---|---|
+| `store._21rebel.orangedeck.yml` | zum **Arbeiten** -- aus dem Verzeichnis, Aenderung sofort sichtbar, ohne Push |
+| `store._21rebel.orangedeck.git.yml` | zum **Ausliefern** -- aus dem oeffentlichen Repo, auf einen Commit festgenagelt |
+
+**Wer einen aendert, muss den anderen mitziehen.** Der Hinweis steht in beiden
+Dateien; eine gemeinsame Grundlage waere schoener, aber flatpak-manifest
+kennt kein Einbinden.
+
+Gegengeprueft am 04.09.2026: der Auslieferungs-Bauplan baut aus nichts als
+Repo-Adresse und Commit durch (43 MB, `orangedeck`, `orangedeck-app`,
+`orangedeck-launch`).
+
+### Zwei Fallen dabei
+
+**Die Skip-Liste vergisst man.** Sie zaehlt auf, was `type: dir` **nicht**
+mitkopieren soll. Neue Baubaeume stehen nicht von selbst darin, und dann
+wandern Gigabyte in jeden Flatpak-Bau -- `build-flatpak-repo`,
+`build-android`, `build-openssl-android` sind jetzt drin. Dieselbe Luecke hat
+am selben Tag 200 OSTree-Objekte ins Git-Repo gespuelt, weil `.gitignore` nur
+`build-flatpak/` kannte und nicht `build-flatpak-repo/`.
+
+**Zustands- und Zielverzeichnis muessen auf demselben Dateisystem liegen.**
+Sonst bricht flatpak-builder mit "The state dir is not on the same filesystem
+as the target dir" ab. Beim Bauen in `/tmp` (hier tmpfs) also
+`--state-dir=` mitgeben.

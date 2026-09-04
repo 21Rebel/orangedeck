@@ -1,13 +1,19 @@
 # Flatpak-Bauplan.
 #
-# **Das hier ist der Bauplan zum Arbeiten**, nicht zum Ausliefern: er baut aus
-# dem Arbeitsverzeichnis (`type: dir`), damit man eine Aenderung sofort im
-# Flatpak sehen kann, ohne sie vorher zu pushen.
+# **Das hier ist der Bauplan zum Ausliefern.** Er zieht aus dem oeffentlichen
+# Repo und ist auf einen Commit festgenagelt -- **Flathub nimmt nur so einen**,
+# und in einem CI-Lauf gibt es kein Arbeitsverzeichnis, aus dem man bauen
+# koennte.
 #
-# Zum Ausliefern gibt es daneben `...git.yml`. Der zieht aus dem
-# oeffentlichen Repo und ist auf einen Commit festgenagelt. **Flathub nimmt
-# nur den**, und in einem CI-Lauf gibt es ohnehin kein Arbeitsverzeichnis.
-# Wer eines von beiden aendert, muss das andere mitziehen.
+# Daneben liegt der Bauplan zum Arbeiten (ohne `.git` im Namen). Der baut aus
+# dem Arbeitsverzeichnis, damit man eine Aenderung sofort sieht, ohne sie
+# vorher zu pushen. **Wer eines von beiden aendert, muss das andere
+# mitziehen.**
+#
+# Beim Veroeffentlichen den `commit` unten auf den Stand setzen, der
+# ausgeliefert werden soll -- ein Zweigname waere hier falsch: dann baut
+# jeder Lauf etwas anderes, und niemand kann sagen, was in einem Paket
+# steckt.
 #
 #   flatpak-builder --user --install --force-clean \
 #       build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
@@ -72,13 +78,6 @@ modules:
       - install -Dm644 packaging/flatpak/store._21rebel.orangedeck.metainfo.xml
         /app/share/metainfo/store._21rebel.orangedeck.metainfo.xml
     sources:
-      - type: dir
-        path: ../..
-        skip:
-          - build
-          - build-flatpak
-          - build-flatpak-repo
-          - build-android
-          - build-openssl-android
-          - .flatpak-builder
-          - upstream
+      - type: git
+        url: https://github.com/21Rebel/orangedeck.git
+        commit: 3234e0dde31a989702c54b28a74ccea2b3eabdbb
