@@ -43,6 +43,8 @@ ShellRoot {
         property string priceSpan: "30d"
         property string marketRange: "24h"
         property string marketKind: "candles"
+        // Volumenbalken oder CVD unter dem Kurs
+        property string marketLower: "volume"
         property int marketSecs: 259200
         // Ausdrueckliches Fenster im Markt, 0 = keins
         property int marketVon: 0
@@ -103,6 +105,7 @@ ShellRoot {
             "priceSpan": priceSpan,
             "marketRange": marketRange,
             "marketKind": marketKind,
+            "marketLower": marketLower,
             "marketSecs": marketSecs,
             "marketVon": marketVon,
             "marketBis": marketBis,
@@ -174,6 +177,8 @@ ShellRoot {
                 marketRange = value;
             else if (key === "marketKind")
                 marketKind = value;
+            else if (key === "marketLower")
+                marketLower = value;
             else if (key === "marketSecs")
                 marketSecs = value;
             else if (key === "marketVon")
@@ -247,6 +252,7 @@ ShellRoot {
                 "priceSpan": priceSpan,
                 "marketRange": marketRange,
                 "marketKind": marketKind,
+                "marketLower": marketLower,
                 "marketSecs": marketSecs,
                 "marketVon": marketVon,
                 "marketBis": marketBis,
@@ -328,6 +334,8 @@ ShellRoot {
                         win.marketRange = v.marketRange;
                     if (typeof v.marketKind === "string")
                         win.marketKind = v.marketKind;
+                    if (typeof v.marketLower === "string")
+                        win.marketLower = v.marketLower;
                     if (typeof v.marketSecs === "number")
                         win.marketSecs = v.marketSecs;
                     if (typeof v.marketVon === "number")

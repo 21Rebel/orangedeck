@@ -75,6 +75,8 @@ Window {
     // Markt-Reiter: Zeitraum, Darstellung, eigener Zeitraum in Sekunden
     property string marketRange: "24h"
     property string marketKind: "candles"
+    // Volumenbalken oder CVD unter dem Kurs
+    property string marketLower: "volume"
     property int marketSecs: 259200
     // Ausdrueckliches Fenster im Markt, 0 = keins
     property int marketVon: 0
@@ -153,6 +155,7 @@ Window {
         property alias priceSpan: win.priceSpan
         property alias marketRange: win.marketRange
         property alias marketKind: win.marketKind
+        property alias marketLower: win.marketLower
         property alias marketSecs: win.marketSecs
         property alias marketVon: win.marketVon
         property alias marketBis: win.marketBis
@@ -248,6 +251,8 @@ Window {
             win.marketRange = value;
         else if (key === "marketKind")
             win.marketKind = value;
+        else if (key === "marketLower")
+            win.marketLower = value;
         else if (key === "marketSecs")
             win.marketSecs = value;
         else if (key === "marketVon")
@@ -319,6 +324,7 @@ Window {
         "priceSpan": win.priceSpan,
         "marketRange": win.marketRange,
         "marketKind": win.marketKind,
+        "marketLower": win.marketLower,
         "marketSecs": win.marketSecs,
         "marketVon": win.marketVon,
         "marketBis": win.marketBis,

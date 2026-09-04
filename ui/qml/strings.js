@@ -104,6 +104,8 @@ var S = {
     "market.custom": ["Eigener Zeitraum", "Custom", "Personalizado", "Personnalisé", "Personalizzato", "Personalizado", "Aangepast", "Свой период", "カスタム", "自定义", "Personalizado", "Własny", "Vlastní"],
     "market.candles": ["Kerzen", "Candles", "Velas", "Chandelles", "Candele", "Velas", "Kaarsen", "Свечи", "ローソク", "蜡烛", "Velas", "Świece", "Svíčky"],
     "market.line": ["Kurve", "Line", "Línea", "Courbe", "Linea", "Linha", "Lijn", "Линия", "ライン", "折线", "Linha", "Linia", "Čára"],
+    "market.volume": ["Volumen", "Volume", "Volumen", "Volume", "Volume", "Volume", "Volume", "Объём", "出来高", "成交量", "Volume", "Wolumen", "Objem"],
+    "market.cvd": ["CVD", "CVD", "CVD", "CVD", "CVD", "CVD", "CVD", "CVD", "CVD", "CVD", "CVD", "CVD", "CVD"],
     "set.marketRange": ["Zeitraum im Markt", "Market range", "Intervalo del mercado", "Période du marché", "Periodo di mercato", "Período do mercado", "Marktperiode", "Период рынка", "市場の期間", "市场区间", "Período do mercado", "Zakres rynku", "Období trhu"],
     "set.crosshair": ["Fadenkreuz", "Crosshair", "Retícula", "Réticule", "Mirino", "Mira", "Draadkruis", "Перекрестие", "十字線", "十字线", "Mira", "Celownik", "Nitkový kříž"],
     "set.crosshairHelp": ["Linien am Zeiger, mit dem Preis an der Achse", "Lines at the cursor, with the price on the axis", "Líneas en el cursor, con el precio en el eje", "Lignes au curseur, avec le prix sur l'axe", "Linee al cursore, con il prezzo sull'asse", "Linhas no cursor, com o preço no eixo", "Lijnen bij de cursor, met de prijs op de as", "Линии у курсора с ценой на оси", "カーソル位置の線と軸上の価格", "光标处的辅助线与坐标轴价格", "Linhas no cursor, com a cotação no eixo", "Linie przy kursorze z ceną na osi", "Čáry u kurzoru s cenou na ose"],

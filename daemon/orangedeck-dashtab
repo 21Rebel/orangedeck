@@ -104,6 +104,7 @@ Item {
     property string priceSpan: SettingsData.getPluginSetting(pid, "priceSpan", "30d")
     property string marketRange: SettingsData.getPluginSetting(pid, "marketRange", "24h")
     property string marketKind: SettingsData.getPluginSetting(pid, "marketKind", "candles")
+    property string marketLower: SettingsData.getPluginSetting(pid, "marketLower", "volume")
     property int marketSecs: SettingsData.getPluginSetting(pid, "marketSecs", 259200)
     property int marketVon: SettingsData.getPluginSetting(pid, "marketVon", 0)
     property int marketBis: SettingsData.getPluginSetting(pid, "marketBis", 0)
@@ -155,6 +156,7 @@ Item {
         "priceSpan": priceSpan,
         "marketRange": marketRange,
         "marketKind": marketKind,
+        "marketLower": marketLower,
         "marketSecs": marketSecs,
         "marketVon": marketVon,
         "marketBis": marketBis,

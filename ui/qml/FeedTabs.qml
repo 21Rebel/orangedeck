@@ -260,6 +260,7 @@ Item {
         panelColor: root.panelColor
         range: root.o("marketRange", "24h")
         kind: root.o("marketKind", "candles")
+        lower: root.o("marketLower", "volume")
         customSecs: root.o("marketSecs", 259200)
         vonZeit: root.o("marketVon", 0)
         bisZeit: root.o("marketBis", 0)
@@ -275,6 +276,9 @@ Item {
         }
         onKindRequested: function (k) {
             root.optRequested("marketKind", k);
+        }
+        onLowerRequested: function (l) {
+            root.optRequested("marketLower", l);
         }
         onCustomSecsRequested: function (sek) {
             root.optRequested("marketSecs", sek);

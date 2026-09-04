@@ -26,6 +26,8 @@ Item {
     // ihn, ebenso die Darstellung und den selbst gewaehlten Zeitraum.
     property string range: "24h"
     property string kind: "candles"      // candles | line
+    // Was unter dem Kurs steht: die Volumenbalken oder der CVD.
+    property string lower: "volume"      // volume | cvd
     property int customSecs: 259200      // drei Tage als Vorgabe
     // Fadenkreuz und laufendes Band -- beides einschaltbar
     property bool crosshair: true
@@ -46,6 +48,7 @@ Item {
     signal rangeRequested(string r)
     signal kindRequested(string k)
     signal customSecsRequested(int secs)
+    signal lowerRequested(string l)
     // Von und Bis gehen als Paar zurueck -- einzeln waeren sie zwischendurch
     // widerspruechlich (ein Von ohne Bis ist kein Fenster).
     signal vonBisRequested(int von, int bis)
@@ -64,6 +67,11 @@ Item {
     readonly property var darstellungen: [
         { "k": "candles", "l": Tr.t("market.candles", root.lang) },
         { "k": "line", "l": Tr.t("market.line", root.lang) }
+    ]
+
+    readonly property var unterarten: [
+        { "k": "volume", "l": Tr.t("market.volume", root.lang) },
+        { "k": "cvd", "l": Tr.t("market.cvd", root.lang) }
     ]
 
     property var kerzen: []
@@ -217,6 +225,41 @@ Item {
     }
     readonly property real letzterPreis: root.sicht.length
                                          ? root.sicht[root.sicht.length - 1][4] : 0
+
+    // ------------------------------------------------------------- CVD
+    // Kauf minus Verkauf, aufsummiert. Er beantwortet die Frage, die eine
+    // Kerze offen laesst: **wer hat den Kurs bewegt**. Steigt der Kurs und
+    // faellt der CVD, kauft niemand -- es wird nur nicht mehr verkauft.
+    //
+    // Aufsummiert wird ueber das **gezeigte Fenster**, beginnend bei null.
+    // Ein absoluter Stand haette keine Bedeutung: die Reihe beginnt dort, wo
+    // die Boerse ihre Kerzen beginnt, und niemand liest einen Wert von 2017
+    // ab. Verglichen wird immer innerhalb des Bildes.
+    readonly property var cvd: {
+        var aus = [];
+        var summe = 0;
+        for (var i = 0; i < root.sicht.length; i++) {
+            var k = root.sicht[i];
+            summe += (k[5] || 0) - (k[6] || 0);
+            aus.push(summe);
+        }
+        return aus;
+    }
+
+    // Die Null gehoert immer ins Bild -- ohne sie sieht eine fallende Reihe
+    // im oberen Drittel wie ein Ueberschuss aus.
+    readonly property real cvdTief: {
+        var m = 0;
+        for (var i = 0; i < root.cvd.length; i++)
+            m = Math.min(m, root.cvd[i]);
+        return m;
+    }
+    readonly property real cvdHoch: {
+        var m = 0;
+        for (var i = 0; i < root.cvd.length; i++)
+            m = Math.max(m, root.cvd[i]);
+        return m;
+    }
 
     // ------------------------------------------------------------ Geometrie
     // **Einmal gerechnet, dreifach benutzt**: von der Leinwand, vom Fadenkreuz
@@ -462,6 +505,29 @@ Item {
             }
         }
 
+        // Was unter dem Kurs steht. Ein eigener Umschalter statt beides
+        // uebereinander: die Balken zaehlen von null nach oben, der CVD hat
+        // eine Null in der Mitte. Zwei Massstaebe in einer Flaeche liest
+        // niemand.
+        TileGoggles {
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.baseFont * 8
+            alignRight: true
+            labelKey: ""
+            modes: root.unterarten
+            mode: root.lower
+            counts: []
+            total: 0
+            lang: root.lang
+            textColor: root.textColor
+            dimColor: root.dimColor
+            accentColor: root.accentColor
+            uiFont: root.baseFont
+            onPicked: function (m) {
+                root.lowerRequested(m);
+            }
+        }
+
         // Eigener Zeitraum: eine Zahl mit Einheit, etwa "72h" oder "90d".
         // Ein Kalender mit Von und Bis waere ein eigenes Bauteil; hierfuer
         // genuegt, was man ohnehin tippen wuerde.
@@ -692,7 +758,7 @@ Item {
                 }
 
                 // ---- Volumen darunter -------------------------------------
-                if (root.maxVol > 0) {
+                if (root.lower === "volume" && root.maxVol > 0) {
                     var basis = height - padB;
                     if (k.length > 6) {
                         // Live-Faecher: Kauf und Verkauf gestapelt
@@ -709,6 +775,56 @@ Item {
                         ctx.fillRect(x, basis - hVol, koerper, hVol);
                     }
                 }
+            }
+
+            // ---- CVD statt der Balken --------------------------------------
+            // **Nach der Schleife**: eine Linie ist keine Folge von Balken,
+            // sie braucht alle Punkte auf einmal.
+            if (root.lower === "cvd") {
+                var cBasis = height - padB;
+                var cLo = root.cvdTief, cHi = root.cvdHoch;
+                var cSpanne = (cHi - cLo) || 1;
+
+                function yCvd(v) {
+                    return cBasis - volHoehe * (v - cLo) / cSpanne;
+                }
+
+                // Die Nulllinie zuerst -- an ihr wird abgelesen, ob die
+                // Kaeufer oder die Verkaeufer vorn liegen.
+                var yNull = yCvd(0);
+                ctx.strokeStyle = root.lineColor;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, Math.round(yNull) + 0.5);
+                ctx.lineTo(breiteGesamt, Math.round(yNull) + 0.5);
+                ctx.stroke();
+
+                var letzterCvd = root.cvd.length ? root.cvd[root.cvd.length - 1] : 0;
+                var cvdFarbe = letzterCvd >= 0 ? root.upColor : root.downColor;
+
+                // Flaeche zwischen Linie und Null, damit man die Richtung
+                // auch aus dem Augenwinkel sieht
+                ctx.beginPath();
+                ctx.moveTo(kerzeBreite / 2, yNull);
+                for (i = 0; i < n; i++)
+                    ctx.lineTo(i * kerzeBreite + kerzeBreite / 2, yCvd(root.cvd[i]));
+                ctx.lineTo((n - 1) * kerzeBreite + kerzeBreite / 2, yNull);
+                ctx.closePath();
+                ctx.fillStyle = Qt.rgba(cvdFarbe.r, cvdFarbe.g, cvdFarbe.b, 0.16);
+                ctx.fill();
+
+                ctx.strokeStyle = cvdFarbe;
+                ctx.lineWidth = 1.4;
+                ctx.lineJoin = "round";
+                ctx.beginPath();
+                for (i = 0; i < n; i++) {
+                    var xc = i * kerzeBreite + kerzeBreite / 2;
+                    if (i === 0)
+                        ctx.moveTo(xc, yCvd(root.cvd[i]));
+                    else
+                        ctx.lineTo(xc, yCvd(root.cvd[i]));
+                }
+                ctx.stroke();
             }
 
             // Zeitachse: Anfang und Ende
@@ -758,10 +874,18 @@ Item {
             if (!root.zeigerDa)
                 return "";
             var k = root.sicht[root.zeiger];
-            return root.zeitpunkt(k[0]) + "    O " + Tr.group(k[1], root.lang)
-                 + "   H " + Tr.group(k[2], root.lang)
-                 + "   L " + Tr.group(k[3], root.lang)
-                 + "   C " + Tr.group(k[4], root.lang);
+            var zeile = root.zeitpunkt(k[0]) + "    O " + Tr.group(k[1], root.lang)
+                      + "   H " + Tr.group(k[2], root.lang)
+                      + "   L " + Tr.group(k[3], root.lang)
+                      + "   C " + Tr.group(k[4], root.lang);
+            // Steht der CVD unten, gehoert sein Wert an dieser Stelle dazu --
+            // sonst liest man eine Linie ohne Achse ab.
+            if (root.lower === "cvd" && root.zeiger < root.cvd.length) {
+                var v = root.cvd[root.zeiger];
+                zeile += "   CVD " + (v >= 0 ? "+" : "\u2212")
+                       + Tr.fixed(Math.abs(v), 1, root.lang) + " \u20bf";
+            }
+            return zeile;
         }
         color: root.textColor
         font.pixelSize: root.baseFont - 2

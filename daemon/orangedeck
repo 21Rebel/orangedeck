@@ -968,11 +968,18 @@ def klines(spanne, symbol="BTCUSDT", von=0, bis=0):
     aus = []
     for k in roh:
         try:
-            # [Oeffnungszeit, O, H, L, C, Volumen, ...] -- der Rest interessiert
-            # nicht und wird gar nicht erst weitergereicht.
+            # [Oeffnungszeit, O, H, L, C, Volumen, Schluss, Umsatz, Trades,
+            #  Kaufvolumen, ...]. Feld 9 ist das Volumen der Trades, die in
+            # den Brief gegangen sind -- gekauft; der Rest ist verkauft.
+            # **Damit steht der Kauf-Verkauf-Unterschied fuer jeden Zeitraum
+            # zur Verfuegung**, nicht nur fuer die Sekundenfaecher der letzten
+            # Stunde. Der CVD haengt daran.
+            volumen = float(k[5])
+            kauf = float(k[9])
             aus.append([int(k[0]) // 1000, round(float(k[1]), 2),
                         round(float(k[2]), 2), round(float(k[3]), 2),
-                        round(float(k[4]), 2), round(float(k[5]), 3)])
+                        round(float(k[4]), 2), round(kauf, 3),
+                        round(max(0.0, volumen - kauf), 3)])
         except (IndexError, TypeError, ValueError):
             continue
     with _klines_lock:
@@ -1673,8 +1680,12 @@ class _Handler(BaseHTTPRequestHandler):
                 kurs, umgerechnet = markt_kurs(self.feed, waehrung)
                 if kurs != 1.0:
                     # Preise umrechnen, Mengen nicht -- die sind in Bitcoin.
+                    # **Die Mengen muessen mit**: Kauf und Verkauf stehen
+                    # dahinter, und ohne sie faellt der CVD aus, sobald jemand
+                    # in Euro rechnet.
                     kerzen = [[k[0], round(k[1] * kurs, 2), round(k[2] * kurs, 2),
-                               round(k[3] * kurs, 2), round(k[4] * kurs, 2), k[5]]
+                               round(k[3] * kurs, 2), round(k[4] * kurs, 2)]
+                              + list(k[5:])
                               for k in kerzen]
                     band = [[t[0], t[1], round(t[2] * kurs, 2),
                              round(t[3] * kurs), t[4], t[5]] for t in band]
