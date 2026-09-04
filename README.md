@@ -27,6 +27,25 @@ Die Daten kommen von [mempool.space](https://mempool.space) (kein eigener Node
 noetig) und, allein fuer den Markt-Reiter, von den oeffentlichen
 Handelsstroemen von Binance und Bybit. Ohne Schluessel, ohne Anmeldung.
 
+## Wo es laeuft, und wie gut geprueft
+
+Zwischen "baut" und "laeuft" liegt mehr, als man denkt -- dem Android-Paket
+fehlte monatelang unbemerkt TLS. Deshalb hier getrennt:
+
+| System | Baut | Gelaufen |
+|---|---|---|
+| Linux (Arch, Qt 6.11) | ja | taeglich, alle fuenf Wirte |
+| Linux (Flatpak auf Ubuntu 24.04) | ja | **ja**, 04.09.2026 in einer VM |
+| Android | ja | ja, im Emulator (x86_64) |
+| Windows | ja, unsigniert | **noch von niemandem** |
+| macOS | ja, unsigniert | **noch von niemandem** |
+
+Windows und macOS entstehen bei jedem Push in der Baustrecke
+(`.github/workflows/build.yml`) und sind **ohne Signatur** -- SmartScreen und
+Gatekeeper werden warnen. Ein Zertifikat kostet 200-400 EUR im Jahr, das
+Apple-Programm 99; das Projekt soll nichts kosten. Flathub signiert selbst,
+dort stellt sich die Frage nicht.
+
 ## Aufbau
 
     daemon/           orangedeck (Python, stdlib): holt die Daten, bietet sie

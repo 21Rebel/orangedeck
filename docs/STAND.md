@@ -4,6 +4,108 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## TAGESABSCHLUSS 04.09.2026 -- wo das Projekt steht
+
+> Der Abschnitt hier ist der Einstieg fuer den naechsten Tag. Alles darunter
+> ist Journal und erklaert, wie es dazu kam.
+
+### Der Stand in einem Satz
+
+OrangeDeck ist fertig gebaut, laeuft auf **fuenf Wirten** (eigenes Fenster,
+quickshell, DMS-Dashboard, DMS-Panel, DMS-Widget) und auf **vier Systemen**
+(Linux, Windows, macOS, Android) -- und ist zum ersten Mal auf einem Rechner
+gelaufen, der nichts von diesem Projekt weiss. **Was jetzt fehlt, ist nur
+noch die Einreichung bei Flathub, und die haengt an einem Menschen.**
+
+### Was heute dazugekommen ist
+
+| Etappe | Stand |
+|---|---|
+| CVD im Markt-Reiter | fertig, gemessen (Binance-Feld 9) |
+| Liquidationen (`MarketLiq.qml`) | fertig, **gemessen** -- OKX + Bybit |
+| Liquidations-Heatmap (`MarketHeat.qml`) | fertig, **Modell**, als SCHAETZUNG gekennzeichnet |
+| Schieber der Zeitachse ohne Verzoegerung | fertig |
+| Zeiteinheit springt auf die naechsthoehere | fertig |
+| Baustrecke Linux/Windows/macOS/Flatpak | **alle vier gruen** |
+| Android-APK mit TLS (OpenSSL aus dem Quelltext) | fertig |
+| Flatpak-Bauplan zum Ausliefern | fertig, Flathub-Pruefer meldet nichts |
+| Lauf auf fremdem System (Ubuntu 24.04) | **bestanden** |
+
+### Was offen ist, in der Reihenfolge
+
+1. **Flathub-Einreichung** -- *deine Aufgabe, nicht meine.* Der Weg steht in
+   `packaging/flathub/EINREICHEN.md`: Tag setzen, `commit:` im
+   Auslieferungs-Bauplan darauf zeigen lassen, `<release>` in die Metadaten,
+   Pull Request gegen `flathub/flathub`, Zweig `new-pr`. Alles Uebrige ist
+   vorbereitet.
+2. **Laufzeit auf `org.kde.Platform 6.10` heben.** Der Flathub-Pruefer weist
+   darauf hin. Zieht die Fassung von `layer-shell-qt` mit sich, deshalb nicht
+   nebenbei zu machen.
+3. **Tonsignal bei neuem Block** (Etappe 3, Rest). Braucht QtMultimedia --
+   ein weiteres Qt-Modul in allen vier Bauplaenen und im Flatpak. Bewusst
+   zurueckgestellt, weil der Nutzen klein und der Eingriff breit ist.
+4. **Kosmetik Android:** der Mempool-Haufen wird auf hohen schmalen Schirmen
+   zu einer schraegen Flaeche statt eines Quadrats.
+5. **Eigener Node als Datenquelle** -- laenger offen, siehe Abschnitt weiter
+   unten. Kein Termindruck.
+
+### Die Erkenntnisse dieses Tages
+
+**1. Was nur eine Umgebung angefasst hat, ist ungeprueft.** Das ist der Satz
+des Tages, und er hat ihn dreimal verdient:
+
+- Dem **Android-APK fehlte TLS**, monatelang. Auf dem Schreibtisch nicht zu
+  sehen, weil dort das System-OpenSSL benutzt wird.
+- Der **Griff des Zeitschiebers liess sich nie ziehen**. Ein Standbild zeigt
+  Geometrie, kein Verhalten.
+- Der **Flatpak-Bauplan hatte keine Repo-Quelle**. Das Arbeitsverzeichnis ist
+  lokal immer da.
+- Und am Abend: der **Explorer war per Tastatur eine Sackgasse**, und die
+  **Deckkraft setzte einen Compositor voraus**, den die meisten nicht haben.
+
+**2. Ein Werkzeug, das nicht misst, ist schlimmer als keins.** `qmllint` aus
+`/usr/bin` ist die Qt5-Fassung und schweigt zu allem; ich habe dreimal "Lint
+sauber" gemeldet, ohne dass etwas geprueft worden waere. Dieselbe Klasse:
+`install-links.sh --check`, das nach der verschobenen `CMakeLists.txt` suchte
+und darum **jede** Datei als fehlend meldete -- ein Pruefer, der immer Alarm
+schlaegt, wird nach dem dritten Mal nicht mehr gelesen. Und der Xvfb-Lauf,
+der ohne Fenstermanager keinen Tastaturfokus hatte und deshalb aus dem
+falschen Grund fehlschlug.
+
+**3. Fehler im Pruefstand sehen aus wie Fehler im Pruefling.** Sauber zu
+trennen war der schwierigere Teil des Abends. `bwrap: namespace failed` sah
+aus wie "Ubuntu 24.04 bricht unser Flatpak" und war eine Live-Sitzung ohne
+geladenes AppArmor-Profil. Dieselbe Falle in klein: `vm.py` konnte kein
+Komma und kein Semikolon tippen, und der Gast meldete daraufhin Unsinn.
+
+**4. Wer zwei Quellen hat, findet Fehler, die eine Quelle verbirgt.** Bybits
+`S`-Feld nennt die **Position**, nicht die erzwungene Gegenorder -- die
+Liquidationsseite war invertiert. Aufgefallen ist es nur, weil OKX daneben
+etwas anderes sagte.
+
+**5. Wo eine Grenze erreicht ist, zeigt man das Moegliche und nennt die
+Grenze -- nicht nichts.** Coinglass' Heatmap laesst sich nicht messen,
+niemand veroeffentlicht fremde Positionen. Also ein Modell, sichtbar als
+SCHAETZUNG gekennzeichnet, mit ausgeschriebenen Annahmen.
+
+**6. `git add -A` nach einem Bauschritt ist eine Falle.** So sind heute rund
+200 OSTree-Objekte in die oeffentliche Historie gewandert. Wieder entfernt,
+`.gitignore` ergaenzt, die Historie **nicht** umgeschrieben -- sie war schon
+oeffentlich.
+
+### Womit man morgen anfaengt
+
+    cd ~/Schreibtisch/orangedeck
+    git log --oneline -5          # der Stand
+    cat packaging/flathub/EINREICHEN.md
+
+Der Prueflauf auf einem fremden System, falls er nochmal gebraucht wird, ist
+in `docs/DOKUMENTATION.md` unter "Pruefen in einer Live-Sitzung" und "Was die
+Pruef-VM gefunden hat" beschrieben -- samt der drei Fallen (RAM-Overlay,
+AppArmor, Cache beim Medientausch).
+
+---
+
 ## UEBERGABE 04.09.2026, Nacht -- die Pruef-VM
 
 **OrangeDeck laeuft auf einem fremden System.** Ubuntu 24.04.4, frisch, ohne
