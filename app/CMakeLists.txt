@@ -91,6 +91,18 @@ qt_add_qml_module(orangedeck-app
     QML_FILES qml/Main.qml ${SHARED_QML}
 )
 
+# **Ohne das gibt es auf Windows ein Konsolenfenster neben der Anwendung und
+# auf macOS gar kein .app-Buendel** -- dann laesst sie sich dort weder
+# doppelklicken noch mit `macdeployqt` packen. Unter Linux und Android sind
+# beide Eigenschaften wirkungslos, sie kosten also nichts.
+#
+# Aufgefallen am 04.09.2026 beim Schreiben der Bauplaene fuer Windows und
+# macOS -- auf diesem Rechner konnte es nie stoeren.
+set_target_properties(orangedeck-app PROPERTIES
+    WIN32_EXECUTABLE ON
+    MACOSX_BUNDLE ON
+)
+
 target_link_libraries(orangedeck-app PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick)
 
 # **Auf Android muss OpenSSL mit ins APK.** Qt liefert es dort nicht mit, und
@@ -141,7 +153,11 @@ include(GNUInstallDirs)
 # Bibliothek, die die Java-Huelle laedt -- `install(TARGETS)` verlangt dort
 # ein LIBRARY-Ziel und bricht sonst schon beim Einrichten ab. Installiert wird
 # unter Android ohnehin nichts: das Ergebnis ist das APK.
-if(NOT ANDROID)
+# **Nur dort, wo es ein freedesktop-System gibt.** Die .desktop-Datei und das
+# Symbol im hicolor-Baum sind Linux-Begriffe; auf macOS kaeme dazu, dass ein
+# `MACOSX_BUNDLE`-Ziel bei `install(TARGETS)` ein BUNDLE-Ziel verlangt und
+# sonst schon beim Einrichten abbricht.
+if(NOT ANDROID AND NOT APPLE AND NOT WIN32)
     install(TARGETS orangedeck-app RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/store._21rebel.orangedeck.desktop
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)

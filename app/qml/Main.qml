@@ -38,15 +38,18 @@ Window {
     // immer bei derselben an und merkt sich gar nichts mehr.
     property int startView: -1
     // "daemon" oder "direct" -- siehe FeedState.mode
-    // **Auf Android gibt es keinen Dienst.** `orangedeck` ist ein
-    // Benutzerdienst auf einem Linux-Rechner; auf einem Telefon kann er nicht
-    // laufen, und 127.0.0.1:21021 antwortet dort nie. Wer die App dort frisch
-    // startete, bekam deshalb "keine Verbindung zum Feed" und musste die
-    // Einstellung erst finden -- ein Fehlerbild als Willkommensgruss.
+    // **Den Dienst gibt es nur unter Linux.** `orangedeck` laeuft als
+    // systemd-Benutzerdienst; auf einem Telefon, unter Windows und unter macOS
+    // kann er nicht laufen, und 127.0.0.1:21021 antwortet dort nie. Wer die
+    // App dort frisch startet, bekaeme "keine Verbindung zum Feed" und muesste
+    // die Einstellung erst finden -- ein Fehlerbild als Willkommensgruss.
     //
-    // Der Direktbezug ist dort nicht die Ausnahme, sondern der Regelfall.
-    // Am 04.09.2026 im Emulator (Android 14) aufgefallen.
-    property string dataSource: Qt.platform.os === "android" ? "direct" : "daemon"
+    // Der Direktbezug ist ueberall sonst nicht die Ausnahme, sondern der
+    // Regelfall. Am 04.09.2026 im Android-Emulator aufgefallen; **die Abfrage
+    // stand danach erst auf "android" und haette Windows und macOS beim ersten
+    // Bau genauso getroffen.** Richtig ist die Frage nach dem Dienst, nicht
+    // nach dem Geraet.
+    property string dataSource: Qt.platform.os === "linux" ? "daemon" : "direct"
     readonly property string effSource: win.forcedSource.length ? win.forcedSource
                                                                 : win.dataSource
     property string currency: "eur"

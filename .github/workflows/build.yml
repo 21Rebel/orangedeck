@@ -1,0 +1,165 @@
+# Bauen fuer Linux, Windows und macOS.
+#
+# **Warum ueberhaupt:** entwickelt wird auf einem Arch-Rechner mit Qt 6.11.
+# Was auf den beiden anderen Systemen passiert, hat bis zum 04.09.2026
+# niemand gesehen -- und der Tag hat gezeigt, wie viel man **nicht** sieht,
+# solange nur eine Umgebung die Software anfasst: dem Android-APK fehlte
+# monatelang TLS, ohne dass es auffallen konnte.
+#
+# Gebaut wird ohne Signatur. Nutzerentscheidung vom 02.09.2026: das Projekt
+# darf nichts kosten, und ein Windows-Zertifikat liegt bei 200-400 EUR im
+# Jahr, das Apple-Programm bei 99. Die Artefakte tragen deshalb eine Warnung
+# im Namen -- SmartScreen und Gatekeeper werden meckern, und das soll niemand
+# ueberraschen.
+name: Bauen
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Ein neuer Push macht den vorigen Lauf ueberfluessig.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # 6.5 ist das Mindeste (siehe app/CMakeLists.txt: `pragma
+  # ComponentBehavior: Bound` gibt es erst ab da). 6.8 ist die LTS-Reihe.
+  QT_VERSION: 6.8.3
+
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Qt holen
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          # QtWebSockets traegt den Direktbezug. **Ohne das Modul faellt er
+          # weg** -- und ausserhalb von Linux gibt es keinen Dienst, der
+          # einspringen koennte.
+          modules: qtwebsockets
+          cache: true
+
+      - name: Bauwerkzeug
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Bauen
+        run: |
+          cmake -S app -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Nachsehen, was hineingebaut wurde
+        run: |
+          # Der Bau meldet selbst, ob Direktbezug und Layer-Shell drin sind.
+          # Faellt QtWebSockets weg, ist die Anwendung ausserhalb von Linux
+          # unbrauchbar -- das darf nicht stillschweigend durchgehen.
+          cmake -S app -B build 2>&1 | tee cmake.log
+          grep -q "QtWebSockets vorhanden" cmake.log || {
+            echo "::error::QtWebSockets fehlt -- ohne Direktbezug"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orangedeck-linux-x86_64
+          path: build/orangedeck-app
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Qt holen
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtwebsockets
+          cache: true
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Bauen
+        shell: cmd
+        run: |
+          cmake -S app -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Zusammenpacken
+        shell: cmd
+        run: |
+          mkdir dist
+          copy build\orangedeck-app.exe dist\
+          rem `--qmldir` zeigt auf die Quellen: die QML-Dateien stecken zwar
+          rem als Ressource im Programm, windeployqt liest die Importe aber
+          rem aus dem Quelltext, um die noetigen Qt-Module zu finden.
+          windeployqt --qmldir ui\qml --release --no-translations dist\orangedeck-app.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orangedeck-windows-x86_64-UNSIGNIERT
+          path: dist
+
+  macos:
+    name: macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Qt holen
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtwebsockets
+          cache: true
+
+      - name: Bauwerkzeug
+        run: brew install ninja
+
+      - name: Bauen
+        run: |
+          cmake -S app -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Zusammenpacken
+        run: |
+          # Qt legt unter macOS ein .app an, wenn MACOSX_BUNDLE gesetzt ist.
+          # Ist es das nicht, liegt eine nackte ausfuehrbare Datei da -- dann
+          # wird die eingepackt, damit der Lauf nicht ohne Ergebnis endet.
+          mkdir -p dist
+          if [ -d build/orangedeck-app.app ]; then
+            macdeployqt build/orangedeck-app.app -qmldir=ui/qml
+            cp -R build/orangedeck-app.app dist/
+          else
+            echo "::warning::kein .app-Buendel -- MACOSX_BUNDLE ist nicht gesetzt"
+            cp build/orangedeck-app dist/
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orangedeck-macos-UNSIGNIERT
+          path: dist
+
+  flatpak:
+    name: Flatpak aus dem Repo
+    runs-on: ubuntu-latest
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:kde-6.9
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      # **Der Bauplan zum Ausliefern, nicht der zum Arbeiten.** Der andere
+      # baut aus dem Arbeitsverzeichnis (`type: dir`) -- hier gibt es keines,
+      # der Laeufer klont nur das Repo. Dieser Lauf prueft also zugleich, ob
+      # der Auslieferungs-Bauplan noch stimmt; er ist auf einen Commit
+      # festgenagelt und veraltet sonst unbemerkt.
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: orangedeck.flatpak
+          manifest-path: packaging/flatpak/store._21rebel.orangedeck.git.yml
+          cache-key: flatpak-builder-${{ github.sha }}
