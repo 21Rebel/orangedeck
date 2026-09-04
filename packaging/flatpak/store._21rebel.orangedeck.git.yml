@@ -35,6 +35,12 @@ finish-args:
   - --share=network
   - --socket=wayland
   - --socket=fallback-x11
+  # **Gehoert zu `fallback-x11`.** Ohne `--share=ipc` faellt unter X11 der
+  # gemeinsame Speicher (MIT-SHM) weg: jedes Bild wandert dann einzeln durch
+  # den Sockel statt durch ein geteiltes Segment. Bei einer Flaeche, die
+  # dreissig Mal je Sekunde neu gezeichnet wird, ist das nicht wenig -- und
+  # der Flathub-Pruefer bemaengelt es ohnehin.
+  - --share=ipc
   - --device=dri
   # Kein --filesystem: die Einstellungen landen in ~/.var/app/store._21rebel.orangedeck,
   # sonst wird nichts vom Rechner angefasst.
