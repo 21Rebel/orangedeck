@@ -6,8 +6,9 @@
 
 ## UEBERGABE 04.09.2026, Vormittag
 
-Fuenf Commits. Abgearbeitet sind vier der offenen Punkte vom 03.09. (5, 6, 9,
-10), die Vorarbeit fuer Punkt 7 und der erste Teil von Punkt 4.
+Acht Commits. Abgearbeitet sind vier der offenen Punkte vom 03.09. (5, 6, 9,
+10), die Vorarbeit fuer Punkt 7, der erste Teil von Punkt 4 -- und auf
+Zuruf des Nutzers der Schieber der Zeitachse.
 
 ### Zwei Werkzeugfunde, die alles andere leichter machen
 
@@ -66,6 +67,7 @@ Damit sind der Suchfokus, der CVD, die Schriften und das gemerkte Marktfenster
 - **Autor in `plugin.json` auf 21Rebel** (Punkt 6), wie das Repo.
 - **Ersatzketten fuer die Schriften** (Vorarbeit zu Punkt 7). Siehe unten.
 - **Der CVD** (Punkt 4, erster Teil). Siehe unten.
+- **Der Schieber der Zeitachse zieht ohne Verzoegerung.** Siehe unten.
 - **Die Bindungsschleife in `TileGoggles.qml`** ist weg. Ein `width:
   implicitWidth` an einem Text ist eine Schleife, und ein `Row` ueberspringt
   unsichtbare Kinder ohnehin -- die Zeile war ueberfluessig. Alter Bestand;
@@ -95,6 +97,33 @@ Zwei Sachen fielen dabei mit ab:
   getrennt. Die Aufteilung war vorher den Live-Faechern vorbehalten.
 - Die Waehrungsumrechnung im Dienst schnitt die Mengen ab -- sie baute jede
   Kerze aus sechs Feldern neu. In Euro waere der CVD ausgefallen.
+
+### Der Schieber der Zeitachse
+
+Der Nutzer fragte, warum das Bild beim Ziehen am Schieber erst nachlaedt.
+Gemessen: **ein frisches Fenster kostet 1,1 bis 1,5 Sekunden**, weil der
+Dienst bei Binance nachfragt; gepuffert sind es 4 ms. Am Schieber liegen neun
+Jahre auf einer Leiste -- zehn Bildpunkte sind hundert Tage. Nachladen
+waehrend des Ziehens ist damit ausgeschlossen, mit jeder Bremse.
+
+Also liegt die **ganze Geschichte einmal grob vor**: `/market/overview`, rund
+3.300 Tageskerzen, 214 kB, vier Seiten von Binance, im Dienst eine halbe
+Stunde gehalten (erster Abruf 6 s, danach 18 ms). Waehrend des Ziehens
+zeichnet die Ansicht daraus -- ohne eine Abfrage, an jeder Stelle seit 2017 --
+und laedt das genaue Fenster beim Loslassen.
+
+Die Vorschau ist als solche kenntlich: gedaempft, als Linie, mit "Uebersicht"
+und dem Datum in der Ablesezeile. Unter zwei Monaten Fensterbreite zeigt sie
+die Umgebung, weil ein Tag kein Fenster von 24 Stunden traegt.
+
+Zwei alte Fehler kamen dabei ans Licht: **`drag.target` zerreisst die Bindung**
+(der Griff folgte dem Fenster nach der ersten Geste nicht mehr), und die
+**Zeitachse las den gewaehlten statt des gezeigten Zeitraums**. Beides
+behoben, beides in der DOKUMENTATION ausgeschrieben.
+
+Dazu `ui/qml/PruefstandMarkt.qml` -- zeichnet den Markt allein und schaltet
+die Vorschau ohne Maus. **Pruefstaende werden nicht mehr mitverteilt**;
+`install-links.sh` nimmt `Pruefstand*` aus.
 
 ### Die Schriften
 
@@ -141,16 +170,20 @@ neu oeffnen.
    **Der Markt-Reiter faellt dort weg** (niemand verdichtet), der Kursverlauf
    nicht.
 3. **Mit echter Maus pruefen**, was offscreen nicht ging: Zoom am Rad, Ziehen
-   im Graphen, Schieber-Griff. Neu dazu: der Umschalter Volumen/CVD und die
-   Ablesezeile mit CVD-Wert am Zeiger.
+   im Graphen, Schieber-Griff. Neu dazu: der Umschalter Volumen/CVD, die
+   Ablesezeile mit CVD-Wert am Zeiger und vor allem **die Vorschau beim
+   Ziehen am Schieber** -- im Pruefstand steht sie richtig im Bild, wie sie
+   sich unter der Hand anfuehlt, sagt erst die echte Maus.
 4. **Etappe 3, Rest**: Liquidationen (eigene Verbindungen zu den
    Futures-Stroemen) und Tonsignal bei grossen Trades. Der CVD steht.
 5. **Windows und macOS** ueber GitHub Actions. Dem 21Rebel-Token fehlt dafuer
    der `workflow`-Scope: einmal `gh auth refresh -s workflow`. Die Schriften
    sind vorbereitet.
 6. **Flathub.**
-7. **Sieben Commits liegen unveroeffentlicht**, seit `98a80198` nichts
+7. **Acht Commits liegen unveroeffentlicht**, seit `98a80198` nichts
    gepusht. Der Push geht nur ueber den Zugangshelfer im Repo.
+8. **Das Flatpak ist wieder veraltet** -- es traegt eine Kopie, und seit dem
+   letzten Bau kam der Schieber dazu.
 
 ### Wie man anfaengt
 

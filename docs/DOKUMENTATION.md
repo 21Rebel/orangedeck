@@ -2189,3 +2189,59 @@ Zwei Sachen fielen dabei mit ab:
   einzelner nach Richtung eingefaerbter Balken sagt weniger.
 - Die Waehrungsumrechnung im Dienst **schnitt die Mengen ab**: sie baute jede
   Kerze aus sechs Feldern neu. In Euro waere der CVD ausgefallen.
+
+
+## Der Schieber der Zeitachse zieht ohne Verzoegerung
+
+Die Zahl, die den ganzen Entwurf bestimmt: **ein frisches Fenster kostet 1,1
+bis 1,5 Sekunden**, weil der Dienst dafuer bei Binance nachfragt. Gepuffert
+sind es 4 ms. Am Schieber liegen neun Jahre auf einer Leiste -- zehn
+Bildpunkte sind schnell hundert Tage, und jede Stelle waere ein eigenes
+Fenster. **Waehrend des Ziehens nachzuladen ist damit ausgeschlossen**, auch
+mit jeder Bremse: sechzig Bilder je Sekunde gegen 1,2 Sekunden Antwortzeit
+geht nicht auf, und Binance haette etwas dagegen.
+
+Also muss das Bild aus etwas kommen, das schon da ist.
+
+**`/market/overview` liefert die ganze Geschichte als Tageskerzen** -- rund
+3.300 Stueck, 214 kB. Binance gibt hoechstens 1000 Kerzen je Abfrage, also
+vier Seiten; der Dienst haelt sie eine halbe Stunde (erster Abruf 6 s, danach
+18 ms). Bewusst ein **eigener Weg** und nicht Teil von `/market`: das wird
+jede Sekunde geholt, die Uebersicht aendert sich einmal am Tag.
+
+Die Ansicht holt sie einmal je Waehrung und zeichnet waehrend des Ziehens
+daraus. `sicht` liefert dann `vorschauKerzen` statt der geholten Kerzen --
+weil alle Geometrie an `sicht` haengt, genuegt dieser eine Griff.
+
+**Die Vorschau sagt, dass sie eine ist**: gedaempft (`globalAlpha 0.55`) und
+als Linie, auch wenn sonst Kerzen stehen. Tageskerzen in einem Fenster, das
+Viertelstunden zeigt, waeren eine Genauigkeit, die die Daten nicht hergeben.
+In der Ablesezeile steht "Uebersicht" und das Datum, auf dem man gerade steht.
+
+Ein Tag traegt kein Fenster von 24 Stunden. Bleiben weniger als drei Kerzen
+uebrig, zeigt die Vorschau die Umgebung -- zwei Monate. Ab zwei Monaten
+Fensterbreite deckt sie sich mit dem, was nach dem Loslassen kommt.
+
+### Zwei Fehler, die dabei ans Licht kamen
+
+**`drag.target` zerreisst die Bindung.** Ein `MouseArea` mit
+`drag.target: griff` schreibt `griff.x` unmittelbar -- und damit ist
+`x: schieber.griffX` fuer immer weg. Der Griff folgte dem Fenster danach nicht
+mehr: ein Klick neben den Griff verschob das Bild, aber nicht den Griff. Nach
+jeder Geste wird sie mit `Qt.binding` neu geknuepft. **Das gilt fuer jede
+gezogene Eigenschaft in QML**, nicht nur hier.
+
+**Die Zeitachse las den gewaehlten Zeitraum statt des gezeigten.** `uhrzeit()`
+entschied anhand von `sichtSekunden`, ob Uhrzeit, Datum oder Monat unter dem
+Bild steht. In der Vorschau stehen zwei Monate im Bild, waehrend das Fenster
+auf 24 Stunden steht -- also standen Uhrzeiten unter einem Bild von zwei
+Monaten. Richtig ist die Spanne, die `sicht` **wirklich** abdeckt
+(`gezeigteSekunden`); das stimmt fuer den Zoom genauso.
+
+### Pruefstand ohne Maus
+
+`ui/qml/PruefstandMarkt.qml` zeichnet den Markt allein, mit einem Stummel als
+`feed`, und schaltet die Vorschau ueber die Befehlszeile -- damit laesst sich
+im Bild nachsehen, was beim Ziehen passiert, ohne dass eine Maus im Spiel
+sein muss. **Pruefstaende sind Werkzeug, kein Bestandteil**:
+`tools/install-links.sh` nimmt `Pruefstand*` von der Verteilung aus.
