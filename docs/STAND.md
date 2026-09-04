@@ -4,6 +4,77 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## UEBERGABE 04.09.2026, Abend
+
+Nach dem Push kam die Baustrecke dazu. **Alle vier Jobs sind gruen**: Linux,
+Windows, macOS und ein Flatpak-Bau aus dem Auslieferungs-Bauplan.
+
+    Linux  2 MB   Windows  52 MB   macOS  133 MB   Flatpak  1 MB
+
+### Was zuerst noetig war
+
+**Der Flatpak-Bauplan baute aus dem Arbeitsverzeichnis** (`type: dir`). Der
+Kommentar darin nannte den Grund -- *solange es kein oeffentliches
+Verzeichnis gibt* -- und **diese Bedingung war seit dem 03.09. hinfaellig**.
+Daran waeren zwei Dinge gescheitert: Flathub nimmt so einen Bauplan nicht an,
+und ein CI-Laeufer hat kein Arbeitsverzeichnis. Es gibt jetzt zwei Bauplaene,
+einen zum Arbeiten und einen zum Ausliefern (`...git.yml`, auf einen Commit
+festgenagelt). **Wer einen aendert, muss den anderen mitziehen.**
+
+### Sechs Fehler, die die Baustrecke gefunden hat
+
+Drei schon beim Schreiben, drei im ersten Lauf. Alle sechs koennen auf diesem
+Rechner nicht auffallen.
+
+1. **`dataSource` fragte nach dem Geraet statt nach dem Dienst.** Der
+   Android-Fix vom Nachmittag lautete `=== "android"` -- ein Symptom statt
+   der Ursache. Der Dienst ist ein **systemd**-Benutzerdienst und existiert
+   nur unter Linux; Windows und macOS waeren mit "keine Verbindung zum Feed"
+   gestartet, derselbe Willkommensgruss zum zweiten Mal an einem Tag.
+2. **`MACOSX_BUNDLE` und `WIN32_EXECUTABLE` nicht gesetzt** -- kein
+   .app-Buendel, und unter Windows ein Konsolenfenster daneben.
+3. **`install(TARGETS)` lief auf allen Nicht-Android-Systemen**, obwohl
+   .desktop und hicolor Linux-Begriffe sind.
+4. **Windows: `..` im QML-Pufferpfad.** Die CMakeLists lag in `app/`, die
+   geteilten QML-Dateien in `ui/qml/`. Linux macht aus dem `..`
+   stillschweigend ein `_`, Windows nicht. **Die CMakeLists liegt jetzt in
+   der Wurzel, gebaut wird mit `cmake -S . -B build`.**
+5. **macOS: Qt 6.8 verlinkt AGL**, das SDK von macOS 15 hat es nicht mehr.
+   Mit 6.9 geht es durch.
+6. **Flatpak: das Abbild `kde-6.9` gibt es nicht.** Der Job richtet flatpak
+   selbst ein.
+
+### Flathub
+
+`appstreamcli validate` besteht, jetzt auch mit Screenshots -- die waren die
+einzige echte Luecke. Fuenf Stueck, mit demselben Pruefstand aufgenommen
+(Xvfb, Fenster genau auf Bildschirmgroesse, damit kein Rand mitkommt). **Der
+Feed braucht Vorlauf**: die Halde ist erst nach einer Viertelstunde voll.
+
+Was noch fehlt: das eigene Repo `flathub/store._21rebel.orangedeck` und die
+Einreichung. Beides braucht den Nutzer.
+
+### Offene Punkte
+
+1. **Flathub einreichen.** Metadaten und Bauplan sind fertig.
+2. **Pruef-VM**: `flatpak build-bundle` liegt bereit. Der Bau in der VM
+   entfaellt -- Ubuntu 24.04 kann das Projekt nicht bauen (Qt 6.4.2 gegen
+   6.5), das Flatpak bringt sein eigenes Qt mit. In die VM muss zusaetzlich
+   die Laufzeit `org.kde.Platform 6.9`, rund 2 GB.
+3. **Etappe 3, Rest**: Tonsignal bei grossen Trades. Braucht QtMultimedia --
+   nach dem OpenSSL-Fund weiss man, was eine zusaetzliche Bibliothek auf
+   Android kostet.
+4. **Kleinigkeit**: auf dem hohen, schmalen Android-Bildschirm steht die
+   Halde als schraege Flaeche statt als Rechteck.
+
+### Die Lehre des Tages, in einem Satz
+
+**Was nur eine Umgebung anfasst, ist ungeprueft.** Drei der schwersten Funde
+-- kein TLS im APK, der nie ziehbare Schiebergriff, der Bauplan ohne
+Repo-Quelle -- waren auf diesem Rechner unsichtbar und kamen erst ans Licht,
+als etwas anderes die Software anfasste: ein Emulator, ein Zeiger, ein Bau
+ohne Verzeichnis.
+
 ## UEBERGABE 04.09.2026, Nachmittag
 
 Der Vormittag steht unten. Am Nachmittag kam **das Pruefen selbst** dazu --
