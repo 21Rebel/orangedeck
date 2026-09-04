@@ -25,9 +25,13 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # 6.5 ist das Mindeste (siehe app/CMakeLists.txt: `pragma
-  # ComponentBehavior: Bound` gibt es erst ab da). 6.8 ist die LTS-Reihe.
-  QT_VERSION: 6.8.3
+  # 6.5 ist das Mindeste (siehe CMakeLists.txt: `pragma ComponentBehavior:
+  # Bound` gibt es erst ab da).
+  #
+  # **Nicht 6.8**: die Reihe verlinkt auf macOS noch das Framework AGL, und
+  # das SDK von macOS 15 hat es nicht mehr -- der erste Lauf brach mit
+  # "ld: framework 'AGL' not found" ab.
+  QT_VERSION: 6.9.*
 
 jobs:
   linux:
@@ -51,7 +55,7 @@ jobs:
 
       - name: Bauen
         run: |
-          cmake -S app -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build
 
       - name: Nachsehen, was hineingebaut wurde
@@ -59,7 +63,7 @@ jobs:
           # Der Bau meldet selbst, ob Direktbezug und Layer-Shell drin sind.
           # Faellt QtWebSockets weg, ist die Anwendung ausserhalb von Linux
           # unbrauchbar -- das darf nicht stillschweigend durchgehen.
-          cmake -S app -B build 2>&1 | tee cmake.log
+          cmake -S . -B build 2>&1 | tee cmake.log
           grep -q "QtWebSockets vorhanden" cmake.log || {
             echo "::error::QtWebSockets fehlt -- ohne Direktbezug"; exit 1; }
 
@@ -86,7 +90,7 @@ jobs:
       - name: Bauen
         shell: cmd
         run: |
-          cmake -S app -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build
 
       - name: Zusammenpacken
@@ -122,7 +126,7 @@ jobs:
 
       - name: Bauen
         run: |
-          cmake -S app -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build
 
       - name: Zusammenpacken
@@ -147,19 +151,48 @@ jobs:
   flatpak:
     name: Flatpak aus dem Repo
     runs-on: ubuntu-latest
-    container:
-      image: bilelmoussaoui/flatpak-github-actions:kde-6.9
-      options: --privileged
     steps:
       - uses: actions/checkout@v4
+
+      # **Kein fertiges Abbild.** Der erste Anlauf nahm
+      # `bilelmoussaoui/flatpak-github-actions:kde-6.9` -- das Abbild gibt es
+      # nicht ("manifest unknown"), und welche Marken existieren, muesste man
+      # raten. Selbst einrichten ist ein paar Zeilen mehr und haengt an
+      # nichts, was sich unter uns aendern kann.
+      - name: Flatpak einrichten
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          flatpak remote-add --if-not-exists --user \
+            flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive \
+            flathub org.kde.Platform//6.9 org.kde.Sdk//6.9
 
       # **Der Bauplan zum Ausliefern, nicht der zum Arbeiten.** Der andere
       # baut aus dem Arbeitsverzeichnis (`type: dir`) -- hier gibt es keines,
       # der Laeufer klont nur das Repo. Dieser Lauf prueft also zugleich, ob
       # der Auslieferungs-Bauplan noch stimmt; er ist auf einen Commit
       # festgenagelt und veraltet sonst unbemerkt.
-      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      # **Auf den Stand dieses Laufs setzen.** Der Bauplan ist auf einen
+      # Commit festgenagelt -- das ist zum Ausliefern richtig, hier aber
+      # falsch: der Lauf soll pruefen, ob **dieser** Stand durchbaut, nicht
+      # ein alter. Die Datei im Repo bleibt unangetastet; geaendert wird nur
+      # die Kopie im Laeufer.
+      - name: Bauplan auf diesen Commit stellen
+        run: |
+          sed -i "s|^        commit: .*|        commit: ${{ github.sha }}|" \
+            packaging/flatpak/store._21rebel.orangedeck.git.yml
+          grep -A2 "type: git" packaging/flatpak/store._21rebel.orangedeck.git.yml
+
+      - name: Bauen und buendeln
+        run: |
+          flatpak-builder --user --repo=repo --force-clean \
+            build-fp packaging/flatpak/store._21rebel.orangedeck.git.yml
+          flatpak build-bundle repo orangedeck.flatpak \
+            store._21rebel.orangedeck \
+            --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+
+      - uses: actions/upload-artifact@v4
         with:
-          bundle: orangedeck.flatpak
-          manifest-path: packaging/flatpak/store._21rebel.orangedeck.git.yml
-          cache-key: flatpak-builder-${{ github.sha }}
+          name: orangedeck-flatpak
+          path: orangedeck.flatpak

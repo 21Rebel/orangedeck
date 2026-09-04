@@ -65,7 +65,7 @@ modules:
   - name: orangedeck
     buildsystem: simple
     build-commands:
-      - cmake -S app -B build-fp -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/app
+      - cmake -S . -B build-fp -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/app
       - cmake --build build-fp
       - cmake --install build-fp
       # Der Daemon ist ein einzelnes Python-Skript ohne Fremdpakete

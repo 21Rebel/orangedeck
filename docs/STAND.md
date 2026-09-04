@@ -109,7 +109,7 @@ unveraendert.
 ### Wie man Android prueft
 
     tools/openssl-android.sh arm64-v8a        # einmal, dauert ~15 min
-    cmake -S app -B build-android \
+    cmake -S . -B build-android \
       -DCMAKE_TOOLCHAIN_FILE=$HOME/Qt/6.11.2/android_arm64_v8a/lib/cmake/Qt6/qt.toolchain.cmake \
       -DANDROID_SDK_ROOT=$HOME/Android/sdk \
       -DANDROID_NDK_ROOT=$HOME/Android/sdk/ndk/27.2.12479018 \

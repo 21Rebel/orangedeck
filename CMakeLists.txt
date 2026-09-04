@@ -1,5 +1,18 @@
-# Eigenstaendige Qt-Anwendung. Dieselben QML-Dateien wie das DMS-Plugin --
-# ui/qml/ wird hier nur zusaetzlich in ein QML-Modul gepackt, nicht kopiert.
+# Eigenstaendige Qt-Anwendung.
+#
+# **Diese Datei liegt in der Wurzel und nicht in `app/`**, und das ist kein
+# Geschmack: die geteilten QML-Dateien liegen unter `ui/qml/`. Von `app/` aus
+# heissen sie `../ui/qml/...`, und Qt baut daraus den Namen des
+# Zwischenverzeichnisses fuer den QML-Puffer. Unter Linux wird das `..`
+# stillschweigend zu `_`, unter Windows nicht:
+#
+#     ninja: error: mkdir(.rcc/qmlcache/orangedeck-app_../ui): No such file
+#
+# Am 04.09.2026 im ersten CI-Lauf aufgeschlagen. **Qt empfiehlt ausdruecklich,
+# QML-Dateien innerhalb des Modulverzeichnisses zu halten** -- von hier aus
+# heissen sie `ui/qml/...` und die Frage stellt sich nicht mehr.
+#
+# Gebaut wird also aus der Wurzel:  cmake -S . -B build
 cmake_minimum_required(VERSION 3.21)
 project(orangedeck-app VERSION 0.1 LANGUAGES CXX)
 
@@ -32,55 +45,55 @@ if(ANDROID AND NOT QT_ANDROID_ABIS)
     set(QT_ANDROID_ABIS "${ANDROID_ABI}")
 endif()
 
-qt_add_executable(orangedeck-app src/main.cpp)
+qt_add_executable(orangedeck-app app/src/main.cpp)
 
 # Die geteilten Dateien liegen ausserhalb dieses Verzeichnisses. Ohne
 # ausdruecklichen Alias landen sie mit ihrem relativen Pfad im Ressourcenbaum,
 # und dann findet FeedCanvas.qml sein "mondrian.js" nicht mehr.
 set(SHARED_QML
-    ../ui/qml/FeedState.qml
-    ../ui/qml/DirectFeed.qml
-    ../ui/qml/FeedCanvas.qml
-    ../ui/qml/FeedPanel.qml
-    ../ui/qml/FrostedPanel.qml
-    ../ui/qml/ClockView.qml
-    ../ui/qml/MinerView.qml
-    ../ui/qml/MinerChart.qml
-    ../ui/qml/PriceChart.qml
-    ../ui/qml/MarketView.qml
-    ../ui/qml/MarketLiq.qml
-    ../ui/qml/MarketHeat.qml
-    ../ui/qml/DropDown.qml
-    ../ui/qml/ViewTabs.qml
-    ../ui/qml/FeedTabs.qml
-    ../ui/qml/InfoPopup.qml
-    ../ui/qml/ExplorerView.qml
-    ../ui/qml/TxFlow.qml
-    ../ui/qml/CopyButton.qml
-    ../ui/qml/BlockChain.qml
-    ../ui/qml/BlockCard.qml
-    ../ui/qml/BlockTiles.qml
-    ../ui/qml/ProjectedBlock.qml
-    ../ui/qml/TileGoggles.qml
-    ../ui/qml/WatchView.qml
-    ../ui/qml/TxList.qml
-    ../ui/qml/BlockHistory.qml
-    ../ui/qml/SettingsView.qml
-    ../ui/qml/ExplorerHome.qml
-    ../ui/qml/MainPanels.qml
-    ../ui/qml/search.js
-    ../ui/qml/txtype.js
-    ../ui/qml/money.js
-    ../ui/qml/strings.js
-    ../ui/qml/mondrian.js
-    ../ui/qml/colors.js
-    ../ui/qml/fonts.js
+    ui/qml/FeedState.qml
+    ui/qml/DirectFeed.qml
+    ui/qml/FeedCanvas.qml
+    ui/qml/FeedPanel.qml
+    ui/qml/FrostedPanel.qml
+    ui/qml/ClockView.qml
+    ui/qml/MinerView.qml
+    ui/qml/MinerChart.qml
+    ui/qml/PriceChart.qml
+    ui/qml/MarketView.qml
+    ui/qml/MarketLiq.qml
+    ui/qml/MarketHeat.qml
+    ui/qml/DropDown.qml
+    ui/qml/ViewTabs.qml
+    ui/qml/FeedTabs.qml
+    ui/qml/InfoPopup.qml
+    ui/qml/ExplorerView.qml
+    ui/qml/TxFlow.qml
+    ui/qml/CopyButton.qml
+    ui/qml/BlockChain.qml
+    ui/qml/BlockCard.qml
+    ui/qml/BlockTiles.qml
+    ui/qml/ProjectedBlock.qml
+    ui/qml/TileGoggles.qml
+    ui/qml/WatchView.qml
+    ui/qml/TxList.qml
+    ui/qml/BlockHistory.qml
+    ui/qml/SettingsView.qml
+    ui/qml/ExplorerHome.qml
+    ui/qml/MainPanels.qml
+    ui/qml/search.js
+    ui/qml/txtype.js
+    ui/qml/money.js
+    ui/qml/strings.js
+    ui/qml/mondrian.js
+    ui/qml/colors.js
+    ui/qml/fonts.js
 )
 # Main.qml gehoert dazu: liegt es im Ressourcenbaum unter qml/, waehrend die
 # geteilten Dateien in der Modulwurzel sitzen, findet es sie nicht mehr
 # ("FeedState is not a type"). Die Aliasse muessen VOR qt_add_qml_module
 # gesetzt werden, danach wirken sie nicht mehr.
-foreach(f ${SHARED_QML} qml/Main.qml)
+foreach(f ${SHARED_QML} app/qml/Main.qml)
     get_filename_component(n "${f}" NAME)
     set_source_files_properties("${f}" PROPERTIES QT_RESOURCE_ALIAS "${n}")
 endforeach()
@@ -88,7 +101,7 @@ endforeach()
 qt_add_qml_module(orangedeck-app
     URI OrangeDeck
     VERSION 1.0
-    QML_FILES qml/Main.qml ${SHARED_QML}
+    QML_FILES app/qml/Main.qml ${SHARED_QML}
 )
 
 # **Ohne das gibt es auf Windows ein Konsolenfenster neben der Anwendung und
@@ -116,7 +129,7 @@ target_link_libraries(orangedeck-app PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Qu
 # Repos; fehlt es, wird trotzdem gebaut -- nur eben ohne TLS, und diese
 # Meldung sagt es.
 if(ANDROID)
-    set(_ossl "${CMAKE_CURRENT_SOURCE_DIR}/../build-openssl-android/${ANDROID_ABI}")
+    set(_ossl "${CMAKE_CURRENT_SOURCE_DIR}/build-openssl-android/${ANDROID_ABI}")
     # Die Namen sind nicht frei waehlbar: Qts TLS-Plugin sucht auf Android
     # nach `libssl_3.so` und `libcrypto_3.so` (Vorgabe von
     # `ANDROID_OPENSSL_SUFFIX`). Heissen sie anders, findet es sie nicht --
@@ -159,8 +172,8 @@ include(GNUInstallDirs)
 # sonst schon beim Einrichten abbricht.
 if(NOT ANDROID AND NOT APPLE AND NOT WIN32)
     install(TARGETS orangedeck-app RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/store._21rebel.orangedeck.desktop
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/app/store._21rebel.orangedeck.desktop
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/icons/store._21rebel.orangedeck.svg
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/app/icons/store._21rebel.orangedeck.svg
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
 endif()
