@@ -1,6 +1,7 @@
 build/
 build-android/
 build-flatpak/
+build-flatpak-repo/
 .flatpak-builder/
 packaging/android/build/
 packaging/flatpak/.flatpak-builder/
