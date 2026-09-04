@@ -105,6 +105,8 @@ Item {
     property string marketRange: SettingsData.getPluginSetting(pid, "marketRange", "24h")
     property string marketKind: SettingsData.getPluginSetting(pid, "marketKind", "candles")
     property int marketSecs: SettingsData.getPluginSetting(pid, "marketSecs", 259200)
+    property int marketVon: SettingsData.getPluginSetting(pid, "marketVon", 0)
+    property int marketBis: SettingsData.getPluginSetting(pid, "marketBis", 0)
     property bool marketCross: SettingsData.getPluginSetting(pid, "marketCross", true)
     property bool marketTape: SettingsData.getPluginSetting(pid, "marketTape", true)
     property bool showFeed: SettingsData.getPluginSetting(pid, "showFeed", true)
@@ -154,6 +156,8 @@ Item {
         "marketRange": marketRange,
         "marketKind": marketKind,
         "marketSecs": marketSecs,
+        "marketVon": marketVon,
+        "marketBis": marketBis,
         "marketCross": marketCross,
         "marketTape": marketTape,
         "showFeed": showFeed,

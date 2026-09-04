@@ -76,6 +76,9 @@ Window {
     property string marketRange: "24h"
     property string marketKind: "candles"
     property int marketSecs: 259200
+    // Ausdrueckliches Fenster im Markt, 0 = keins
+    property int marketVon: 0
+    property int marketBis: 0
     property bool marketCross: true
     property bool marketTape: true
     property bool showFeed: true
@@ -151,6 +154,8 @@ Window {
         property alias marketRange: win.marketRange
         property alias marketKind: win.marketKind
         property alias marketSecs: win.marketSecs
+        property alias marketVon: win.marketVon
+        property alias marketBis: win.marketBis
         property alias marketCross: win.marketCross
         property alias marketTape: win.marketTape
         property alias showFeed: win.showFeed
@@ -245,6 +250,10 @@ Window {
             win.marketKind = value;
         else if (key === "marketSecs")
             win.marketSecs = value;
+        else if (key === "marketVon")
+            win.marketVon = value;
+        else if (key === "marketBis")
+            win.marketBis = value;
         else if (key === "marketCross")
             win.marketCross = value;
         else if (key === "marketTape")
@@ -311,6 +320,8 @@ Window {
         "marketRange": win.marketRange,
         "marketKind": win.marketKind,
         "marketSecs": win.marketSecs,
+        "marketVon": win.marketVon,
+        "marketBis": win.marketBis,
         "marketCross": win.marketCross,
         "marketTape": win.marketTape,
         "showFeed": win.showFeed,

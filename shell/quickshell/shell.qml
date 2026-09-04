@@ -44,6 +44,9 @@ ShellRoot {
         property string marketRange: "24h"
         property string marketKind: "candles"
         property int marketSecs: 259200
+        // Ausdrueckliches Fenster im Markt, 0 = keins
+        property int marketVon: 0
+        property int marketBis: 0
         property bool marketCross: true
         property bool marketTape: true
         property bool showFeed: true
@@ -101,6 +104,8 @@ ShellRoot {
             "marketRange": marketRange,
             "marketKind": marketKind,
             "marketSecs": marketSecs,
+            "marketVon": marketVon,
+            "marketBis": marketBis,
             "marketCross": marketCross,
             "marketTape": marketTape,
             "showFeed": showFeed,
@@ -171,6 +176,10 @@ ShellRoot {
                 marketKind = value;
             else if (key === "marketSecs")
                 marketSecs = value;
+            else if (key === "marketVon")
+                marketVon = value;
+            else if (key === "marketBis")
+                marketBis = value;
             else if (key === "marketCross")
                 marketCross = value;
             else if (key === "marketTape")
@@ -239,6 +248,8 @@ ShellRoot {
                 "marketRange": marketRange,
                 "marketKind": marketKind,
                 "marketSecs": marketSecs,
+                "marketVon": marketVon,
+                "marketBis": marketBis,
                 "marketCross": marketCross,
                 "marketTape": marketTape,
                 "showFeed": showFeed,
@@ -319,6 +330,10 @@ ShellRoot {
                         win.marketKind = v.marketKind;
                     if (typeof v.marketSecs === "number")
                         win.marketSecs = v.marketSecs;
+                    if (typeof v.marketVon === "number")
+                        win.marketVon = v.marketVon;
+                    if (typeof v.marketBis === "number")
+                        win.marketBis = v.marketBis;
                     if (typeof v.marketCross === "boolean")
                         win.marketCross = v.marketCross;
                     if (typeof v.marketTape === "boolean")

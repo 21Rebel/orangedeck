@@ -45,6 +45,9 @@ Item {
     signal rangeRequested(string r)
     signal kindRequested(string k)
     signal customSecsRequested(int secs)
+    // Von und Bis gehen als Paar zurueck -- einzeln waeren sie zwischendurch
+    // widerspruechlich (ein Von ohne Bis ist kein Fenster).
+    signal vonBisRequested(int von, int bis)
 
     readonly property var zeitraeume: [
         { "k": "1h", "l": Tr.t("market.1h", root.lang) },
@@ -96,6 +99,13 @@ Item {
     property int fensterEnde: 0
     // Ausdrueckliches Fenster von ... bis. Ist es gesetzt, gilt weder
     // Zeitraum noch Fensterende.
+    //
+    // **Der Wirt haelt es**, wie Zeitraum und Darstellung -- ein getipptes
+    // "01.01.2021..31.03.2021" ist eine Absicht und soll einen Neustart
+    // ueberleben. Hier steht es deshalb nur zu lesen: geaendert wird es ueber
+    // `vonBisRequested`, und es kommt vom Wirt zurueck. Das Fensterende aus
+    // Schieber und Ziehen bleibt fluechtig -- wer neu startet, will in die
+    // Gegenwart sehen.
     property int vonZeit: 0
     property int bisZeit: 0
     // Waehrend des Ziehens: um wie viele Bildpunkte das Bild verschoben ist
@@ -112,15 +122,25 @@ Item {
         var max = root.jetzt;
         var e = Math.round(Math.max(min, Math.min(max, ende)));
         root.fensterEnde = (e >= max - 60) ? 0 : e;
-        root.vonZeit = 0;
-        root.bisZeit = 0;
+        root.vonBisLoeschen();
         nachfassen.restart();
+    }
+
+    // Nicht selbst nullen: das Fenster gehoert dem Wirt. Setzte es die Ansicht
+    // selbst, stuende hier gleich ein anderer Wert als in den Einstellungen --
+    // und der naechste Blick von dort holte das geloeschte Fenster zurueck.
+    function vonBisLoeschen() {
+        if (root.vonZeit || root.bisZeit)
+            root.vonBisRequested(0, 0);
     }
 
     function zurueckZurGegenwart() {
         root.fensterEnde = 0;
-        root.vonZeit = 0;
-        root.bisZeit = 0;
+        if (root.vonZeit || root.bisZeit) {
+            // Kommt ueber den Wirt zurueck; die Aenderung holt dann selbst.
+            root.vonBisRequested(0, 0);
+            return;
+        }
         root.holen();
     }
 
@@ -472,17 +492,14 @@ Item {
                         var a = root.datumSekunden(teile[0]);
                         var b = root.datumSekunden(teile[1]);
                         if (a > 0 && b > a) {
-                            root.vonZeit = a;
-                            root.bisZeit = b;
                             root.fensterEnde = 0;
-                            root.holen();
+                            root.vonBisRequested(a, b);
                         }
                         return;
                     }
                     var sek = root.eigenSekunden(text);
                     if (sek > 0) {
-                        root.vonZeit = 0;
-                        root.bisZeit = 0;
+                        root.vonBisLoeschen();
                         root.customSecsRequested(sek);
                     }
                 }
@@ -505,6 +522,9 @@ Item {
             accentColor: root.accentColor
             lineColor: root.lineColor
             onPicked: function (k) {
+                // Ein ausdrueckliches Fenster schlaegt den Zeitraum: bliebe es
+                // stehen, sieht die Wahl hier folgenlos aus.
+                root.vonBisLoeschen();
                 root.rangeRequested(k);
             }
         }

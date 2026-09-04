@@ -261,6 +261,8 @@ Item {
         range: root.o("marketRange", "24h")
         kind: root.o("marketKind", "candles")
         customSecs: root.o("marketSecs", 259200)
+        vonZeit: root.o("marketVon", 0)
+        bisZeit: root.o("marketBis", 0)
         crosshair: root.o("marketCross", true)
         showTape: root.o("marketTape", true)
         baseFont: root.baseFont
@@ -276,6 +278,10 @@ Item {
         }
         onCustomSecsRequested: function (sek) {
             root.optRequested("marketSecs", sek);
+        }
+        onVonBisRequested: function (von, bis) {
+            root.optRequested("marketVon", von);
+            root.optRequested("marketBis", bis);
         }
     }
 
