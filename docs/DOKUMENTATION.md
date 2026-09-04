@@ -2861,3 +2861,55 @@ sofort.
 Die Bilder liegen im Repo und werden von dort geladen. **Kein doppelter
 Bindestrich im XML-Kommentar** daneben: XML verbietet ihn, und
 `appstreamcli` bricht daran ab.
+
+
+## Pruefen in einer Live-Sitzung: die RAM-Falle
+
+Am 04.09.2026 beim Pruefen des Flatpaks auf Ubuntu 24.04 aufgeschlagen.
+
+**Eine Live-Sitzung schreibt in den Arbeitsspeicher.** Das Wurzeldateisystem
+ist eine Overlay ueber der squashfs, und die beschreibbare Schicht (`/cow`)
+liegt im RAM:
+
+    /cow   1.5G  326M  1.2G  22%  /
+    Mem:   2971 gesamt, 1507 verfuegbar
+
+Bei 3 GB Maschine bleiben **1,2 GB beschreibbar**. Die Laufzeit
+`org.kde.Platform 6.9` braucht rund 2 GB installiert -- die Installation
+waere auf halbem Weg abgebrochen, und man haette den Fehler leicht beim
+Flatpak gesucht statt beim Pruefstand.
+
+**Behoben ohne Neustart**: QEMU kann eine Platte im laufenden Betrieb
+anhaengen.
+
+    # auf dem Wirt
+    qemu-img create -f qcow2 vmdisk.qcow2 12G
+    # im QEMU-Monitor
+    drive_add 0 if=none,id=disk1,file=/pfad/vmdisk.qcow2,format=qcow2
+    device_add virtio-blk-pci,drive=disk1,id=vd1
+    # im Gast
+    sudo mkfs.ext4 -q /dev/vda
+    mkdir -p /home/ubuntu/.local/share/flatpak
+    sudo mount /dev/vda /home/ubuntu/.local/share/flatpak
+    sudo chown ubuntu:ubuntu /home/ubuntu/.local/share/flatpak
+
+Danach liegt der ganze Flatpak-Bestand auf der Platte statt im RAM.
+
+### Die VM ohne Fenster steuern
+
+Der QEMU-Monitor auf einem Unix-Sockel genuegt: `sendkey` fuer Tasten,
+`screendump` fuer Bilder. `tools/xtest.py` ist dafuer **nicht** zustaendig --
+das arbeitet auf einem X-Server, hier gibt es keinen, den man erreichen
+koennte.
+
+    -display none -monitor unix:/pfad/mon.sock,server,nowait
+
+Ubuntus Live-Sitzung startet mit dem Installationsassistenten obenauf.
+`alt-f4` schliesst ihn, `ctrl-alt-t` oeffnet ein Terminal; ab da tippt man
+Befehle Taste fuer Taste.
+
+**Zeichen, die man vergisst.** `sendkey` kennt eigene Namen -- `comma` fuer
+das Komma, `shift-4` fuer `$`, `spc` fuer das Leerzeichen. Fehlt eines in der
+Tabelle, wird es stillschweigend verschluckt: aus `lsblk -o NAME,LABEL,SIZE`
+wurde `NAMELABELSIZE`, und lsblk meldete eine unbekannte Spalte. Der Fehler
+sieht dann nach einem Problem im Gast aus und liegt in der Fernsteuerung.
