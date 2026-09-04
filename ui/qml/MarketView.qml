@@ -120,19 +120,49 @@ Item {
     // Waehrend des Ziehens: um wie viele Bildpunkte das Bild verschoben ist
     property real ziehVersatz: 0
 
+    // ------------------------------------------------------- Uebersicht
+    // **Die ganze Geschichte als Tageskerzen, einmal geholt.** Der Grund ist
+    // gemessen: ein frisches Fenster kostet 1,1 bis 1,5 Sekunden, weil der
+    // Dienst dafuer bei Binance nachfragt (gepuffert 4 ms). Am Schieber sind
+    // zehn Bildpunkte schnell hundert Tage -- beim Ziehen waere jede Stelle
+    // ein eigenes Fenster und das Bild stuende still.
+    //
+    // Also wird waehrend des Ziehens aus diesen 3.300 Kerzen gezeichnet:
+    // grob, aber sofort und an jeder Stelle seit 2017. Das genaue Fenster
+    // kommt, wenn die Hand loslaesst.
+    property var uebersicht: []
+    property bool vorschau: false
+    // Ein Tag traegt kein Fenster von 24 Stunden. Reicht der Zeitraum nicht
+    // fuer ein Bild, zeigt die Vorschau die Umgebung -- lieber die Gegend als
+    // eine leere Flaeche. Ab zwei Monaten Fensterbreite faellt das weg, dort
+    // deckt sich die Vorschau mit dem, was danach kommt.
+    readonly property int vorschauMindest: 60 * 86400
+
     // Binance hat BTCUSDT am 31.07.2017 aufgenommen -- frueher gibt es nichts.
     readonly property int beginn: 1501459200
     readonly property int jetzt: Math.round(Date.now() / 1000)
     readonly property int endeEffektiv: root.fensterEnde > 0 ? root.fensterEnde : root.jetzt
     readonly property bool inVergangenheit: root.fensterEnde > 0 || root.bisZeit > 0
 
-    function fensterSetzen(ende) {
+    // Der Wert allein, ohne Nebenwirkung -- **0 heisst weiterhin: bis jetzt**.
+    function fensterWert(ende) {
         var min = root.beginn + root.sichtSekunden;
         var max = root.jetzt;
         var e = Math.round(Math.max(min, Math.min(max, ende)));
-        root.fensterEnde = (e >= max - 60) ? 0 : e;
+        return (e >= max - 60) ? 0 : e;
+    }
+
+    function fensterSetzen(ende) {
+        root.fensterEnde = root.fensterWert(ende);
         root.vonBisLoeschen();
         nachfassen.restart();
+    }
+
+    // Waehrend am Schieber gezogen wird: nur die Stelle merken, **nicht**
+    // nachladen. Das Bild kommt so lange aus der Uebersicht und folgt der
+    // Hand ohne Verzoegerung.
+    function fensterSchieben(ende) {
+        root.fensterEnde = root.fensterWert(ende);
     }
 
     // Nicht selbst nullen: das Fenster gehoert dem Wirt. Setzte es die Ansicht
@@ -159,7 +189,26 @@ Item {
 
     // Die Kerzen, die gezeichnet werden. Beim Zoomen ein Ausschnitt der
     // geholten, sonst alle.
+    // Der Ausschnitt der Tagesuebersicht, der zum gezogenen Ziel passt.
+    readonly property var vorschauKerzen: {
+        var u = root.uebersicht;
+        if (!u.length)
+            return root.kerzen;
+        var ende = root.endeEffektiv;
+        var spanne = Math.max(root.sichtSekunden, root.vorschauMindest);
+        var von = ende - spanne;
+        var aus = [];
+        for (var i = 0; i < u.length; i++) {
+            if (u[i][0] >= von && u[i][0] <= ende)
+                aus.push(u[i]);
+        }
+        return aus.length >= 3 ? aus : root.kerzen;
+    }
+
     readonly property var sicht: {
+        // Am Schieber gezogen: aus der Uebersicht, ohne eine einzige Abfrage.
+        if (root.vorschau)
+            return root.vorschauKerzen;
         if (root.zoomSekunden <= 0 || !root.kerzen.length)
             return root.kerzen;
         var bis = root.kerzen[root.kerzen.length - 1][0];
@@ -288,6 +337,14 @@ Item {
         var d = root.hoch - root.tief;
         return d > 0 ? d : Math.max(1, root.hoch * 0.0002);
     }
+    // **Was wirklich im Bild steht**, nicht was gewaehlt ist. In der Vorschau
+    // sind das zwei Monate, obwohl das Fenster auf 24 Stunden steht -- und
+    // die Zeitachse muss sich danach richten, sonst stehen Uhrzeiten unter
+    // einem Bild von zwei Monaten.
+    readonly property real gezeigteSekunden: root.sicht.length > 1
+        ? Math.max(1, root.sicht[root.sicht.length - 1][0] - root.sicht[0][0])
+        : root.sichtSekunden
+
     readonly property real kerzeBreite: root.sicht.length
                                         ? root.feldBreite / root.sicht.length : 1
 
@@ -304,6 +361,30 @@ Item {
             return -1;
         var i = Math.floor(x / root.kerzeBreite);
         return Math.max(0, Math.min(root.sicht.length - 1, i));
+    }
+
+    // Einmal je Waehrung. Der erste Abruf kostet den Dienst rund sechs
+    // Sekunden (vier Seiten bei Binance), danach sind es Millisekunden -- er
+    // haelt sie eine halbe Stunde. Bis sie da ist, verhaelt sich der Schieber
+    // wie vorher.
+    property string uebersichtFuer: ""
+
+    function uebersichtHolen() {
+        if (!root.feed || !root.live)
+            return;
+        if (root.uebersichtFuer === root.currency)
+            return;
+        var fuer = root.currency;
+        root.uebersichtFuer = fuer;
+        root.feed.getJson("/market/overview?cur=" + fuer, function (d, err) {
+            if (err || !d || !(d.candles || []).length) {
+                // Nicht gemerkt lassen -- beim naechsten Anlauf neu versuchen
+                if (root.uebersichtFuer === fuer)
+                    root.uebersichtFuer = "";
+                return;
+            }
+            root.uebersicht = d.candles;
+        });
     }
 
     function holen() {
@@ -348,7 +429,11 @@ Item {
         // neben den neuen Kerzen und niemand sieht, dass sie nicht passen.
         root.band = [];
         root.bandNr = 0;
+        // Die Uebersicht traegt ebenfalls Preise: in einer anderen Waehrung
+        // ist sie eine andere Reihe und wird neu geholt.
+        root.uebersichtFuer = "";
         root.holen();
+        root.uebersichtHolen();
     }
     onCustomSecsChanged: if (root.range === "custom") root.holen()
     // Von und Bis kommen als zwei Zuweisungen beim Wirt zurueck. `nachfassen`
@@ -356,8 +441,16 @@ Item {
     // mit halbem Fenster raus.
     onVonZeitChanged: nachfassen.restart()
     onBisZeitChanged: nachfassen.restart()
-    onLiveChanged: if (root.live) root.holen()
-    Component.onCompleted: root.holen()
+    onLiveChanged: {
+        if (root.live) {
+            root.holen();
+            root.uebersichtHolen();
+        }
+    }
+    Component.onCompleted: {
+        root.holen();
+        root.uebersichtHolen();
+    }
 
     // Jede Abfrage haelt die Boersenstroeme im Dienst am Leben -- bleibt sie
     // zwei Minuten aus, trennt er sie von selbst. Sieht niemand hin, fragt
@@ -701,7 +794,13 @@ Item {
             // ---- Kurve statt Kerzen ---------------------------------------
             // Bei neun Jahren in einem Bild ist eine Kerze ein Strich; dann
             // sagt die Linie mehr. Bei einer Stunde ist es umgekehrt.
-            if (root.kind === "line") {
+            // **Die Vorschau sagt, dass sie eine ist**: gedaempft und als
+            // Linie, auch wenn sonst Kerzen stehen. Tageskerzen in einem
+            // Fenster, das eigentlich Viertelstunden zeigt, waeren eine
+            // Genauigkeit, die die Daten nicht hergeben.
+            if (root.vorschau)
+                ctx.globalAlpha = 0.55;
+            if (root.kind === "line" || root.vorschau) {
                 var g = ctx.createLinearGradient(0, root.padT, 0, root.padT + preisHoehe);
                 g.addColorStop(0, Qt.rgba(root.accentColor.r, root.accentColor.g,
                                           root.accentColor.b, 0.28));
@@ -738,7 +837,7 @@ Item {
                 steigt = k[4] >= k[1];
                 farbe = steigt ? root.upColor : root.downColor;
 
-                if (root.kind === "candles") {
+                if (root.kind === "candles" && !root.vorschau) {
                     var mitte = i * kerzeBreite + kerzeBreite / 2;
 
                     // Docht
@@ -841,7 +940,7 @@ Item {
     // "31.10." allein ist bei einem Zeitraum, der Jahre umfassen kann, keine
     // Angabe, sondern ein Raten.
     function uhrzeit(ts) {
-        var sek = root.sichtSekunden;
+        var sek = root.gezeigteSekunden;
         if (sek <= 86400 * 2)
             return Qt.formatDateTime(new Date(ts * 1000), "HH:mm");
         if (sek <= 86400 * 400)
@@ -852,8 +951,8 @@ Item {
     // In der Ablesezeile ist Platz -- dort steht das volle Datum mit Uhrzeit.
     function zeitpunkt(ts) {
         return Qt.formatDateTime(new Date(ts * 1000),
-                                 root.sichtSekunden <= 86400 * 2 ? "dd.MM.yyyy  HH:mm"
-                                                                 : "dd.MM.yyyy");
+                                 root.gezeigteSekunden <= 86400 * 2 ? "dd.MM.yyyy  HH:mm"
+                                                                   : "dd.MM.yyyy");
     }
 
     // **Das Ablesen steht in einer eigenen Zeile.** In der Kopfzeile wuchs es
@@ -868,9 +967,14 @@ Item {
         anchors.rightMargin: root.baseFont
         anchors.top: parent.top
         anchors.topMargin: Math.max(kopf.height, wahl.height) + root.baseFont * 0.25
-        visible: root.zeigerDa
+        visible: root.zeigerDa || root.vorschau
         elide: Text.ElideRight
         text: {
+            // Beim Ziehen steht hier, **wo** man ist und dass das Bild grob
+            // ist. Der Platz war ohnehin freigehalten.
+            if (root.vorschau)
+                return Tr.t("market.preview", root.lang) + "    "
+                     + root.zeitpunkt(root.endeEffektiv);
             if (!root.zeigerDa)
                 return "";
             var k = root.sicht[root.zeiger];
@@ -1093,6 +1197,17 @@ Item {
         Rectangle {
             id: griff
 
+            // **Ziehen zerreisst die Bindung.** `drag.target` schreibt `x`
+            // unmittelbar, und damit folgt der Griff danach nicht mehr dem
+            // Fenster -- ein Klick neben den Griff verschob bisher das Bild,
+            // aber nicht den Griff. Nach jeder Geste wird sie deshalb neu
+            // geknuepft.
+            function bindungZurueck() {
+                griff.x = Qt.binding(function () {
+                    return schieber.griffX;
+                });
+            }
+
             x: schieber.griffX
             width: schieber.griffBreite
             anchors.verticalCenter: parent.verticalCenter
@@ -1114,11 +1229,28 @@ Item {
                 drag.maximumX: schieber.width - griff.width
                 drag.threshold: 0
 
+                // Solange gezogen wird, zeichnet die Ansicht aus der
+                // Uebersicht. Geholt wird erst beim Loslassen -- ein frisches
+                // Fenster kostet ueber eine Sekunde, und am Schieber waere
+                // jede Handbewegung eines.
+                onPressed: root.vorschau = true
+
                 onPositionChanged: {
                     if (!drag.active)
                         return;
                     // Der Griff steht fuer den **Anfang** des Fensters
+                    root.fensterSchieben(schieber.zeitBei(griff.x) + root.sichtSekunden);
+                }
+
+                onReleased: {
+                    root.vorschau = false;
                     root.fensterSetzen(schieber.zeitBei(griff.x) + root.sichtSekunden);
+                    griff.bindungZurueck();
+                }
+
+                onCanceled: {
+                    root.vorschau = false;
+                    griff.bindungZurueck();
                 }
             }
         }

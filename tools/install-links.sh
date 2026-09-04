@@ -7,7 +7,11 @@ R="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Aus dem Verzeichnis gelesen, nicht aufgezaehlt -- siehe Kommentar in
 # daemon/orangedeck-dashtab: eine fest verdrahtete Liste vergisst man.
-QMLFILES="$(cd "$R/ui/qml" && command ls -1 *.qml *.js 2>/dev/null)"
+#
+# Ausgenommen sind die Pruefstaende (`Pruefstand*.qml`): sie sind Werkzeug,
+# kein Bestandteil. Sie zeichnen ein einzelnes Bauteil zum Ansehen und haben
+# in Shell, Dashboard und Plugin nichts verloren.
+QMLFILES="$(cd "$R/ui/qml" && command ls -1 *.qml *.js 2>/dev/null | grep -v '^Pruefstand')"
 
 link() {  # link <ziel-im-repo> <ort-im-system>
   local src="$1" dst="$2"

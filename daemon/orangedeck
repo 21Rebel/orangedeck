@@ -987,6 +987,70 @@ def klines(spanne, symbol="BTCUSDT", von=0, bis=0):
     return aus
 
 
+_uebersicht_lock = threading.Lock()
+_uebersicht = (0.0, [])
+
+
+def uebersicht():
+    """Tageskerzen der **ganzen** Geschichte, am Stueck.
+
+    Wofuer: der Schieber der Zeitachse spannt neun Jahre auf eine Leiste. Ein
+    Zug von zehn Bildpunkten sind dort schnell hundert Tage, und jede Stelle
+    waere ein eigenes Fenster -- **gemessen 1,1 bis 1,5 Sekunden**, weil dafuer
+    bei Binance nachgefragt wird. Beim Ziehen ist das unbrauchbar.
+
+    Deshalb liegt die ganze Geschichte einmal grob vor: rund 3.300 Tageskerzen,
+    etwa 270 kB. Die Oberflaeche haelt sie und zeichnet daraus **waehrend** des
+    Ziehens sofort -- gob, aber sofort und ueberall. Das genaue Fenster kommt,
+    wenn die Hand loslaesst.
+
+    Binance gibt hoechstens 1000 Kerzen je Abfrage, also vier Seiten. Ein Tag
+    aendert sich nur an seinem Ende; eine halbe Stunde Puffer reicht.
+    """
+    global _uebersicht
+    with _uebersicht_lock:
+        wann, daten = _uebersicht
+        if daten and time.time() - wann < 1800:
+            return daten
+    aus = []
+    start = 1501459200          # 31.07.2017, der erste Handelstag
+    jetzt = int(time.time())
+    try:
+        while start < jetzt and len(aus) < 6000:
+            url = ("https://api.binance.com/api/v3/klines?symbol=BTCUSDT"
+                   "&interval=1d&limit=1000&startTime=%d" % (start * 1000))
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                seite = json.loads(r.read().decode())
+            if not seite:
+                break
+            for k in seite:
+                try:
+                    volumen = float(k[5])
+                    kauf = float(k[9])
+                    aus.append([int(k[0]) // 1000, round(float(k[1]), 2),
+                                round(float(k[2]), 2), round(float(k[3]), 2),
+                                round(float(k[4]), 2), round(kauf, 3),
+                                round(max(0.0, volumen - kauf), 3)])
+                except (IndexError, TypeError, ValueError):
+                    continue
+            # Die naechste Seite beginnt einen Tag nach der letzten Kerze --
+            # ohne das schickt Binance dieselbe Seite noch einmal.
+            weiter = int(seite[-1][0]) // 1000 + 86400
+            if weiter <= start:
+                break
+            start = weiter
+    except Exception as e:
+        sys.stderr.write("Uebersicht: %s\n" % e)
+        with _uebersicht_lock:
+            _wann, alt = _uebersicht
+        # Ein alter Stand ist besser als ein leeres Bild
+        return alt if alt else []
+    with _uebersicht_lock:
+        _uebersicht = (time.time(), aus)
+    return aus
+
+
 def markt_kurs(feed, cur):
     """Umrechnungsfaktor von Dollar in `cur`.
 
@@ -1636,6 +1700,29 @@ class _Handler(BaseHTTPRequestHandler):
                         self._send(json.dumps({"error": err[0]}), err[1])
                     else:
                         self._send(body)
+            elif path == "/market/overview":
+                # Die ganze Geschichte als Tageskerzen, einmal am Stueck.
+                # **Bewusst ein eigener Weg**: sie sind rund 270 kB und
+                # aendern sich einmal am Tag, `/market` wird jede Sekunde
+                # geholt. Die Oberflaeche laedt sie einmal und zeichnet
+                # daraus, solange am Schieber gezogen wird.
+                waehrung = "usd"
+                for teil in (zerlegt.query or "").split("&"):
+                    name, _, wert = teil.partition("=")
+                    if name == "cur" and wert.isalpha() and len(wert) == 3:
+                        waehrung = wert.lower()
+                kerzen = uebersicht()
+                kurs, umgerechnet = markt_kurs(self.feed, waehrung)
+                if kurs != 1.0:
+                    kerzen = [[k[0], round(k[1] * kurs, 2), round(k[2] * kurs, 2),
+                               round(k[3] * kurs, 2), round(k[4] * kurs, 2)]
+                              + list(k[5:])
+                              for k in kerzen]
+                self._send(json.dumps({
+                    "cur": waehrung,
+                    "converted": umgerechnet,
+                    "candles": kerzen,
+                }, separators=(",", ":")))
             elif path == "/market":
                 # `?tf=<sekunden>&n=<anzahl>` -- jede Abfrage haelt die
                 # Boersenstroeme am Leben; bleibt sie zwei Minuten aus, gehen
