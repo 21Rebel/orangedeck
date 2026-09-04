@@ -401,7 +401,7 @@ neu oeffnen.
     systemctl --user restart dms
     cmake --build build                 # die eigenstaendige Anwendung
     flatpak-builder --user --install --force-clean \
-        build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
+        build-flatpak packaging/flatpak/store._21rebel.orangedeck.dev.yml
 
 Die letzten beiden tragen eine **Kopie**, keinen Verweis.
 
@@ -517,7 +517,7 @@ gesetzt, global steht weiter der Klarname.
     systemctl --user restart dms
     cmake --build build                 # die eigenstaendige Anwendung
     flatpak-builder --user --install --force-clean \
-        build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
+        build-flatpak packaging/flatpak/store._21rebel.orangedeck.dev.yml
 
 Die letzten beiden tragen eine **Kopie**, keinen Verweis. Und das
 **Quickshell-Fenster laedt nicht von selbst nach** -- einmal schliessen und
@@ -673,7 +673,7 @@ Push wird abgelehnt. Der Zugangshelfer im Repo loest das, siehe oben.
     systemctl --user restart dms
     cmake --build build             # die eigenstaendige Anwendung
     flatpak-builder --user --install --force-clean \
-        build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
+        build-flatpak packaging/flatpak/store._21rebel.orangedeck.dev.yml
 
 **Die letzten beiden nicht vergessen** -- sie tragen eine *Kopie*, keinen
 Verweis. Genau daran ist der Nutzer am 02.09. vorbeigelaufen: die Aenderungen

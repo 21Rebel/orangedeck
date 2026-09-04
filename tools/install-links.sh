@@ -109,5 +109,5 @@ fi
 if flatpak info --user store._21rebel.orangedeck >/dev/null 2>&1; then
   echo "Flatpak ist installiert und jetzt VERALTET. Neu bauen mit:"
   echo "  flatpak-builder --user --install --force-clean \\"
-  echo "      $R/build-flatpak $R/packaging/flatpak/store._21rebel.orangedeck.yml"
+  echo "      $R/build-flatpak $R/packaging/flatpak/store._21rebel.orangedeck.dev.yml"
 fi

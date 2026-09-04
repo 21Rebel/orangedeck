@@ -85,7 +85,7 @@ braucht `qt6-websockets`; fehlt das Paket, bleibt der Dienst.
 
     flatpak install --user flathub org.kde.Platform//6.9 org.kde.Sdk//6.9
     flatpak-builder --user --install --force-clean \
-        build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
+        build-flatpak packaging/flatpak/store._21rebel.orangedeck.dev.yml
     flatpak run --user store._21rebel.orangedeck
 
 Das Paket bringt den Daemon mit und startet ihn, falls noch keiner laeuft.

@@ -2735,8 +2735,15 @@ Jetzt liegen zwei nebeneinander:
 
 | | |
 |---|---|
-| `store._21rebel.orangedeck.yml` | zum **Arbeiten** -- aus dem Verzeichnis, Aenderung sofort sichtbar, ohne Push |
-| `store._21rebel.orangedeck.git.yml` | zum **Ausliefern** -- aus dem oeffentlichen Repo, auf einen Commit festgenagelt |
+| `store._21rebel.orangedeck.dev.yml` | zum **Arbeiten** -- aus dem Verzeichnis, Aenderung sofort sichtbar, ohne Push |
+| `store._21rebel.orangedeck.yml` | zum **Ausliefern** -- aus dem oeffentlichen Repo, auf einen Commit festgenagelt |
+
+**Den kanonischen Namen traegt der zum Ausliefern**, und das ist kein Zufall:
+Flathubs Pruefer verlangt, dass die Datei so heisst wie die Kennung
+(`appid-filename-mismatch`). Hiesse sie hier anders, muesste man sie vor der
+Einreichung umbenennen -- ein Handgriff, den man vergisst, und dann kann die
+eingereichte Datei von der geprueften abweichen. So ist sie byteweise
+dieselbe.
 
 **Wer einen aendert, muss den anderen mitziehen.** Der Hinweis steht in beiden
 Dateien; eine gemeinsame Grundlage waere schoener, aber flatpak-manifest
@@ -2744,7 +2751,15 @@ kennt kein Einbinden.
 
 Gegengeprueft am 04.09.2026: der Auslieferungs-Bauplan baut aus nichts als
 Repo-Adresse und Commit durch (43 MB, `orangedeck`, `orangedeck-app`,
-`orangedeck-launch`).
+`orangedeck-launch`), und **Flathubs eigener Pruefer meldet keinen Fehler**:
+
+    flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
+        manifest packaging/flatpak/store._21rebel.orangedeck.yml
+
+Uebrig bleibt ein Hinweis: `org.kde.Platform 6.10` gibt es inzwischen. Ein
+Wechsel ist nicht umsonst -- die Fassung von `layer-shell-qt` haengt an Qt
+und ECM der Laufzeit (siehe der Kommentar im Bauplan), also muesste sie
+mitziehen.
 
 ### Zwei Fallen dabei
 

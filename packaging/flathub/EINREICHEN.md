@@ -6,11 +6,14 @@ haengt an einer Person, nicht an einem Werkzeug.
 
 ## Was fertig ist
 
-- **Der Bauplan** `packaging/flatpak/store._21rebel.orangedeck.git.yml` --
+- **Der Bauplan** `packaging/flatpak/store._21rebel.orangedeck.yml` --
   zieht aus dem oeffentlichen Repo, auf einen Commit festgenagelt. Genau die
   Form, die Flathub verlangt; ein `type: dir` wie im Bauplan zum Arbeiten
   waere abgelehnt worden.
 - **Die Metadaten** bestehen `appstreamcli validate`, samt fuenf Screenshots.
+- **Flathubs eigener Pruefer meldet keinen Fehler** (Stand 04.09.2026). Uebrig
+  bleibt ein Hinweis auf die neuere Laufzeit `org.kde.Platform 6.10`; ein
+  Wechsel dorthin zieht die Fassung von `layer-shell-qt` nach sich.
 - **Die Berechtigungen** sind knapp gehalten: Netz, Wayland (mit Rueckfall auf
   X11), IPC und die Grafikkarte. **Kein `--filesystem`** -- die Anwendung
   fasst nichts auf dem Rechner an, ihre Einstellungen landen unter
@@ -36,9 +39,16 @@ Passend dazu gehoert ein `<release>`-Eintrag in die Metadaten.
 ### 2. Den Antrag stellen
 
 Flathub nimmt Antraege als Pull Request gegen `flathub/flathub`, Zweig
-`new-pr`. Hinein gehoert **nur** die Bauplan-Datei, benannt wie die Kennung:
+`new-pr`. Hinein gehoert **nur** die Bauplan-Datei, und die heisst hier schon
+richtig:
 
-    store._21rebel.orangedeck.yml
+    packaging/flatpak/store._21rebel.orangedeck.yml
+
+**Nicht umbenennen noetig.** Der Pruefer verlangt, dass der Dateiname der
+Kennung entspricht (`appid-filename-mismatch`), und deshalb traegt der
+Auslieferungs-Bauplan den kanonischen Namen -- der zum Arbeiten heisst
+`...dev.yml`. So ist die eingereichte Datei byteweise dieselbe wie die
+gepruefte.
 
 Nach der Annahme legt Flathub ein eigenes Repo
 `flathub/store._21rebel.orangedeck` an; ab dann wird dort gepflegt.
@@ -64,14 +74,14 @@ gehoert erwaehnt, wenn jemand nach der Herkunft fragt.
     # Baut aus nichts als Repo-Adresse und Commit?
     flatpak-builder --force-clean --disable-cache \
         --state-dir=/tmp/fp-state /tmp/fp-bau \
-        packaging/flatpak/store._21rebel.orangedeck.git.yml
+        packaging/flatpak/store._21rebel.orangedeck.yml
 
     # Metadaten
     appstreamcli validate packaging/flatpak/store._21rebel.orangedeck.metainfo.xml
 
     # Flathubs eigener Pruefer (dasselbe Werkzeug wie in deren CI)
     flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
-        manifest packaging/flatpak/store._21rebel.orangedeck.git.yml
+        manifest packaging/flatpak/store._21rebel.orangedeck.yml
 
 **Und vorher auf einem fremden System laufen lassen.** Der Leitsatz des
 04.09.2026: was nur eine Umgebung angefasst hat, ist ungeprueft. Das Buendel
