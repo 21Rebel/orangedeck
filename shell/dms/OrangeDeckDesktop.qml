@@ -150,8 +150,10 @@ Item {
         feed: feedState
         opts: root.opts
         // Auf dem Desktop stellt niemand Knoepfe -- das Widget ist zum Ansehen
-        // da, nicht zum Bedienen.
+        // da, nicht zum Bedienen. Aus demselben Grund holt sich das Suchfeld
+        // des Explorers hier keinen Tastaturfokus.
         minerActions: false
+        searchFocus: false
         baseFont: Theme.fontSizeSmall
         textColor: Theme.surfaceText
         dimColor: Theme.surfaceVariantText

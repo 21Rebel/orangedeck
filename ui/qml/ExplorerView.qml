@@ -39,6 +39,40 @@ Item {
     property bool busy: false
     property var trail: []            // Weg dorthin, fuer den Zurueck-Knopf
 
+    // Wer den Explorer aufschlaegt, will tippen -- also gehoert der Fokus ins
+    // Suchfeld. Die Wirte legen alle Ansichten uebereinander und schalten nur
+    // die Sichtbarkeit um; `visible` ist damit das Signal fuer "aufgeschlagen".
+    // Das Desktop-Widget nimmt keine Tastatur an und stellt das ab.
+    property bool focusSearch: true
+    // "Ich gebe den Fokus wieder her." Die Wirte mit Tastenkuerzeln
+    // (Fenster und Quickshell) holen ihn sich darauf zurueck -- sonst sind
+    // ihre Kuerzel nach einem Besuch im Explorer tot.
+    signal searchFocusReleased()
+
+    onVisibleChanged: {
+        if (root.visible) {
+            // **Nicht sofort**: beim Umschalten steht der Baum noch nicht,
+            // ein `forceActiveFocus` in dieser Runde verpufft.
+            if (root.focusSearch)
+                Qt.callLater(root.focusSearchField);
+        } else if (field.activeFocus) {
+            field.focus = false;
+            root.searchFocusReleased();
+        }
+    }
+
+    // Ist der Explorer die Startansicht, ist er von Anfang an sichtbar und
+    // `onVisibleChanged` kommt nie.
+    Component.onCompleted: {
+        if (root.visible && root.focusSearch)
+            Qt.callLater(root.focusSearchField);
+    }
+
+    function focusSearchField() {
+        if (root.visible && root.focusSearch)
+            field.forceActiveFocus();
+    }
+
     // In die Zwischenablage. QtQuick hat dafuer keine eigene Schnittstelle --
     // der uebliche Weg ist ein unsichtbares Textfeld, das man auswaehlt und
     // kopieren laesst.

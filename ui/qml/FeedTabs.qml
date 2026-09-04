@@ -37,6 +37,9 @@ Item {
     // trotzdem dieses Bauteil, damit die Ansichten nur an einer Stelle
     // verdrahtet sind.
     property bool tabsVisible: true
+    // Darf sich das Suchfeld des Explorers beim Aufschlagen den Tastaturfokus
+    // holen? Auf dem Desktop-Widget nicht -- dort tippt niemand.
+    property bool searchFocus: true
 
     property color textColor: "#e6e0e9"
     property color dimColor: "#9a94a6"
@@ -52,6 +55,8 @@ Item {
 
     signal optRequested(string key, var value)
     signal viewRequested(int v)
+    // Der Explorer hat den Tastaturfokus wieder hergegeben.
+    signal searchFocusReleased()
 
     function o(key, def) {
         return root.opts[key] === undefined ? def : root.opts[key];
@@ -235,9 +240,12 @@ Item {
         textColor: root.textColor
         dimColor: root.dimColor
         accentColor: root.accentColor
+        focusSearch: root.searchFocus
         onTileColorModeRequested: function (m) {
             root.optRequested("tileColorMode", m);
         }
+        // Weiterreichen: der Wirt holt sich seine Tastenkuerzel zurueck.
+        onSearchFocusReleased: root.searchFocusReleased()
     }
 
     MarketView {

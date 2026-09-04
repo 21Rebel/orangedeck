@@ -366,9 +366,15 @@ Window {
         onViewRequested: function (v) {
             win.view = v;
         }
+        // Das Suchfeld des Explorers nimmt den Fokus, solange es zu sehen ist.
+        // Beim Verlassen gehoert er wieder hierher -- sonst sind die
+        // Tastenkuerzel nach einem Besuch im Explorer tot.
+        onSearchFocusReleased: keys.forceActiveFocus()
     }
 
     Item {
+        id: keys
+
         anchors.fill: parent
         focus: true
 
