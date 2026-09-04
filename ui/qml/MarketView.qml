@@ -32,7 +32,7 @@ Item {
     // nicht nach der Zeit** -- ein Balken quer auf Kurshoehe passt in kein
     // Feld, das von links nach rechts laeuft. Deshalb eine eigene Flaeche
     // statt einer weiteren Spur unter dem Kurs.
-    property string sub: "price"         // price | liq
+    property string sub: "price"         // price | liq | heat
     property int customSecs: 259200      // drei Tage als Vorgabe
     // Fadenkreuz und laufendes Band -- beides einschaltbar
     property bool crosshair: true
@@ -86,6 +86,33 @@ Item {
     property var liqHist: []
     property var ratio: []
     property int liqSeit: 0
+    // Die Heatmap kommt ueber einen eigenen Weg und **nicht im Sekundentakt**:
+    // sie ist gerechnet, nicht beobachtet, und aendert sich nur mit dem
+    // offenen Interesse -- das schreibt Binance alle fuenf Minuten fort.
+    property var heat: ({})
+
+    function heatHolen() {
+        if (!root.feed || !root.live || root.sub !== "heat")
+            return;
+        var pfad = "/market/heatmap?range=" + root.range
+                 + (root.range === "custom" ? "&secs=" + root.sichtSekunden : "")
+                 + "&cur=" + root.currency;
+        root.feed.getJson(pfad, function (d, err) {
+            if (err || !d)
+                return;
+            root.heat = d;
+        });
+    }
+
+    Timer {
+        interval: 60000
+        repeat: true
+        running: root.live && root.visible && root.sub === "heat"
+        triggeredOnStart: true
+        onTriggered: root.heatHolen()
+    }
+
+    onSubChanged: if (root.sub === "heat") root.heatHolen()
     property int tradeZahl: 0
     // Wahr, wenn die Kerzen aus Dollar umgerechnet sind -- ueber Jahre ist
     // das eine Umrechnung zum heutigen Kurs, keine Wahrheit.
@@ -491,15 +518,17 @@ Item {
 
         anchors.left: parent.left
         anchors.top: parent.top
-        labels: [Tr.t("market.sub.price", root.lang), Tr.t("market.sub.liq", root.lang)]
-        current: root.sub === "liq" ? 1 : 0
+        labels: [Tr.t("market.sub.price", root.lang),
+                 Tr.t("market.sub.liq", root.lang),
+                 Tr.t("market.sub.heat", root.lang)]
+        current: root.sub === "liq" ? 1 : (root.sub === "heat" ? 2 : 0)
         fontSize: root.baseFont
         textColor: root.textColor
         dimColor: root.dimColor
         accentColor: root.accentColor
         z: 40
         onPicked: function (i) {
-            root.subRequested(i === 1 ? "liq" : "price");
+            root.subRequested(i === 1 ? "liq" : (i === 2 ? "heat" : "price"));
         }
     }
 
@@ -1207,6 +1236,30 @@ Item {
             color: "#11131f"
             font.pixelSize: root.baseFont - 2
         }
+    }
+
+    MarketHeat {
+        visible: root.sub === "heat"
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.topMargin: Math.max(kopf.height, wahl.height, unterreiter.height)
+                           + root.baseFont * 0.6
+        lang: root.lang
+        zeichen: root.zeichen
+        yAchse: root.heat.yAxis || []
+        zellen: root.heat.cells || []
+        hoechst: root.heat.max || 0
+        schlusskurse: root.heat.closes || []
+        hebel: (root.heat.model && root.heat.model.leverage) || []
+        zuLang: root.heat.tooLong === true
+        maxTage: root.heat.maxDays || 30
+        textColor: root.textColor
+        dimColor: root.dimColor
+        accentColor: root.accentColor
+        lineColor: root.lineColor
+        baseFont: root.baseFont
     }
 
     MarketLiq {

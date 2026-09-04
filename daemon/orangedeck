@@ -1420,6 +1420,162 @@ def verhaeltnis():
     return aus
 
 
+# --------------------------------------------------------------------------
+# Liquidations-Heatmap -- ein **Modell**, keine Messung
+# --------------------------------------------------------------------------
+# Was Coinglass unter diesem Namen zeigt, ist hochgerechnet: aus dem offenen
+# Interesse und *angenommenen* Hebeln wird abgeleitet, wo Positionen liegen
+# und bei welchem Kurs sie sterben wuerden. Ihr eigenes Feld heisst
+# `liquidation_leverage_data`, nicht `liquidation_data`.
+#
+# Ihre Schnittstelle dafuer kostet 699 $ im Monat (Professional-Tarif, ohne
+# Schluessel kommt `{"code":"401","msg":"API key missing."}`). Die **Zutaten**
+# sind aber frei: den Verlauf des offenen Interesses geben Binance, OKX und
+# Bybit ohne Schluessel heraus. Also wird hier selbst gerechnet.
+#
+# **Zwei Annahmen stecken darin, und beide sind erfunden**, nicht gemessen:
+# die Verteilung der Hebel und die Aufteilung zwischen Long und Short. Sie
+# stehen deshalb hier oben als Konstanten, und die Oberflaeche nennt sie.
+# Niemand veroeffentlicht, mit welchem Hebel fremde Positionen laufen.
+HEBEL_STUFEN = ((5, 0.30), (10, 0.30), (25, 0.20), (50, 0.13), (100, 0.07))
+# Halb long, halb short. Das Konten-Verhaeltnis waere die naechstliegende
+# Verfeinerung -- es zaehlt aber **Konten**, nicht Kapital, und waere damit
+# eine zweite Annahme auf der ersten.
+LONG_ANTEIL = 0.5
+# Binance haelt den Verlauf des offenen Interesses **dreissig Tage** vor
+# (gemessen: 5m reicht 1,7 Tage, 1h 20,8 Tage, 1d 30,0 Tage). Fuer laengere
+# Fenster gibt es das Modell schlicht nicht.
+OI_RASTER = (("5m", 300), ("15m", 900), ("30m", 1800), ("1h", 3600),
+             ("2h", 7200), ("4h", 14400), ("6h", 21600), ("12h", 43200),
+             ("1d", 86400))
+OI_MAX_TAGE = 30
+
+_oi_lock = threading.Lock()
+_oi = {}   # raster -> (zeitpunkt, {sekunde: offenes Interesse in BTC})
+
+
+def offenes_interesse(raster):
+    """Verlauf des offenen Interesses, gepuffert."""
+    with _oi_lock:
+        eintrag = _oi.get(raster)
+        if eintrag and time.time() - eintrag[0] < 240:
+            return eintrag[1]
+    try:
+        roh = _hol_json("https://fapi.binance.com/futures/data/openInterestHist"
+                        "?symbol=BTCUSDT&period=%s&limit=500" % raster, timeout=20)
+        d = {int(x["timestamp"]) // 1000: float(x["sumOpenInterest"]) for x in roh}
+    except Exception as e:
+        sys.stderr.write("Offenes Interesse %s: %s\n" % (raster, e))
+        with _oi_lock:
+            eintrag = _oi.get(raster)
+        return eintrag[1] if eintrag else {}
+    with _oi_lock:
+        _oi[raster] = (time.time(), d)
+    return d
+
+
+def heatmap(kerzen, stufen=64, schwelle=0.004):
+    """Wo Positionen liegen wuerden, ueber die Zeit.
+
+    Der Gedanke in drei Schritten:
+
+    1. **Waechst das offene Interesse, wurden Positionen eroeffnet** -- und
+       zwar zum Kurs, der gerade galt. Faellt es, wurden welche geschlossen;
+       das interessiert hier nicht.
+    2. Eine Long-Position mit Hebel L stirbt rund bei `Kurs * (1 - 1/L)`, eine
+       Short bei `Kurs * (1 + 1/L)`. Die Erhaltungsmarge ist dabei
+       **weggelassen** -- sie schoebe die Schwelle ein Stueck naeher an den
+       Einstieg, und sie ist je Boerse und Groesse verschieden.
+    3. **Ein Niveau lebt, bis der Kurs es durchschreitet.** Danach ist es
+       abgeraeumt und verschwindet -- daher brechen die Baender im Bild dort
+       ab, wo der Kurs war.
+
+    Zurueck kommt ein duennes Gitter: nur Zellen ueber `schwelle` mal dem
+    hoechsten Wert. Voll waeren es 64 mal 400 Zahlen, und die meisten sind
+    null.
+    """
+    if len(kerzen) < 3:
+        return {"yAxis": [], "cells": [], "max": 0}
+    tief = min(k[3] for k in kerzen)
+    hoch = max(k[2] for k in kerzen)
+    spanne = hoch - tief
+    if spanne <= 0:
+        return {"yAxis": [], "cells": [], "max": 0}
+    # Etwas Luft, damit die Baender knapp ausserhalb der Kurspanne noch
+    # hineinpassen -- dort liegen die interessanten.
+    tief -= spanne * 0.04
+    hoch += spanne * 0.04
+    breite = (hoch - tief) / stufen
+    n = len(kerzen)
+
+    zeiten = sorted(offenes_interesse(_oi_raster_fuer(kerzen)))
+    werte = offenes_interesse(_oi_raster_fuer(kerzen))
+    if len(zeiten) < 3:
+        return {"yAxis": [], "cells": [], "max": 0, "kein_oi": True}
+
+    def oi_bei(ts):
+        # Der letzte Punkt, der nicht nach `ts` liegt
+        links, rechts = 0, len(zeiten) - 1
+        if ts < zeiten[0]:
+            return None
+        while links < rechts:
+            mitte = (links + rechts + 1) // 2
+            if zeiten[mitte] <= ts:
+                links = mitte
+            else:
+                rechts = mitte - 1
+        return werte[zeiten[links]]
+
+    gitter = [[0.0] * stufen for _ in range(n)]
+    vorher = oi_bei(kerzen[0][0])
+    hoechst = 0.0
+    for i in range(1, n):
+        jetzt = oi_bei(kerzen[i][0])
+        if jetzt is None or vorher is None:
+            vorher = jetzt
+            continue
+        zuwachs = jetzt - vorher
+        vorher = jetzt
+        if zuwachs <= 0:
+            continue
+        preis = kerzen[i][4]
+        wert = zuwachs * preis
+        for hebel, anteil in HEBEL_STUFEN:
+            for ist_long in (True, False):
+                teil = wert * anteil * (LONG_ANTEIL if ist_long
+                                        else 1.0 - LONG_ANTEIL)
+                niveau = preis * (1.0 - 1.0 / hebel) if ist_long \
+                    else preis * (1.0 + 1.0 / hebel)
+                if niveau < tief or niveau >= hoch:
+                    continue
+                y = int((niveau - tief) / breite)
+                for j in range(i, n):
+                    if kerzen[j][3] <= niveau <= kerzen[j][2]:
+                        break
+                    gitter[j][y] += teil
+                    if gitter[j][y] > hoechst:
+                        hoechst = gitter[j][y]
+    grenze = hoechst * schwelle
+    zellen = []
+    for x in range(n):
+        for y in range(stufen):
+            if gitter[x][y] > grenze:
+                zellen.append([x, y, round(gitter[x][y])])
+    return {"yAxis": [round(tief + (y + 0.5) * breite, 2) for y in range(stufen)],
+            "cells": zellen, "max": round(hoechst)}
+
+
+def _oi_raster_fuer(kerzen):
+    """Das Raster des offenen Interesses, das zu den Kerzen passt."""
+    if len(kerzen) < 2:
+        return "1h"
+    schritt = kerzen[1][0] - kerzen[0][0]
+    for name, laenge in OI_RASTER:
+        if laenge >= schritt:
+            return name
+    return "1d"
+
+
 def markt_kurs(feed, cur):
     """Umrechnungsfaktor von Dollar in `cur`.
 
@@ -2069,6 +2225,51 @@ class _Handler(BaseHTTPRequestHandler):
                         self._send(json.dumps({"error": err[0]}), err[1])
                     else:
                         self._send(body)
+            elif path == "/market/heatmap":
+                # `?range=...&secs=...&cur=...` -- dieselben Fenster wie
+                # `/market`. **Ein eigener Weg**, weil das Modell nur im
+                # Heatmap-Reiter gebraucht wird und `/market` jede Sekunde
+                # geholt wird.
+                spanne, eigen, waehrung = "24h", 0, "usd"
+                for teil in (zerlegt.query or "").split("&"):
+                    name, _, wert = teil.partition("=")
+                    try:
+                        if name == "range" and (wert in KLINE_SPANS or wert == "custom"):
+                            spanne = wert
+                        elif name == "secs":
+                            eigen = max(300, min(400000000, int(wert)))
+                        elif name == "cur" and wert.isalpha() and len(wert) == 3:
+                            waehrung = wert.lower()
+                    except ValueError:
+                        pass
+                if spanne == "custom" and eigen:
+                    kerzen = klines(raster_fuer(eigen))
+                else:
+                    kerzen = klines(spanne)
+                # **Dreissig Tage sind die Grenze**, weiter zurueck gibt
+                # Binance den Verlauf des offenen Interesses nicht mehr her.
+                # Ein leeres Bild mit Begruendung ist besser als ein
+                # erfundenes.
+                zu_lang = bool(kerzen) and (
+                    kerzen[-1][0] - kerzen[0][0] > OI_MAX_TAGE * 86400)
+                d = ({"yAxis": [], "cells": [], "max": 0} if zu_lang
+                     else heatmap(kerzen))
+                kurs, umgerechnet = markt_kurs(self.feed, waehrung)
+                if kurs != 1.0:
+                    d["yAxis"] = [round(y * kurs, 2) for y in d["yAxis"]]
+                    d["cells"] = [[c[0], c[1], round(c[2] * kurs)] for c in d["cells"]]
+                    d["max"] = round(d["max"] * kurs)
+                d["converted"] = umgerechnet
+                d["tooLong"] = zu_lang
+                d["maxDays"] = OI_MAX_TAGE
+                d["times"] = [k[0] for k in kerzen]
+                d["closes"] = [k[4] * kurs for k in kerzen] if kurs != 1.0 \
+                    else [k[4] for k in kerzen]
+                # Die Annahmen mitschicken -- die Oberflaeche soll sie nennen
+                # koennen, ohne sie ein zweites Mal zu kennen.
+                d["model"] = {"leverage": [list(x) for x in HEBEL_STUFEN],
+                              "longShare": LONG_ANTEIL}
+                self._send(json.dumps(d, separators=(",", ":")))
             elif path == "/market/overview":
                 # Die ganze Geschichte als Tageskerzen, einmal am Stueck.
                 # **Bewusst ein eigener Weg**: sie sind rund 270 kB und

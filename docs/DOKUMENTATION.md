@@ -2432,3 +2432,81 @@ Dass die drei auseinanderliegen (04.09.2026: OKX 50,7 %, Bybit 53,4 %,
 Binance 50,2 %), ist kein Fehler, sondern der Punkt -- es sind drei
 verschiedene Nutzerschaften. Ein Mittelwert daraus waere eine Erfindung,
 deshalb stehen sie einzeln.
+
+
+## Die Liquidations-Heatmap (`MarketHeat.qml`) -- ein Modell, kein Messwert
+
+Der dritte Unterreiter zeigt, was Coinglass unter diesem Namen zeigt:
+waagerechte Baender, je heller desto mehr, die dort abbrechen, wo der Kurs
+sie durchschritten hat.
+
+**Der Unterschied zum Reiter daneben ist grundsaetzlich.** "Liquidationen"
+zeigt, wo liquidiert *wurde* -- gemessen, aus dem eigenen Strom. "Heatmap"
+zeigt, wo Positionen *laegen* und wo sie sterben *wuerden*. Die hellen
+Baender liegen deshalb **vor** dem Kurs, und eine Messung kann das
+prinzipiell nicht: sie kennt keine Zukunft.
+
+### Was Coinglass verkauft, und was frei ist
+
+Nachgesehen am 04.09.2026:
+
+| | |
+|---|---|
+| `futures/liquidation/heatmap/model1` | **Professional-Tarif, 699 $/Monat** |
+| `futures/liquidation/liquidation-order` (7 Tage) | Standard-Tarif, 299 $/Monat |
+| ohne Schluessel | `{"code":"401","msg":"API key missing."}` |
+| Verlauf des offenen Interesses | **frei** bei Binance, OKX und Bybit |
+
+Ihr eigenes Feld heisst `liquidation_leverage_data`, nicht
+`liquidation_data` -- der Name sagt schon, dass darin gerechneter Hebel
+steht und keine Ereignisse. Die Zutaten sind frei, also wird hier selbst
+gerechnet.
+
+### Der Gedanke in drei Schritten
+
+1. **Waechst das offene Interesse, wurden Positionen eroeffnet** -- zum Kurs,
+   der gerade galt. Faellt es, wurden welche geschlossen; das interessiert
+   nicht.
+2. Eine Long-Position mit Hebel L stirbt rund bei `Kurs * (1 - 1/L)`, eine
+   Short bei `Kurs * (1 + 1/L)`. Die **Erhaltungsmarge ist weggelassen** --
+   sie schoebe die Schwelle ein Stueck naeher an den Einstieg und ist je
+   Boerse und Positionsgroesse verschieden.
+3. **Ein Niveau lebt, bis der Kurs es durchschreitet.** Danach ist es
+   abgeraeumt. Daher brechen die Baender im Bild dort ab, wo der Kurs war --
+   das ist die Regel, an der man dem Modell beim Arbeiten zusehen kann.
+
+### Zwei erfundene Annahmen, und warum sie oben stehen
+
+`HEBEL_STUFEN` (5x 30 %, 10x 30 %, 25x 20 %, 50x 13 %, 100x 7 %) und
+`LONG_ANTEIL` (0,5) sind **nicht gemessen**. Niemand veroeffentlicht, mit
+welchem Hebel fremde Positionen laufen. Sie stehen deshalb als Konstanten
+ganz oben, der Dienst schickt sie in der Antwort mit, und die Ansicht nennt
+sie im Klartext -- neben einer Marke "SCHAETZUNG", die Teil der Ansicht ist
+und keine Fussnote.
+
+Das Konten-Verhaeltnis waere die naechstliegende Verfeinerung des
+Long/Short-Splits. Es zaehlt aber **Konten und nicht Kapital** und waere
+damit eine zweite Annahme auf der ersten.
+
+### Grenzen, die aus den Daten kommen
+
+**Dreissig Tage.** Binance haelt den Verlauf des offenen Interesses nur so
+lange vor -- gemessen: `5m` reicht 1,7 Tage, `1h` 20,8 Tage, `1d` 30,0 Tage.
+Fuer ein laengeres Fenster gibt es das Modell nicht, und die Antwort sagt das
+mit `tooLong` statt ein leeres Bild zu zeigen.
+
+### Aufwand
+
+Das Rechnen kostet **5 ms** (96 Kerzen, 500 OI-Punkte). Teuer ist nur das
+Holen des offenen Interesses (1,6 s), deshalb vier Minuten Puffer. Die
+Antwort ist ein **duennes** Gitter: nur Zellen ueber 0,4 % des hoechsten
+Werts -- 2.545 Zellen und 41 kB fuer 24 Stunden statt 64 mal 96 Zahlen, von
+denen die meisten null sind.
+
+Die Oberflaeche holt sie **einmal pro Minute und nur im Heatmap-Reiter**.
+`/market` wird jede Sekunde geholt; ein gerechnetes Bild, das sich nur mit
+dem offenen Interesse aendert, gehoert dort nicht hinein.
+
+Gezeichnet wird mit einer **Wurzelkennlinie** (`^0.45`), nicht linear: die
+Betraege gehen ueber drei Groessenordnungen, und linear waere alles ausser
+der hellsten Zelle schwarz.

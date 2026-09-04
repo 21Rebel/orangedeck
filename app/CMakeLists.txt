@@ -40,6 +40,7 @@ set(SHARED_QML
     ../ui/qml/PriceChart.qml
     ../ui/qml/MarketView.qml
     ../ui/qml/MarketLiq.qml
+    ../ui/qml/MarketHeat.qml
     ../ui/qml/DropDown.qml
     ../ui/qml/ViewTabs.qml
     ../ui/qml/FeedTabs.qml
