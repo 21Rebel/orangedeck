@@ -2569,3 +2569,47 @@ jeden Zeitpunkt -- was ueber ihr liegt, ist Short, was darunter liegt, Long.
 **Nebenbei ein Argument gegen Rot/Gruen, das unabhaengig davon gilt:** rot
 gegen gruen ist das schlechteste Paar fuer Farbenblinde. Wo die Information
 schon in der Geometrie steht, ist sie dort besser aufgehoben.
+
+
+## Der Griff des Schiebers liess sich nie ziehen
+
+Am 04.09.2026 mit einem **echten Zeiger** gefunden, nachdem die Geste im
+Standbild monatelang richtig aussah.
+
+Im `schieber` stand die Klickflaeche ("neben den Griff geklickt: dorthin
+springen") als **letztes** Kind, hinter dem Griff. In QML bekommt das spaetere
+Geschwister die Ereignisse zuerst -- sie hat damit jeden Druck auf den Griff
+geschluckt. Der Griff liess sich deshalb nie ziehen: **jede Geste wurde zu
+einem Klick an der Loslass-Stelle**, samt Sprung.
+
+Im Bild sah man es nicht, weil das Ergebnis plausibel ist -- man zieht nach
+links, das Fenster wandert nach links. Nur eben in einem Satz statt
+mitlaufend, und die ganze Vorschau aus der Tagesuebersicht wurde nie
+angeschaltet.
+
+Behoben, indem die Klickflaeche **vor** den Griff gezogen wurde. Danach am
+Zeiger nachgesehen:
+
+| | |
+|---|---|
+| waehrend der Geste | "Uebersicht 24.03.2020", gedaempfte Linie, Achse 24.01.–23.03.20 |
+| nach dem Loslassen | 16-Stunden-Fenster vom 23.03.2020, echte Kerzen |
+
+Dieselbe Familie wie die Falle vom 03.09.2026 (`z` ordnet nur unter
+Geschwistern). **Merksatz: wer oben liegt, bekommt zuerst -- und "oben" ist in
+QML, wer spaeter steht.**
+
+### Was daraus fuers Pruefen folgt
+
+Ein Standbild zeigt Geometrie, kein Verhalten. Alles, was an einem Zeiger
+haengt -- Ziehen, Rad, Halten --, braucht einen Zeiger.
+
+**Das geht ohne den Bildschirm des Nutzers**: `python-xlib` liegt hier
+ohnehin, dazu `libXtst`. Damit lassen sich in den Xvfb, in dem ohnehin
+abgebildet wird, echte Ereignisse einspeisen -- Bewegung, Druck, Rad, und
+Abzuege **waehrend** eine Taste gehalten wird. `tools/xtest.py` ist der
+Helfer dazu; er kann ausserdem das Fenster auf eine gewuenschte Groesse
+setzen, womit sich die Breite des Popouts nachstellen laesst.
+
+So gefunden: der Griff oben, und der Ueberlappungsfehler in der Kopfzeile
+bei 695 Punkten Breite.

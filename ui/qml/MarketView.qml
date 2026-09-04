@@ -1359,6 +1359,24 @@ Item {
             color: root.lineColor
         }
 
+        // **Diese Flaeche gehoert VOR den Griff.** Sie lag danach, und in QML
+        // bekommt das spaetere Geschwister die Ereignisse zuerst -- sie hat
+        // damit jeden Druck auf den Griff geschluckt. Der Griff liess sich
+        // deshalb **nie ziehen**: jede Geste wurde zu einem Klick an der
+        // Loslass-Stelle, samt Sprung. Am 04.09.2026 mit einem echten
+        // Zeiger gefunden, nachdem es im Standbild monatelang richtig aussah.
+        //
+        // Dieselbe Familie wie die Falle vom 03.09.: `z` und die Reihenfolge
+        // ordnen nur unter Geschwistern, und wer oben liegt, bekommt zuerst.
+        MouseArea {
+            anchors.fill: parent
+            // Neben den Griff geklickt: dorthin springen, Fenstermitte auf
+            // die angeklickte Stelle.
+            onClicked: function (m) {
+                root.fensterSetzen(schieber.zeitBei(m.x) + root.sichtSekunden / 2);
+            }
+        }
+
         Rectangle {
             id: griff
 
@@ -1420,14 +1438,6 @@ Item {
             }
         }
 
-        MouseArea {
-            anchors.fill: parent
-            // Neben den Griff geklickt: dorthin springen, Fenstermitte auf
-            // die angeklickte Stelle.
-            onClicked: function (m) {
-                root.fensterSetzen(schieber.zeitBei(m.x) + root.sichtSekunden / 2);
-            }
-        }
     }
 
     // -------------------------------------------------- Laufendes Band
