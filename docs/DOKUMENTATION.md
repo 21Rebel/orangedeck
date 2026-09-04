@@ -2759,3 +2759,90 @@ am selben Tag 200 OSTree-Objekte ins Git-Repo gespuelt, weil `.gitignore` nur
 Sonst bricht flatpak-builder mit "The state dir is not on the same filesystem
 as the target dir" ab. Beim Bauen in `/tmp` (hier tmpfs) also
 `--state-dir=` mitgeben.
+
+
+## Baulaeufe fuer Linux, Windows, macOS und Flatpak
+
+Seit 04.09.2026, `.github/workflows/build.yml`. Vier Jobs, ohne Signatur
+(Nutzerentscheidung vom 02.09.: das Projekt darf nichts kosten). Die
+Artefakte heissen deshalb UNSIGNIERT -- SmartScreen und Gatekeeper werden
+meckern, und das soll niemanden ueberraschen.
+
+### Drei Fehler, die schon das Schreiben zutage foerderte
+
+Alle drei koennen auf dem Entwicklungsrechner **nicht** auffallen.
+
+**`dataSource` fragte nach dem Geraet statt nach dem Dienst.** Der Fix vom
+Nachmittag lautete `Qt.platform.os === "android"`. Richtig ist die Frage nach
+dem **Dienst**: `orangedeck` ist ein systemd-Benutzerdienst und laeuft nur
+unter Linux. Die erste Windows-Fassung waere mit "keine Verbindung zum Feed"
+gestartet -- derselbe Willkommensgruss, denselben Tag zum zweiten Mal, weil
+ein Symptom behandelt worden war statt der Ursache.
+
+**`MACOSX_BUNDLE` und `WIN32_EXECUTABLE` waren nicht gesetzt.** Ohne sie gibt
+es unter macOS kein `.app` (weder doppelklickbar noch mit `macdeployqt` zu
+packen) und unter Windows ein Konsolenfenster neben der Anwendung.
+
+**`install(TARGETS)` lief auf allen Nicht-Android-Systemen.** Die
+`.desktop`-Datei und das Symbol im hicolor-Baum sind Linux-Begriffe, und ein
+`MACOSX_BUNDLE`-Ziel verlangt bei `install(TARGETS)` ein BUNDLE-Ziel -- es
+braeche schon beim Einrichten ab.
+
+### Und drei, die erst der erste Lauf zeigte
+
+**Windows: die CMakeLists gehoert in die Wurzel.** Die geteilten QML-Dateien
+liegen unter `ui/qml/`; von `app/` aus heissen sie `../ui/qml/...`, und Qt
+baut daraus den Namen des Zwischenverzeichnisses fuer den QML-Puffer. **Linux
+macht aus dem `..` stillschweigend ein `_`, Windows nicht:**
+
+    ninja: error: mkdir(.rcc/qmlcache/orangedeck-app_../ui): No such file
+
+Qt empfiehlt ausdruecklich, QML-Dateien innerhalb des Modulverzeichnisses zu
+halten. Aus der Wurzel gebaut heissen sie `ui/qml/...`, der Puffername lautet
+`orangedeck-app_ui_qml_...` und die Frage stellt sich nicht mehr. **Gebaut
+wird seitdem mit `cmake -S . -B build`**; Bauplaene, Workflow und die
+Android-Anleitung sind mitgezogen.
+
+**macOS: nicht Qt 6.8.** Die Reihe verlinkt dort noch das Framework AGL, und
+das SDK von macOS 15 hat es nicht mehr: `ld: framework 'AGL' not found`. Mit
+6.9 geht es durch.
+
+**Flatpak: kein fertiges Container-Abbild.**
+`bilelmoussaoui/flatpak-github-actions:kde-6.9` gibt es nicht ("manifest
+unknown"), und welche Marken existieren, muesste man raten. Der Job richtet
+flatpak selbst ein -- ein paar Zeilen mehr, dafuer haengt er an nichts, was
+sich unter uns aendern kann.
+
+### Zwei Entscheidungen im Workflow
+
+**Der Linux-Job bricht ab, wenn QtWebSockets fehlt.** Ohne das Modul faellt
+der Direktbezug weg, und ausserhalb von Linux gibt es keinen Dienst, der
+einspraenge -- das waere wieder ein Paket, das erst beim Nutzer versagt. Nach
+dem OpenSSL-Fund desselben Tages sollen solche Loecher laut sein, nicht
+still.
+
+**Der Flatpak-Job stellt den Auslieferungs-Bauplan auf den Commit dieses
+Laufs.** Festgenagelt zu sein ist zum Ausliefern richtig und zum Pruefen
+falsch: sonst baut der Lauf einen alten Stand und sagt nichts ueber den
+neuen. Die Datei im Repo bleibt unangetastet, geaendert wird nur die Kopie im
+Laeufer.
+
+### Ergebnis des zweiten Laufs
+
+    Linux    2 MB    Windows  52 MB    macOS  133 MB    Flatpak  1 MB
+
+## Screenshots fuer Flathub
+
+Flathub verlangt mindestens einen. Aufgenommen mit demselben Pruefstand wie
+alles andere: Xvfb, Fenster ueber `tools/xtest.py` **genau auf die
+Bildschirmgroesse gesetzt** (1280x800), damit kein schwarzer Rand mitkommt --
+`import -window root` liefert dann exakt das Fenster.
+
+**Der Feed braucht Vorlauf.** Die Halde fuellt sich nur mit echten
+Transaktionen und ist erst nach einer Viertelstunde voll; ein Bild direkt
+nach dem Start zeigt eine leere Flaeche. Die uebrigen Ansichten stehen
+sofort.
+
+Die Bilder liegen im Repo und werden von dort geladen. **Kein doppelter
+Bindestrich im XML-Kommentar** daneben: XML verbietet ihn, und
+`appstreamcli` bricht daran ab.

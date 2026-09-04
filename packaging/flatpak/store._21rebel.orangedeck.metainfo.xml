@@ -26,6 +26,51 @@
 
   <launchable type="desktop-id">store._21rebel.orangedeck.desktop</launchable>
 
+  <!-- Flathub verlangt mindestens einen Screenshot. Die Bilder liegen im
+       Repo und werden von dort geladen; ein Anbieter fuer Bilder waere eine
+       weitere Stelle, die ausfallen kann.
+
+       Aufgenommen mit dem eigenen Pruefstand (Xvfb, Fenster genau auf
+       1280x800 gesetzt, damit kein Rand mitkommt), Verfahren steht in der
+       DOKUMENTATION. Der Feed braucht dabei Vorlauf: die Halde fuellt sich
+       nur mit echten Transaktionen und ist erst nach einer Viertelstunde
+       voll.
+
+       Kein doppelter Bindestrich in diesem Kommentar: XML verbietet ihn,
+       und appstreamcli bricht daran ab. -->
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/21Rebel/orangedeck/main/packaging/flatpak/screenshots/feed.png</image>
+      <caption>Der Mempool als lebendige Kachelgrafik</caption>
+      <caption xml:lang="de">Der Mempool als lebendige Kachelgrafik</caption>
+      <caption xml:lang="en">The mempool as a living tile graphic</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/21Rebel/orangedeck/main/packaging/flatpak/screenshots/uhr.png</image>
+      <caption>Blockhöhe gross, Kennzahlen und Kursverlauf</caption>
+      <caption xml:lang="de">Blockhöhe gross, Kennzahlen und Kursverlauf</caption>
+      <caption xml:lang="en">Block height large, metrics and price history</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/21Rebel/orangedeck/main/packaging/flatpak/screenshots/explorer.png</image>
+      <caption>Blockforscher mit Suche und Kachelgrafik</caption>
+      <caption xml:lang="de">Blockforscher mit Suche und Kachelgrafik</caption>
+      <caption xml:lang="en">Block explorer with search and tile graphic</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/21Rebel/orangedeck/main/packaging/flatpak/screenshots/markt.png</image>
+      <caption>Kerzen aus den Trades von Binance und Bybit</caption>
+      <caption xml:lang="de">Kerzen aus den Trades von Binance und Bybit</caption>
+      <caption xml:lang="en">Candles from Binance and Bybit trades</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/21Rebel/orangedeck/main/packaging/flatpak/screenshots/heatmap.png</image>
+      <caption>Wo Positionen liegen würden — als Schätzung gekennzeichnet</caption>
+      <caption xml:lang="de">Wo Positionen liegen würden — als Schätzung gekennzeichnet</caption>
+      <caption xml:lang="en">Where positions would sit — marked as an estimate</caption>
+    </screenshot>
+  </screenshots>
+
   <!-- Flathub verlangt eine Startseite; ohne sie faellt `appstreamcli
        validate` durch. Seit dem 03.09.2026 gibt es eine. -->
   <url type="homepage">https://github.com/21Rebel/orangedeck</url>
