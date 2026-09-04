@@ -13,6 +13,40 @@ R="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # in Shell, Dashboard und Plugin nichts verloren.
 QMLFILES="$(cd "$R/ui/qml" && command ls -1 *.qml *.js 2>/dev/null | grep -v '^Pruefstand')"
 
+# --check: nachsehen, ob im System etwas fehlt -- ohne etwas zu aendern.
+# **Der Grund steht in der DOKUMENTATION**: die Shell liest per Symlink direkt
+# ins Repo. Eine neue geteilte QML-Datei macht das laufende Dashboard in dem
+# Moment kaputt, in dem eine andere Datei auf sie verweist -- nicht erst beim
+# naechsten Neustart. Zwischen "angelegt" und "verteilt" darf also nichts
+# liegen, und das hier sagt, ob etwas dazwischenliegt.
+if [ "${1:-}" = "--check" ]; then
+  fehlt=0
+  for f in $QMLFILES; do
+    for d in "$HOME/.local/share/orangedeck/qml" \
+             "$HOME/.config/DankMaterialShell/plugins/OrangeDeck" \
+             "$HOME/.config/quickshell/OrangeDeckApp" \
+             "$HOME/.config/quickshell/dms-custom/Modules/DankDash"; do
+      [ -d "$d" ] || continue
+      [ -e "$d/$f" ] || { echo "fehlt: $d/$f"; fehlt=1; }
+    done
+    case "$f" in
+      *.qml)
+        grep -q "ui/qml/$f\b" "$R/app/CMakeLists.txt" \
+          || { echo "fehlt in app/CMakeLists.txt: $f"; fehlt=1; } ;;
+    esac
+  done
+  if [ "$fehlt" = "0" ]; then
+    echo "Alles verteilt."
+  else
+    echo
+    echo "Beheben mit:  tools/install-links.sh && python3 daemon/orangedeck-dashtab"
+    echo "Danach ist ein  systemctl --user restart dms  noetig:"
+    echo "eine **neu hinzugekommene** Datei sieht die laufende Shell nicht,"
+    echo "auch nicht nach  dms ipc call plugin-scan reload orangedeck."
+  fi
+  exit "$fehlt"
+fi
+
 link() {  # link <ziel-im-repo> <ort-im-system>
   local src="$1" dst="$2"
   [ -e "$src" ] || { echo "fehlt im Repo: $src" >&2; return 1; }

@@ -455,6 +455,38 @@ Nach einer neuen Datei also:
     python3 daemon/orangedeck-dashtab  # baut die Ueberlagerung neu
     systemctl --user restart dms
 
+### Am 04.09.2026 ein drittes Mal, und diesmal war die **Reihenfolge** das
+### Problem
+
+`MarketLiq.qml` wurde angelegt, `MarketView.qml` verwies darauf -- und die
+Verteilung lief erst sieben Minuten spaeter. In diesen sieben Minuten war das
+Dashboard des Nutzers kaputt:
+
+    MarketView.qml:1212:5: MarketLiq is not a type
+    FeedTabs.qml:251:5:    Type MarketView unavailable
+    OrangeDeckWidget.qml:  Type FeedTabs unavailable
+
+**Die Shell liest per Symlink direkt ins Repo.** Eine neue geteilte Datei
+bricht das laufende Dashboard also in dem Augenblick, in dem eine andere
+Datei auf sie verweist -- nicht erst beim naechsten Neustart, nicht erst nach
+einem Bau. Zwischen "angelegt" und "verteilt" darf nichts liegen; im Zweifel
+verteilt man, bevor der Verweis geschrieben wird.
+
+**Und `plugin-scan reload` reicht dafuer nicht.** Nachgemessen: nach
+`dms ipc call plugin-scan reload orangedeck` stand derselbe Fehler wieder da,
+obwohl der Symlink laengst existierte. Der Reload haengt ein `?t=<zeit>` an
+die Plugin-Datei und umgeht damit deren Puffer -- die **Typentabelle des
+Verzeichnisses** wird davon nicht neu gelesen. Eine neu hinzugekommene Datei
+sieht die laufende Shell erst nach `systemctl --user restart dms`. Eine
+geaenderte sieht sie sofort; nur das Hinzukommen ist der Sonderfall.
+
+Zum Nachsehen gibt es jetzt einen Schalter, der nichts aendert:
+
+    tools/install-links.sh --check
+
+Er meldet jede Datei aus `ui/qml/`, die an einem der vier Orte oder in
+`app/CMakeLists.txt` fehlt, und gibt einen Rueckgabewert ungleich null.
+
 
 ## Stolperfalle: ohne `clip` regnet es ueber den ganzen Bildschirm
 
