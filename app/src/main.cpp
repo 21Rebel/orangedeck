@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
     QCommandLineParser p;
     p.setApplicationDescription(QStringLiteral(
-        "OrangeDeck -- Mempool, Blockclock, Miner, Explorer.\n"
+        "OrangeDeck -- Mempool, Uhr, Miner, Explorer.\n"
         "Ohne Schalter ein gewoehnliches Fenster; mit --layer ein Widget "
         "oder eine Leiste auf dem Desktop."));
     p.addHelpOption();
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
     // QCommandLineParser lehnt dann die **ganze** Option ab -- "--view" waere
     // stillschweigend unbekannt.
     const QCommandLineOption oAnsicht(QStringLiteral("view"),
-        QStringLiteral("Ansicht: 0 Feed, 1 Blockclock, 2 Miner, 3 Explorer, "
+        QStringLiteral("Ansicht: 0 Feed, 1 Uhr, 2 Miner, 3 Explorer, "
                        "4 Wallet, 5 Einstellungen. Ohne Angabe die zuletzt benutzte."),
         QStringLiteral("nr"));
     const QCommandLineOption oLayer(QStringLiteral("layer"),

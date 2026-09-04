@@ -105,15 +105,15 @@ Window {
     property string explorerPanelsRaw: ""
     readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split("|") : []
     property string lang: "de"
-    // Grosse Anzeige der BlockClock -- als Zeichenkette abgelegt, siehe
+    // Grosse Anzeige der Uhr -- als Zeichenkette abgelegt, siehe
     // die uebrigen Listen.
     property string bigFieldsRaw: "height"
     readonly property var bigFields: bigFieldsRaw.length ? bigFieldsRaw.split("|") : ["height"]
     property int bigRotate: 0
     property bool walletEnabled: false
-    // 0 = Feed, 1 = BlockClock, 2 = Miner, 3 = Explorer, 4 = Wallet. Wird
+    // 0 = Feed, 1 = Uhr, 2 = Miner, 3 = Explorer, 4 = Wallet. Wird
     // gemerkt, damit ein Tablet nach dem Einschalten gleich wieder als
-    // BlockClock hochkommt.
+    // Uhr hochkommt.
     property int view: 0
     // Von der Befehlszeile gesetzt (`--view`, `--bare`) und **nicht**
     // gespeichert: ein Widget an der Wand soll seine Ansicht behalten, ohne
@@ -176,7 +176,7 @@ Window {
     }
 
     // Beim Start in die gemerkte Ansicht -- fuer ein Tablet an der Wand ist
-    // das meist die BlockClock. Der Reiter "Wallet" faellt weg, solange er
+    // das meist die Uhr. Der Reiter "Wallet" faellt weg, solange er
     // nicht eingeschaltet ist.
     Component.onCompleted: {
         if (win.forcedView >= 0)
@@ -350,7 +350,7 @@ Window {
     // **Alle Ansichten stehen in `FeedTabs`** -- dasselbe Bauteil wie im
     // Dashboard, im Popout und auf dem Desktop. Vorher verdrahtete dieses
     // Fenster sie selbst, und genau daran fehlte der Wallet-Ansicht ihre
-    // Sprache und der BlockClock der Kursverlauf: was hier dazukam, kam
+    // Sprache und der Uhr der Kursverlauf: was hier dazukam, kam
     // dort nicht an, und umgekehrt.
     FeedTabs {
         id: tabs

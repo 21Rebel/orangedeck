@@ -1187,7 +1187,7 @@ class Feed:
         self.error = ""
         self.dirty = True
         self.summary_for = None
-        # Langsame Kennzahlen fuer die BlockClock, und der eigene Miner
+        # Langsame Kennzahlen fuer die Uhr, und der eigene Miner
         self.difficulty = {}
         self.hashrate = {}
         self.miners = []          # je Geraet ein normalisierter Satz Felder
@@ -1781,7 +1781,7 @@ def sample_stats(feed):
 
 def poll_slow(feed):
     """Schwierigkeitsanpassung und Hashrate. Beides aendert sich langsam und
-    wird deshalb nur alle paar Minuten geholt -- es speist die BlockClock und
+    wird deshalb nur alle paar Minuten geholt -- es speist die Uhr und
     den Vergleich mit der Netzschwierigkeit in der Miner-Ansicht."""
     if time.time() - feed.slow_at < SLOW_INTERVAL:
         return

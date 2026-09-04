@@ -4,12 +4,12 @@
 // Bauteil einen instanzbezogenen `pluginService` durch (siehe
 // DesktopPluginWrapper: `instanceScopedPluginService`). `loadPluginData` ist
 // hier also **je Instanz** -- man kann denselben Feed dreimal aufs Desktop
-// legen, einmal als Halde, einmal als BlockClock, einmal als Miner.
+// legen, einmal als Halde, einmal als Uhr, einmal als Miner.
 //
 // Gezeigt wird eine einzige Ansicht ohne Reiterzeile, gebaut wird sie aber aus
 // demselben `FeedTabs` wie Dashboard und Popout (`tabsVisible: false`). Vorher
 // standen die vier Ansichten hier ein zweites Mal verdrahtet -- und bekamen
-// ihre Feineinstellungen nicht: die BlockClock ohne Auswahl der Werte, der
+// ihre Feineinstellungen nicht: die Uhr ohne Auswahl der Werte, der
 // Miner ohne Kurve und Tafel, der Explorer ohne Startseite.
 import QtQuick
 import qs.Common

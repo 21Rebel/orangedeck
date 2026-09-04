@@ -307,6 +307,11 @@ Item {
         root.holen();
     }
     onCustomSecsChanged: if (root.range === "custom") root.holen()
+    // Von und Bis kommen als zwei Zuweisungen beim Wirt zurueck. `nachfassen`
+    // fasst sie zu einer Abfrage zusammen -- sonst ginge zwischendurch eine
+    // mit halbem Fenster raus.
+    onVonZeitChanged: nachfassen.restart()
+    onBisZeitChanged: nachfassen.restart()
     onLiveChanged: if (root.live) root.holen()
     Component.onCompleted: root.holen()
 
@@ -434,7 +439,7 @@ Item {
         spacing: root.baseFont * 0.5
         z: 50
 
-        // Kerze oder Kurve. **Nur hier** -- der Kursverlauf in der BlockClock
+        // Kerze oder Kurve. **Nur hier** -- der Kursverlauf in der Uhr
         // kann keine Kerzen zeigen: die Reihe von mempool.space kennt nur
         // Schlusskurse, kein Hoch und Tief.
         TileGoggles {

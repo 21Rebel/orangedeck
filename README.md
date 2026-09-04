@@ -8,7 +8,7 @@ unten, neue Transaktionen fallen von oben hinein. Dazugekommen sind sechs
 weitere Ansichten:
 
     Feed         der Mempool als Halde, Kacheln nach Alter, Gebuehr oder Art
-    BlockClock   Blockhoehe gross, Kennzahlen, Kursverlauf bis 2013 zurueck
+    Uhr          Blockhoehe gross, Kennzahlen, Kursverlauf bis 2013 zurueck
     Miner        AxeOS und cgminer im Heimnetz, Hashrate und Freigaben
     Explorer     Suche, Transaktionsfluss, Bloecke, geplante Bloecke
     Markt        Kerzen aus den Trades von Binance und Bybit, laufendes Band

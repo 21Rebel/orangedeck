@@ -48,7 +48,7 @@ Item {
 
     // Die uebrigen Dashboard-Seiten sind 410 hoch; DankDashPopout nimmt aber
     // die Hoehe dieser Seite (`bitcoinLoader.item?.implicitHeight`). Diese
-    // braucht mehr: bei 460 blieben der BlockClock nach Raendern und
+    // braucht mehr: bei 460 blieben der Uhr nach Raendern und
     // Reiterzeile 409 Punkte, und davon wurde die Kurskurve zum Strich. Mit
     // 520 sind es 469 -- genug fuer die Kurve samt Zeitachse.
     implicitHeight: 520
@@ -129,7 +129,7 @@ Item {
     readonly property var minerFields: minerFieldsRaw.length ? minerFieldsRaw.split("|") : []
     readonly property var explorerParts: explorerPartsRaw.length ? explorerPartsRaw.split("|") : []
     readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split("|") : []
-    // 0 = Feed, 1 = BlockClock, 2 = Miner, 3 = Explorer, 4 = Wallet,
+    // 0 = Feed, 1 = Uhr, 2 = Miner, 3 = Explorer, 4 = Wallet,
     // 5 = Einstellungen -- gemerkt wie die uebrigen Einstellungen
     property int view: SettingsData.getPluginSetting(pid, "view", 0)
 

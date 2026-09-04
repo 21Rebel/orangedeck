@@ -600,7 +600,7 @@ Item {
                 }
             }
 
-            // ------------------------------------------------ BlockClock
+            // ------------------------------------------------ Uhr
             Column {
                 width: parent.width
                 visible: root.tab === "clock"

@@ -1,4 +1,4 @@
-// Der ganze Satz Ansichten mit der Reiterzeile darueber -- Feed, BlockClock,
+// Der ganze Satz Ansichten mit der Reiterzeile darueber -- Feed, Uhr,
 // Miner, Explorer, Wallet, Einstellungen.
 //
 // **Einmal gebaut, dreimal benutzt**: im Dashboard-Tab von DMS, im Popout der
@@ -25,7 +25,7 @@ Item {
     // Sieht niemand hin, rechnet auch nichts
     property bool live: true
     property var opts: ({})
-    // 0 Feed, 1 BlockClock, 2 Miner, 3 Explorer, 4 Wallet, 5 Einstellungen
+    // 0 Feed, 1 Uhr, 2 Miner, 3 Explorer, 4 Wallet, 5 Einstellungen
     property int view: 0
     // Die Einstellungsseite blendet Deckkraft und Startansicht aus, wo das
     // Fenster nicht dem Programm gehoert.

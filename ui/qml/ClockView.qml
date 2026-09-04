@@ -1,4 +1,4 @@
-// BlockClock: gross, ruhig, ohne Bedienung. Gedacht fuer ein Tablet an der
+// Uhr: gross, ruhig, ohne Bedienung. Gedacht fuer ein Tablet an der
 // Wand oder den Vollbildmodus am Rechner.
 //
 // Vorbild ist der unveroeffentlichte Zweig `display-mode` aus dem Fork
@@ -448,7 +448,7 @@ Item {
         // nicht, und im Dashboard-Format haengt genau daran, ob ueber ihr noch
         // die Halving-Zeile steht oder die Spalte gerollt werden muss.
         height: Math.max(90, Math.min(root.height * 0.26, root.scaleUnit * 7))
-        // 420 war zu hoch gegriffen -- **gemessen** bleiben der BlockClock
+        // 420 war zu hoch gegriffen -- **gemessen** bleiben der Uhr
         // im Dashboard-Tab 409 Punkte (460 Tabhoehe minus Raender und
         // Reiterzeile), und die Kurve fiel damit ausgerechnet dort weg,
         // wo sie am ehesten gebraucht wird. Ab 330 traegt sie noch: die

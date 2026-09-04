@@ -24,7 +24,7 @@ Auf X11 gibt es keine Layer-Shell; dort bleibt das gewoehnliche Fenster.
 | `--width` / `--height` | gewuenschte Groesse; an gedehnten Kanten entscheidet der Compositor |
 | `--margin` | eine Zahl, oder `oben,rechts,unten,links` |
 | `--exclusive` | Platz, den andere Fenster freilassen. `0` keiner, `-1` sich ueberlappen lassen |
-| `--view` | `0` Feed, `1` Blockclock, `2` Miner, `3` Explorer, `4` Wallet, `5` Einstellungen |
+| `--view` | `0` Feed, `1` Uhr, `2` Miner, `3` Explorer, `4` Wallet, `5` Einstellungen |
 | `--bare` | ohne Reiter, Kopf- und Fusszeile -- die Ansicht allein |
 | `--id` | eigener Einstellungsspeicher (`~/.config/orangedeck/orangedeck-<name>.conf`) |
 
@@ -34,7 +34,7 @@ behaelt jedes seine Ansicht, seine Sprache, seine Waehrung.
 
 ## Beispiele
 
-Blockclock als Kachel rechts oben, ohne Reiter:
+Uhr als Kachel rechts oben, ohne Reiter:
 
     orangedeck-app --layer top --anchor top,right --width 300 --height 220 \
                 --margin 24 --view 1 --bare --id uhr

@@ -18,10 +18,10 @@ PluginSettings {
     SelectionSetting {
         settingKey: "widgetView"
         label: "Ansicht des Desktop-Widgets"
-        description: "Jede Instanz kann eine andere zeigen — Feed, BlockClock, Miner, Explorer oder die beobachteten Wallets."
+        description: "Jede Instanz kann eine andere zeigen — Feed, Uhr, Miner, Explorer oder die beobachteten Wallets."
         options: [
             {label: "Feed", value: "feed"},
-            {label: "BlockClock", value: "clock"},
+            {label: "Uhr", value: "clock"},
             {label: "Miner", value: "miner"},
             {label: "Explorer", value: "explorer"},
             {label: "Wallet", value: "wallet"}

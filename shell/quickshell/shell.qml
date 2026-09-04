@@ -65,7 +65,7 @@ ShellRoot {
         property int bigRotate: 0
         // Aus, bis sie in den Einstellungen ausdruecklich eingeschaltet wird
         property bool walletEnabled: false
-        // 0 Feed, 1 BlockClock, 2 Miner, 3 Explorer, 4 Wallet, 5 Einstellungen
+        // 0 Feed, 1 Uhr, 2 Miner, 3 Explorer, 4 Wallet, 5 Einstellungen
         property int view: 0
 
         // Welche Reiter es gibt, rechnet `FeedTabs` -- samt Rueckfall auf den
