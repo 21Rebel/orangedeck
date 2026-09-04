@@ -11,6 +11,19 @@ Qt 6.6+ und ohne irgendetwas aus diesem Repo: Live-Blockhoehe, Live-Kurs,
 Mempool und Gebuehrenhistogramm zeichnen sich. Damit ist der Satz vom Abend
 eingeloest -- *was nur eine Umgebung angefasst hat, ist ungeprueft*.
 
+**Beide Korrekturen sind in der VM nachgeprueft**, nicht nur hier: neues
+Buendel gebaut, Pruefsumme im Gast gegen die des Hosts gehalten, den
+gespeicherten Zustand unter `~/.var/app/...` geloescht und frisch gestartet.
+Das Fenster ist beim ersten Start deckend, und Escape gibt den Reiter-Kuerzeln
+den Weg frei.
+
+**Falle beim Nachreichen:** wird der Wechseldatentraeger getauscht, waehrend
+er eingehaengt ist, liefert der Gast weiter den alten Inhalt aus dem Cache --
+`ls` zeigte den neuen Dateinamen, `flatpak install` bekam die alten Daten und
+wollte die GL-Erweiterung installieren. Erst `umount`, dann `change`, dann
+neu einhaengen; und die Pruefsumme vergleichen, bevor man dem Ergebnis
+glaubt.
+
 ### Zwei Fehler, die nur dort auffallen konnten
 
 **1. Wer im Explorer landet, kommt per Tastatur nicht mehr heraus.** Das
