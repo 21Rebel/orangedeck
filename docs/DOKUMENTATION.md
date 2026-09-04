@@ -311,13 +311,27 @@ ueber die Loopback-Schnittstelle des Daemons (`http://127.0.0.1:21021/state`).
 Ueber HTTP gibt es den Sonderfall nicht, und dieselbe Datei laeuft damit
 unveraendert unter Android.
 
-Nebenbei zwei Fallen beim Nachmessen selbst:
+Nebenbei vier Fallen beim Nachmessen selbst:
 - `/usr/bin/qml` ist hier **Qt 5.15**. Versionslose Importe sind Qt-6-Syntax,
   deshalb meldet es nur "Did not load any objects". Der Qt6-Laeufer liegt unter
   `/usr/lib/qt6/bin/qml`.
-- Dessen `console.log`/`console.warn` erreicht die Konsole in dieser Umgebung
-  nicht. Ergebnisse lassen sich zuverlaessig ueber `Qt.exit(<code>)` heraus-
-  tragen.
+- **`/usr/bin/qmllint` ist ebenso die Qt5-Fassung** (aus `qt5-declarative`,
+  meldet sich als `qmllint 1.0`) und gibt **gar nichts** aus -- auch nicht bei
+  einer absichtlich kaputten Datei. Ein "keine Meldungen" von dort beweist
+  nichts. Die richtige liegt unter `/usr/lib/qt6/bin/qmllint`; mit `-I ui/qml`
+  findet sie auch die geteilten Bausteine.
+- **Qt schweigt, weil stderr kein Terminal ist.** Das ist der Grund fuer die
+  verschluckten Meldungen, nicht ein Fehler in Qt. `QT_ASSUME_STDERR_HAS_CONSOLE=1`
+  vor den Aufruf gesetzt, und die QML-Fehler stehen da -- am 04.09.2026 wurde
+  so aus einem stummen `rc=1` in einer Zeile "Cannot assign to non-existent
+  property". `Qt.exit(<code>)` als Umweg braucht es damit nicht mehr.
+- **Ein gezeichnetes Bild geht ohne Bildschirm.** Xvfb plus `import`; die
+  Wayland-Variable muss weg, sonst geht das Fenster auf dem echten Compositor
+  auf und der Abzug bleibt schwarz:
+
+      xvfb-run -a --server-args="-screen 0 1400x900x24" bash -c '
+          env -u WAYLAND_DISPLAY QT_QPA_PLATFORM=xcb ./build/orangedeck-app --view 6 &
+          sleep 10; import -window root /tmp/bild.png; pkill -f orangedeck-app'
 
 
 ## Bewusste Abweichung: der Block liegt enger als im Original
@@ -544,11 +558,11 @@ Neustarts `0`. Ein `kill -9 0` trifft dann die **ganze Prozessgruppe** --
 also immer auf Plausibilitaet pruefen, bevor man die Zahl an `kill` gibt.
 
 
-## BlockClock und Miner-Ansicht
+## Uhr und Miner-Ansicht
 
 Zwei zusaetzliche Ansichten in `ui/qml/`, umschaltbar mit 1/2/3; die Auswahl
 merkt sich `Settings` (damit ein Tablet nach dem Einschalten gleich wieder als
-BlockClock hochkommt). Beide importieren nur `QtQuick` und laufen damit auch
+Uhr hochkommt). Beide importieren nur `QtQuick` und laufen damit auch
 unter Android.
 
 **`ClockView.qml`** -- Blockhoehe gross, dazu Gebuehr, Kurs, Mempool und
@@ -745,7 +759,7 @@ Dashboard-Tab ist dafuer kein Platz, dort bleiben die Kennzahlen.
 
 ## Ansichten und Tabs
 
-`ViewTabs.qml` ist der Umschalter zwischen Feed, BlockClock und Miner --
+`ViewTabs.qml` ist der Umschalter zwischen Feed, Uhr und Miner --
 bewusst ein eigenes Bauteil, weil ihn **beide** Oberflaechen benutzen: das
 eigene Fenster (`app/qml/Main.qml`) und der Dashboard-Tab (Vorlage in
 `daemon/orangedeck-dashtab`). Nur `import QtQuick`, laeuft also auch unter
@@ -1912,7 +1926,7 @@ Loader in einen Positionierer haengt, braucht beides.**
 
 Bisher gab es Einstellungen nur als Tastenkuerzel und im DMS-Plugin. Jetzt hat
 jedes Fenster einen Reiter "Einstellungen", und der ist genauso gegliedert wie
-die Ansichten: Allgemein, Feed, BlockClock, Miner, Explorer, Wallet.
+die Ansichten: Allgemein, Feed, Uhr, Miner, Explorer, Wallet.
 
 **Die Werte gehoeren dem Wirt, nicht der Ansicht.** `SettingsView` liest `opts`
 und meldet jede Aenderung ueber `changed(key, value)` zurueck; wo sie liegen
@@ -1952,7 +1966,7 @@ Ansicht offen ist, springt das Fenster zurueck.
     Allgemein   Deckkraft, Kachelgroesse, Startansicht
     Feed        Farbe (Alter/Gebuehr/Art), Groesse, Blockangaben, Legende,
                 Trennlinie, Weichzeichnung
-    BlockClock  welche Kennzahlen, Waehrung (Euro/Dollar), Balken
+    Uhr         welche Kennzahlen, Waehrung (Euro/Dollar), Balken
     Miner       welche Kennzahlen
     Explorer    Farbe der Kachelgrafiken
     Wallet      der Schalter samt Warnung
@@ -1993,7 +2007,7 @@ nach ausgewichen -- lieber eine andere Waehrung als ein Strich.
     Allgemein   Waehrung, Sprache, Deckkraft, Kachelgroesse, Startansicht
     Feed        Farbe, Groesse, Kopfzeile, Fusszeile, Blockangaben,
                 Kachelgrafik des Blocks, Legende, Trennlinie, Weichzeichnung
-    BlockClock  fuenf Kennzahlen einzeln, Schwierigkeit/Halving,
+    Uhr         fuenf Kennzahlen einzeln, Schwierigkeit/Halving,
                 Hashrate-Kurve, Uhrzeit
     Miner       sechs Kennzahlen einzeln, Verlaufskurve, Rechenwerke,
                 Bestenliste
@@ -2112,3 +2126,66 @@ Einheiten und Eigennamen: `sat/vB`, `vByte`, `MB`, `BTC`, `₿`, `EH/s`, `°C`,
 `Mempool`, `Hashrate`, `Coinbase`, `RBF`, `SegWit`, `Nonce`, `Sigops`,
 `CoinJoin`. Ausnahme sind Umdrehungen je Minute: im Deutschen `U/min`, sonst
 `RPM`.
+
+
+## Schriften an einer Stelle (`fonts.js`)
+
+`"monospace"` und `"sans-serif"` sind **fontconfig-Namen**. Unter Linux loest
+fontconfig sie auf die vom Benutzer eingestellte Standardschrift auf, unter
+Windows und macOS gibt es sie nicht -- dort faellt Qt auf irgendeine Schrift
+zurueck, an einer Monospace-Stelle womoeglich auf eine proportionale, und dann
+stehen Hashes und Betraege nicht mehr untereinander.
+
+**`font.families` gibt es in QML nicht.** Der Wertetyp `font` kennt nur
+`family`; Qt 6.11.2 lehnt die Zuweisung mit "Cannot assign to non-existent
+property" ab. Der Fehler kostete einen ganzen Bau, weil er stumm blieb -- siehe
+`QT_ASSUME_STDERR_HAS_CONSOLE` weiter oben.
+
+`fonts.js` waehlt deshalb aus, statt aufzuzaehlen: auf Windows und macOS die
+erste Schrift aus einer Liste, die `Qt.fontFamilies()` wirklich kennt, sonst
+weiter der generische Name. **Unter Linux aendert sich damit nichts.**
+
+Zwei Feinheiten:
+
+- `Qt.fontFamilies()` liest die ganze Schriftdatenbank. Das gehoert nicht in
+  eine Bindung, die je Zeile neu rechnet -- einmal ausgerechnet, dann gemerkt.
+- Auf der Leinwand (`ctx.font`) gilt die CSS-Kurzschreibweise. Ein Name mit
+  Leerzeichen gehoert dort in Anfuehrungszeichen, ein generischer ausdruecklich
+  **nicht**: in Anfuehrungszeichen waere er ein gesuchter Schriftname statt
+  einer Gattung, und dann findet Qt ihn nicht.
+
+
+## Der CVD im Markt
+
+Kauf minus Verkauf, aufsummiert, unter dem Kurs. Er beantwortet die Frage, die
+eine Kerze offen laesst: **wer hat den Kurs bewegt**. Steigt der Kurs und
+faellt der CVD, kauft niemand -- es wird nur nicht mehr verkauft.
+
+Der Fund, an dem alles haengt: **die Sekundenfaecher des Dienstes werden fuer
+die Kerzen gar nicht benutzt.** `Market.kerzen()` steht da, wird aber nirgends
+gerufen -- gezeichnet wird immer aus den fertigen Kerzen von Binance. Die
+Live-Stroeme speisen nur das Band, die Trade-Zaehlung und die
+Verbindungsanzeige.
+
+Der Kauf-Verkauf-Unterschied musste also aus den Boersenkerzen kommen, und er
+kommt von dort: **Feld 9 einer Binance-Kerze ist das Volumen der Trades, die
+in den Brief gegangen sind**, der Rest ist verkauft. Damit traegt der CVD jeden
+Zeitraum von einer Stunde bis 2017, ohne eine einzige neue Verbindung.
+
+Aufsummiert wird ueber das **gezeigte Fenster**, beginnend bei null. Ein
+absoluter Stand haette keine Bedeutung: die Reihe faengt dort an, wo die Boerse
+anfaengt, und niemand liest einen Wert von 2017 ab. Verglichen wird immer
+innerhalb des Bildes.
+
+Ein eigener Umschalter statt beides uebereinander: die Balken zaehlen von null
+nach oben, der CVD hat seine Null in der Mitte. Zwei Massstaebe in einer
+Flaeche liest niemand. Steht der CVD unten, nennt die Ablesezeile seinen Wert
+am Zeiger -- sonst laege dort eine Linie ohne Achse.
+
+Zwei Sachen fielen dabei mit ab:
+
+- Die Volumenbalken zeigen jetzt auch bei Boersenkerzen Kauf und Verkauf
+  getrennt. Die Aufteilung war vorher den Live-Faechern vorbehalten, und ein
+  einzelner nach Richtung eingefaerbter Balken sagt weniger.
+- Die Waehrungsumrechnung im Dienst **schnitt die Mengen ab**: sie baute jede
+  Kerze aus sechs Feldern neu. In Euro waere der CVD ausgefallen.

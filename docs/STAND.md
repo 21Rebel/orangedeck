@@ -4,6 +4,175 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## UEBERGABE 04.09.2026, Vormittag
+
+Fuenf Commits. Abgearbeitet sind vier der offenen Punkte vom 03.09. (5, 6, 9,
+10), die Vorarbeit fuer Punkt 7 und der erste Teil von Punkt 4.
+
+### Zwei Werkzeugfunde, die alles andere leichter machen
+
+**`qmllint` auf dem PATH ist die Qt5-Fassung und schweigt zu allem.**
+`/usr/bin/qmllint` gehoert zu `qt5-declarative`, meldet `qmllint 1.0` und gibt
+auch bei einer absichtlich kaputten Datei **nichts** aus -- ein "keine
+Meldungen" von dort beweist nichts. Die richtige liegt daneben:
+
+    /usr/lib/qt6/bin/qmllint -I ui/qml <datei>
+
+Sie meldet zuverlaessig. Die ueblichen `unqualified access`-Warnungen sind
+Altbestand (MarketView: 24, vor und nach jeder Aenderung gleich viele) --
+danach filtern, sonst gehen echte Meldungen darin unter.
+
+**Qt verschluckt seine Meldungen nur, weil stderr kein Terminal ist.** Das ist
+die Aufloesung des Eintrags vom 03.09. ("qml6 verschluckt hier seine
+Meldungen"). Der Schalter:
+
+    QT_ASSUME_STDERR_HAS_CONSOLE=1 ./build/orangedeck-app
+
+Damit kam sofort:
+
+    QQmlApplicationEngine failed to load component
+    qrc:/qt/qml/OrangeDeck/FeedPanel.qml:361:26:
+      Cannot assign to non-existent property "families"
+
+Vorher lief derselbe Bau stumm und gab nur `rc=1` zurueck.
+
+**Und ein gezeichnetes Bild gibt es ohne echten Bildschirm.** Xvfb plus
+`import` liefert einen Abzug -- die Wayland-Variable muss weg, sonst geht das
+Fenster auf dem echten Compositor auf und der Abzug bleibt schwarz:
+
+    xvfb-run -a --server-args="-screen 0 1400x900x24" bash -c '
+        env -u WAYLAND_DISPLAY QT_QPA_PLATFORM=xcb ./build/orangedeck-app --view 6 &
+        sleep 10; import -window root /tmp/bild.png; pkill -f orangedeck-app'
+
+Damit sind der Suchfokus, der CVD, die Schriften und das gemerkte Marktfenster
+**im Bild** nachgesehen, nicht nur im Code.
+
+### Was heute dazugekommen ist
+
+- **Der Explorer bekommt den Fokus ins Suchfeld** (Punkt 9). Den Fokus hielt
+  in Fenster und Quickshell das Element mit den Tastenkuerzeln -- es steht
+  hinter `FeedTabs` und nimmt ihn beim Start mit `focus: true` an sich. Jetzt
+  holt ihn sich das Suchfeld beim Aufschlagen und gibt ihn beim Verlassen
+  ausdruecklich wieder her, sonst waeren die Kuerzel danach tot.
+- **Das ausdrueckliche Marktfenster ueberlebt den Neustart** (Punkt 10).
+  `marketVon` und `marketBis` gehen jetzt denselben Weg wie `marketSecs`,
+  durch alle fuenf Wirte. Das Fensterende aus Schieber und Ziehen bleibt
+  bewusst fluechtig.
+- **Der Reiter heisst "Uhr"** (Punkt 5), in dreizehn Sprachen das schlichte
+  Wort fuer Uhr. Dazu die zwei Hilfetexte, das Auswahlfeld der
+  DMS-Einstellungen, die Hilfe der Befehlszeile, README, Widget-Doku und die
+  Flatpak-Beschreibung. In fuenf Sprachen hiess die Einstellung "Uhrzeit"
+  danach genauso wie der Reiter -- sie heisst dort jetzt anders.
+- **Autor in `plugin.json` auf 21Rebel** (Punkt 6), wie das Repo.
+- **Ersatzketten fuer die Schriften** (Vorarbeit zu Punkt 7). Siehe unten.
+- **Der CVD** (Punkt 4, erster Teil). Siehe unten.
+
+### Der CVD
+
+Kauf minus Verkauf, aufsummiert, unter dem Kurs. Der Umschalter in der
+Kopfzeile stellt zwischen Volumenbalken und CVD um, gemerkt als
+`marketLower`.
+
+Der entscheidende Fund: **die Sekundenfaecher des Dienstes werden fuer die
+Kerzen gar nicht benutzt.** `MARKT.kerzen()` steht da, wird aber nirgends
+gerufen -- gezeichnet wird immer aus den fertigen Kerzen von Binance. Der
+Kauf-Verkauf-Unterschied musste also von dort kommen, und er kommt von dort:
+**Feld 9 einer Binance-Kerze ist das Volumen der Trades, die in den Brief
+gegangen sind**, der Rest ist verkauft. Damit traegt der CVD jeden Zeitraum
+von einer Stunde bis 2017, ohne eine einzige neue Verbindung.
+
+Aufsummiert wird ueber das **gezeigte Fenster**, beginnend bei null. Ein
+absoluter Stand haette keine Bedeutung: die Reihe faengt dort an, wo die
+Boerse anfaengt.
+
+Zwei Sachen fielen dabei mit ab:
+
+- Die Volumenbalken zeigen jetzt auch bei Boersenkerzen Kauf und Verkauf
+  getrennt. Die Aufteilung war vorher den Live-Faechern vorbehalten.
+- Die Waehrungsumrechnung im Dienst schnitt die Mengen ab -- sie baute jede
+  Kerze aus sechs Feldern neu. In Euro waere der CVD ausgefallen.
+
+### Die Schriften
+
+`"monospace"` und `"sans-serif"` sind fontconfig-Namen: unter Linux loest
+fontconfig sie auf die eingestellte Standardschrift auf, unter Windows und
+macOS gibt es sie nicht.
+
+**`font.families` gibt es in QML nicht.** Die Wertetyp-`font` kennt nur
+`family`; Qt 6.11.2 lehnt die Zuweisung ab. Also waehlt `ui/qml/fonts.js` aus,
+statt aufzuzaehlen: auf Windows und macOS die erste Schrift aus der Liste, die
+`Qt.fontFamilies()` wirklich kennt, sonst weiter der generische Name. **Unter
+Linux aendert sich damit nichts** -- im Bild nachgesehen.
+
+Einmal ausgerechnet und gemerkt: `Qt.fontFamilies()` liest die ganze
+Schriftdatenbank und gehoert nicht in eine Bindung, die je Zeile neu rechnet.
+Auf der Leinwand (`ctx.font`) gilt die CSS-Kurzschreibweise -- ein Name mit
+Leerzeichen gehoert dort in Anfuehrungszeichen, ein generischer ausdruecklich
+nicht.
+
+Mitgenommen: das QML-Modul hiess noch `BtcFeed`.
+
+### Was jetzt am System noch aussteht
+
+Die Verweise sind aufgefrischt (`tools/install-links.sh` -- `fonts.js` ist
+neu und muss verlinkt sein, sonst laedt keine Ansicht mehr), die
+DMS-Ueberlagerung ist neu gebaut. **Zwei Schritte fehlen und brauchen eine
+Entscheidung:**
+
+    systemctl --user restart dms        # setzt den Dashboard-Tab in Kraft
+    flatpak-builder --user --install --force-clean \
+        build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
+
+Das Quickshell-Fenster laedt nicht von selbst nach -- einmal schliessen und
+neu oeffnen.
+
+### Offene Punkte, in der Reihenfolge fuer als naechstes
+
+1. **Pruef-VMs.** Die Abbilder liegen fertig in `~/VMs`: `fedora-kde-44.iso`
+   (3,4 GB) und `ubuntu-24.04.4.iso` (6,7 GB), beide byte-genau geprueft.
+   **Beides sind Live-Systeme** -- nichts installieren, direkt hineinbooten.
+   Ubuntu bewusst 24.04 und nicht 26.04: das ist das "altes Qt"-Ende.
+2. **APK aufs Handy.** Braucht `sudo usermod -aG adbusers satoshoe` und das
+   Kabel. Auf dem Handy gibt es keinen Dienst -- der Direktbezug ist der Weg.
+   **Der Markt-Reiter faellt dort weg** (niemand verdichtet), der Kursverlauf
+   nicht.
+3. **Mit echter Maus pruefen**, was offscreen nicht ging: Zoom am Rad, Ziehen
+   im Graphen, Schieber-Griff. Neu dazu: der Umschalter Volumen/CVD und die
+   Ablesezeile mit CVD-Wert am Zeiger.
+4. **Etappe 3, Rest**: Liquidationen (eigene Verbindungen zu den
+   Futures-Stroemen) und Tonsignal bei grossen Trades. Der CVD steht.
+5. **Windows und macOS** ueber GitHub Actions. Dem 21Rebel-Token fehlt dafuer
+   der `workflow`-Scope: einmal `gh auth refresh -s workflow`. Die Schriften
+   sind vorbereitet.
+6. **Flathub.**
+7. **`TileGoggles.qml:59` meldet eine Bindungsschleife** fuer `width` --
+   alter Bestand, faellt jetzt nur auf, weil Qt endlich redet.
+8. **Fuenf Commits liegen unveroeffentlicht**, seit `98a80198` nichts
+   gepusht. Der Push geht nur ueber den Zugangshelfer im Repo.
+
+### Wie man anfaengt
+
+    cd ~/Schreibtisch/orangedeck
+    git log --oneline -8
+    systemctl --user status orangedeck
+    curl -s http://127.0.0.1:21021/health
+
+**Nach jeder Aenderung an den geteilten QML-Dateien:**
+
+    tools/install-links.sh              # Shell und Dashboard (Verweise)
+    python3 daemon/orangedeck-dashtab   # DMS-Ueberlagerung neu bauen
+    systemctl --user restart dms
+    cmake --build build                 # die eigenstaendige Anwendung
+    flatpak-builder --user --install --force-clean \
+        build-flatpak packaging/flatpak/store._21rebel.orangedeck.yml
+
+Die letzten beiden tragen eine **Kopie**, keinen Verweis.
+
+**Der Push geht nur ueber den Zugangshelfer im Repo.** `gh` steht auf dieser
+Maschine oft auf Shopatch; `.git/config` holt den Token von 21Rebel unabhaengig
+davon. Die leere erste `helper =`-Zeile setzt die geerbte Liste zurueck und ist
+der Kern -- ohne sie antwortet der globale Helfer zuerst.
+
 ## UEBERGABE 03.09.2026, Abend
 
 21 Commits. Der Tag hatte drei Teile: erst die Luecken schliessen, die vom
