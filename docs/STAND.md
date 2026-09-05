@@ -4,6 +4,74 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## 05.09.2026 -- die Auslieferung geradegezogen
+
+Der Stand von gestern gilt weiter; hier steht nur, was sich fuer die
+Einreichung geaendert hat. Der Abschnitt darunter bleibt der Einstieg in das
+Projekt als Ganzes.
+
+### Der Bauplan zeigte auf einen Stand, der nicht ausgeliefert werden durfte
+
+Der `commit:` im Auslieferungs-Bauplan stand auf `3234e0d` -- **13 Commits
+zurueck**. Darin fehlten die beiden Korrekturen, die die Pruef-VM gefunden hat
+(die Fokus-Sackgasse im Explorer, das durchscheinende Fenster beim ersten
+Start) und der Android-TLS-Fix. Waere der Antrag gestern gestellt worden,
+haette Flathub genau die Fassung ausgeliefert, deren Fehler wir am Abend
+vorher gefunden hatten.
+
+Gebaut haette sie ohnehin nicht: seit dem Windows-Fix liegt die
+`CMakeLists.txt` im Wurzelverzeichnis, bei `3234e0d` lag sie noch unter
+`app/`, und der Bauplan ruft `cmake -S .`.
+
+**Warum es keiner sah -- und das ist die Erkenntnis des Tages:** der CI-Lauf
+setzt den `commit:` vor dem Bauen auf den eigenen Stand. Das ist fuer den Lauf
+richtig, er soll ja pruefen, ob *dieser* Baum durchbaut. Es macht den
+festgenagelten Commit aber zur **einzigen Stelle im Projekt, die von nichts
+nachgeprueft wird** -- ein gruener Haken, der ueber genau das Feld hinwegsieht,
+das den Auslieferungsstand bestimmt. Dieselbe Klasse wie `qmllint` aus
+`/usr/bin` und `install-links.sh --check` vom 04.09.: nicht ein Pruefer, der
+falsch meldet, sondern einer, der an der entscheidenden Stelle gar nicht
+hinsieht.
+
+### Was jetzt steht
+
+| | |
+|---|---|
+| `<release>` in den Metadaten | `0.1.0`, 05.09.2026, mit Inhalt statt "Erste Fassung." |
+| `project(... VERSION)` in CMakeLists | `0.1.0`, damit Tag, Metadaten und Bauplan dieselbe Zahl nennen |
+| `commit:` im Bauplan | `0fbad4a` -- der Stand, der getaggt wird |
+| `appstreamcli validate` | sauber (nur der bekannte Hinweis zur Kennung) |
+| `flatpak-builder-lint` | keine Fehler; Hinweis auf die neuere Laufzeit, inzwischen **6.11** statt 6.10 |
+| Bau aus einem Git-Commit | **durchgelaufen**, im Ergebnis steht 0.1.0 |
+
+Der Bau lief gegen das lokale Repo als Git-Adresse, weil der Commit noch nicht
+gepusht ist -- geprueft ist damit der Weg "aus einem Commit bauen", nicht die
+GitHub-Adresse. Die kommt nach dem Push dran.
+
+Der alte Eintrag `0.1` vom 02.09. ist **ersetzt, nicht ergaenzt**: ein
+Release-Eintrag fuer etwas, das nie ein Paket wurde, ist eine Erfindung.
+
+### Was jetzt an dir haengt
+
+    git tag -a v0.1.0 0fbad4a -m "erste Auslieferung"
+    git push origin main v0.1.0
+
+Der Tag sitzt auf `0fbad4a` (den Metadaten), **nicht** auf `c7d1cdc` (dem
+Bauplan, der darauf zeigt): gebaut wird der Tag, und der Bauplan selbst steckt
+nicht im Paket.
+
+Danach einmal gegen die echte Adresse gegenpruefen -- der Befehl steht in
+`packaging/flathub/EINREICHEN.md` -- und dann der Pull Request gegen
+`flathub/flathub`, Zweig `new-pr`.
+
+**Offen bleibt der Punkt aus dem eigenen Leitsatz:** der Stand, der
+ausgeliefert wird, ist ein anderer als der, der in der VM lief. Der
+Unterschied sind Metadaten, eine Versionszahl und Kommentare -- kein Code.
+Wer es genau nehmen will, baut das Buendel neu und laesst es noch einmal in
+der VM laufen.
+
+---
+
 ## TAGESABSCHLUSS 04.09.2026 -- wo das Projekt steht
 
 > Der Abschnitt hier ist der Einstieg fuer den naechsten Tag. Alles darunter
