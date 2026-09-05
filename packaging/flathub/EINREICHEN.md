@@ -12,10 +12,11 @@ haengt an einer Person, nicht an einem Werkzeug.
   waere abgelehnt worden.
 - **Die Metadaten** bestehen `appstreamcli validate`, samt fuenf Screenshots.
 - **Flathubs eigener Pruefer meldet keinen Fehler** (Stand 05.09.2026). Uebrig
-  bleibt ein Hinweis auf die neuere Laufzeit -- inzwischen
-  `org.kde.Platform 6.11`, gestern war es noch 6.10; die Zahl wandert weiter,
-  der Hinweis bleibt eine Warnung und kein Fehler. Ein Wechsel dorthin zieht
-  die Fassung von `layer-shell-qt` nach sich.
+  bleibt ein Hinweis auf eine neuere Laufzeit. **Welche, schwankt:** derselbe
+  Pruefer nannte am 05.09. vormittags `org.kde.Platform 6.11` und
+  nachmittags wieder 6.10. Die Zahl taugt also nicht als Zielangabe -- der
+  Hinweis bleibt in jedem Fall eine Warnung und kein Fehler. Ein Wechsel
+  zieht die Fassung von `layer-shell-qt` nach sich.
 - **Die Berechtigungen** sind knapp gehalten: Netz, Wayland (mit Rueckfall auf
   X11), IPC und die Grafikkarte. **Kein `--filesystem`** -- die Anwendung
   fasst nichts auf dem Rechner an, ihre Einstellungen landen unter
@@ -43,7 +44,14 @@ Was fehlt, ist der Tag auf demselben Stand und der Push:
 
     git tag -a v0.1.0 <der Commit aus dem Bauplan> -m "erste Auslieferung"
     git push origin main v0.1.0
-    git rev-parse v0.1.0        # muss den `commit:` aus dem Bauplan ergeben
+    git rev-parse v0.1.0^{}     # muss den `commit:` aus dem Bauplan ergeben
+
+**Die geschweiften Klammern gehoeren dazu.** Ein annotierter Tag (`-a`) ist
+ein eigenes Objekt mit eigenem SHA; `git rev-parse v0.1.0` gibt **den**
+zurueck, nicht den Commit darunter. Hier stand bis zum 05.09.2026 die Zeile
+ohne `^{}` -- wer sie befolgt haette, haette den SHA des Tag-Objekts in den
+Bauplan gesetzt, und `flatpak-builder` haette einen Commit gesucht, den es
+nicht gibt. Aufgefallen beim Anwenden, nicht beim Schreiben.
 
 Der Tag sitzt auf dem Commit mit den Metadaten, **nicht** auf dem darauf
 folgenden, der den Bauplan nachzieht: was gebaut wird, ist der Tag; der
