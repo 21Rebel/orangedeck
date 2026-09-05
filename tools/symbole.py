@@ -264,6 +264,34 @@ def rendern(svg_pfad, ziel, groesse, tun):
                         str(WURZEL / svg_pfad), "-o", str(WURZEL / ziel)], check=True)
     print("  %s %s (%d px)" % ("rendere" if tun else "wuerde rendern", ziel, groesse))
 
+def icns_schreiben(ziel, bilder):
+    """Schreibt eine .icns-Datei aus PNG-Daten.
+
+    **Ohne Mac und ohne ImageMagick-Delegat.** Beides stand hier nicht zur
+    Verfuegung: `iconutil` gibt es nur auf macOS, und dieses ImageMagick ist
+    ohne ICNS gebaut. Das Format ist aber denkbar einfach und braucht keins
+    von beidem:
+
+        "icns" | Gesamtlaenge | dann je Bild: Typ | Laenge | Daten
+
+    Alle Laengen sind vier Bytes, gross-endig, und schliessen die acht Bytes
+    des Kopfes mit ein. Die hier benutzten Typen tragen unveraendertes PNG.
+    """
+    import struct
+    teile = []
+    for typ, daten in bilder:
+        teile.append(typ.encode("ascii") + struct.pack(">I", len(daten) + 8) + daten)
+    rumpf = b"".join(teile)
+    ziel.parent.mkdir(parents=True, exist_ok=True)
+    ziel.write_bytes(b"icns" + struct.pack(">I", len(rumpf) + 8) + rumpf)
+
+
+# Typ -> Kantenlaenge. icp4/icp5 sind die einfachen 16 und 32, ic07 bis ic10
+# die grossen, ic11 bis ic14 die verdoppelten fuer Netzhautschirme.
+ICNS_TYPEN = [("icp4", 16), ("icp5", 32), ("ic11", 32), ("ic12", 64),
+              ("ic07", 128), ("ic13", 256), ("ic08", 256), ("ic14", 512),
+              ("ic09", 512), ("ic10", 1024)]
+
 DICHTEN = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
 MACOS = [(16, "16x16"), (32, "16x16@2x"), (32, "32x32"), (64, "32x32@2x"),
          (128, "128x128"), (256, "128x128@2x"), (256, "256x256"),
@@ -322,12 +350,23 @@ def main():
           % ("schreibe" if tun else "wuerde schreiben"))
 
     print("macOS:")
-    # ImageMagick kann hier kein .icns schreiben. Das `.iconset` ist ohnehin
-    # der uebliche Weg: `iconutil -c icns` macht daraus auf einem Mac die
-    # fertige Datei.
+    # Das `.iconset` bleibt: wer einen Mac hat, macht daraus mit
+    # `iconutil -c icns` dasselbe. Die fertige Datei entsteht aber auch ohne
+    # einen -- siehe icns_schreiben().
     for px, name in MACOS:
         rendern(meister, "packaging/macos/orangedeck.iconset/icon_%s.png" % name, px, tun)
-    print("  Auf einem Mac: iconutil -c icns packaging/macos/orangedeck.iconset")
+    if tun:
+        import tempfile
+        bilder = []
+        with tempfile.TemporaryDirectory() as tmp:
+            for typ, px in ICNS_TYPEN:
+                t = pathlib.Path(tmp) / ("%s.png" % typ)
+                subprocess.run(["rsvg-convert", "-w", str(px), "-h", str(px),
+                                str(WURZEL / meister), "-o", str(t)], check=True)
+                bilder.append((typ, t.read_bytes()))
+        icns_schreiben(WURZEL / "packaging/macos/orangedeck.icns", bilder)
+    print("  %s packaging/macos/orangedeck.icns (16..1024, ohne Mac erzeugt)"
+          % ("schreibe" if tun else "wuerde schreiben"))
 
 if __name__ == "__main__":
     main()
