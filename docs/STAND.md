@@ -93,13 +93,18 @@ Titel fuer das quickshell-Fenster. Wie man sie anlegt, steht in
 
 ### Was jetzt an dir haengt
 
-    git tag -a v0.1.0 f5c34704d1105fedc64a1ed5234a6f46a2d958d8 -m "erste Auslieferung"
-    git push origin main v0.1.0
+**Der Tag wandert auf 0.1.1.** `v0.1.0` bleibt stehen, wo er ist -- er ist
+schon oeffentlich, und Historie wird hier nicht umgeschrieben. Ausgeliefert
+wurde daraus nie etwas, deshalb traegt erst 0.1.1 einen Release-Eintrag.
 
-Der Tag sitzt auf dem Stand, auf den der `commit:` im Bauplan zeigt --
-nachgezogen, nachdem die vier Korrekturen dazugekommen waren. **Kommen vor
-dem Tag noch Commits dazu, muss beides wieder mitwandern**; das ist die
-Stelle, die von nichts nachgeprueft wird.
+    git tag -a v0.1.1 15a6466f3fa94fffc4ac013e697224284c1ea81a -m "erste Auslieferung"
+    git push origin main v0.1.1
+
+Der Tag sitzt auf dem Stand, auf den der `commit:` im Bauplan zeigt.
+**Kommen vor dem Tag noch Commits dazu, muss beides wieder mitwandern**; das
+ist die Stelle, die von nichts nachgeprueft wird. Heute ist sie deswegen
+schon zweimal gewandert: einmal fuer die vier Oberflaechen-Korrekturen, dann
+fuer das neue Anwendungssymbol.
 
 Danach einmal gegen die echte Adresse gegenpruefen -- der Befehl steht in
 `packaging/flathub/EINREICHEN.md` -- und dann der Pull Request gegen
