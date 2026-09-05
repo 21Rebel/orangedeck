@@ -1,0 +1,106 @@
+/* Dieselbe Sprache wie die Anwendung: der Grund der Oberflaeche, das Orange
+   der Kacheln, und die Kachel als wiederkehrende Form. */
+:root {
+  --grund: #12101a;
+  --grund-hell: #1b1822;
+  --linie: #2a2a38;
+  --schrift: #e6e0e9;
+  --gedaempft: #9a94a6;
+  --orange: #f7931a;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--grund);
+  color: var(--schrift);
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+a { color: var(--orange); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.mitte { max-width: 62rem; margin: 0 auto; padding: 0 1.5rem; }
+
+header { padding: 3.5rem 0 2.5rem; }
+.marke { display: flex; align-items: center; gap: 1rem; }
+.marke img { width: 72px; height: 72px; }
+.marke h1 { margin: 0; font-size: 1.9rem; letter-spacing: -0.01em; }
+.schlagzeile { margin: 2.2rem 0 0.6rem; font-size: clamp(1.8rem, 5vw, 2.9rem); line-height: 1.15; }
+.unterzeile { margin: 0; color: var(--gedaempft); font-size: clamp(1rem, 2.4vw, 1.25rem); max-width: 42rem; }
+
+section { padding: 2.6rem 0; border-top: 1px solid var(--linie); }
+h2 { font-size: 1.35rem; margin: 0 0 1.2rem; }
+p { max-width: 44rem; }
+
+.bilder { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); }
+.bilder img { width: 100%; border: 1px solid var(--linie); border-radius: 10px; display: block; }
+
+.gitter { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); list-style: none; padding: 0; margin: 0; }
+.gitter li { background: var(--grund-hell); border: 1px solid var(--linie); border-radius: 10px; padding: 1rem 1.1rem; }
+.gitter b { color: var(--orange); display: block; margin-bottom: 0.25rem; }
+.gitter span { color: var(--gedaempft); font-size: 0.95rem; }
+
+.knopfreihe { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+.knopf { background: var(--grund-hell); border: 1px solid var(--linie); border-radius: 10px; padding: 0.9rem 1.1rem; min-width: 13rem; }
+.knopf b { display: block; color: var(--schrift); }
+.knopf span { color: var(--gedaempft); font-size: 0.9rem; }
+.knopf.wartet { opacity: 0.6; }
+
+ul.klar { list-style: none; padding: 0; margin: 0; max-width: 44rem; }
+ul.klar li { padding-left: 1.4rem; position: relative; margin-bottom: 0.7rem; color: var(--gedaempft); }
+ul.klar li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 8px; height: 8px; border-radius: 2px; background: var(--orange); }
+
+footer { border-top: 1px solid var(--linie); padding: 2rem 0 3rem; color: var(--gedaempft); font-size: 0.92rem; }
+.sprachen { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; margin-top: 1rem; }
+.sprachen a[aria-current="true"] { color: var(--schrift); text-decoration: underline; }
+
+/* ---- Aufbau nach shopatch.com ------------------------------------------ */
+.kopfleiste {
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(18, 16, 26, 0.86);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--linie);
+}
+.kopf { display: flex; align-items: center; gap: 1.5rem; height: 60px; }
+.kopf .marke { display: flex; align-items: center; gap: 0.6rem; color: var(--schrift); font-weight: 600; }
+.kopf .marke:hover { text-decoration: none; }
+.nav { display: flex; gap: 1.3rem; margin-left: auto; font-size: 0.94rem; }
+.nav a { color: var(--gedaempft); }
+.nav a:hover { color: var(--schrift); text-decoration: none; }
+.kopf .sprachen { display: flex; gap: 0.7rem; font-size: 0.86rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.kopf .sprachen a { color: var(--gedaempft); }
+.kopf .sprachen a[aria-current="true"] { color: var(--orange); }
+
+.hero { padding: 4.5rem 0 3rem; border: 0; }
+.hero h1 { font-size: clamp(2.1rem, 6vw, 3.6rem); line-height: 1.08; margin: 0 0 1.1rem; letter-spacing: -0.02em; max-width: 20ch; }
+.fuehrend { color: var(--gedaempft); font-size: clamp(1.02rem, 2.3vw, 1.2rem); max-width: 44rem; margin: 0 0 1.8rem; }
+.tat { display: inline-block; background: var(--orange); color: #14100a; font-weight: 600; padding: 0.7rem 1.4rem; border-radius: 8px; }
+.tat:hover { text-decoration: none; filter: brightness(1.08); }
+.tat.zweit { background: transparent; color: var(--schrift); border: 1px solid var(--linie); }
+.badges { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.8rem; }
+.badge { font-size: 0.82rem; color: var(--gedaempft); border: 1px solid var(--linie); border-radius: 999px; padding: 0.28rem 0.8rem; }
+
+.schau { border: 0; padding-top: 0; }
+
+.karten { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem;
+          grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
+.karten li { background: var(--grund-hell); border: 1px solid var(--linie); border-radius: 12px; padding: 1.2rem 1.3rem; }
+.karten .nr { display: block; font-variant-numeric: tabular-nums; color: var(--orange); font-size: 0.8rem; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+.karten b { display: block; margin-bottom: 0.35rem; font-size: 1.02rem; }
+.karten .txt { color: var(--gedaempft); font-size: 0.94rem; }
+
+.fragen { max-width: 46rem; }
+.fragen details { border-bottom: 1px solid var(--linie); padding: 0.9rem 0; }
+.fragen summary { cursor: pointer; font-weight: 600; list-style: none; }
+.fragen summary::-webkit-details-marker { display: none; }
+.fragen summary::after { content: "+"; float: right; color: var(--orange); }
+.fragen details[open] summary::after { content: "\2013"; }
+.fragen p { color: var(--gedaempft); margin: 0.6rem 0 0; }
+
+.fuss-tat { margin-bottom: 1.6rem; }
+footer .klein { margin-bottom: 0.3rem; font-size: 0.86rem; }
+
+@media (max-width: 46rem) {
+  .nav { display: none; }
+  .kopf .sprachen { margin-left: auto; }
+}

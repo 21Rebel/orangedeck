@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de" dir="ltr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OrangeDeck — der Bitcoin-Mempool, lebendig</title>
+<meta name="description" content="Der Bitcoin-Mempool als Kachelgrafik, dazu Blockuhr, Kennzahlen zum Schürfen, Blockforscher, beobachtete Adressen und ein Markt-Reiter. Frei, MIT-lizenziert, ohne Konto.">
+<meta property="og:title" content="OrangeDeck — der Bitcoin-Mempool, lebendig">
+<meta property="og:description" content="Der Bitcoin-Mempool als Kachelgrafik, dazu Blockuhr, Kennzahlen zum Schürfen, Blockforscher, beobachtete Adressen und ein Markt-Reiter. Frei, MIT-lizenziert, ohne Konto.">
+<meta property="og:type" content="website">
+<link rel="icon" href="../bilder/symbol.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../stil.css">
+<link rel="alternate" hreflang="de" href="https://orangedeck.dev/de/">
+<link rel="alternate" hreflang="en" href="https://orangedeck.dev/en/">
+<link rel="alternate" hreflang="x-default" href="https://orangedeck.dev/en/">
+<body>
+<div class="kopfleiste"><div class="mitte kopf">
+  <a class="marke" href="#"><img src="../bilder/symbol.svg" alt="" width="34" height="34"><span>OrangeDeck</span></a>
+  <nav class="nav"><a href="#was">Was es ist</a><a href="#ansichten">Ansichten</a><a href="#wo">Wo es läuft</a><a href="#warum">Warum</a><a href="#faq">Fragen</a></nav>
+  <nav class="sprachen"><a href="../de/" hreflang="de" aria-current="true">Deutsch</a><a href="../en/" hreflang="en">English</a></nav>
+</div></div>
+
+<div class="mitte">
+  <header class="hero">
+    <h1>Der Bitcoin-Mempool, lebendig</h1>
+    <p class="fuehrend">Wartende Transaktionen fallen als Kacheln auf die Halde — so groß wie das, was sie bewegen, gefärbt nach Alter, Gebühr oder Art. Bestätigte fliegen in den Block. Man sieht dem Netz beim Atmen zu.</p>
+    <div class="knopfreihe">
+      <a class="tat" href="#holen">Beziehen</a>
+      <a class="tat zweit" href="https://github.com/21Rebel/orangedeck">Quelltext lesen</a>
+    </div>
+    <div class="badges"><span class="badge">MIT-lizenziert</span><span class="badge">Kein Konto, keine Zählung</span><span class="badge">Nur beobachtend, keine Schlüssel</span><span class="badge">Sechs Ansichten, fünf Wirte</span></div>
+  </header>
+
+  <section class="schau">
+    <div class="bilder">
+      <img src="../bilder/feed.png" alt="Feed" loading="lazy">
+      <img src="../bilder/uhr.png" alt="Clock" loading="lazy">
+      <img src="../bilder/markt.png" alt="Market" loading="lazy">
+    </div>
+  </section>
+
+  <section id="was">
+    <h2>Was es ist</h2>
+    <p>OrangeDeck zeichnet den Bitcoin-Mempool so, wie er sich tatsächlich verhält. Jede wartende Transaktion ist ein Quadrat. Sie häuft sich, sie wird geschürft, sie wird verdrängt — und man sieht es geschehen, statt eine Zahl zu lesen.</p><p>Darum herum liegen fünf weitere Ansichten: eine Blockuhr für das Tablet an der Wand, Kennzahlen des eigenen Schürfers, ein Blockforscher, beobachtete Adressen, und ein Markt-Reiter mit Kerzen, kumuliertem Volumendelta und Liquidationen.</p>
+  </section>
+
+  <section id="ansichten">
+    <h2>Sechs Ansichten</h2>
+    <ul class="karten"><li><span class="nr">01</span><b>Feed</b><span class="txt">Der Mempool als lebendige Kachelgrafik, daneben der letzte Block. Farbe nach Alter, Gebühr oder Art.</span></li><li><span class="nr">02</span><b>Uhr</b><span class="txt">Blockhöhe, Gebühren, Kurs, Hashrate und Halving-Countdown — groß, ohne Bedienung. Für das Tablet an der Wand.</span></li><li><span class="nr">03</span><b>Miner</b><span class="txt">Hashrate und beste Schwierigkeit des eigenen Bitaxe, gegen die Netzschwierigkeit gehalten.</span></li><li><span class="nr">04</span><b>Explorer</b><span class="txt">Suche nach Höhe, Hash, TxID oder Adresse. Blöcke und ihr Inhalt zum Durchblättern, samt Verdrängungen.</span></li><li><span class="nr">05</span><b>Wallet</b><span class="txt">Eigene Adressen, nur beobachtet. Die eigenen Transaktionen stechen hervor, solange sie in der Halde liegen.</span></li><li><span class="nr">06</span><b>Markt</b><span class="txt">Kerzen, kumuliertes Volumendelta und Liquidationen, über Börsen hinweg verdichtet.</span></li></ul>
+  </section>
+
+  <section id="wo">
+    <h2>Wo es läuft</h2>
+    <ul class="karten schlicht"><li><b>Jeder Linux-Desktop</b><span class="txt">Ein gewöhnliches Fenster. Wayland mit Rückfall auf X11.</span></li><li><b>Als Widget oder Leiste</b><span class="txt">Layer-Shell auf niri, sway, Hyprland, river, labwc.</span></li><li><b>In DankMaterialShell</b><span class="txt">Als Dashboard-Reiter, Leistenpille oder Desktop-Widget.</span></li><li><b>Windows und macOS</b><span class="txt">Derselbe Bau, dieselben Ansichten.</span></li><li><b>Android</b><span class="txt">Telefon oder Tablet. Jede Ansicht mit eigener Verknüpfung auf dem Startbildschirm.</span></li></ul>
+  </section>
+
+  <section id="warum">
+    <h2>Warum OrangeDeck</h2>
+    <ul class="karten"><li><span class="nr">01</span><b>Es ist ein Betrachter, sonst nichts</b><span class="txt">Es kennt keinen privaten Schlüssel, kann nicht unterschreiben und trägt keine Bibliothek mit, die das könnte.</span></li><li><span class="nr">02</span><b>Kein Server von uns</b><span class="txt">Es spricht mit mempool.space oder mit dem eigenen Node. Keine Zählung, keine Absturzberichte, kein Konto.</span></li><li><span class="nr">03</span><b>Gemessen statt geraten</b><span class="txt">Wo eine Zahl ein Modell ist und keine Messung — die Liquidations-Heatmap — steht das auf dem Schirm, samt ausgeschriebener Annahmen.</span></li><li><span class="nr">04</span><b>Eine Codebasis, fünf Wirte</b><span class="txt">Dasselbe QML zeichnet Fenster, Widget, Leiste und Telefon. Was an einer Stelle behoben ist, ist es überall.</span></li><li><span class="nr">05</span><b>Zum Nachlesen</b><span class="txt">MIT-lizenziert, nichts verschleiert, und die Begründungen stehen in den Commits statt verloren zu gehen.</span></li></ul>
+  </section>
+
+  <section id="holen">
+    <h2>Beziehen</h2>
+    <div class="knopfreihe"><div class="knopf wartet"><b>Flathub</b><span>Antrag läuft.</span></div><a class="knopf" href="https://github.com/21Rebel/orangedeck/releases"><b>Android-APK</b><span>Aus dem Quelltext gebaut, mit TLS.</span></a><a class="knopf" href="https://github.com/21Rebel/orangedeck"><b>Quelltext</b><span>Selbst bauen. MIT.</span></a></div>
+  </section>
+
+  <section id="faq">
+    <h2>Fragen</h2>
+    <div class="fragen"><details><summary>Braucht es meine Schlüssel?</summary><p>Nein. Es kann nichts unterschreiben. Beobachtete Adressen gibt man als Adresse oder xpub ein; sie verlassen den Rechner nur als Guthabenabfrage.</p></details><details><summary>Woher kommen die Daten?</summary><p>Aus mempool.space, oder aus der eigenen Instanz — das ist eine Einstellung. Marktdaten kommen aus den öffentlichen Kanälen der Börsen.</p></details><details><summary>Telefoniert es nach Hause?</summary><p>Nein. Es gibt keinen Server von uns, keine Auswertung und keine Absturzberichte.</p></details><details><summary>Was kostet es?</summary><p>Nichts. MIT-lizenziert, und es gibt keine bezahlte Stufe.</p></details><details><summary>Ist die Liquidations-Heatmap echt?</summary><p>Nein, und sie sagt es auf dem Schirm. Niemand veröffentlicht fremde Positionen; sie ist ein Modell mit ausgeschriebenen Annahmen.</p></details><details><summary>Läuft es auf einem Tablet an der Wand?</summary><p>Dafür ist die Uhr da — große Zahlen, keine Bedienung. Der Android-Bau hat eine Verknüpfung direkt dorthin.</p></details></div>
+  </section>
+
+  <!-- Hier kommt spaeter der Spendenteil hin: eine wechselnde Adresse, damit
+       sich Zahlungen nicht einer einzigen zuordnen lassen. Braucht einen xpub
+       und eine Ableitung, also mehr als eine statische Seite -- deshalb
+       bewusst noch nicht drin. -->
+
+  <footer>
+    <p class="fuss-tat"><a class="tat" href="#holen">Ausprobieren</a></p>
+    <p>OrangeDeck steht unter der MIT-Lizenz. Kachelpackung und Farbmodell aus bitfeed portiert (MIT, mononaut).</p>
+    <p><a href="https://github.com/21Rebel/orangedeck">github.com/21Rebel/orangedeck</a></p>
+    <p class="klein">Sprache</p>
+    <nav class="sprachen"><a href="../de/" hreflang="de" aria-current="true">Deutsch</a><a href="../en/" hreflang="en">English</a></nav>
+  </footer>
+</div>
+</body>
+</html>

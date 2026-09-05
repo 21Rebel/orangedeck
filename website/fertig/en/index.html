@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OrangeDeck — the Bitcoin mempool, live</title>
+<meta name="description" content="A live view of the Bitcoin mempool as a tile mosaic, with a block clock, miner figures, a block explorer, watch-only addresses and a market tab. Free, MIT licensed, no account.">
+<meta property="og:title" content="OrangeDeck — the Bitcoin mempool, live">
+<meta property="og:description" content="A live view of the Bitcoin mempool as a tile mosaic, with a block clock, miner figures, a block explorer, watch-only addresses and a market tab. Free, MIT licensed, no account.">
+<meta property="og:type" content="website">
+<link rel="icon" href="../bilder/symbol.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../stil.css">
+<link rel="alternate" hreflang="de" href="https://orangedeck.dev/de/">
+<link rel="alternate" hreflang="en" href="https://orangedeck.dev/en/">
+<link rel="alternate" hreflang="x-default" href="https://orangedeck.dev/en/">
+<body>
+<div class="kopfleiste"><div class="mitte kopf">
+  <a class="marke" href="#"><img src="../bilder/symbol.svg" alt="" width="34" height="34"><span>OrangeDeck</span></a>
+  <nav class="nav"><a href="#was">What it is</a><a href="#ansichten">Views</a><a href="#wo">Where it runs</a><a href="#warum">Why</a><a href="#faq">FAQ</a></nav>
+  <nav class="sprachen"><a href="../de/" hreflang="de">Deutsch</a><a href="../en/" hreflang="en" aria-current="true">English</a></nav>
+</div></div>
+
+<div class="mitte">
+  <header class="hero">
+    <h1>The Bitcoin mempool, live</h1>
+    <p class="fuehrend">Waiting transactions fall onto a heap as a tile mosaic, sized by what they move and coloured by age, fee or type. Confirmed ones fly into the block. You watch the network breathe.</p>
+    <div class="knopfreihe">
+      <a class="tat" href="#holen">Get it</a>
+      <a class="tat zweit" href="https://github.com/21Rebel/orangedeck">Read the source</a>
+    </div>
+    <div class="badges"><span class="badge">MIT licensed</span><span class="badge">No account, no telemetry</span><span class="badge">Watch-only, no keys</span><span class="badge">Six views, five hosts</span></div>
+  </header>
+
+  <section class="schau">
+    <div class="bilder">
+      <img src="../bilder/feed.png" alt="Feed" loading="lazy">
+      <img src="../bilder/uhr.png" alt="Clock" loading="lazy">
+      <img src="../bilder/markt.png" alt="Market" loading="lazy">
+    </div>
+  </section>
+
+  <section id="was">
+    <h2>What it is</h2>
+    <p>OrangeDeck draws the Bitcoin mempool the way it actually behaves. Every waiting transaction is a square. It piles up, it gets mined, it gets replaced — and you see it happen instead of reading a number.</p><p>Around that sit five more views: a block clock for a tablet on the wall, figures from your own miner, a block explorer, watch-only addresses, and a market tab with candles, cumulative volume delta and liquidations.</p>
+  </section>
+
+  <section id="ansichten">
+    <h2>Six views</h2>
+    <ul class="karten"><li><span class="nr">01</span><b>Feed</b><span class="txt">The mempool as a living mosaic, with the last block beside it. Colour by age, fee or transaction type.</span></li><li><span class="nr">02</span><b>Clock</b><span class="txt">Block height, fees, price, hashrate and the halving countdown — large, without controls. For a tablet on the wall.</span></li><li><span class="nr">03</span><b>Miner</b><span class="txt">Hashrate and best difficulty from your own Bitaxe, held against the network difficulty.</span></li><li><span class="nr">04</span><b>Explorer</b><span class="txt">Search by height, hash, txid or address. Browse blocks and their contents, see what replaced what.</span></li><li><span class="nr">05</span><b>Watch</b><span class="txt">Your own addresses, watch-only. Your transactions are highlighted while they sit in the heap.</span></li><li><span class="nr">06</span><b>Market</b><span class="txt">Candles, cumulative volume delta and liquidations, aggregated across exchanges.</span></li></ul>
+  </section>
+
+  <section id="wo">
+    <h2>Where it runs</h2>
+    <ul class="karten schlicht"><li><b>Any Linux desktop</b><span class="txt">An ordinary window. Wayland with an X11 fallback.</span></li><li><b>As a widget or bar</b><span class="txt">Layer-shell on niri, sway, Hyprland, river, labwc.</span></li><li><b>Inside DankMaterialShell</b><span class="txt">As a dashboard tab, a panel pill or a desktop widget.</span></li><li><b>Windows and macOS</b><span class="txt">Same build, same views.</span></li><li><b>Android</b><span class="txt">Phone or tablet. Each view has its own home screen shortcut.</span></li></ul>
+  </section>
+
+  <section id="warum">
+    <h2>Why OrangeDeck</h2>
+    <ul class="karten"><li><span class="nr">01</span><b>It is a viewer, and nothing else</b><span class="txt">It knows no private key, cannot sign, and carries no library that could. Watch-only means watch-only.</span></li><li><span class="nr">02</span><b>No server of ours</b><span class="txt">It talks to mempool.space or to your own node. There is no counting, no crash reports and no account.</span></li><li><span class="nr">03</span><b>Measured, not guessed</b><span class="txt">Where a number is a model rather than a measurement — the liquidation heatmap — it says so on screen, with the assumptions written out.</span></li><li><span class="nr">04</span><b>One codebase, five hosts</b><span class="txt">The same QML draws the window, the widget, the panel and the phone. What is fixed in one place is fixed everywhere.</span></li><li><span class="nr">05</span><b>Yours to read</b><span class="txt">MIT licensed, no obfuscation, and the reasoning is in the commit messages rather than lost.</span></li></ul>
+  </section>
+
+  <section id="holen">
+    <h2>Get it</h2>
+    <div class="knopfreihe"><div class="knopf wartet"><b>Flathub</b><span>Submission in progress.</span></div><a class="knopf" href="https://github.com/21Rebel/orangedeck/releases"><b>Android APK</b><span>Built from source, TLS included.</span></a><a class="knopf" href="https://github.com/21Rebel/orangedeck"><b>Source</b><span>Build it yourself. MIT.</span></a></div>
+  </section>
+
+  <section id="faq">
+    <h2>Questions</h2>
+    <div class="fragen"><details><summary>Does it need my keys?</summary><p>No. It cannot sign anything. Watched addresses are entered as addresses or an xpub and never leave your machine except as a balance query.</p></details><details><summary>Where does the data come from?</summary><p>From mempool.space by default, or from your own mempool instance — that is a single setting. Market data comes from the exchanges&#x27; public feeds.</p></details><details><summary>Does it phone home?</summary><p>No. There is no server of ours, no analytics and no crash reporting.</p></details><details><summary>What does it cost?</summary><p>Nothing. It is MIT licensed and there is no paid tier.</p></details><details><summary>Is the liquidation heatmap real data?</summary><p>No, and it says so on screen. Nobody publishes other people&#x27;s positions; it is a model with its assumptions written out.</p></details><details><summary>Can I run it on a tablet on the wall?</summary><p>That is what the clock view is for — large figures, no controls. The Android build carries a shortcut straight into it.</p></details></div>
+  </section>
+
+  <!-- Hier kommt spaeter der Spendenteil hin: eine wechselnde Adresse, damit
+       sich Zahlungen nicht einer einzigen zuordnen lassen. Braucht einen xpub
+       und eine Ableitung, also mehr als eine statische Seite -- deshalb
+       bewusst noch nicht drin. -->
+
+  <footer>
+    <p class="fuss-tat"><a class="tat" href="#holen">Try it</a></p>
+    <p>OrangeDeck is MIT licensed. Tile packing and colour model ported from bitfeed (MIT, mononaut).</p>
+    <p><a href="https://github.com/21Rebel/orangedeck">github.com/21Rebel/orangedeck</a></p>
+    <p class="klein">Language</p>
+    <nav class="sprachen"><a href="../de/" hreflang="de">Deutsch</a><a href="../en/" hreflang="en" aria-current="true">English</a></nav>
+  </footer>
+</div>
+</body>
+</html>

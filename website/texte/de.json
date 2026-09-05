@@ -1,0 +1,169 @@
+{
+  "code": "de",
+  "name": "Deutsch",
+  "richtung": "ltr",
+  "repo": "https://github.com/21Rebel/orangedeck",
+  "titel": "OrangeDeck — der Bitcoin-Mempool, lebendig",
+  "beschreibung": "Der Bitcoin-Mempool als Kachelgrafik, dazu Blockuhr, Kennzahlen zum Schürfen, Blockforscher, beobachtete Adressen und ein Markt-Reiter. Frei, MIT-lizenziert, ohne Konto.",
+  "nav": [
+    [
+      "Was es ist",
+      "#was"
+    ],
+    [
+      "Ansichten",
+      "#ansichten"
+    ],
+    [
+      "Wo es läuft",
+      "#wo"
+    ],
+    [
+      "Warum",
+      "#warum"
+    ],
+    [
+      "Fragen",
+      "#faq"
+    ]
+  ],
+  "hero_titel": "Der Bitcoin-Mempool, lebendig",
+  "hero_text": "Wartende Transaktionen fallen als Kacheln auf die Halde — so groß wie das, was sie bewegen, gefärbt nach Alter, Gebühr oder Art. Bestätigte fliegen in den Block. Man sieht dem Netz beim Atmen zu.",
+  "hero_cta1": "Beziehen",
+  "hero_cta1_ziel": "#holen",
+  "hero_cta2": "Quelltext lesen",
+  "hero_cta2_ziel": "https://github.com/21Rebel/orangedeck",
+  "badges": [
+    "MIT-lizenziert",
+    "Kein Konto, keine Zählung",
+    "Nur beobachtend, keine Schlüssel",
+    "Sechs Ansichten, fünf Wirte"
+  ],
+  "was_titel": "Was es ist",
+  "was": [
+    "OrangeDeck zeichnet den Bitcoin-Mempool so, wie er sich tatsächlich verhält. Jede wartende Transaktion ist ein Quadrat. Sie häuft sich, sie wird geschürft, sie wird verdrängt — und man sieht es geschehen, statt eine Zahl zu lesen.",
+    "Darum herum liegen fünf weitere Ansichten: eine Blockuhr für das Tablet an der Wand, Kennzahlen des eigenen Schürfers, ein Blockforscher, beobachtete Adressen, und ein Markt-Reiter mit Kerzen, kumuliertem Volumendelta und Liquidationen."
+  ],
+  "ansichten_titel": "Sechs Ansichten",
+  "ansichten": [
+    [
+      "Feed",
+      "Der Mempool als lebendige Kachelgrafik, daneben der letzte Block. Farbe nach Alter, Gebühr oder Art."
+    ],
+    [
+      "Uhr",
+      "Blockhöhe, Gebühren, Kurs, Hashrate und Halving-Countdown — groß, ohne Bedienung. Für das Tablet an der Wand."
+    ],
+    [
+      "Miner",
+      "Hashrate und beste Schwierigkeit des eigenen Bitaxe, gegen die Netzschwierigkeit gehalten."
+    ],
+    [
+      "Explorer",
+      "Suche nach Höhe, Hash, TxID oder Adresse. Blöcke und ihr Inhalt zum Durchblättern, samt Verdrängungen."
+    ],
+    [
+      "Wallet",
+      "Eigene Adressen, nur beobachtet. Die eigenen Transaktionen stechen hervor, solange sie in der Halde liegen."
+    ],
+    [
+      "Markt",
+      "Kerzen, kumuliertes Volumendelta und Liquidationen, über Börsen hinweg verdichtet."
+    ]
+  ],
+  "wo_titel": "Wo es läuft",
+  "wo": [
+    [
+      "Jeder Linux-Desktop",
+      "Ein gewöhnliches Fenster. Wayland mit Rückfall auf X11."
+    ],
+    [
+      "Als Widget oder Leiste",
+      "Layer-Shell auf niri, sway, Hyprland, river, labwc."
+    ],
+    [
+      "In DankMaterialShell",
+      "Als Dashboard-Reiter, Leistenpille oder Desktop-Widget."
+    ],
+    [
+      "Windows und macOS",
+      "Derselbe Bau, dieselben Ansichten."
+    ],
+    [
+      "Android",
+      "Telefon oder Tablet. Jede Ansicht mit eigener Verknüpfung auf dem Startbildschirm."
+    ]
+  ],
+  "warum_titel": "Warum OrangeDeck",
+  "warum": [
+    [
+      "Es ist ein Betrachter, sonst nichts",
+      "Es kennt keinen privaten Schlüssel, kann nicht unterschreiben und trägt keine Bibliothek mit, die das könnte."
+    ],
+    [
+      "Kein Server von uns",
+      "Es spricht mit mempool.space oder mit dem eigenen Node. Keine Zählung, keine Absturzberichte, kein Konto."
+    ],
+    [
+      "Gemessen statt geraten",
+      "Wo eine Zahl ein Modell ist und keine Messung — die Liquidations-Heatmap — steht das auf dem Schirm, samt ausgeschriebener Annahmen."
+    ],
+    [
+      "Eine Codebasis, fünf Wirte",
+      "Dasselbe QML zeichnet Fenster, Widget, Leiste und Telefon. Was an einer Stelle behoben ist, ist es überall."
+    ],
+    [
+      "Zum Nachlesen",
+      "MIT-lizenziert, nichts verschleiert, und die Begründungen stehen in den Commits statt verloren zu gehen."
+    ]
+  ],
+  "holen_titel": "Beziehen",
+  "holen": [
+    [
+      "Flathub",
+      "Antrag läuft.",
+      ""
+    ],
+    [
+      "Android-APK",
+      "Aus dem Quelltext gebaut, mit TLS.",
+      "https://github.com/21Rebel/orangedeck/releases"
+    ],
+    [
+      "Quelltext",
+      "Selbst bauen. MIT.",
+      "https://github.com/21Rebel/orangedeck"
+    ]
+  ],
+  "faq_titel": "Fragen",
+  "faq": [
+    [
+      "Braucht es meine Schlüssel?",
+      "Nein. Es kann nichts unterschreiben. Beobachtete Adressen gibt man als Adresse oder xpub ein; sie verlassen den Rechner nur als Guthabenabfrage."
+    ],
+    [
+      "Woher kommen die Daten?",
+      "Aus mempool.space, oder aus der eigenen Instanz — das ist eine Einstellung. Marktdaten kommen aus den öffentlichen Kanälen der Börsen."
+    ],
+    [
+      "Telefoniert es nach Hause?",
+      "Nein. Es gibt keinen Server von uns, keine Auswertung und keine Absturzberichte."
+    ],
+    [
+      "Was kostet es?",
+      "Nichts. MIT-lizenziert, und es gibt keine bezahlte Stufe."
+    ],
+    [
+      "Ist die Liquidations-Heatmap echt?",
+      "Nein, und sie sagt es auf dem Schirm. Niemand veröffentlicht fremde Positionen; sie ist ein Modell mit ausgeschriebenen Annahmen."
+    ],
+    [
+      "Läuft es auf einem Tablet an der Wand?",
+      "Dafür ist die Uhr da — große Zahlen, keine Bedienung. Der Android-Bau hat eine Verknüpfung direkt dorthin."
+    ]
+  ],
+  "fuss_cta": "Ausprobieren",
+  "fuss_herkunft": "Kachelpackung und Farbmodell aus bitfeed portiert (MIT, mononaut).",
+  "fuss_lizenz": "OrangeDeck steht unter der MIT-Lizenz.",
+  "sprache_waehlen": "Sprache"
+}
