@@ -1,0 +1,11 @@
+<!-- Feed: der Mempool als Halde. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#12101a" android:pathData="M10.50,0.00 H37.50 A10.50,10.50 0 0 1 48.00,10.50 V37.50 A10.50,10.50 0 0 1 37.50,48.00 H10.50 A10.50,10.50 0 0 1 0.00,37.50 V10.50 A10.50,10.50 0 0 1 10.50,0.00 Z"/>
+    <path android:fillColor="#ffa734" android:pathData="M13.40,24.00 H20.60 A2.40,2.40 0 0 1 23.00,26.40 V33.60 A2.40,2.40 0 0 1 20.60,36.00 H13.40 A2.40,2.40 0 0 1 11.00,33.60 V26.40 A2.40,2.40 0 0 1 13.40,24.00 Z"/>
+    <path android:fillColor="#ffa734" android:pathData="M26.80,28.00 H31.20 A1.80,1.80 0 0 1 33.00,29.80 V34.20 A1.80,1.80 0 0 1 31.20,36.00 H26.80 A1.80,1.80 0 0 1 25.00,34.20 V29.80 A1.80,1.80 0 0 1 26.80,28.00 Z"/>
+    <path android:fillColor="#ffd15e" android:fillAlpha="0.80" android:pathData="M16.80,14.00 H21.20 A1.80,1.80 0 0 1 23.00,15.80 V20.20 A1.80,1.80 0 0 1 21.20,22.00 H16.80 A1.80,1.80 0 0 1 15.00,20.20 V15.80 A1.80,1.80 0 0 1 16.80,14.00 Z"/>
+    <path android:fillColor="#ffa734" android:pathData="M26.80,16.00 H31.20 A1.80,1.80 0 0 1 33.00,17.80 V22.20 A1.80,1.80 0 0 1 31.20,24.00 H26.80 A1.80,1.80 0 0 1 25.00,22.20 V17.80 A1.80,1.80 0 0 1 26.80,16.00 Z"/>
+    <path android:fillColor="#ffa734" android:fillAlpha="0.85" android:pathData="M12.30,38.00 H31.70 A1.30,1.30 0 0 1 33.00,39.30 V39.30 A1.30,1.30 0 0 1 31.70,40.60 H12.30 A1.30,1.30 0 0 1 11.00,39.30 V39.30 A1.30,1.30 0 0 1 12.30,38.00 Z"/>
+</vector>

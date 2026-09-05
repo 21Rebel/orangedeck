@@ -1,0 +1,17 @@
+<!-- Monochrome Ebene fuer eingefaerbte Symbole ab Android 13. Ohne sie zeichnet das System sich selbst eine, meist schlecht. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:strokeColor="#ffffff" android:strokeWidth="9.29"
+        android:strokeAlpha="0.55" android:fillColor="#00000000"
+        android:pathData="M29.63,28.00 H78.38 A1.62,1.62 0 0 1 80.00,29.63 V78.38 A1.62,1.62 0 0 1 78.38,80.00 H29.63 A1.62,1.62 0 0 1 28.00,78.38 V29.63 A1.62,1.62 0 0 1 29.63,28.00 Z"/>
+    <path android:fillColor="#ffffff" android:pathData="M35.83,31.37 H56.69 A4.47,4.47 0 0 1 61.16,35.83 V56.69 A4.47,4.47 0 0 1 56.69,61.16 H35.83 A4.47,4.47 0 0 1 31.37,56.69 V35.83 A4.47,4.47 0 0 1 35.83,31.37 Z"/>
+    <path android:fillColor="#ffffff" android:pathData="M64.47,31.37 H74.49 A2.15,2.15 0 0 1 76.63,33.51 V43.53 A2.15,2.15 0 0 1 74.49,45.68 H64.47 A2.15,2.15 0 0 1 62.32,43.53 V33.51 A2.15,2.15 0 0 1 64.47,31.37 Z"/>
+    <path android:fillColor="#ffffff" android:pathData="M64.47,46.84 H74.49 A2.15,2.15 0 0 1 76.63,48.99 V59.01 A2.15,2.15 0 0 1 74.49,61.16 H64.47 A2.15,2.15 0 0 1 62.32,59.01 V48.99 A2.15,2.15 0 0 1 64.47,46.84 Z"/>
+    <path android:fillColor="#ffffff" android:pathData="M33.51,62.32 H43.53 A2.15,2.15 0 0 1 45.68,64.47 V74.49 A2.15,2.15 0 0 1 43.53,76.63 H33.51 A2.15,2.15 0 0 1 31.37,74.49 V64.47 A2.15,2.15 0 0 1 33.51,62.32 Z"/>
+    <path android:fillColor="#ffffff" android:pathData="M48.99,62.32 H59.01 A2.15,2.15 0 0 1 61.16,64.47 V74.49 A2.15,2.15 0 0 1 59.01,76.63 H48.99 A2.15,2.15 0 0 1 46.84,74.49 V64.47 A2.15,2.15 0 0 1 48.99,62.32 Z"/>
+    <path android:fillColor="#ffffff" android:pathData="M64.32,62.32 H66.90 A2.00,2.00 0 0 1 68.90,64.32 V66.90 A2.00,2.00 0 0 1 66.90,68.90 H64.32 A2.00,2.00 0 0 1 62.32,66.90 V64.32 A2.00,2.00 0 0 1 64.32,62.32 Z"/>
+    <path android:fillColor="#ffffff" android:pathData="M72.06,62.32 H74.63 A2.00,2.00 0 0 1 76.63,64.32 V66.90 A2.00,2.00 0 0 1 74.63,68.90 H72.06 A2.00,2.00 0 0 1 70.06,66.90 V64.32 A2.00,2.00 0 0 1 72.06,62.32 Z"/>
+    <path android:fillColor="#ffffff" android:pathData="M64.32,70.06 H66.90 A2.00,2.00 0 0 1 68.90,72.06 V74.63 A2.00,2.00 0 0 1 66.90,76.63 H64.32 A2.00,2.00 0 0 1 62.32,74.63 V72.06 A2.00,2.00 0 0 1 64.32,70.06 Z"/>
+    <path android:fillColor="#ffffff" android:pathData="M72.06,70.06 H74.63 A2.00,2.00 0 0 1 76.63,72.06 V74.63 A2.00,2.00 0 0 1 74.63,76.63 H72.06 A2.00,2.00 0 0 1 70.06,74.63 V72.06 A2.00,2.00 0 0 1 72.06,70.06 Z"/>
+</vector>

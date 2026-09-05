@@ -25,6 +25,7 @@
     <shortcut
         android:shortcutId="feed"
         android:enabled="true"
+        android:icon="@drawable/shortcut_feed"
         android:shortcutShortLabel="@string/shortcut_feed_short"
         android:shortcutLongLabel="@string/shortcut_feed_long">
         <intent
@@ -36,6 +37,7 @@
     <shortcut
         android:shortcutId="clock"
         android:enabled="true"
+        android:icon="@drawable/shortcut_clock"
         android:shortcutShortLabel="@string/shortcut_clock_short"
         android:shortcutLongLabel="@string/shortcut_clock_long">
         <intent
@@ -47,6 +49,7 @@
     <shortcut
         android:shortcutId="explorer"
         android:enabled="true"
+        android:icon="@drawable/shortcut_explorer"
         android:shortcutShortLabel="@string/shortcut_explorer_short"
         android:shortcutLongLabel="@string/shortcut_explorer_long">
         <intent

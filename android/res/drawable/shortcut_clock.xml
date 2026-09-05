@@ -1,0 +1,13 @@
+<!-- Uhr: der Ring die Zeit, das Quadrat der Block. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#12101a" android:pathData="M10.50,0.00 H37.50 A10.50,10.50 0 0 1 48.00,10.50 V37.50 A10.50,10.50 0 0 1 37.50,48.00 H10.50 A10.50,10.50 0 0 1 0.00,37.50 V10.50 A10.50,10.50 0 0 1 10.50,0.00 Z"/>
+    <path android:strokeColor="#ffa734" android:strokeWidth="3.6"
+        android:strokeAlpha="0.45" android:fillColor="#00000000"
+        android:pathData="M24,9 A15,15 0 1 1 23.99,9 Z"/>
+    <path android:strokeColor="#ffd15e" android:strokeWidth="3.6"
+        android:strokeLineCap="round" android:fillColor="#00000000"
+        android:pathData="M24,9 A15,15 0 0 1 39,24"/>
+    <path android:fillColor="#ffa734" android:pathData="M20.40,18.00 H27.60 A2.40,2.40 0 0 1 30.00,20.40 V27.60 A2.40,2.40 0 0 1 27.60,30.00 H20.40 A2.40,2.40 0 0 1 18.00,27.60 V20.40 A2.40,2.40 0 0 1 20.40,18.00 Z"/>
+</vector>

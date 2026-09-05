@@ -1,25 +1,13 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- Eigenes Zeichen, nicht von Bitfeed uebernommen: der Mempool als Halde.
-     Kacheln unterschiedlicher Groesse, wie sie die Anwendung packt, in
-     Bitcoin-Orange auf dem dunklen Grund der Oberflaeche. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect width="256" height="256" rx="56" fill="#12101a"/>
-  <g fill="#f7931a">
-    <rect x="40"  y="150" width="52" height="52" rx="6"/>
-    <rect x="100" y="166" width="36" height="36" rx="5"/>
-    <rect x="144" y="150" width="52" height="52" rx="6"/>
-    <rect x="204" y="174" width="28" height="28" rx="4"/>
-  </g>
-  <g fill="#f7931a" opacity="0.62">
-    <rect x="60"  y="106" width="36" height="36" rx="5"/>
-    <rect x="104" y="118" width="24" height="24" rx="4"/>
-    <rect x="136" y="106" width="36" height="36" rx="5"/>
-    <rect x="180" y="118" width="24" height="24" rx="4"/>
-  </g>
-  <g fill="#f7931a" opacity="0.34">
-    <rect x="86"  y="70" width="24" height="24" rx="4"/>
-    <rect x="118" y="58" width="36" height="36" rx="5"/>
-    <rect x="162" y="70" width="24" height="24" rx="4"/>
-  </g>
-  <rect x="40" y="212" width="192" height="6" rx="3" fill="#f7931a" opacity="0.85"/>
+  <rect width="256" height="256" rx="56.1" fill="#12101a"/>
+  <rect x="49.6" y="49.6" width="156.8" height="156.8" rx="4.9" fill="none" stroke="#f7941d" stroke-width="22.0" opacity="0.42"/>
+  <rect x="59.8" y="59.8" width="89.8" height="89.8" rx="13.5" fill="#ff9b26"/>
+  <rect x="153.1" y="59.8" width="43.2" height="43.2" rx="6.5" fill="#ffc452"/>
+  <rect x="153.1" y="106.4" width="43.2" height="43.2" rx="6.5" fill="#ffaf3d"/>
+  <rect x="59.8" y="153.1" width="43.2" height="43.2" rx="6.5" fill="#d17400"/>
+  <rect x="106.4" y="153.1" width="43.2" height="43.2" rx="6.5" fill="#e88705"/>
+  <rect x="153.1" y="153.1" width="19.8" height="19.8" rx="3.0" fill="#ff9b26"/>
+  <rect x="176.4" y="153.1" width="19.8" height="19.8" rx="3.0" fill="#ffa532"/>
+  <rect x="153.1" y="176.4" width="19.8" height="19.8" rx="3.0" fill="#f39119"/>
+  <rect x="176.4" y="176.4" width="19.8" height="19.8" rx="3.0" fill="#ff9b26"/>
 </svg>
