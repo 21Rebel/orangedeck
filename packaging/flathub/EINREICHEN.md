@@ -11,30 +11,45 @@ haengt an einer Person, nicht an einem Werkzeug.
   Form, die Flathub verlangt; ein `type: dir` wie im Bauplan zum Arbeiten
   waere abgelehnt worden.
 - **Die Metadaten** bestehen `appstreamcli validate`, samt fuenf Screenshots.
-- **Flathubs eigener Pruefer meldet keinen Fehler** (Stand 04.09.2026). Uebrig
-  bleibt ein Hinweis auf die neuere Laufzeit `org.kde.Platform 6.10`; ein
-  Wechsel dorthin zieht die Fassung von `layer-shell-qt` nach sich.
+- **Flathubs eigener Pruefer meldet keinen Fehler** (Stand 05.09.2026). Uebrig
+  bleibt ein Hinweis auf die neuere Laufzeit -- inzwischen
+  `org.kde.Platform 6.11`, gestern war es noch 6.10; die Zahl wandert weiter,
+  der Hinweis bleibt eine Warnung und kein Fehler. Ein Wechsel dorthin zieht
+  die Fassung von `layer-shell-qt` nach sich.
 - **Die Berechtigungen** sind knapp gehalten: Netz, Wayland (mit Rueckfall auf
   X11), IPC und die Grafikkarte. **Kein `--filesystem`** -- die Anwendung
   fasst nichts auf dem Rechner an, ihre Einstellungen landen unter
   `~/.var/app/store._21rebel.orangedeck`.
-- **Der Bauplan wird bei jedem Push gebaut** (`.github/workflows/build.yml`),
-  damit er nicht unbemerkt veraltet.
+- **Der Bauplan wird bei jedem Push gebaut** (`.github/workflows/build.yml`).
+  **Aber nicht mit dem Commit, der darin steht:** der Lauf setzt ihn erst auf
+  den eigenen Stand, sonst prueft er einen alten Baum statt des neuen. Das ist
+  fuer den Lauf richtig und heisst zugleich, dass **der festgenagelte Commit
+  die einzige Stelle im Projekt ist, die nichts nachprueft**. Er stand darum
+  13 Commits lang auf `3234e0d`, einem Stand, der die beiden in der VM
+  gefundenen Korrekturen nicht enthielt und mit dem heutigen Bauplan nicht
+  einmal durchgebaut haette (die `CMakeLists.txt` lag dort noch unter `app/`).
+  **Vor jeder Einreichung von Hand nachsehen.**
 
 ## Was noch fehlt
 
-### 1. Den Commit im Bauplan auf den Auslieferungsstand setzen
+### 1. Tag setzen und beides veroeffentlichen
 
-Im `...git.yml` steht ein `commit:`. Der muss auf den Stand zeigen, der
-ausgeliefert werden soll -- **kein Zweigname**: dann baut jeder Lauf etwas
-anderes, und niemand kann sagen, was in einem Paket steckt. Sinnvoll ist ein
-Tag:
+**Vorbereitet ist das schon.** Der `<release>`-Eintrag in den Metadaten nennt
+`0.1.0`, und der `commit:` im Bauplan zeigt auf den Stand, der ausgeliefert
+werden soll -- **kein Zweigname**: dann baut jeder Lauf etwas anderes, und
+niemand kann sagen, was in einem Paket steckt.
 
-    git tag -a v0.1.0 -m "erste Auslieferung"
-    git push origin v0.1.0
-    git rev-parse v0.1.0        # diesen Wert in den Bauplan
+Was fehlt, ist der Tag auf demselben Stand und der Push:
 
-Passend dazu gehoert ein `<release>`-Eintrag in die Metadaten.
+    git tag -a v0.1.0 <der Commit aus dem Bauplan> -m "erste Auslieferung"
+    git push origin main v0.1.0
+    git rev-parse v0.1.0        # muss den `commit:` aus dem Bauplan ergeben
+
+Der Tag sitzt auf dem Commit mit den Metadaten, **nicht** auf dem darauf
+folgenden, der den Bauplan nachzieht: was gebaut wird, ist der Tag; der
+Bauplan selbst steckt nicht im Paket. Erst nach dem Push laesst sich der
+Bauplan gegen die echte Adresse pruefen -- vorher gibt es den Commit auf
+GitHub nicht.
 
 ### 2. Den Antrag stellen
 

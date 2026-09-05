@@ -5,7 +5,7 @@
 # und in einem CI-Lauf gibt es kein Arbeitsverzeichnis, aus dem man bauen
 # koennte.
 #
-# Daneben liegt der Bauplan zum Arbeiten (ohne `.git` im Namen). Der baut aus
+# Daneben liegt der Bauplan zum Arbeiten, `...dev.yml`. Der baut aus
 # dem Arbeitsverzeichnis, damit man eine Aenderung sofort sieht, ohne sie
 # vorher zu pushen. **Wer eines von beiden aendert, muss das andere
 # mitziehen.**
@@ -86,4 +86,4 @@ modules:
     sources:
       - type: git
         url: https://github.com/21Rebel/orangedeck.git
-        commit: 3234e0dde31a989702c54b28a74ccea2b3eabdbb
+        commit: 0fbad4aa0072ac01480fb5ce9b3ecd7234b8cc31
