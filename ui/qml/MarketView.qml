@@ -911,13 +911,27 @@ Item {
             // ---- Kurve statt Kerzen ---------------------------------------
             // Bei neun Jahren in einem Bild ist eine Kerze ein Strich; dann
             // sagt die Linie mehr. Bei einer Stunde ist es umgekehrt.
-            // **Die Vorschau sagt, dass sie eine ist**: gedaempft und als
-            // Linie, auch wenn sonst Kerzen stehen. Tageskerzen in einem
-            // Fenster, das eigentlich Viertelstunden zeigt, waeren eine
-            // Genauigkeit, die die Daten nicht hergeben.
+            //
+            // **Nicht die Vorschau entscheidet das, sondern die Breite.**
+            // Vorher fiel jede Vorschau auf die Linie zurueck: wer den
+            // Schieber zog, sah waehrend der ganzen Geste eine Kurve, obwohl
+            // Kerzen eingestellt waren, und beim Loslassen sprang das Bild
+            // in eine andere Darstellungsart zurueck. Der Sprung sagte nichts
+            // ueber die Daten, er war eine Nebenwirkung.
+            //
+            // Was die Vorschau wirklich unterscheidet, ist die Aufloesung:
+            // sie zeichnet Tageskerzen. Ueber sechzig Tage sind das sechzig
+            // Kerzen und ein gewoehnliches Bild; ueber neun Jahre sind es
+            // dreitausend, und dann ist jede schmaler als ein Bildpunkt. Genau
+            // das misst die Schwelle -- und sie gilt fuer das feste Bild
+            // ebenso, denn eine Kerze, die keine zweieinhalb Bildpunkte breit
+            // ist, zeigt weder Docht noch Koerper.
+            //
+            // Dass es eine Vorschau ist, sagt weiterhin die Daempfung.
+            var alsLinie = root.kind === "line" || kerzeBreite < 2.5;
             if (root.vorschau)
                 ctx.globalAlpha = 0.55;
-            if (root.kind === "line" || root.vorschau) {
+            if (alsLinie) {
                 var g = ctx.createLinearGradient(0, root.padT, 0, root.padT + preisHoehe);
                 g.addColorStop(0, Qt.rgba(root.accentColor.r, root.accentColor.g,
                                           root.accentColor.b, 0.28));
@@ -954,7 +968,7 @@ Item {
                 steigt = k[4] >= k[1];
                 farbe = steigt ? root.upColor : root.downColor;
 
-                if (root.kind === "candles" && !root.vorschau) {
+                if (!alsLinie) {
                     var mitte = i * kerzeBreite + kerzeBreite / 2;
 
                     // Docht
