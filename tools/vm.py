@@ -12,18 +12,39 @@ und der einzige Draht hinein ist der QEMU-Monitor auf einem Unix-Sockel.
     qemu-system-x86_64 -enable-kvm -m 3072 -smp 2 -cpu host \
         -drive file=ubuntu-24.04.4.iso,media=cdrom,readonly=on \
         -vga std -display none \
-        -monitor unix:/pfad/mon.sock,server,nowait \
+        -monitor unix:$HOME/.cache/orangedeck-vm/mon.sock,server,nowait \
         -netdev user,id=n0 -device virtio-net-pci,netdev=n0 -boot d
+
+Der Sockel und der Ablageort fuer die Bilder stehen in
+`~/.cache/orangedeck-vm`; `ORANGEDECK_VM_DIR` verschiebt beides.
 
 Der Rest -- RAM-Overlay der Live-Sitzung, AppArmor, Medientausch -- steht in
 `docs/DOKUMENTATION.md` unter "Pruefen in einer Live-Sitzung" und "Was die
 Pruef-VM gefunden hat".
 """
 import socket, time, subprocess, os
-SOCK = "/tmp/claude-1000/-home-satoshoe/0ac3647d-cd2e-4635-884c-99697b0c2858/scratchpad/mon.sock"
-SC = "/tmp/claude-1000/-home-satoshoe/0ac3647d-cd2e-4635-884c-99697b0c2858/scratchpad"
+
+# **Kein fester Pfad.** Hier standen bis zum 05.09.2026 zwei absolute Pfade in
+# das Kratzverzeichnis der Sitzung, in der die Datei entstanden ist. Solche
+# Verzeichnisse werden aufgeraeumt: schon beim naechsten Griff nach dem
+# Werkzeug zeigten beide ins Leere, und der Abbruch (`FileNotFoundError` auf
+# einen Sockel) sagt nicht, dass der Pfad das Problem ist.
+#
+# Das Verzeichnis kommt jetzt aus der Umgebung, mit einem Rueckfall, den es
+# ueberall gibt.
+SC = os.environ.get("ORANGEDECK_VM_DIR",
+                    os.path.expanduser("~/.cache/orangedeck-vm"))
+SOCK = os.environ.get("ORANGEDECK_VM_SOCK", os.path.join(SC, "mon.sock"))
+os.makedirs(SC, exist_ok=True)
 
 def _mon(befehl, warte=0.25):
+    if not os.path.exists(SOCK):
+        raise SystemExit(
+            "Kein QEMU-Monitor unter %s.\n"
+            "Laeuft die VM? Der Sockel entsteht durch\n"
+            "    -monitor unix:%s,server,nowait\n"
+            "Ein anderer Ort geht ueber ORANGEDECK_VM_SOCK "
+            "(oder ORANGEDECK_VM_DIR fuer beides)." % (SOCK, SOCK))
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     s.connect(SOCK)
     time.sleep(0.2)
