@@ -136,6 +136,15 @@ target_compile_definitions(orangedeck-app PRIVATE
 # Repos; fehlt es, wird trotzdem gebaut -- nur eben ohne TLS, und diese
 # Meldung sagt es.
 if(ANDROID)
+    # **Eigenes Paketverzeichnis statt Qts Vorlage.** Ohne das erzeugt
+    # androiddeployqt ein Manifest mit dem Paketnamen
+    # `org.qtproject.example.orangedeck_app` und der Beschriftung
+    # `orangedeck-app` -- Qts Beispielwerte, die das APK bis zum 05.09.2026
+    # wirklich trug. Hier liegen jetzt der eigene Name, die Beschriftung und
+    # die Verknuepfungen je Ansicht.
+    set_property(TARGET orangedeck-app PROPERTY
+        QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
+
     set(_ossl "${CMAKE_CURRENT_SOURCE_DIR}/build-openssl-android/${ANDROID_ABI}")
     # Die Namen sind nicht frei waehlbar: Qts TLS-Plugin sucht auf Android
     # nach `libssl_3.so` und `libcrypto_3.so` (Vorgabe von

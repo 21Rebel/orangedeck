@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Die Beschriftungen der Verknuepfungen. **Sie muessen Zeichenketten-
+     Ressourcen sein** — anders als das `<intent>` in shortcuts.xml, das
+     ausdruecklich keine vertraegt ("This intent element can't include string
+     resources").
+
+     Kurz und lang: die kurze steht unter dem Symbol auf dem
+     Startbildschirm, die lange im Menue beim langen Druck. Passt die lange
+     nicht, faellt der Starter auf die kurze zurueck. -->
+<resources>
+    <string name="app_name">OrangeDeck</string>
+
+    <string name="shortcut_feed_short">Feed</string>
+    <string name="shortcut_feed_long">Mempool-Feed</string>
+
+    <string name="shortcut_clock_short">Uhr</string>
+    <string name="shortcut_clock_long">Blockuhr</string>
+
+    <string name="shortcut_market_short">Markt</string>
+    <string name="shortcut_market_long">Kurs und Markt</string>
+
+    <string name="shortcut_explorer_short">Explorer</string>
+    <string name="shortcut_explorer_long">Bloecke durchsuchen</string>
+</resources>

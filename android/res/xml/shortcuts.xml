@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Eine Verknuepfung je Ansicht: langer Druck auf das Symbol, dann von dort
+     auf den Startbildschirm ziehen. So bekommt jeder Reiter sein eigenes
+     Symbol, ohne dass es ein Homescreen-Widget waere — das ist auf Android
+     etwas voellig anderes (RemoteViews, kein QML) und um Groessenordnungen
+     aufwendiger.
+
+     **Genau vier, und das ist keine Willkuer.** Android: "Most supported
+     launchers display up to four shortcuts at a time, including both static
+     and dynamic shortcuts." Was darueber hinaus deklariert wird, faellt
+     stillschweigend weg. Miner und Wallet fehlen deshalb: der eine braucht
+     einen Bitaxe, der andere ist ohnehin abschaltbar.
+
+     **Je eine eigene `android:action`, keine Extras.** Ein statisches
+     `<intent>` traegt keine `<extra>`-Kinder — dokumentiert sind nur
+     `action`, `targetPackage` und `targetClass`. Die Ansicht steckt deshalb
+     in der Aktion selbst, und `main.cpp` liest sie beim Start aus. Der
+     `targetClass` macht die Absicht ausserdem ausdruecklich: sie kann bei
+     keiner anderen Anwendung landen. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="feed"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_feed_short"
+        android:shortcutLongLabel="@string/shortcut_feed_long">
+        <intent
+            android:action="store.rebel.orangedeck.VIEW_FEED"
+            android:targetPackage="store.rebel.orangedeck"
+            android:targetClass="org.qtproject.qt.android.bindings.QtActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="clock"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_clock_short"
+        android:shortcutLongLabel="@string/shortcut_clock_long">
+        <intent
+            android:action="store.rebel.orangedeck.VIEW_CLOCK"
+            android:targetPackage="store.rebel.orangedeck"
+            android:targetClass="org.qtproject.qt.android.bindings.QtActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="market"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_market_short"
+        android:shortcutLongLabel="@string/shortcut_market_long">
+        <intent
+            android:action="store.rebel.orangedeck.VIEW_MARKET"
+            android:targetPackage="store.rebel.orangedeck"
+            android:targetClass="org.qtproject.qt.android.bindings.QtActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="explorer"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_explorer_short"
+        android:shortcutLongLabel="@string/shortcut_explorer_long">
+        <intent
+            android:action="store.rebel.orangedeck.VIEW_EXPLORER"
+            android:targetPackage="store.rebel.orangedeck"
+            android:targetClass="org.qtproject.qt.android.bindings.QtActivity" />
+    </shortcut>
+</shortcuts>

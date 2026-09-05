@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<!-- Eigenes Android-Manifest statt des von Qt erzeugten.
+     Sobald QT_ANDROID_PACKAGE_SOURCE_DIR gesetzt ist, nimmt androiddeployqt
+     diese Datei. Der Grund, sie ueberhaupt zu haben, sind die Verknuepfungen
+     unten; zwei Dinge fallen dabei gleich mit an.
+
+     **Der Paketname.** Qt erzeugte `org.qtproject.example.orangedeck_app` —
+     Qts Beispielname, den das APK bis zum 05.09.2026 wirklich trug. Er heisst
+     jetzt `store.rebel.orangedeck`.
+
+     **Und er ist absichtlich nicht die Flatpak-Kennung.** Dort heisst es
+     `store._21rebel.orangedeck`: Flathub verlangt fuer ein Segment mit
+     fuehrender Ziffer den Unterstrich. Android verlangt das Gegenteil —
+     "each segment must start with a letter" — und lehnt `_21rebel` ab. Die
+     beiden Regeln lassen sich nicht zugleich erfuellen; die Kennungen sind
+     deshalb verschieden, und das ist kein Versehen.
+
+     **Kein WRITE_EXTERNAL_STORAGE.** Qt setzt es in der Vorlage. Die
+     Anwendung ist ein Betrachter und fasst nichts auf dem Geraet an; eine
+     Berechtigung, die niemand braucht, faellt weg. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="store.rebel.orangedeck"
+    android:installLocation="auto"
+    android:versionCode="1"
+    android:versionName="0.1.0">
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <supports-screens
+        android:anyDensity="true"
+        android:largeScreens="true"
+        android:normalScreens="true"
+        android:smallScreens="true" />
+    <application
+        android:name="org.qtproject.qt.android.bindings.QtApplication"
+        android:hardwareAccelerated="true"
+        android:label="@string/app_name"
+        android:enableOnBackInvokedCallback="false"
+        android:allowBackup="true"
+        android:fullBackupOnly="false">
+        <activity
+            android:name="org.qtproject.qt.android.bindings.QtActivity"
+            android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:screenOrientation="unspecified"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Die Verknuepfungen je Ansicht. Sie erscheinen beim langen
+                 Druck auf das Symbol und lassen sich von dort auf den
+                 Startbildschirm ziehen. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="orangedeck-app" />
+
+            <meta-data
+                android:name="android.app.arguments"
+                android:value="" />
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.qtprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/qtprovider_paths" />
+        </provider>
+    </application>
+</manifest>

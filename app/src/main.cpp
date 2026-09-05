@@ -18,7 +18,50 @@
 #include <LayerShellQt/Window>
 #endif
 
+#ifdef Q_OS_ANDROID
+#include <QHash>
+#include <QJniObject>
+#endif
+
 namespace {
+
+#ifdef Q_OS_ANDROID
+// **Die Ansicht steckt in der Aktion, nicht in einem Extra.** Ein statisches
+// `<intent>` in `res/xml/shortcuts.xml` traegt keine `<extra>`-Kinder --
+// Android dokumentiert dort nur `action`, `targetPackage` und `targetClass`.
+// Also bekommt jede Verknuepfung ihre eigene Aktion, und hier wird sie beim
+// Start ausgelesen. Auf dem Schreibtisch macht `--view` dasselbe.
+//
+// **Nur beim Start.** Die Activity laeuft `singleTop`: tippt jemand eine
+// zweite Verknuepfung an, waehrend die Anwendung schon offen ist, kommt das
+// als `onNewIntent` -- das reicht hier nicht durch, die Ansicht bleibt dann
+// stehen. Wer wechseln will, nimmt die Reiter. Aufgeschrieben, damit es
+// niemand fuer einen Fehler haelt.
+int ansichtAusAbsicht()
+{
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    if (!activity.isValid())
+        return -1;
+    QJniObject absicht = activity.callObjectMethod(
+        "getIntent", "()Landroid/content/Intent;");
+    if (!absicht.isValid())
+        return -1;
+    QJniObject aktion = absicht.callObjectMethod(
+        "getAction", "()Ljava/lang/String;");
+    if (!aktion.isValid())
+        return -1;
+
+    // Dieselben Zahlen wie bei `--view`; sie muessen zu den Aktionen in
+    // `android/res/xml/shortcuts.xml` passen.
+    static const QHash<QString, int> karte{
+        {QStringLiteral("store.rebel.orangedeck.VIEW_FEED"), 0},
+        {QStringLiteral("store.rebel.orangedeck.VIEW_CLOCK"), 1},
+        {QStringLiteral("store.rebel.orangedeck.VIEW_EXPLORER"), 3},
+        {QStringLiteral("store.rebel.orangedeck.VIEW_MARKET"), 6},
+    };
+    return karte.value(aktion.toString(), -1);
+}
+#endif
 
 #ifdef ORANGEDECK_LAYERSHELL
 using LSWindow = LayerShellQt::Window;
@@ -82,7 +125,8 @@ int main(int argc, char *argv[])
     // stillschweigend unbekannt.
     const QCommandLineOption oAnsicht(QStringLiteral("view"),
         QStringLiteral("Ansicht: 0 Feed, 1 Uhr, 2 Miner, 3 Explorer, "
-                       "4 Wallet, 5 Einstellungen. Ohne Angabe die zuletzt benutzte."),
+                       "4 Wallet, 5 Einstellungen, 6 Markt. "
+                       "Ohne Angabe die zuletzt benutzte."),
         QStringLiteral("nr"));
     const QCommandLineOption oLayer(QStringLiteral("layer"),
         QStringLiteral("Als Layer-Shell-Flaeche: background, bottom (Vorgabe), top, overlay."),
@@ -148,6 +192,17 @@ int main(int argc, char *argv[])
         if (ok)
             start.insert(QStringLiteral("forcedView"), nr);
     }
+#ifdef Q_OS_ANDROID
+    // Auf Android gibt es keine Befehlszeile; dieselbe Angabe kommt von der
+    // angetippten Verknuepfung. `--view` behaelt trotzdem den Vorrang: es
+    // wird nur gesetzt, wenn es ueberhaupt gesetzt werden kann, und beim
+    // Pruefen ueber `adb shell am` ist es der kuerzere Weg.
+    else {
+        const int nr = ansichtAusAbsicht();
+        if (nr >= 0)
+            start.insert(QStringLiteral("forcedView"), nr);
+    }
+#endif
     if (p.isSet(oNackt))
         start.insert(QStringLiteral("bare"), true);
     if (p.isSet(oQuelle))

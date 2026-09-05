@@ -89,13 +89,44 @@ starten() {
         -monitor "unix:$VM/mon.sock,server,nowait" \
         -netdev user,id=n0 -device virtio-net-pci,netdev=n0 -boot d \
         > "$VM/qemu.log" 2>&1 &
-    echo "QEMU gestartet (PID $!), Monitor: $VM/mon.sock"
+    echo $! > "$VM/qemu.pid"
+    echo "QEMU gestartet (PID $(cat "$VM/qemu.pid")), Monitor: $VM/mon.sock"
     echo "Steuern mit tools/vm.py -- der nimmt denselben Ort."
 }
 
+# **Ueber die notierte PID, nicht ueber ein Muster.** `pgrep -f` durchsucht
+# ganze Befehlszeilen und findet dabei auch die Zeile, in der es selbst
+# steht -- die Pruefung meldet dann "laeuft noch", waehrend nichts mehr
+# laeuft. Am 05.09.2026 genau so passiert, und die Fehldiagnose sah aus wie
+# eine haengende VM.
 anhalten() {
-    pkill -f "monitor unix:$VM/mon.sock" 2>/dev/null || pkill -f 'qemu-system-x86_64.*orangedeck-vm' 2>/dev/null || true
+    local pid=""
+    [ -f "$VM/qemu.pid" ] && pid="$(cat "$VM/qemu.pid")"
+    # Erst sauber ueber den Monitor, dann erst mit Gewalt.
+    # Ueber Python, nicht ueber socat: das ist hier nicht installiert, und
+    # `tools/vm.py` setzt Python ohnehin voraus.
+    if [ -S "$VM/mon.sock" ]; then
+        python3 -c 'import socket,sys
+s=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
+s.settimeout(5)
+s.connect(sys.argv[1]); s.sendall(b"quit\n"); s.close()' "$VM/mon.sock" >/dev/null 2>&1 || true
+    fi
+    for _ in 1 2 3 4 5; do
+        laeuft "$pid" || { rm -f "$VM/qemu.pid"; echo "angehalten"; return 0; }
+        sleep 1
+    done
+    [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
+    sleep 2
+    if laeuft "$pid"; then
+        echo "laeuft weiterhin (PID $pid) -- von Hand nachsehen"
+        return 1
+    fi
+    rm -f "$VM/qemu.pid"
     echo "angehalten"
+}
+
+laeuft() {
+    [ -n "$1" ] && kill -0 "$1" 2>/dev/null
 }
 
 case "${1:-}" in
