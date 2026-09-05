@@ -11,20 +11,32 @@ Fenster dahinter mit, scharf und quer durch die Graphen. Deshalb ist die
 Vorgabe **deckend** (`bgOpacity 1,0`); wer den milchigen Look will, zieht
 den Regler in den Einstellungen zurueck **und** legt hier eine Regel an.
 
-## Die Kennung, nach der gesucht wird
+## Wonach zu suchen ist -- es gibt das Fenster zweimal
 
-    store._21rebel.orangedeck
+Je nachdem, wie OrangeDeck laeuft, traegt die Wayland-Flaeche eine andere
+Kennung:
 
-Das ist die `app_id` der Wayland-Flaeche. Sie kommt aus
+| So gestartet | `app_id` | Titel |
+|---|---|---|
+| eigenstaendig (`orangedeck-app`) | `store._21rebel.orangedeck` | `OrangeDeck` |
+| im quickshell-Fenster | `org.quickshell` | `OrangeDeck` |
+
+Die eigenstaendige Anwendung hat eine eigene Kennung; sie kommt aus
 `QGuiApplication::setDesktopFileName()` (siehe `app/src/main.cpp`) und ist
-dieselbe Kennung wie im Flatpak und in der `.desktop`-Datei.
+dieselbe wie im Flatpak und in der `.desktop`-Datei. Danach laesst sich
+sauber suchen.
 
-**Nicht ueber den Fenstertitel gehen.** Der Titel ist Anzeigetext: er
-aendert sich, wenn die Anwendung umbenannt wird, und eine Regel, die auf ihn
-zeigt, greift danach stillschweigend ins Leere -- kein Fehler, keine
-Meldung, nur kein Blur mehr. Genau das ist am 05.09.2026 aufgefallen, als
-eine Regel auf `title="^Bitcoin Feed$"` nach der Umbenennung auf OrangeDeck
-liegenblieb.
+**Das quickshell-Fenster nicht.** Alles, was quickshell zeigt, traegt
+`org.quickshell` -- eine Regel darauf allein erwischt jedes andere
+quickshell-Fenster mit. Hier bleibt nur der Titel, eingegrenzt durch die
+app-id daneben.
+
+Und damit die Warnung, die dazugehoert: **ein Titel ist Anzeigetext.** Er
+aendert sich, wenn die Anwendung umbenannt wird, und die Regel greift danach
+stillschweigend ins Leere -- kein Fehler, keine Meldung, nur kein Blur mehr.
+Am 05.09.2026 genau so passiert: die Regel suchte noch `^Bitcoin Feed$`.
+Wo der Titel unvermeidlich ist, gehoert er beim Umbenennen mit auf die
+Liste.
 
 ## niri
 
@@ -32,11 +44,16 @@ In `~/.config/niri/config.kdl`:
 
     window-rule {
         match app-id=r#"^store\._21rebel\.orangedeck$"#
+        match app-id=r#"^org\.quickshell$"# title=r#"^OrangeDeck$"#
         background-effect {
             blur true
             xray false
         }
     }
+
+Zwei `match`-Zeilen sind ein Oder, zwei Angaben in **einer** Zeile ein Und --
+die zweite trifft also nur das quickshell-Fenster, das OrangeDeck heisst,
+und nicht jedes andere.
 
 `xray false` zeichnet weich, was tatsaechlich dahinter liegt. Mit
 `xray true` nimmt niri stattdessen den Hintergrund des Arbeitsbereichs --

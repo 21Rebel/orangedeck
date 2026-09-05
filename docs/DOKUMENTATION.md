@@ -2964,30 +2964,49 @@ Wie man dem Compositor die Regel beibringt, steht in
 
 Nachtrag vom 05.09.2026, und die Fortsetzung derselben Geschichte.
 
-Auf diesem Rechner war der Blur im Fenstermodus verschwunden, im Dashboard
-aber noch da. Naheliegend waere gewesen, das der Deckkraft-Aenderung vom
-Vortag zuzuschreiben. Es lag an keiner Zeile im Repo: die niri-Regel suchte
+Auf diesem Rechner war der Blur am Fenster verschwunden. Naheliegend waere
+gewesen, das der Deckkraft-Aenderung vom Vortag zuzuschreiben. Es lag an
+keiner Zeile im Repo: die niri-Regel suchte
 
     match title="^Bitcoin Feed$"
 
-und das Fenster heisst seit der Umbenennung `OrangeDeck`. Das Dashboard war
-davon nicht betroffen, weil es als Layer-Flaeche unter `org.quickshell`
-laeuft und von einer anderen Regel gedeckt wird -- daher der Eindruck, die
-Anwendung habe etwas verloren.
+und das Fenster heisst seit der Umbenennung `OrangeDeck`. **Der Titel ist
+Anzeigetext.** Er aendert sich, und eine Regel darauf greift danach ins
+Leere: kein Fehler, keine Meldung, nur eine Wirkung weniger.
 
-**Der Titel ist Anzeigetext.** Er aendert sich, und eine Regel darauf greift
-danach ins Leere: kein Fehler, keine Meldung, nur eine Wirkung weniger. Die
-`app_id` ist die Kennung und kommt aus `setDesktopFileName()` --
-`store._21rebel.orangedeck`, dieselbe wie im Flatpak. Danach sucht die Regel
-jetzt.
+**Der erste Anlauf, das zu beheben, war falsch** -- und der Irrtum ist
+lehrreicher als die Korrektur.
+
+Der Schluss lag nahe: Titel schlecht, `app_id` gut, also die Regel auf
+`store._21rebel.orangedeck` umstellen. Die Kennung stimmt auch, sie kommt aus
+`setDesktopFileName()`. Nur traegt das Fenster, um das es ging, sie gar
+nicht. Es gibt OrangeDeck naemlich zweimal:
+
+| So gestartet | `app_id` | Titel |
+|---|---|---|
+| eigenstaendig (`orangedeck-app`) | `store._21rebel.orangedeck` | `OrangeDeck` |
+| im quickshell-Fenster | `org.quickshell` | `OrangeDeck` |
+
+Nachgesehen wurde die falsche Zeile: der Prueflauf startete die
+eigenstaendige Anwendung, fand die erwartete Kennung und bestaetigte damit
+eine Regel, die auf das Fenster im Bild gar nicht zeigte. **Ein Nachweis, der
+einen anderen Gegenstand prueft als den gemeldeten, ist keiner** -- dieselbe
+Klasse wie der CI-Lauf, der den festgenagelten Commit ueberschreibt, bevor er
+ihn baut.
+
+Und der Titel war nie der Fehler, sondern die einzige Moeglichkeit: alles,
+was quickshell zeigt, traegt `org.quickshell`, eine Regel darauf allein
+erwischt jedes andere quickshell-Fenster mit. Richtig ist beides
+nebeneinander -- die app-id fuer die eigenstaendige Anwendung, app-id **und**
+Titel fuer das quickshell-Fenster. So steht es in
+`packaging/compositor/README.md`.
+
+Bleibt die Warnung, nur an der richtigen Stelle: wo ein Titel unvermeidlich
+ist, gehoert er beim Umbenennen mit auf die Liste.
 
 Nachzusehen ist das mit
 
-    niri msg windows        # Title und App ID nebeneinander
-
-Die allgemeinere Form davon steht schon weiter oben in diesem Text: **ein
-Pruefer, der an der entscheidenden Stelle nicht hinsieht, meldet nichts.**
-Hier war es kein Pruefer, sondern eine Regel -- der Ausgang ist derselbe.
+    niri msg windows        # Title und App ID nebeneinander, fuer jedes Fenster
 
 ### Ohne Fenstermanager gibt es keinen Tastaturfokus
 

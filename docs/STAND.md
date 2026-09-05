@@ -60,7 +60,7 @@ Am Bild gemeldet, alle vier abgearbeitet. Drei lagen im Code, einer nicht:
 | Blockangaben und Legende standen ungleich hoch | jede Seite rechnete ihren Abstand selbst -- jetzt derselbe Wert |
 | Der Farbumschalter lag ohne Untergrund ueber der Halde | eigener Kasten, so breit wie die Knopfreihe wirklich ist |
 | Beim Ziehen am Schieber immer die Kurve, beim Loslassen zurueck zu Kerzen | die Breite der Kerze entscheidet das jetzt, nicht die Vorschau |
-| Der Blur im Fenstermodus war weg | **keine Zeile im Repo** -- siehe unten |
+| Der Blur am Fenster war weg | **keine Zeile im Repo**, eine niri-Regel auf den alten Namen -- siehe unten |
 
 Nebenbefund, gleich mit erledigt: in der Lesart "Art" ist die Legende sieben
 Zeilen laenger und schob den Umschalter in flachen Flaechen bis in die
@@ -68,15 +68,28 @@ Fusszeile. Er endet jetzt spaetestens am unteren Rand der Halde.
 
 **Der Blur war eine Regel, die ins Leere zeigte.** niri suchte
 `match title="^Bitcoin Feed$"`; das Fenster heisst seit der Umbenennung
-`OrangeDeck`. Im Dashboard blieb der Blur, weil das als Layer-Flaeche unter
-`org.quickshell` laeuft und eine andere Regel es deckt -- daher der
-Eindruck, die Anwendung habe etwas verloren. Der Titel ist Anzeigetext; die
-`app_id` ist die Kennung. Die Regel geht jetzt darueber, und wie man sie
-anlegt, steht in `packaging/compositor/README.md`.
+`OrangeDeck`. Der Titel ist Anzeigetext -- er aendert sich, und die Regel
+greift danach stillschweigend nicht mehr.
 
-Das ist **dieselbe Klasse wie der festgenagelte Commit von heute frueh**:
-nicht ein Pruefer, der falsch meldet, sondern einer, der an der
-entscheidenden Stelle nicht hinsieht.
+**Der erste Anlauf, das zu beheben, war falsch, und der Irrtum ist der
+lehrreichere Teil.** Der Schluss lag nahe: Titel schlecht, `app_id` gut, also
+auf `store._21rebel.orangedeck` umstellen. Nur traegt das gemeldete Fenster
+diese Kennung gar nicht -- es ist das **quickshell**-Fenster (`app_id
+org.quickshell`), nicht die eigenstaendige Anwendung. Und geprueft wurde
+genau daneben: der Lauf startete die eigenstaendige Anwendung, fand die
+erwartete Kennung und bestaetigte damit eine Regel, die auf das Fenster im
+Bild nie gezeigt hat.
+
+**Ein Nachweis, der einen anderen Gegenstand prueft als den gemeldeten, ist
+keiner** -- dieselbe Klasse wie der CI-Lauf von heute frueh, der den
+festgenagelten Commit ueberschreibt, bevor er ihn baut. Zweimal an einem Tag,
+und beide Male sah der Haken gruen aus.
+
+Der Titel war ausserdem nie der Fehler, sondern die einzige Moeglichkeit:
+alles, was quickshell zeigt, traegt dieselbe app-id. Die Regel trifft jetzt
+beide Fenster -- die app-id fuer die eigenstaendige Anwendung, app-id **und**
+Titel fuer das quickshell-Fenster. Wie man sie anlegt, steht in
+`packaging/compositor/README.md`.
 
 ### Was jetzt an dir haengt
 
