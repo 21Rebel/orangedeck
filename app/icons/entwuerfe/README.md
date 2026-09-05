@@ -33,6 +33,25 @@ nebeneinander:
 | `A-flaeche.svg` | Block, echte Fugen, kein Rahmen | **empfohlen** |
 | `B-rahmen.svg` | derselbe Block mit Rahmen | Rahmen liest sich als Fenster oder Tabelle |
 | `C-fuellt-sich.svg` | die Packung mit Leserichtung | ehrlichstes Bild, schwaechster Umriss |
+| `D-ausgefranst.svg` | nur Quadrate, vom Packer gesetzt | oben rechts bleibt ein Loch |
+| `E-ausgefranst-rahmen.svg` | dasselbe mit Rahmen | Rahmen kostet bei 44 px den Rand |
+| `H-voll.svg` | nur Quadrate, Raster restlos gefuellt | **empfohlen** |
+| `I-voll-rahmen.svg` | dasselbe mit Rahmen | Rahmen konkurriert klein mit den Kacheln |
+
+## Nur Quadrate, und zwar vom echten Packer
+
+A, B und C trugen Rechtecke. Das war eine Unwahrheit ueber die Anwendung:
+`ui/qml/mondrian.js` setzt ausschliesslich Quadrate (`r x r`). Seit D setzt
+deshalb ein nachgebauter Packer die Kacheln nach derselben Regel -- erste
+freie Stelle von unten links -- und das Ergebnis kann gar keine Rechtecke
+mehr enthalten.
+
+Der Packer fuellt allerdings von unten links, also bleibt oben rechts ein
+Loch: D und E sehen aus wie eine angefangene Halde, nicht wie ein fertiger
+Block. `H-voll.svg` benutzt deshalb einen Groessensatz, der das Raster
+**restlos** ausfuellt -- ein 4x4, vier 2x2, vier 1x1, zusammen 36 von 36
+Zellen bei sechs Einheiten Breite. Neun Kacheln, starker
+Groessenunterschied, geschlossener Umriss.
 
 ## Der Handgriff, der den Unterschied macht
 

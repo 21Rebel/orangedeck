@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="56" fill="#12101a"/>
+  <rect x="30.0" y="30.0" width="196.0" height="196.0" rx="20" fill="none" stroke="#f7931a" stroke-width="9" opacity="0.45"/>
+  <rect x="46.2" y="46.2" width="79.5" height="79.5" rx="11.1" fill="#f7931a" opacity="1.00"/>
+  <rect x="130.2" y="46.2" width="51.5" height="51.5" rx="7.2" fill="#f7931a" opacity="1.00"/>
+  <rect x="130.2" y="102.2" width="51.5" height="51.5" rx="7.2" fill="#f7931a" opacity="1.00"/>
+  <rect x="186.2" y="46.2" width="23.5" height="23.5" rx="3.3" fill="#f7931a" opacity="0.72"/>
+  <rect x="186.2" y="74.2" width="23.5" height="23.5" rx="3.3" fill="#f7931a" opacity="0.72"/>
+  <rect x="46.2" y="130.2" width="51.5" height="51.5" rx="7.2" fill="#f7931a" opacity="1.00"/>
+  <rect x="186.2" y="102.2" width="23.5" height="23.5" rx="3.3" fill="#f7931a" opacity="0.72"/>
+  <rect x="102.2" y="130.2" width="23.5" height="23.5" rx="3.3" fill="#f7931a" opacity="0.72"/>
+  <rect x="186.2" y="130.2" width="23.5" height="23.5" rx="3.3" fill="#f7931a" opacity="0.72"/>
+</svg>
