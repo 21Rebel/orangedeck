@@ -210,6 +210,22 @@ Window {
         // Ausgeschaltete Wallet-Ansicht darf nicht als leere Seite dastehen
         if (win.view === 4 && !win.walletEnabled)
             win.view = 0;
+
+        // **Und jede andere Ansicht, die es gerade nicht gibt, genauso.**
+        // Die Wallet war bisher der einzige geprüfte Fall; `--view 2` ohne
+        // Bitaxe und `--view 6` im Direktbezug landeten auf einer
+        // vollstaendig leeren Seite, bei der nicht einmal ein Reiter
+        // hervorgehoben war. Am 05.09.2026 im Android-Emulator aufgefallen,
+        // wo der Markt **nie** einen Reiter hat: die Verknuepfung dorthin
+        // fuehrte ins Nichts, und der einzige Ausweg war zu wissen, wo man
+        // hintippen muss.
+        //
+        // Hier und nicht in `FeedTabs`: dort haengt der Rueckfall an
+        // Signalen, und beim Start aendert sich nichts, worauf sie warten
+        // koennten -- der Wert ist von Anfang an falsch. Diese Zeile laeuft
+        // genau einmal, gleich nachdem er gesetzt wurde.
+        if (tabs.tabViews.length > 0 && tabs.tabViews.indexOf(win.view) < 0)
+            win.view = tabs.tabViews[0];
     }
 
     // Welche Reiter es gibt, rechnet `FeedTabs` -- samt Rueckfall auf den

@@ -57,7 +57,8 @@ int ansichtAusAbsicht()
         {QStringLiteral("store.rebel.orangedeck.VIEW_FEED"), 0},
         {QStringLiteral("store.rebel.orangedeck.VIEW_CLOCK"), 1},
         {QStringLiteral("store.rebel.orangedeck.VIEW_EXPLORER"), 3},
-        {QStringLiteral("store.rebel.orangedeck.VIEW_MARKET"), 6},
+        // Kein Markt: der haengt am Dienst, und auf Android gibt es nur den
+        // Direktbezug. Die Verknuepfung dorthin oeffnete eine leere Seite.
     };
     return karte.value(aktion.toString(), -1);
 }

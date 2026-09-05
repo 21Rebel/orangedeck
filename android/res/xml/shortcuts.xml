@@ -5,11 +5,15 @@
      etwas voellig anderes (RemoteViews, kein QML) und um Groessenordnungen
      aufwendiger.
 
-     **Genau vier, und das ist keine Willkuer.** Android: "Most supported
-     launchers display up to four shortcuts at a time, including both static
-     and dynamic shortcuts." Was darueber hinaus deklariert wird, faellt
-     stillschweigend weg. Miner und Wallet fehlen deshalb: der eine braucht
-     einen Bitaxe, der andere ist ohnehin abschaltbar.
+     **Hoechstens vier.** Android: "Most supported launchers display up to
+     four shortcuts at a time, including both static and dynamic shortcuts."
+     Was darueber hinaus deklariert wird, faellt stillschweigend weg.
+
+     **Es sind aber nur drei, und der Grund steckt in der Anwendung.** Auf
+     Android laeuft der Direktbezug; einen Dienst gibt es dort nicht. Miner,
+     Wallet und **Markt** haengen an ihm und haben auf dem Geraet nie einen
+     Reiter. Eine Verknuepfung dorthin fuehrte im Emulator am 05.09.2026 auf
+     eine vollstaendig leere Seite. Uebrig bleiben Feed, Uhr und Explorer.
 
      **Je eine eigene `android:action`, keine Extras.** Ein statisches
      `<intent>` traegt keine `<extra>`-Kinder — dokumentiert sind nur
@@ -36,17 +40,6 @@
         android:shortcutLongLabel="@string/shortcut_clock_long">
         <intent
             android:action="store.rebel.orangedeck.VIEW_CLOCK"
-            android:targetPackage="store.rebel.orangedeck"
-            android:targetClass="org.qtproject.qt.android.bindings.QtActivity" />
-    </shortcut>
-
-    <shortcut
-        android:shortcutId="market"
-        android:enabled="true"
-        android:shortcutShortLabel="@string/shortcut_market_short"
-        android:shortcutLongLabel="@string/shortcut_market_long">
-        <intent
-            android:action="store.rebel.orangedeck.VIEW_MARKET"
             android:targetPackage="store.rebel.orangedeck"
             android:targetClass="org.qtproject.qt.android.bindings.QtActivity" />
     </shortcut>

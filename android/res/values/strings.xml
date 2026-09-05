@@ -16,9 +16,6 @@
     <string name="shortcut_clock_short">Uhr</string>
     <string name="shortcut_clock_long">Blockuhr</string>
 
-    <string name="shortcut_market_short">Markt</string>
-    <string name="shortcut_market_long">Kurs und Markt</string>
-
     <string name="shortcut_explorer_short">Explorer</string>
     <string name="shortcut_explorer_long">Bloecke durchsuchen</string>
 </resources>

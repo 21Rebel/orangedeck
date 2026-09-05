@@ -125,11 +125,31 @@ Item {
     }
 
     // Steht die Ansicht auf einem Reiter, den es gerade nicht gibt, zurueck auf
-    // den Feed -- sonst bliebe eine leere Seite stehen.
-    onTabViewsChanged: {
-        if (root.tabsVisible && root.tabViews.indexOf(root.view) < 0)
-            root.viewRequested(0);
+    // den ersten vorhandenen -- sonst bliebe eine leere Seite stehen.
+    //
+    // **Nicht fest auf 0.** Ist der Feed abgeschaltet, ist 0 selbst kein
+    // vorhandener Reiter -- die Aufforderung waere dann bei jedem Durchlauf
+    // dieselbe und liefe im Kreis. `tabViews[0]` ist immer vorhanden; die
+    // Liste traegt mindestens die Einstellungen.
+    //
+    // **Und ausdruecklich kein `onViewChanged` daneben.** Der Gedanke liegt
+    // nahe -- der Rueckfall soll ja auch greifen, wenn die *Ansicht* von
+    // aussen gesetzt wird -- und er zerstoert die Anzeige. `view` haengt am
+    // Fenster (`view: win.view`); ein Handler, der beim Aktualisieren dieser
+    // Bindung auf die Quelle zurueckschreibt, ist eine Bindungsschleife, und
+    // QML loest sie, indem es die Bindung fallen laesst. Danach steht das
+    // Fenster auf der richtigen Ansicht und `FeedTabs` auf der alten: am
+    // 05.09.2026 gemessen als `win=0 tabs=6` bei leerer Seite. Der Fall
+    // "von aussen gesetzt" gehoert deshalb nach `Main.qml`, gleich hinter
+    // die Zuweisung.
+    function reiterPruefen() {
+        if (!root.tabsVisible || root.tabViews.length === 0)
+            return;
+        if (root.tabViews.indexOf(root.view) < 0)
+            root.viewRequested(root.tabViews[0]);
     }
+
+    onTabViewsChanged: root.reiterPruefen()
 
     ViewTabs {
         id: tabs
