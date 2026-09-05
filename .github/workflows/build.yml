@@ -152,7 +152,21 @@ jobs:
     name: Flatpak aus dem Repo
     runs-on: ubuntu-latest
     steps:
+      # **Ganze Historie, nicht nur die Spitze.** Die Pruefung unten sieht im
+      # gepinnten Stand nach, ob die Dateien dort wirklich liegen -- mit dem
+      # voreingestellten `fetch-depth: 1` waere dieser Commit gar nicht da,
+      # und die Pruefung meldete Unsinn statt eines Befundes.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # **Der `commit:` im Bauplan ist die einzige Stelle, die der Lauf
+      # darunter nicht prueft** -- er setzt sie vorher auf den eigenen Stand.
+      # Am 05.09.2026 ist sie deshalb dreimal hinterhergehinkt, einmal auf
+      # einen Stand, an dem es die zu installierenden Dateien gar nicht gab.
+      # Diese Pruefung sieht dort nach, bevor irgendetwas ueberschrieben wird.
+      - name: Bauplan pruefen
+        run: python3 tools/bauplan-pruefen.py
 
       # **Kein fertiges Abbild.** Der erste Anlauf nahm
       # `bilelmoussaoui/flatpak-github-actions:kde-6.9` -- das Abbild gibt es
