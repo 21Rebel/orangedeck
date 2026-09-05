@@ -14,7 +14,7 @@
 #
 # Gebaut wird also aus der Wurzel:  cmake -S . -B build
 cmake_minimum_required(VERSION 3.21)
-project(orangedeck-app VERSION 0.1.0 LANGUAGES CXX)
+project(orangedeck-app VERSION 0.1.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -144,6 +144,25 @@ if(ANDROID)
     # die Verknuepfungen je Ansicht.
     set_property(TARGET orangedeck-app PROPERTY
         QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
+
+    # **Die Fassung steht im Manifest, und das ist hier nicht zu aendern.**
+    # `QT_ANDROID_VERSION_NAME` und `..._CODE` wurden versucht: bei einem
+    # eigenen `QT_ANDROID_PACKAGE_SOURCE_DIR` setzt androiddeployqt sie
+    # **nicht** durch -- das gebaute APK meldete weiter die alte Zahl. Eine
+    # Einstellung, die stillschweigend nichts tut, ist schlimmer als keine.
+    #
+    # Also die zweite Stelle nicht wegdefinieren, sondern laut bewachen: das
+    # Manifest muss dieselbe Fassung nennen wie `project()`, sonst bricht das
+    # Einrichten ab. Genau diese Drift liess heute frueh den Bauplan dreizehn
+    # Commits zurueckstehen -- dort hat sie niemand bemerkt.
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/android/AndroidManifest.xml" _manifest)
+    string(REGEX MATCH "android:versionName=\"([^\"]*)\"" _ "${_manifest}")
+    if(NOT CMAKE_MATCH_1 STREQUAL PROJECT_VERSION)
+        message(FATAL_ERROR
+            "android/AndroidManifest.xml nennt die Fassung ${CMAKE_MATCH_1}, "
+            "project() aber ${PROJECT_VERSION}. Beide muessen uebereinstimmen; "
+            "androiddeployqt zieht den Wert bei eigenem Manifest nicht nach.")
+    endif()
 
     set(_ossl "${CMAKE_CURRENT_SOURCE_DIR}/build-openssl-android/${ANDROID_ABI}")
     # Die Namen sind nicht frei waehlbar: Qts TLS-Plugin sucht auf Android

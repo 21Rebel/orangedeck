@@ -87,7 +87,7 @@
        daraus geworden waere. Ein Release-Eintrag fuer etwas, das niemand
        installieren konnte, ist eine Erfindung; darum ersetzt statt ergaenzt. -->
   <releases>
-    <release version="0.1.0" date="2026-09-05">
+    <release version="0.1.1" date="2026-09-05">
       <description>
         <p>Erste Auslieferung.</p>
         <p>
@@ -96,6 +96,10 @@
           ohne Schluessel. Dazu der Markt-Reiter mit Kerzen, CVD,
           Liquidationen und einer Heatmap, die als Schaetzung gekennzeichnet
           ist.
+        </p>
+        <p>
+          Neues Anwendungssymbol: der Block, gepackt aus ungleichen Quadraten,
+          wie die Anwendung ihn auch auf den Schirm zeichnet.
         </p>
         <p>
           Geprueft auf einem System, das nichts von diesem Projekt weiss:
