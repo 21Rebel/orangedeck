@@ -2957,6 +2957,38 @@ und der milchige Look ist einen Reglerzug entfernt (`-`, oder in den
 Einstellungen). Wer den Wert schon einmal gesetzt hat, behaelt seinen --
 die Vorgabe greift nur bei einer frischen Einrichtung.
 
+Wie man dem Compositor die Regel beibringt, steht in
+`packaging/compositor/README.md`.
+
+### Eine Regel auf den Fenstertitel bricht bei der Umbenennung
+
+Nachtrag vom 05.09.2026, und die Fortsetzung derselben Geschichte.
+
+Auf diesem Rechner war der Blur im Fenstermodus verschwunden, im Dashboard
+aber noch da. Naheliegend waere gewesen, das der Deckkraft-Aenderung vom
+Vortag zuzuschreiben. Es lag an keiner Zeile im Repo: die niri-Regel suchte
+
+    match title="^Bitcoin Feed$"
+
+und das Fenster heisst seit der Umbenennung `OrangeDeck`. Das Dashboard war
+davon nicht betroffen, weil es als Layer-Flaeche unter `org.quickshell`
+laeuft und von einer anderen Regel gedeckt wird -- daher der Eindruck, die
+Anwendung habe etwas verloren.
+
+**Der Titel ist Anzeigetext.** Er aendert sich, und eine Regel darauf greift
+danach ins Leere: kein Fehler, keine Meldung, nur eine Wirkung weniger. Die
+`app_id` ist die Kennung und kommt aus `setDesktopFileName()` --
+`store._21rebel.orangedeck`, dieselbe wie im Flatpak. Danach sucht die Regel
+jetzt.
+
+Nachzusehen ist das mit
+
+    niri msg windows        # Title und App ID nebeneinander
+
+Die allgemeinere Form davon steht schon weiter oben in diesem Text: **ein
+Pruefer, der an der entscheidenden Stelle nicht hinsieht, meldet nichts.**
+Hier war es kein Pruefer, sondern eine Regel -- der Ausgang ist derselbe.
+
 ### Ohne Fenstermanager gibt es keinen Tastaturfokus
 
 Der Escape-Fix liess sich im Xvfb erst nicht nachweisen. Grund: in einem
