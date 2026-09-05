@@ -27,7 +27,11 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLATTE_GB="${ORANGEDECK_VM_DISK_GB:-12}"
 RAM_MB="${ORANGEDECK_VM_RAM_MB:-2560}"
 
-mkdir -p "$VM"
+# **Auch `daten/`.** Das Skript soll aus dem Nichts laufen; es tat es nicht.
+# Am 05.09.2026 nach dem Loeschen des Verzeichnisses gescheitert, mit
+# einem `opendir`-Fehler von xorriso -- also genau daran, wogegen es
+# geschrieben wurde: etwas, das sich nicht wiederherstellen laesst.
+mkdir -p "$VM/daten"
 
 bauen() {
     echo "== Anwendung buendeln =="

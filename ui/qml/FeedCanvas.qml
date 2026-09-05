@@ -50,17 +50,31 @@ Item {
     // Am 05.09.2026 auf dem Telefon aufgefallen und im Xvfb nachgestellt.
     //
     // Also andersherum gerechnet: das Band oben ist so hoch, wie der Block es
-    // braucht, und **der Rest gehoert der Halde**. Der alte Bruchteil bleibt
-    // als Mindestmass -- so behaelt die Halde auch in einer flachen Leiste
-    // ihre Zeilen, wo umgekehrt der Block das Bild fuellen wuerde.
+    // braucht, und der Rest gehoert der Halde -- **aber nur bis zu einem
+    // Drittel der Hoehe.**
+    //
+    // Die Obergrenze fehlte zuerst, und sie fehlte sichtbar: auf einem grossen
+    // Fenster (1900x1500) bekam die Halde 802 statt 375 Pixel und uebernahm
+    // das Bild. Von aussen sah es aus, als scrolle sie nicht mehr -- sie war
+    // nur nicht mehr gedeckelt. Genau davor schuetzt bitfeeds Viertel-Regel,
+    // und ich hatte sie als Deckel entfernt statt sie als Boden zu behalten.
+    //
+    // Beides gilt jetzt: der alte Bruchteil ist die **Untergrenze** (die
+    // Halde behaelt in einer flachen Leiste ihre Zeilen), ein Drittel der
+    // Hoehe die **Obergrenze**. Dazwischen entscheidet, was der Block
+    // uebriglaesst.
+    //
+    //     1900x1500   375 vorher   802 ohne Deckel   500 jetzt
+    //      440x900    200 vorher   532 ohne Deckel   300 jetzt
     readonly property real blockWish: Math.min(width * 0.72, height / 2.5)
     // 0,86 ist derselbe Faktor, mit dem `blockSide` unten aus `poolTop`
     // zurueckrechnet -- hier einmal vorwaerts, damit beide dasselbe meinen.
     readonly property real blockBand: showBlock ? blockWish / 0.86 : 0
     readonly property real poolLimit: height / (width <= 620 ? 4.5 : 4)
-    readonly property real poolTop: showBlock
-        ? Math.max(0, Math.min(blockBand, height - poolLimit)) : 0
-    readonly property real poolH: height - poolTop
+    readonly property real poolH: showBlock
+        ? Math.max(poolLimit, Math.min(height - blockBand, height / 3))
+        : height
+    readonly property real poolTop: Math.max(0, height - poolH)
     // Im Original haengt die Kachelgroesse an der Fensterbreite
     // (max(4, Breite/250)) -- beim Aufziehen des Fensters wachsen die Kacheln
     // dort also mit. Hier ist sie **fest**: 4 px Kachel, 1 px Abstand, also
