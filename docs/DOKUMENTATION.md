@@ -3008,6 +3008,48 @@ Nachzusehen ist das mit
 
     niri msg windows        # Title und App ID nebeneinander, fuer jedes Fenster
 
+### Was die Pruef-VM nicht kann: einen Zeiger
+
+Stand 05.09.2026, und ausdruecklich eine **offene** Stelle.
+
+`vm.py` sendet Tasten und holt Bilder. Damit prueft die VM Geometrie. Alles,
+was an einem Zeiger haengt -- Ziehen, Klicken, Ueberfahren -- prueft sie
+nicht, und das ist genau die Luecke, die am 04.09. der Griff des
+Zeitschiebers hinterlassen hat: ein Standbild zeigt Geometrie, kein
+Verhalten.
+
+Der Versuch, sie zu schliessen, ist gescheitert, und zwar auf die
+unangenehme Art -- alle Anzeichen standen auf gruen:
+
+    device_add qemu-xhci,id=xhci
+    device_add usb-tablet,bus=xhci.0
+
+    (qemu) info mice
+      Mouse #2: QEMU PS/2 Mouse
+      Mouse #4: vmmouse (absolute)
+    * Mouse #5: QEMU HID Tablet (absolute)
+
+Im Gast lag das Geraet danach unter
+`/dev/input/by-id/usb-QEMU_QEMU_USB_Tablet_...-event-mouse`. QEMU hielt es
+fuer das aktive absolute Zeigegeraet. Und `mouse_move` bewegte den Zeiger
+trotzdem nicht -- weder mit Bildpunkten noch im Bereich 0..32767, geprueft
+mit zwei Zielen und je einem Abzug danach.
+
+**Die Ursache ist nicht geklaert.** Moeglich ist, dass ein nachtraeglich
+gestecktes Geraet anders behandelt wird als eines von der Befehlszeile;
+`pruefvm.sh` steckt es deshalb jetzt gleich beim Start dazu. Ob das genuegt,
+**ist Vermutung, bis es jemand misst.**
+
+Der Maus-Code fuer `vm.py` war geschrieben und ist wieder entfernt worden.
+Er haette funktioniert ausgesehen und nichts getan, und die Zusicherung
+darin haette es nicht gemerkt: sie fragte QEMU, welches Geraet aktiv ist --
+und QEMU antwortete richtig. Geprueft haette werden muessen, ob im Gast
+etwas ankommt. Ein Werkzeug, das nicht misst, ist schlimmer als keins;
+eine Zusicherung, die das Falsche misst, auch.
+
+Bis dahin gilt die Arbeitsteilung: **Verhalten prueft `xtest.py` im Xvfb**
+(echte Zeigerereignisse ueber XTEST), **fremde Umgebung prueft die VM**.
+
 ### Ohne Fenstermanager gibt es keinen Tastaturfokus
 
 Der Escape-Fix liess sich im Xvfb erst nicht nachweisen. Grund: in einem

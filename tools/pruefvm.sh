@@ -66,6 +66,16 @@ starten() {
     [ -f "$ISO" ] || { echo "Keine Ubuntu-ISO unter $ISO (ORANGEDECK_VM_ISO setzt den Pfad)"; exit 1; }
     [ -f "$VM/daten.iso" ] || { echo "Keine Daten-ISO -- erst 'tools/pruefvm.sh bauen'"; exit 1; }
     rm -f "$VM/mon.sock"
+    # **Das Tablett von Anfang an, nicht nachgesteckt.** Am 05.09.2026
+    # versucht, es in eine laufende VM zu haengen: QEMU meldete es danach als
+    # aktives absolutes Zeigegeraet, der Gast hatte es unter
+    # /dev/input/by-id/ -- und `mouse_move` bewegte trotzdem nichts. Die
+    # Ursache ist **nicht** geklaert. Es steht hier, damit der naechste Lauf
+    # es von Anfang an hat; **ob der Monitor damit einen Zeiger bewegt, ist
+    # offen und muss gemessen werden, bevor sich jemand darauf verlaesst.**
+    # Ohne Zeiger prueft die VM nur Geometrie, kein Verhalten -- was am
+    # Zeiger haengt, prueft weiterhin `xtest.py` im Xvfb.
+    #
     # **Zwei Laufwerke von Anfang an.** Am 04.09. wurde das Medium im Betrieb
     # getauscht; der Gast lieferte danach weiter den alten Inhalt aus dem
     # Cache, `ls` zeigte schon den neuen Namen. Wer beide ISOs gleich
@@ -75,6 +85,7 @@ starten() {
         -drive file="$VM/daten.iso",media=cdrom,readonly=on \
         -drive file="$VM/vmdisk.qcow2",if=virtio,format=qcow2 \
         -vga std -display none \
+        -device qemu-xhci,id=xhci -device usb-tablet,bus=xhci.0 \
         -monitor "unix:$VM/mon.sock,server,nowait" \
         -netdev user,id=n0 -device virtio-net-pci,netdev=n0 -boot d \
         > "$VM/qemu.log" 2>&1 &
