@@ -4,6 +4,128 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## TAGESABSCHLUSS 05.09.2026 -- wo das Projekt steht
+
+> Einstieg fuer den naechsten Tag. Alles darunter ist Journal und erklaert,
+> wie es dazu kam.
+
+### Der Stand in einem Satz
+
+OrangeDeck hat eine **eigene Identitaet** bekommen -- eigene Domain, eigenes
+Zeichen, eine Kennung fuer alle Systeme -- und der Flathub-Antrag ist bis auf
+einen Schritt fertig: **die Seite unter orangedeck.dev muss live sein**, sonst
+weist Flathubs eigener Pruefer den Antrag zurueck.
+
+### Was morgen als Erstes drankommt
+
+**1. Die Seite veroeffentlichen.** Cloudflare-Dashboard, Workers & Pages,
+Connect to Git:
+
+    Repository:  21Rebel/orangedeck
+    Branch:      main
+    Build command: (leer)
+    Build output:  website/fertig
+
+Danach unter *Custom domains* `orangedeck.dev` hinzufuegen.
+
+**2. Dann laeuft der Rest in einem Zug** (und der ist vorbereitet):
+
+    flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
+        manifest packaging/flatpak/dev.orangedeck.OrangeDeck.yml
+
+Verschwindet `appid-url-not-reachable`, dann: Tag `v0.2.0` setzen, `commit:`
+im Bauplan darauf, gegen die echte GitHub-Adresse gegenbauen, und der Pull
+Request. Abzweigung `21Rebel/flathub` und Zweig
+`store._21rebel.orangedeck` liegen schon -- **der Zweig traegt noch den alten
+Namen und die alte Datei**, beides muss auf `dev.orangedeck.OrangeDeck`
+gewechselt werden. Titel und Text stehen in `packaging/flathub/PR-TEXT.md`.
+
+### Was heute dazugekommen ist
+
+| Etappe | Stand |
+|---|---|
+| Auslieferungsstand geradegezogen (0.1.0, 0.1.1) | fertig |
+| Vier gemeldete Oberflaechen-Korrekturen | fertig, gemessen |
+| Leere Seite bei unbekannter Ansicht | behoben |
+| Blur im Fenster | war eine Compositor-Regel auf den alten Namen |
+| Buendel auf Ubuntu 24.04 gelaufen | **bestanden**, samt Markt-Reiter |
+| `tools/pruefvm.sh` -- die VM laesst sich wiederherstellen | neu |
+| Android: Verknuepfungen je Ansicht | fertig, im Emulator geprueft |
+| Android: eigene Paketidentitaet statt Qts Beispielname | fertig |
+| Hoch- und Querformat | beide geprueft |
+| "Schraege Flaeche" auf Android | **war der Emulator**, nicht die Anwendung |
+| Neues Anwendungssymbol, 28 Dateien aus einem Erzeuger | fertig |
+| `.icns` ohne Mac | fertig |
+| Eine Kennung fuer alle Systeme (`dev.orangedeck.OrangeDeck`) | fertig |
+| orangedeck.dev: Seite in zwei Sprachen | gebaut, **noch nicht live** |
+| Flathub-Antrag | vorbereitet, wartet auf die Seite |
+
+### Die Erkenntnisse dieses Tages
+
+**Alles dreht sich um Messgeraete, die luegen.** Der Satz von gestern war
+"was nur eine Umgebung angefasst hat, ist ungeprueft". Heute war es haerter:
+**ein Pruefer, der an der entscheidenden Stelle nicht hinsieht, meldet
+nichts** -- und das gleich fuenfmal:
+
+- Der **CI-Lauf** setzt den festgenagelten `commit:` vor dem Bauen auf den
+  eigenen Stand. Richtig fuer den Lauf, und dadurch ist genau das Feld, das
+  den Auslieferungsstand bestimmt, das einzige, das von nichts geprueft wird.
+  Es stand dreizehn Commits zurueck, auf einem Stand, der nicht einmal mehr
+  gebaut haette.
+- Die **niri-Regel** suchte einen Fenstertitel, den es seit der Umbenennung
+  nicht mehr gab. Kein Fehler, keine Meldung, nur kein Blur.
+- Mein **erster Fix dafuer war falsch**, und der Nachweis deckte ihn: ich
+  startete die eigenstaendige Anwendung, fand die erwartete Kennung und
+  bestaetigte damit eine Regel, die auf das gemeldete Fenster nie gezeigt
+  hat. Ein Nachweis an einem anderen Gegenstand als dem gemeldeten ist keiner.
+- `console.log` und `console.warn` aus dem QML erschienen im Desktop-Bau
+  **nirgends**. Zwei Fehlversuche lang habe ich daraus geschlossen, meine
+  Signalhandler liefen nicht. Der Fenstertitel, an die Werte gebunden, gab
+  die Antwort in einer Zeile.
+- Und `pgrep -f` fand seine **eigene Befehlszeile** und meldete "laeuft
+  noch", waehrend nichts mehr lief.
+
+**Ein Bild ist ein Messwert wie jeder andere und kann falsch sein.** Die
+"schraege Flaeche" auf Android stand seit gestern als Kosmetikfehler auf der
+Liste. Vier Vermutungen lang wurde die Anwendung durchsucht, weil das Bild
+nicht in Frage stand. Der erste Handgriff, der den Pruefstand selbst mass --
+ein einzelnes `strokeRect` um die Flaeche, von dem nur zwei Kanten ankamen --
+traf sofort: der Software-Renderer des Emulators zeichnete nur eines der
+beiden Dreiecke der Leinwand. **Mit `-gpu host` ist es weg.**
+
+**Eine Einstellung, die stillschweigend nichts tut, ist schlimmer als
+keine.** `QT_ANDROID_VERSION_NAME` setzt sich bei eigenem Paketverzeichnis
+nicht durch; das APK meldete unveraendert die alte Zahl. Statt der Kruecke
+bewacht CMake die Stelle jetzt laut.
+
+**Erzeugen statt pflegen.** Symbol (28 Dateien, vier Plattformen) und Seite
+(je Sprache eine Datei) kommen aus je einem Skript. Beim Symbol zeichnet
+derselbe Packer wie in der Anwendung, und die Toene kommen aus `colors.js` --
+das Zeichen ist damit kein Entwurf ueber der Anwendung, sondern eines aus ihr.
+
+**Und die teuerste Erkenntnis war eine Frage.** "Muessen wir den Namen
+wirklich so verwenden?" -- daraufhin zehn Euro fuer `orangedeck.dev`, und der
+Regelkonflikt zwischen Flathub (Unterstrich vor der Ziffer) und Android
+(jedes Segment mit einem Buchstaben), den ich als unvermeidbar dokumentiert
+hatte, war weg. Zwei Identitaeten wurden eine.
+
+### Was sonst noch offen ist
+
+1. **Laufzeit auf `org.kde.Platform` 6.11.** Hinweis des Pruefers, kein
+   Fehler. Zieht `layer-shell-qt` mit. Nach der Einreichung.
+2. **Die elf uebrigen Sprachen der Seite** und der **Spendenteil** (wechselnde
+   Adresse, braucht xpub und Ableitung).
+3. **Widget-Seite in den Einstellungen** fuer den Desktop -- die Auswertung
+   steht, entschieden ist nur der Android-Teil. Zu beachten: Layer-Shell geht
+   **nachweislich nicht** aus dem Flatpak.
+4. **Tonsignal bei neuem Block** (QtMultimedia in allen vier Bauplaenen).
+5. **Eigener Node als Datenquelle.**
+6. **Die Pruef-VM hat keinen Zeiger.** `usb-tablet` steht jetzt in
+   `pruefvm.sh`; ob der Monitor damit wirklich einen Zeiger bewegt, ist
+   **ungeprueft**.
+
+---
+
 ## 05.09.2026 -- die Auslieferung geradegezogen
 
 Der Stand von gestern gilt weiter; hier steht nur, was sich fuer die
