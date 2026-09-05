@@ -38,10 +38,28 @@ Item {
 
     // --- Raster und Aufteilung, Formeln aus bitfeed ----------------------
     // TxPoolScene.resize: heightLimit = Hoehe/4 (bei schmalen Fenstern /4,5).
-    // Die Halde ist also auf ein Viertel der Fensterhoehe gedeckelt und reicht
-    // nie weiter ins Bild -- genau das hat bei uns vorher gefehlt.
+    // Das ist bei bitfeed ein **Deckel** fuer die Halde, und als Deckel steht
+    // er hier weiter. Er war hier aber zugleich die einzige Regel, und damit
+    // bekam die Halde **immer** genau ein Viertel -- gleichgueltig, ob dem
+    // Block darueber ein Viertel oder das Dreifache seiner eigenen Groesse
+    // zur Verfuegung stand.
+    //
+    // **Im Hochformat faellt das auseinander.** Bei 440x950 sind das 189 Pixel
+    // fuer die Halde und 661 fuer den Block, der davon 317 braucht: der Block
+    // schwimmt in Leerraum, und der lebendige Teil des Bildes wird gequetscht.
+    // Am 05.09.2026 auf dem Telefon aufgefallen und im Xvfb nachgestellt.
+    //
+    // Also andersherum gerechnet: das Band oben ist so hoch, wie der Block es
+    // braucht, und **der Rest gehoert der Halde**. Der alte Bruchteil bleibt
+    // als Mindestmass -- so behaelt die Halde auch in einer flachen Leiste
+    // ihre Zeilen, wo umgekehrt der Block das Bild fuellen wuerde.
+    readonly property real blockWish: Math.min(width * 0.72, height / 2.5)
+    // 0,86 ist derselbe Faktor, mit dem `blockSide` unten aus `poolTop`
+    // zurueckrechnet -- hier einmal vorwaerts, damit beide dasselbe meinen.
+    readonly property real blockBand: showBlock ? blockWish / 0.86 : 0
     readonly property real poolLimit: height / (width <= 620 ? 4.5 : 4)
-    readonly property real poolTop: showBlock ? Math.max(0, height - poolLimit) : 0
+    readonly property real poolTop: showBlock
+        ? Math.max(0, Math.min(blockBand, height - poolLimit)) : 0
     readonly property real poolH: height - poolTop
     // Im Original haengt die Kachelgroesse an der Fensterbreite
     // (max(4, Breite/250)) -- beim Aufziehen des Fensters wachsen die Kacheln

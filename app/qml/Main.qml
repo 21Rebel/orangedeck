@@ -427,6 +427,14 @@ Window {
         // Beim Verlassen gehoert er wieder hierher -- sonst sind die
         // Tastenkuerzel nach einem Besuch im Explorer tot.
         onSearchFocusReleased: keys.forceActiveFocus()
+
+        // **Auf dem Telefon holt sich das Suchfeld den Fokus nicht.** Dort
+        // haengt am Fokus die Bildschirmtastatur, und die deckt die halbe
+        // Ansicht zu: wer den Explorer oeffnet, sieht zuerst eine Tastatur
+        // und muss sie wegwischen, bevor er die Bloecke sieht. Am 05.09.2026
+        // im Emulator aufgefallen -- auf dem Schreibtisch kostet der Fokus
+        // nichts und spart einen Klick, deshalb bleibt er dort.
+        searchFocus: Qt.platform.os !== "android" && Qt.platform.os !== "ios"
     }
 
     Item {
