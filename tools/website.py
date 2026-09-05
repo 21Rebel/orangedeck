@@ -47,11 +47,18 @@ def seite(d, alle):
     zwei Handlungsaufforderungen und Kennzahlen, dann nummerierte Karten,
     Merkmale, Gruende, Fragen, Fuss."""
     nav = "".join('<a href="%s">%s</a>' % (e(z), e(t)) for t, z in d["nav"])
-    wahl = "".join(
-        '<a href="../%s/" hreflang="%s"%s>%s</a>'
-        % (a["code"], a["code"],
-           ' aria-current="true"' if a["code"] == d["code"] else "", e(a["name"]))
-        for a in alle)
+    # Zwei Formen derselben Wahl: oben das Kuerzel, unten der Name.
+    # **Ausgeschrieben passt es nicht.** Zwei Sprachen gehen noch; bei den
+    # dreizehn, die die Anwendung spricht, waere die Kopfleiste gesprengt.
+    # Im Fuss ist Platz, dort steht der Name.
+    def wahlliste(lang):
+        return "".join(
+            '<a href="../%s/" hreflang="%s"%s>%s</a>'
+            % (a["code"], a["code"],
+               ' aria-current="true"' if a["code"] == d["code"] else "",
+               e(a["code"].upper() if lang else a["name"]))
+            for a in alle)
+    wahl_kurz, wahl_lang = wahlliste(True), wahlliste(False)
     badges = "".join('<span class="badge">%s</span>' % e(b) for b in d["badges"])
     absaetze = "".join("<p>%s</p>" % e(t) for t in d["was"])
     ansichten = "".join(
@@ -84,7 +91,7 @@ def seite(d, alle):
 <div class="kopfleiste"><div class="mitte kopf">
   <a class="marke" href="#"><img src="../bilder/symbol.svg" alt="" width="34" height="34"><span>OrangeDeck</span></a>
   <nav class="nav">%(nav)s</nav>
-  <nav class="sprachen">%(wahl)s</nav>
+  <nav class="sprachen">%(wahl_kurz)s</nav>
 </div></div>
 
 <div class="mitte">
@@ -146,13 +153,13 @@ def seite(d, alle):
     <p>%(fuss_lizenz)s %(fuss_herkunft)s</p>
     <p><a href="%(repo)s">github.com/21Rebel/orangedeck</a></p>
     <p class="klein">%(sprache_waehlen)s</p>
-    <nav class="sprachen">%(wahl)s</nav>
+    <nav class="sprachen">%(wahl_lang)s</nav>
   </footer>
 </div>
 </body>
 </html>
 """ % {"code": d["code"], "richtung": d["richtung"], "titel": e(d["titel"]),
-       "beschreibung": e(d["beschreibung"]), "nav": nav, "wahl": wahl,
+       "beschreibung": e(d["beschreibung"]), "nav": nav, "wahl_kurz": wahl_kurz, "wahl_lang": wahl_lang,
        "hero_titel": e(d["hero_titel"]), "hero_text": e(d["hero_text"]),
        "cta1": e(d["hero_cta1"]), "cta1z": e(d["hero_cta1_ziel"]),
        "cta2": e(d["hero_cta2"]), "cta2z": e(d["hero_cta2_ziel"]),
