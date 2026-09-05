@@ -2735,8 +2735,8 @@ Jetzt liegen zwei nebeneinander:
 
 | | |
 |---|---|
-| `store._21rebel.orangedeck.dev.yml` | zum **Arbeiten** -- aus dem Verzeichnis, Aenderung sofort sichtbar, ohne Push |
-| `store._21rebel.orangedeck.yml` | zum **Ausliefern** -- aus dem oeffentlichen Repo, auf einen Commit festgenagelt |
+| `dev.orangedeck.OrangeDeck.dev.yml` | zum **Arbeiten** -- aus dem Verzeichnis, Aenderung sofort sichtbar, ohne Push |
+| `dev.orangedeck.OrangeDeck.yml` | zum **Ausliefern** -- aus dem oeffentlichen Repo, auf einen Commit festgenagelt |
 
 **Den kanonischen Namen traegt der zum Ausliefern**, und das ist kein Zufall:
 Flathubs Pruefer verlangt, dass die Datei so heisst wie die Kennung
@@ -2754,7 +2754,7 @@ Repo-Adresse und Commit durch (43 MB, `orangedeck`, `orangedeck-app`,
 `orangedeck-launch`), und **Flathubs eigener Pruefer meldet keinen Fehler**:
 
     flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
-        manifest packaging/flatpak/store._21rebel.orangedeck.yml
+        manifest packaging/flatpak/dev.orangedeck.OrangeDeck.yml
 
 Uebrig bleibt ein Hinweis: `org.kde.Platform 6.10` gibt es inzwischen. Ein
 Wechsel ist nicht umsonst -- die Fassung von `layer-shell-qt` haengt an Qt
@@ -2978,13 +2978,13 @@ Leere: kein Fehler, keine Meldung, nur eine Wirkung weniger.
 lehrreicher als die Korrektur.
 
 Der Schluss lag nahe: Titel schlecht, `app_id` gut, also die Regel auf
-`store._21rebel.orangedeck` umstellen. Die Kennung stimmt auch, sie kommt aus
+`dev.orangedeck.OrangeDeck` umstellen. Die Kennung stimmt auch, sie kommt aus
 `setDesktopFileName()`. Nur traegt das Fenster, um das es ging, sie gar
 nicht. Es gibt OrangeDeck naemlich zweimal:
 
 | So gestartet | `app_id` | Titel |
 |---|---|---|
-| eigenstaendig (`orangedeck-app`) | `store._21rebel.orangedeck` | `OrangeDeck` |
+| eigenstaendig (`orangedeck-app`) | `dev.orangedeck.OrangeDeck` | `OrangeDeck` |
 | im quickshell-Fenster | `org.quickshell` | `OrangeDeck` |
 
 Nachgesehen wurde die falsche Zeile: der Prueflauf startete die

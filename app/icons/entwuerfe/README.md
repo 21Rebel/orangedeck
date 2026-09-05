@@ -74,7 +74,7 @@ und wurden zu einer weissen Masse.
 ## Was folgt, wenn eine gewaehlt ist
 
 Ein Master-SVG, alles andere daraus abgeleitet. Heute gibt es genau **eine**
-Symboldatei (`app/icons/store._21rebel.orangedeck.svg`), und fuer Windows und
+Symboldatei (`app/icons/dev.orangedeck.OrangeDeck.svg`), und fuer Windows und
 macOS noch gar keine -- billiger als jetzt wird ein Wechsel nie.
 
     Flatpak/Linux   das Master-SVG

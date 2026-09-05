@@ -4,25 +4,31 @@
      diese Datei. Der Grund, sie ueberhaupt zu haben, sind die Verknuepfungen
      unten; zwei Dinge fallen dabei gleich mit an.
 
-     **Der Paketname.** Qt erzeugte `org.qtproject.example.orangedeck_app` —
-     Qts Beispielname, den das APK bis zum 05.09.2026 wirklich trug. Er heisst
-     jetzt `store.rebel.orangedeck`.
+     **Der Paketname ist derselbe wie ueberall sonst**, und das war er
+     nicht immer. Qt erzeugte zuerst `org.qtproject.example.orangedeck_app`
+     — Qts Beispielname, den das APK bis zum 05.09.2026 wirklich trug.
 
-     **Und er ist absichtlich nicht die Flatpak-Kennung.** Dort heisst es
-     `store._21rebel.orangedeck`: Flathub verlangt fuer ein Segment mit
-     fuehrender Ziffer den Unterstrich. Android verlangt das Gegenteil —
-     "each segment must start with a letter" — und lehnt `_21rebel` ab. Die
-     beiden Regeln lassen sich nicht zugleich erfuellen; die Kennungen sind
-     deshalb verschieden, und das ist kein Versehen.
+     Danach hiess er kurz `store.rebel.orangedeck`, und dahinter stand ein
+     echter Regelkonflikt: die Flatpak-Kennung war aus der Domain
+     `21rebel.store` gebildet, und Flathub verlangt fuer ein Segment mit
+     fuehrender Ziffer einen Unterstrich (`store._21rebel.orangedeck`).
+     Android verlangt das Gegenteil — "each segment must start with a
+     letter" — und lehnt genau das ab. Zwei Identitaeten fuer eine Anwendung.
+
+     Aufgeloest hat das nicht ein Kniff, sondern eine eigene Domain:
+     `orangedeck.dev` kennt keine fuehrende Ziffer, also erfuellt
+     `dev.orangedeck.OrangeDeck` beide Regelwerke zugleich. Dieselbe
+     Zeichenkette steht seither im Flatpak, im APK, in der .desktop-Datei und
+     in der Compositor-Regel.
 
      **Kein WRITE_EXTERNAL_STORAGE.** Qt setzt es in der Vorlage. Die
      Anwendung ist ein Betrachter und fasst nichts auf dem Geraet an; eine
      Berechtigung, die niemand braucht, faellt weg. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="store.rebel.orangedeck"
+    package="dev.orangedeck.OrangeDeck"
     android:installLocation="auto"
-    android:versionCode="2"
-    android:versionName="0.1.1">
+    android:versionCode="3"
+    android:versionName="0.2.0">
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <supports-screens

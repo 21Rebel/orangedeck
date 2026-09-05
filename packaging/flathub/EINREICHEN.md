@@ -6,7 +6,7 @@ haengt an einer Person, nicht an einem Werkzeug.
 
 ## Was fertig ist
 
-- **Der Bauplan** `packaging/flatpak/store._21rebel.orangedeck.yml` --
+- **Der Bauplan** `packaging/flatpak/dev.orangedeck.OrangeDeck.yml` --
   zieht aus dem oeffentlichen Repo, auf einen Commit festgenagelt. Genau die
   Form, die Flathub verlangt; ein `type: dir` wie im Bauplan zum Arbeiten
   waere abgelehnt worden.
@@ -20,7 +20,7 @@ haengt an einer Person, nicht an einem Werkzeug.
 - **Die Berechtigungen** sind knapp gehalten: Netz, Wayland (mit Rueckfall auf
   X11), IPC und die Grafikkarte. **Kein `--filesystem`** -- die Anwendung
   fasst nichts auf dem Rechner an, ihre Einstellungen landen unter
-  `~/.var/app/store._21rebel.orangedeck`.
+  `~/.var/app/dev.orangedeck.OrangeDeck`.
 - **Der Bauplan wird bei jedem Push gebaut** (`.github/workflows/build.yml`).
   **Aber nicht mit dem Commit, der darin steht:** der Lauf setzt ihn erst auf
   den eigenen Stand, sonst prueft er einen alten Baum statt des neuen. Das ist
@@ -76,7 +76,7 @@ Flathub nimmt Antraege als Pull Request gegen `flathub/flathub`, Zweig
 `new-pr`. Hinein gehoert **nur** die Bauplan-Datei, und die heisst hier schon
 richtig:
 
-    packaging/flatpak/store._21rebel.orangedeck.yml
+    packaging/flatpak/dev.orangedeck.OrangeDeck.yml
 
 **Nicht umbenennen noetig.** Der Pruefer verlangt, dass der Dateiname der
 Kennung entspricht (`appid-filename-mismatch`), und deshalb traegt der
@@ -85,11 +85,11 @@ Auslieferungs-Bauplan den kanonischen Namen -- der zum Arbeiten heisst
 gepruefte.
 
 Nach der Annahme legt Flathub ein eigenes Repo
-`flathub/store._21rebel.orangedeck` an; ab dann wird dort gepflegt.
+`flathub/dev.orangedeck.OrangeDeck` an; ab dann wird dort gepflegt.
 
 ### 3. Womit im Pruefgespraech zu rechnen ist
 
-**Die Kennung.** `store._21rebel.orangedeck` ist die umgedrehte Form von
+**Die Kennung.** `dev.orangedeck.OrangeDeck` ist die umgedrehte Form von
 `21rebel.store`. Der Unterstrich davor ist **Flathubs eigene Vorgabe** fuer
 Segmente, die mit einer Ziffer beginnen -- darauf laesst sich verweisen, falls
 jemand stutzt. Voraussetzung ist, dass die Domain `21rebel.store` dem
@@ -108,18 +108,18 @@ gehoert erwaehnt, wenn jemand nach der Herkunft fragt.
     # Baut aus nichts als Repo-Adresse und Commit?
     flatpak-builder --force-clean --disable-cache \
         --state-dir=/tmp/fp-state /tmp/fp-bau \
-        packaging/flatpak/store._21rebel.orangedeck.yml
+        packaging/flatpak/dev.orangedeck.OrangeDeck.yml
 
     # Metadaten
-    appstreamcli validate packaging/flatpak/store._21rebel.orangedeck.metainfo.xml
+    appstreamcli validate packaging/flatpak/dev.orangedeck.OrangeDeck.metainfo.xml
 
     # Flathubs eigener Pruefer (dasselbe Werkzeug wie in deren CI)
     flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
-        manifest packaging/flatpak/store._21rebel.orangedeck.yml
+        manifest packaging/flatpak/dev.orangedeck.OrangeDeck.yml
 
 **Und vorher auf einem fremden System laufen lassen.** Der Leitsatz des
 04.09.2026: was nur eine Umgebung angefasst hat, ist ungeprueft. Das Buendel
 dafuer erzeugt
 
-    flatpak build-bundle <repo> orangedeck.flatpak store._21rebel.orangedeck \
+    flatpak build-bundle <repo> orangedeck.flatpak dev.orangedeck.OrangeDeck \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo

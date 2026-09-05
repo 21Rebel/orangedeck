@@ -54,9 +54,9 @@ int ansichtAusAbsicht()
     // Dieselben Zahlen wie bei `--view`; sie muessen zu den Aktionen in
     // `android/res/xml/shortcuts.xml` passen.
     static const QHash<QString, int> karte{
-        {QStringLiteral("store.rebel.orangedeck.VIEW_FEED"), 0},
-        {QStringLiteral("store.rebel.orangedeck.VIEW_CLOCK"), 1},
-        {QStringLiteral("store.rebel.orangedeck.VIEW_EXPLORER"), 3},
+        {QStringLiteral("dev.orangedeck.OrangeDeck.VIEW_FEED"), 0},
+        {QStringLiteral("dev.orangedeck.OrangeDeck.VIEW_CLOCK"), 1},
+        {QStringLiteral("dev.orangedeck.OrangeDeck.VIEW_EXPLORER"), 3},
         // Kein Markt: der haengt am Dienst, und auf Android gibt es nur den
         // Direktbezug. Die Verknuepfung dorthin oeffnete eine leere Seite.
     };
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
     // und der Fensterverwalter findet das Symbol nicht, weil die
     // .desktop-Datei anders heisst. Der Unterstrich gehoert dazu -- ein
     // Segment einer solchen Kennung darf nicht mit einer Ziffer beginnen.
-    app.setDesktopFileName(QStringLiteral("store._21rebel.orangedeck"));
+    app.setDesktopFileName(QStringLiteral("dev.orangedeck.OrangeDeck"));
 
     QCommandLineParser p;
     p.setApplicationDescription(QStringLiteral(

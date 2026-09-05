@@ -2,7 +2,7 @@
 
 Einzureichen ist **eine Datei**, unveraendert:
 
-    packaging/flatpak/store._21rebel.orangedeck.yml
+    packaging/flatpak/dev.orangedeck.OrangeDeck.yml
 
 Ziel: Pull Request gegen `flathub/flathub`, Zweig **`new-pr`**. Der Zweig im
 eigenen Fork heisst ueblicherweise wie die Kennung.
@@ -11,7 +11,7 @@ eigenen Fork heisst ueblicherweise wie die Kennung.
 
 ## Titel
 
-    Add store._21rebel.orangedeck (OrangeDeck)
+    Add dev.orangedeck.OrangeDeck (OrangeDeck)
 
 ## Text
 
@@ -23,7 +23,7 @@ block clock, mining figures, a block explorer and watch-only address tracking.
 - Tag submitted: `v0.1.1` (the manifest pins the commit, not a branch)
 - License: MIT
 
-**About the app ID.** `store._21rebel.orangedeck` is the reverse of the domain
+**About the app ID.** `dev.orangedeck.OrangeDeck` is the reverse of the domain
 `21rebel.store`, which I own. The leading underscore follows Flathub's own
 rule for segments starting with a digit.
 
@@ -32,7 +32,7 @@ rule for segments starting with a digit.
 
 **Permissions.** Network, Wayland with X11 fallback, IPC and the GPU. No
 `--filesystem` at all: the app touches nothing on the machine, its settings
-live under `~/.var/app/store._21rebel.orangedeck`.
+live under `~/.var/app/dev.orangedeck.OrangeDeck`.
 
 **Verified.** `flatpak-builder` builds from the public repository at the
 tagged commit, `appstreamcli validate` is clean, and
@@ -57,11 +57,11 @@ angemeldet, ohne Push-Recht auf das Projekt.
 
     gh repo fork flathub/flathub --clone --remote=false -- /tmp/flathub
     cd /tmp/flathub
-    git checkout -b store._21rebel.orangedeck origin/new-pr
-    cp ~/Schreibtisch/orangedeck/packaging/flatpak/store._21rebel.orangedeck.yml .
-    git add store._21rebel.orangedeck.yml
-    git commit -m "Add store._21rebel.orangedeck (OrangeDeck)"
-    git push -u origin store._21rebel.orangedeck
+    git checkout -b dev.orangedeck.OrangeDeck origin/new-pr
+    cp ~/Schreibtisch/orangedeck/packaging/flatpak/dev.orangedeck.OrangeDeck.yml .
+    git add dev.orangedeck.OrangeDeck.yml
+    git commit -m "Add dev.orangedeck.OrangeDeck (OrangeDeck)"
+    git push -u origin dev.orangedeck.OrangeDeck
     gh pr create --repo flathub/flathub --base new-pr \
-        --title "Add store._21rebel.orangedeck (OrangeDeck)" \
+        --title "Add dev.orangedeck.OrangeDeck (OrangeDeck)" \
         --body-file ~/Schreibtisch/orangedeck/packaging/flathub/PR-TEXT.md

@@ -306,7 +306,7 @@ def main():
     tun = not args.pruefen
 
     print("Linux und Flatpak:")
-    meister = "app/icons/store._21rebel.orangedeck.svg"
+    meister = "app/icons/dev.orangedeck.OrangeDeck.svg"
     schreiben(meister, svg_voll(), tun)
 
     print("Android:")

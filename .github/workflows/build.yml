@@ -181,15 +181,15 @@ jobs:
       - name: Bauplan auf diesen Commit stellen
         run: |
           sed -i "s|^        commit: .*|        commit: ${{ github.sha }}|" \
-            packaging/flatpak/store._21rebel.orangedeck.yml
-          grep -A2 "type: git" packaging/flatpak/store._21rebel.orangedeck.yml
+            packaging/flatpak/dev.orangedeck.OrangeDeck.yml
+          grep -A2 "type: git" packaging/flatpak/dev.orangedeck.OrangeDeck.yml
 
       - name: Bauen und buendeln
         run: |
           flatpak-builder --user --repo=repo --force-clean \
-            build-fp packaging/flatpak/store._21rebel.orangedeck.yml
+            build-fp packaging/flatpak/dev.orangedeck.OrangeDeck.yml
           flatpak build-bundle repo orangedeck.flatpak \
-            store._21rebel.orangedeck \
+            dev.orangedeck.OrangeDeck \
             --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
       - uses: actions/upload-artifact@v4

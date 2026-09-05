@@ -3,6 +3,6 @@ Type=Application
 Name=OrangeDeck
 Comment=Live-Ansicht des Bitcoin-Mempools
 Exec=orangedeck-app
-Icon=store._21rebel.orangedeck
+Icon=dev.orangedeck.OrangeDeck
 Terminal=false
 Categories=Network;Monitor;

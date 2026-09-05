@@ -317,7 +317,7 @@ ohne Quickshell und ohne DMS.
 
 Nachgewiesen am 01.09.2026: eigenes Fenster auf dem Desktop (app_id damals
 `dev.21rebel.orangedeck-app`, seit dem 02.09.2026 ausdruecklich
-`store._21rebel.orangedeck`), zwei stehende Verbindungen zum Daemon auf
+`dev.orangedeck.OrangeDeck`), zwei stehende Verbindungen zum Daemon auf
 `127.0.0.1:21021` (Zustand und Block), **3,0 % CPU** ueber sechs Sekunden
 gemessen. Einstellungen liegen portabel in `~/.config/orangedeck/orangedeck.conf`.
 

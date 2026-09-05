@@ -18,7 +18,7 @@ Kennung:
 
 | So gestartet | `app_id` | Titel |
 |---|---|---|
-| eigenstaendig (`orangedeck-app`) | `store._21rebel.orangedeck` | `OrangeDeck` |
+| eigenstaendig (`orangedeck-app`) | `dev.orangedeck.OrangeDeck` | `OrangeDeck` |
 | im quickshell-Fenster | `org.quickshell` | `OrangeDeck` |
 
 Die eigenstaendige Anwendung hat eine eigene Kennung; sie kommt aus
@@ -43,7 +43,7 @@ Liste.
 In `~/.config/niri/config.kdl`:
 
     window-rule {
-        match app-id=r#"^store\._21rebel\.orangedeck$"#
+        match app-id=r#"^dev\.orangedeck\.OrangeDeck$"#
         match app-id=r#"^org\.quickshell$"# title=r#"^OrangeDeck$"#
         background-effect {
             blur true

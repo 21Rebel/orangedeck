@@ -14,7 +14,7 @@
 #
 # Gebaut wird also aus der Wurzel:  cmake -S . -B build
 cmake_minimum_required(VERSION 3.21)
-project(orangedeck-app VERSION 0.1.1 LANGUAGES CXX)
+project(orangedeck-app VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -207,8 +207,8 @@ include(GNUInstallDirs)
 # sonst schon beim Einrichten abbricht.
 if(NOT ANDROID AND NOT APPLE AND NOT WIN32)
     install(TARGETS orangedeck-app RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/app/store._21rebel.orangedeck.desktop
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/app/dev.orangedeck.OrangeDeck.desktop
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/app/icons/store._21rebel.orangedeck.svg
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/app/icons/dev.orangedeck.OrangeDeck.svg
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
 endif()

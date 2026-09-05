@@ -106,8 +106,8 @@ echo "Verlinkt gegen $R"
 if [ -d "$R/build" ]; then
   echo "Eigenstaendige Anwendung neu bauen:  cmake --build $R/build"
 fi
-if flatpak info --user store._21rebel.orangedeck >/dev/null 2>&1; then
+if flatpak info --user dev.orangedeck.OrangeDeck >/dev/null 2>&1; then
   echo "Flatpak ist installiert und jetzt VERALTET. Neu bauen mit:"
   echo "  flatpak-builder --user --install --force-clean \\"
-  echo "      $R/build-flatpak $R/packaging/flatpak/store._21rebel.orangedeck.dev.yml"
+  echo "      $R/build-flatpak $R/packaging/flatpak/dev.orangedeck.OrangeDeck.dev.yml"
 fi

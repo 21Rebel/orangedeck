@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>store._21rebel.orangedeck</id>
+  <id>dev.orangedeck.OrangeDeck</id>
   <name>OrangeDeck</name>
   <summary>Live-Ansicht des Bitcoin-Mempools</summary>
   <metadata_license>CC0-1.0</metadata_license>
@@ -24,7 +24,7 @@
     </p>
   </description>
 
-  <launchable type="desktop-id">store._21rebel.orangedeck.desktop</launchable>
+  <launchable type="desktop-id">dev.orangedeck.OrangeDeck.desktop</launchable>
 
   <!-- Flathub verlangt mindestens einen Screenshot. Die Bilder liegen im
        Repo und werden von dort geladen; ein Anbieter fuer Bilder waere eine
@@ -72,8 +72,9 @@
   </screenshots>
 
   <!-- Flathub verlangt eine Startseite; ohne sie faellt `appstreamcli
-       validate` durch. Seit dem 03.09.2026 gibt es eine. -->
-  <url type="homepage">https://github.com/21Rebel/orangedeck</url>
+       validate` durch. Seit dem 05.09.2026 ist es die eigene Domain, aus der
+       auch die Kennung gebildet ist. -->
+  <url type="homepage">https://orangedeck.dev</url>
   <url type="bugtracker">https://github.com/21Rebel/orangedeck/issues</url>
   <url type="vcs-browser">https://github.com/21Rebel/orangedeck</url>
   <content_rating type="oars-1.1"/>
@@ -87,7 +88,7 @@
        daraus geworden waere. Ein Release-Eintrag fuer etwas, das niemand
        installieren konnte, ist eine Erfindung; darum ersetzt statt ergaenzt. -->
   <releases>
-    <release version="0.1.1" date="2026-09-05">
+    <release version="0.2.0" date="2026-09-05">
       <description>
         <p>Erste Auslieferung.</p>
         <p>
@@ -100,6 +101,11 @@
         <p>
           Neues Anwendungssymbol: der Block, gepackt aus ungleichen Quadraten,
           wie die Anwendung ihn auch auf den Schirm zeichnet.
+        </p>
+        <p>
+          Eigene Kennung unter der Domain orangedeck.dev. Sie gilt auf allen
+          Systemen gleich; das Android-Paket trug vorher notgedrungen eine
+          andere.
         </p>
         <p>
           Geprueft auf einem System, das nichts von diesem Projekt weiss:

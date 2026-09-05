@@ -35,9 +35,9 @@ bauen() {
     rm -rf "$bau" "$VM/repo"
     flatpak-builder --user --repo="$VM/repo" --force-clean --disable-cache \
         --state-dir="$VM/state" "$bau" \
-        "$REPO/packaging/flatpak/store._21rebel.orangedeck.yml"
+        "$REPO/packaging/flatpak/dev.orangedeck.OrangeDeck.yml"
     flatpak build-bundle "$VM/repo" "$VM/daten/orangedeck.flatpak" \
-        store._21rebel.orangedeck \
+        dev.orangedeck.OrangeDeck \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
     # **Die Laufzeit muss mit.** Im Gast bricht die Netzverbindung zu Flathub

@@ -29,8 +29,8 @@
         android:shortcutShortLabel="@string/shortcut_feed_short"
         android:shortcutLongLabel="@string/shortcut_feed_long">
         <intent
-            android:action="store.rebel.orangedeck.VIEW_FEED"
-            android:targetPackage="store.rebel.orangedeck"
+            android:action="dev.orangedeck.OrangeDeck.VIEW_FEED"
+            android:targetPackage="dev.orangedeck.OrangeDeck"
             android:targetClass="org.qtproject.qt.android.bindings.QtActivity" />
     </shortcut>
 
@@ -41,8 +41,8 @@
         android:shortcutShortLabel="@string/shortcut_clock_short"
         android:shortcutLongLabel="@string/shortcut_clock_long">
         <intent
-            android:action="store.rebel.orangedeck.VIEW_CLOCK"
-            android:targetPackage="store.rebel.orangedeck"
+            android:action="dev.orangedeck.OrangeDeck.VIEW_CLOCK"
+            android:targetPackage="dev.orangedeck.OrangeDeck"
             android:targetClass="org.qtproject.qt.android.bindings.QtActivity" />
     </shortcut>
 
@@ -53,8 +53,8 @@
         android:shortcutShortLabel="@string/shortcut_explorer_short"
         android:shortcutLongLabel="@string/shortcut_explorer_long">
         <intent
-            android:action="store.rebel.orangedeck.VIEW_EXPLORER"
-            android:targetPackage="store.rebel.orangedeck"
+            android:action="dev.orangedeck.OrangeDeck.VIEW_EXPLORER"
+            android:targetPackage="dev.orangedeck.OrangeDeck"
             android:targetClass="org.qtproject.qt.android.bindings.QtActivity" />
     </shortcut>
 </shortcuts>

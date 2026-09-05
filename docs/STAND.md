@@ -73,7 +73,7 @@ greift danach stillschweigend nicht mehr.
 
 **Der erste Anlauf, das zu beheben, war falsch, und der Irrtum ist der
 lehrreichere Teil.** Der Schluss lag nahe: Titel schlecht, `app_id` gut, also
-auf `store._21rebel.orangedeck` umstellen. Nur traegt das gemeldete Fenster
+auf `dev.orangedeck.OrangeDeck` umstellen. Nur traegt das gemeldete Fenster
 diese Kennung gar nicht -- es ist das **quickshell**-Fenster (`app_id
 org.quickshell`), nicht die eigenstaendige Anwendung. Und geprueft wurde
 genau daneben: der Lauf startete die eigenstaendige Anwendung, fand die
@@ -349,7 +349,7 @@ einzige echte Luecke. Fuenf Stueck, mit demselben Pruefstand aufgenommen
 (Xvfb, Fenster genau auf Bildschirmgroesse, damit kein Rand mitkommt). **Der
 Feed braucht Vorlauf**: die Halde ist erst nach einer Viertelstunde voll.
 
-Was noch fehlt: das eigene Repo `flathub/store._21rebel.orangedeck` und die
+Was noch fehlt: das eigene Repo `flathub/dev.orangedeck.OrangeDeck` und die
 Einreichung. Beides braucht den Nutzer.
 
 ### Offene Punkte
@@ -699,7 +699,7 @@ neu oeffnen.
     systemctl --user restart dms
     cmake --build build                 # die eigenstaendige Anwendung
     flatpak-builder --user --install --force-clean \
-        build-flatpak packaging/flatpak/store._21rebel.orangedeck.dev.yml
+        build-flatpak packaging/flatpak/dev.orangedeck.OrangeDeck.dev.yml
 
 Die letzten beiden tragen eine **Kopie**, keinen Verweis.
 
@@ -815,7 +815,7 @@ gesetzt, global steht weiter der Klarname.
     systemctl --user restart dms
     cmake --build build                 # die eigenstaendige Anwendung
     flatpak-builder --user --install --force-clean \
-        build-flatpak packaging/flatpak/store._21rebel.orangedeck.dev.yml
+        build-flatpak packaging/flatpak/dev.orangedeck.OrangeDeck.dev.yml
 
 Die letzten beiden tragen eine **Kopie**, keinen Verweis. Und das
 **Quickshell-Fenster laedt nicht von selbst nach** -- einmal schliessen und
@@ -909,7 +909,7 @@ Push wird abgelehnt. Der Zugangshelfer im Repo loest das, siehe oben.
   DMS ueber die Plugin-Einstellungen, ueberall sonst mit `--layer` (Anleitung
   in `packaging/widgets/README.md`). Mehrere nebeneinander, jedes mit eigenem
   Einstellungsspeicher (`--id`).
-- **Flatpak**: `packaging/flatpak/store._21rebel.orangedeck.yml`, gebaut,
+- **Flatpak**: `packaging/flatpak/dev.orangedeck.OrangeDeck.yml`, gebaut,
   installiert, geprueft.
 - **Android**: Werkzeugkette steht, das APK baut (45 MB, arm64-v8a,
   unsigniert). Auf dem Handy war es noch nicht.
@@ -971,7 +971,7 @@ Push wird abgelehnt. Der Zugangshelfer im Repo loest das, siehe oben.
     systemctl --user restart dms
     cmake --build build             # die eigenstaendige Anwendung
     flatpak-builder --user --install --force-clean \
-        build-flatpak packaging/flatpak/store._21rebel.orangedeck.dev.yml
+        build-flatpak packaging/flatpak/dev.orangedeck.OrangeDeck.dev.yml
 
 **Die letzten beiden nicht vergessen** -- sie tragen eine *Kopie*, keinen
 Verweis. Genau daran ist der Nutzer am 02.09. vorbeigelaufen: die Aenderungen
@@ -1008,7 +1008,7 @@ kurz darauf auf 13,5 % -- die Last haengt am Mempool-Verkehr. Nur
 **gleichzeitig** gemessen sind zwei Varianten vergleichbar.
 
 **Eine Flatpak-Kennung darf kein Segment mit einer Ziffer beginnen.** Aus
-`dev.21rebel.orangedeck` wurde `store._21rebel.orangedeck`.
+`dev.21rebel.orangedeck` wurde `dev.orangedeck.OrangeDeck`.
 
 **Der Sandkasten blendet privilegierte Wayland-Protokolle aus**
 (`wp_security_context_v1`). Deshalb gibt es im Flatpak kein Layer-Shell --
@@ -1133,21 +1133,21 @@ Qt 6.11.2 fuer `android_arm64_v8a` mit `aqtinstall` nach `~/Qt`.
 
 ### Flatpak -- laeuft
 
-`packaging/flatpak/store._21rebel.orangedeck.yml`. Gebaut und geprueft: das
+`packaging/flatpak/dev.orangedeck.OrangeDeck.yml`. Gebaut und geprueft: das
 Paket startet im kopflosen Compositor, zeigt Live-Daten und traegt sein
 eigenes Symbol.
 
 **Die Kennung musste sich aendern.** `dev.21rebel.orangedeck` weist Flatpak ab:
 *"Name segment can't start with 2"*. Ein Segment einer solchen Kennung darf
 nicht mit einer Ziffer beginnen; die vorgesehene Schreibweise setzt einen
-Unterstrich davor. Neu ist deshalb **`store._21rebel.orangedeck`** -- und das
+Unterstrich davor. Neu ist deshalb **`dev.orangedeck.OrangeDeck`** -- und das
 passt zugleich zu einer Domain, die es wirklich gibt (21rebel.store).
 Umbenannt wurden die `.desktop`-Datei und das Symbol; in `main.cpp` steht die
 Kennung jetzt ausdruecklich (`setDesktopFileName`), sonst leitet Qt die
 Wayland-app_id aus der umgedrehten Domain ab und der Fensterverwalter findet
 das Symbol nicht.
 
-Dazu neu: `app/icons/store._21rebel.orangedeck.svg` (eigene Zeichnung -- Kacheln
+Dazu neu: `app/icons/dev.orangedeck.OrangeDeck.svg` (eigene Zeichnung -- Kacheln
 wie im Feed, **nichts** von Bitfeed uebernommen), eine AppStream-Beschreibung
 und `packaging/flatpak/orangedeck-launch`. Der Starter prueft erst, ob auf
 `127.0.0.1:21021` schon ein Daemon antwortet: im Flatpak ist das dank
@@ -1523,7 +1523,7 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
   Loopback. Abfragen: `/state`, `/block`, `/health`, `/lookup/<art>/<wert>`.
 - **Die Grafik haengt an nichts ausser Qt Quick.** Dieselben QML-Dateien
   bedienen DMS-Plugin, Dashboard-Tab und die eigenstaendige Anwendung
-  (`app/`, CMake, app_id `store._21rebel.orangedeck`).
+  (`app/`, CMake, app_id `dev.orangedeck.OrangeDeck`).
 
 **Vier Ansichten** (Tabs oder Tasten 1-4)
 - **Feed** -- Halde und Block wie bitfeed, mit Zoom (Rad, Zusammenziehen,
