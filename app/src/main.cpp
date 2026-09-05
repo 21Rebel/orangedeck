@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     app.setOrganizationName("orangedeck");
     app.setOrganizationDomain("21rebel.dev");
     app.setApplicationName("orangedeck");
-    app.setApplicationVersion("0.1");
+    app.setApplicationVersion(QStringLiteral(ORANGEDECK_VERSION));
     app.setApplicationDisplayName(QStringLiteral("OrangeDeck"));
     // Ausdruecklich gesetzt: sonst leitet Qt die Wayland-app_id aus der
     // umgedrehten Domain und dem Programmnamen ab ("dev.21rebel.orangedeck-app"),

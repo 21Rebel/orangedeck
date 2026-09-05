@@ -118,6 +118,13 @@ set_target_properties(orangedeck-app PROPERTIES
 
 target_link_libraries(orangedeck-app PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick)
 
+# **Die Fassung steht an genau einer Stelle.** Sie stand vorher als "0.1" in
+# main.cpp und als Zahl in `project()` -- zwei Stellen, die auseinanderlaufen,
+# sobald eine gepflegt wird und die andere nicht. Genau das war am 05.09.2026
+# passiert.
+target_compile_definitions(orangedeck-app PRIVATE
+    ORANGEDECK_VERSION="${PROJECT_VERSION}")
+
 # **Auf Android muss OpenSSL mit ins APK.** Qt liefert es dort nicht mit, und
 # ohne es meldet das Geraet nur "No functional TLS backend was found" -- die
 # App ist dann vollstaendig funktionslos, weil mempool.space nur https und wss
