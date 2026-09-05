@@ -61,6 +61,17 @@ GitHub nicht.
 
 ### 2. Den Antrag stellen
 
+**Zuerst: von welchem Konto?** Flathub fragt im Pruefgespraech, ob der
+Einreichende der Entwickler ist. Der Antrag gehoert deshalb von dem Konto,
+dem auch `21Rebel/orangedeck` gehoert. Am 05.09.2026 war `gh` auf diesem
+Rechner als `Shopatch` angemeldet und hatte **kein** Push-Recht auf das
+Projekt -- ein Antrag von dort haette dieselbe Rueckfrage ausgeloest wie eine
+fremde Kennung. `gh auth status` sagt, wer gerade spricht.
+
+Titel und Text des Antrags liegen fertig in `packaging/flathub/PR-TEXT.md`,
+samt der Befehlsfolge mit `gh`.
+
+
 Flathub nimmt Antraege als Pull Request gegen `flathub/flathub`, Zweig
 `new-pr`. Hinein gehoert **nur** die Bauplan-Datei, und die heisst hier schon
 richtig:
