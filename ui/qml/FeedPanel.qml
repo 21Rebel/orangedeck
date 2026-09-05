@@ -52,9 +52,20 @@ Item {
     // dadurch **nie** eine Legende -- und mit ihr auch nicht den Umschalter
     // darunter. Gemessen passt sie samt Umschalter ab 330 in die Flaeche.
     readonly property bool showLegend: legendVisible && width >= 420 && height >= 330
-    // In flachen Flaechen rueckt sie dichter an die Oberkante, sonst reicht
-    // der Platz unter ihr nicht mehr fuer den Umschalter.
-    readonly property bool legendTight: height < 460
+    // **Links und rechts derselbe Abstand zur Kopfzeile.** Vorher rechnete
+    // jede Seite fuer sich: links 0,03/0,10 mit einem Mindestabstand, rechts
+    // 0,04/0,10 ohne. Zwischen 460 und 520 Pixeln Hoehe kam links der
+    // Mindestabstand zum Tragen und rechts schon der grosse Bruchteil -- die
+    // Legende sass dadurch bis zu dreissig Pixel tiefer als die Blockangaben.
+    // Sichtbar wird das, weil beide denselben Kasten ueber sich haben und die
+    // Fuge darunter ungleich breit ausfiel.
+    //
+    // Der Mindestabstand gilt jetzt fuer beide: `FrostedPanel` traegt acht
+    // Pixel Rand nach aussen, ohne ihn stossen die Kaesten in flachen
+    // Flaechen aneinander.
+    readonly property int sideTopMargin: Math.max(
+        Math.round(root.baseFont * 1.6),
+        Math.round(canvasView.height * (root.infoCompact ? 0.04 : 0.10)))
     readonly property var tip: feed ? feed.tip : ({})
     readonly property var nextBlock: feed ? feed.nextBlock : ({})
     readonly property var block: feed ? feed.block : ({})
@@ -134,6 +145,19 @@ Item {
         backdropSource: canvasView
         blurred: root.frostedBlur
         visible: root.frostedInfo && legend.visible
+        z: 4
+    }
+
+    // **Der Umschalter braucht denselben Untergrund wie die Legende.** Er
+    // steht unter ihr, also genau dort, wo die Halde bei vollem Mempool nach
+    // oben waechst -- und dann lagen die Knoepfe ueber den Kacheln und waren
+    // nicht mehr zu lesen. Dass es der Legende darueber nicht so ging, lag
+    // allein an ihrem Kasten.
+    FrostedPanel {
+        content: goggles
+        backdropSource: canvasView
+        blurred: root.frostedBlur
+        visible: root.frostedInfo && goggles.visible
         z: 4
     }
 
@@ -235,12 +259,7 @@ Item {
 
         anchors.left: canvasView.left
         anchors.top: canvasView.top
-        // **Nicht blosse Prozente.** `FrostedPanel` traegt 8 Pixel Rand nach
-        // aussen -- bei 3 % einer flachen Flaeche stossen der Kasten der
-        // Kopfzeile und der der Blockangaben aneinander. Der Mindestabstand
-        // haelt zwischen beiden eine sichtbare Fuge frei.
-        anchors.topMargin: Math.max(Math.round(root.baseFont * 1.6),
-                                    Math.round(canvasView.height * (root.infoCompact ? 0.03 : 0.10)))
+        anchors.topMargin: root.sideTopMargin
         width: Math.min(160, root.width * 0.22)
         spacing: 2
         visible: root.showInfo && root.block.height !== undefined
@@ -335,7 +354,7 @@ Item {
 
         anchors.right: canvasView.right
         anchors.top: canvasView.top
-        anchors.topMargin: Math.round(canvasView.height * (root.legendTight ? 0.04 : 0.10))
+        anchors.topMargin: root.sideTopMargin
         spacing: 4
         visible: root.showLegend
 
@@ -493,9 +512,27 @@ Item {
         // Unter der Legende am rechten Rand. Unten links lag er in der Halde
         // und war ueber den Kacheln nicht mehr zu lesen.
         anchors.right: legend.right
-        anchors.top: legend.bottom
-        anchors.topMargin: root.baseFont * 0.8
-        width: root.baseFont * 14
+        // **Unter der Legende, aber nicht tiefer als die Halde reicht.**
+        //
+        // Der Abstand zur Legende ist gerechnet, nicht geraten: seit der
+        // Umschalter einen eigenen Untergrund hat, ist er die Fuge zwischen
+        // zwei Kaesten, und jeder traegt acht Pixel nach aussen
+        // (`FrostedPanel.pad`). Die frueheren 0,8 Schriftgraden waren
+        // weniger -- die Kaesten haetten sich ueberlappt, und zwei
+        // durchscheinende Flaechen uebereinander geben eine dunkle Naht.
+        //
+        // Der Boden darunter ist der zweite Teil: in der Lesart "Art" traegt
+        // die Legende sieben Zeilen mehr, und in einer flachen Flaeche schob
+        // sie den Umschalter aus der Zeichenflaeche heraus bis in die
+        // Fusszeile. Solange er nur Schrift war, sah man darueber hinweg;
+        // als Kasten deckt er den Kurs darunter zu. Also endet er
+        // spaetestens am unteren Rand der Halde.
+        y: Math.min(legend.y + legend.height + 8 + 8 + 2,
+                    canvasView.y + canvasView.height - goggles.height)
+        // Genau so breit wie die Knopfreihe, damit der Untergrund dahinter
+        // sie umschliesst und nicht daneben steht. `baseFont * 14` war
+        // geraten und lag bei den deutschen Beschriftungen zu knapp.
+        width: goggles.schalterBreite
         alignRight: true
         visible: root.showLegend && root.width >= 420
         mode: root.colorMode

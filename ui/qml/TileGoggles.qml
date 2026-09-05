@@ -46,10 +46,19 @@ Column {
 
     signal picked(string mode)
 
+    // Wie breit die Knopfreihe wirklich ist. Der Feed setzt seine Breite
+    // danach, damit der Untergrund dahinter die Knoepfe genau umschliesst --
+    // eine von Hand geratene Breite war mal zu schmal (die Knoepfe standen
+    // ueber den Rand hinaus) und mal zu breit (der Kasten trug links eine
+    // leere Flaeche vor sich her).
+    readonly property real schalterBreite: schalterZeile.implicitWidth
+
     spacing: uiFont * 0.4
 
     // ------------------------------------------------------- Umschalter
     Row {
+        id: schalterZeile
+
         anchors.right: root.alignRight ? parent.right : undefined
         spacing: root.uiFont * 0.9
 
@@ -112,7 +121,12 @@ Column {
     Flow {
         width: parent.width
         spacing: root.uiFont * 1.1
-        visible: root.mode === "type"
+        // **Nicht blosses `mode === "type"`.** Wo keine Anzahlen geliefert
+        // werden -- im Feed ist das der Regelfall -- bleibt die Zeile leer,
+        // zaehlt in der Spalte aber weiter als sichtbares Kind und traegt
+        // ihren Abstand bei. Der Untergrund dahinter wurde dadurch hoeher als
+        // das, was er umschliesst.
+        visible: root.mode === "type" && (root.counts || []).length > 0
 
         Repeater {
             model: {
