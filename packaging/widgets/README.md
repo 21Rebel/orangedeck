@@ -12,6 +12,24 @@ dazu -- ein Programm im Sandkasten soll sich nicht ueber den ganzen Bildschirm
 legen koennen. Aus dem Flatpak zeigt `--layer` deshalb nur ein gewoehnliches
 Fenster. Fuer Widgets die Anwendung selbst bauen.
 
+**Am 05.09.2026 gemessen**, nicht mehr nur hergeleitet -- gleiche Maschine,
+gleicher Compositor (niri), gleiches Binary, nur der Sandkasten unterscheidet
+sich:
+
+| Lauf | `niri msg layers` | `niri msg windows` |
+|---|---|---|
+| aus dem Bauverzeichnis | neue Flaeche, Namensraum `orangedeck` | -- |
+| aus dem installierten Flatpak | nichts | ein gewoehnliches Fenster |
+
+**Die Fehlermeldung dabei zeigt in die falsche Richtung:**
+
+    layershellqt: Failed to initialize layer-shell integration,
+    possibly because compositor does not support the layer-shell protocol
+
+Der Compositor unterstuetzt es sehr wohl -- er zeigt es dem Sandkasten nur
+nicht. Wer der Meldung glaubt, sucht den Fehler beim Compositor und findet
+dort nichts.
+
 Das setzt `layer-shell-qt` (Qt6) beim Bauen voraus. Fehlt es, faellt nur
 `--layer` weg -- `cmake` sagt das beim Einrichten. Getragen wird es von allen
 wlroots-nahen Compositoren: **niri, sway, Hyprland, river, labwc, Wayfire**.
