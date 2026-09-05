@@ -40,10 +40,10 @@ Ausgabeverzeichnis.
 
 ## Was noch fehlt
 
-- **Impressum und Datenschutzerklaerung.** Fuer eine aus Deutschland
-  betriebene Seite sind sie Pflicht, und sie lassen sich nicht erfinden --
-  Name, Anschrift und Kontakt muessen stimmen. Sie fehlen bewusst, statt mit
-  Platzhaltern zu suggerieren, es sei erledigt.
+- **Rechtstexte.** Zurueckgestellt: der Betreiber sitzt nicht in der EU,
+  eine Impressumspflicht nach deutschem Recht greift also nicht. Wenn spaeter
+  doch welche gebraucht werden, gehoeren sie in denselben Erzeuger -- als
+  eigene Textdatei je Sprache, nicht als handgeschriebene Extraseite.
 - **Die elf uebrigen Sprachen.**
 - **Der Spendenteil**: eine wechselnde Adresse, damit sich Zahlungen nicht
   einer einzigen zuordnen lassen. Braucht einen xpub und eine Ableitung, also
