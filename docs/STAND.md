@@ -40,6 +40,10 @@ Request. Abzweigung `21Rebel/flathub` und Zweig
 Namen und die alte Datei**, beides muss auf `dev.orangedeck.OrangeDeck`
 gewechselt werden. Titel und Text stehen in `packaging/flathub/PR-TEXT.md`.
 
+**3. Und dann die Darstellungs-Seite** -- siehe unten unter den offenen
+Punkten. Sie ist der naechste Schritt an der Oberflaeche und loest gleich
+mehrere kleine Aergernisse auf einmal.
+
 ### Was heute dazugekommen ist
 
 | Etappe | Stand |
@@ -59,6 +63,44 @@ gewechselt werden. Titel und Text stehen in `packaging/flathub/PR-TEXT.md`.
 | Eine Kennung fuer alle Systeme (`dev.orangedeck.OrangeDeck`) | fertig |
 | orangedeck.dev: Seite in zwei Sprachen | gebaut, **noch nicht live** |
 | Flathub-Antrag | vorbereitet, wartet auf die Seite |
+
+### Nachtrag Abend
+
+Nach dem Tagesabschluss kamen noch fuenf Dinge dazu, vier davon Fehler, die
+ich selbst gebaut hatte.
+
+**Der Bauplan zeigte auf einen Stand vor der Umbenennung.** `commit:` stand
+auf 15a6466 -- dort heisst die Kennung noch `store._21rebel.orangedeck`, und
+die Datei, die der Bauplan installieren will, gibt es dort gar nicht. Der Bau
+waere gescheitert. `flatpak-builder-lint` fand es nicht, weil er nicht baut.
+Neu ist deshalb `tools/bauplan-pruefen.py`, das im gepinnten Stand selbst
+nachsieht; die CI fuehrt es aus, **bevor** sie den Pin ueberschreibt
+(`fetch-depth: 0`, sonst liegt der Commit im Laeufer nicht vor).
+
+**Die niri-Regel zeigte auf die alte Kennung.** Nach der Umbenennung waere
+der Blur wieder weg gewesen -- diesmal haette ich ihn selbst zerbrochen.
+Nachgezogen und geprueft: das Fenster meldet `dev.orangedeck.OrangeDeck`.
+
+**Die Halde hatte keinen Deckel mehr.** Auf einem grossen Fenster wuchs sie
+ueber die halbe Hoehe; von aussen sah es aus, als scrolle sie nicht mehr. Sie
+tat es, der Deckel stand nur zu hoch: ich hatte bitfeeds Viertel-Regel als
+Deckel **entfernt**, statt sie als Boden zu behalten. Jetzt gilt beides --
+Bruchteil als Untergrenze, ein Drittel der Hoehe als Obergrenze.
+
+**Und das Fenster ging immer in den Einstellungen auf.** Die gemerkte Ansicht
+wurde beim Lesen auf 5 geklemmt (`shell.qml`), aus der Zeit mit den Ansichten
+0 bis 5. Der Markt kam als 6 dazu, die Klemme wanderte nicht mit: wer im
+Markt schloss, fand die Einstellungen vor. Geschrieben wurde der echte Wert,
+gelesen der gestutzte, und die 5 ging zurueck -- deshalb "immer". Geklemmt
+wird jetzt gar nicht mehr; unbekannte Ansichten faengt derselbe Rueckfall ab
+wie in `Main.qml`.
+
+**Die Zeigerfrage der Pruef-VM ist beantwortet, negativ.** Ueber sechs
+Konfigurationen hinweg bewegt `mouse_move` nichts: Tablett per Befehlszeile,
+per `device_add`, mit `mouse_set` aktiv, mit und ohne Anzeigetreiber, relativ
+auf der PS/2-Maus. Die QEMU-Hilfe erklaert es -- `mouse_move dx dy` sendet
+**relative** Deltas, die ein absolutes Geraet nicht braucht. Nicht probiert
+ist QMP `input-send-event`; das waere der naechste Weg.
 
 ### Die Erkenntnisse dieses Tages
 
@@ -103,6 +145,19 @@ bewacht CMake die Stelle jetzt laut.
 derselbe Packer wie in der Anwendung, und die Toene kommen aus `colors.js` --
 das Zeichen ist damit kein Entwurf ueber der Anwendung, sondern eines aus ihr.
 
+**Und der Abend fuegte eine sechste dazu, in doppelter Ausfuehrung: eine
+Grenze wandert nicht von selbst mit.** Die Klemme auf 5 stammte aus der Zeit
+mit sechs Ansichten, der Markt kam als siebte dazu -- und wer im Markt
+schloss, fand die Einstellungen vor. Die *Startansicht* kennt aus demselben
+Grund bis heute nur vier der sieben. Und ich selbst habe eine Obergrenze
+entfernt, weil ich sie fuer eine Untergrenze hielt, und die Halde uebernahm
+das Bild.
+
+Dreimal dasselbe Muster: eine Zahl, die einmal richtig war, steht neben
+etwas, das gewachsen ist. **Wer eine Grenze anfasst, muss dort messen, wo sie
+greift** -- ich hatte bei 440x950 und 900x500 geprueft, also gerade dort
+nicht.
+
 **Und die teuerste Erkenntnis war eine Frage.** "Muessen wir den Namen
 wirklich so verwenden?" -- daraufhin zehn Euro fuer `orangedeck.dev`, und der
 Regelkonflikt zwischen Flathub (Unterstrich vor der Ziffer) und Android
@@ -111,16 +166,41 @@ hatte, war weg. Zwei Identitaeten wurden eine.
 
 ### Was sonst noch offen ist
 
-1. **Laufzeit auf `org.kde.Platform` 6.11.** Hinweis des Pruefers, kein
+1. **Darstellungs-Seite in den Einstellungen** -- neu am 05.09.2026 abends
+   besprochen, und der naechste Schritt an der Oberflaeche.
+
+   Gedacht als eigener Punkt unter *Allgemein*: **jede Position bekommt ein
+   Auswahlfeld mit den Reitern**, so dass der Anwender die Reihenfolge selbst
+   bestimmt. Heute liegt sie fest in `FeedTabs.tabViews`.
+
+   Drei Aergernisse loest das gleich mit:
+
+   - Die *Startansicht* kennt nur Feed, Uhr, Miner, Explorer (0 bis 3).
+     **Markt und Wallet fehlen**, weil sie spaeter dazukamen -- dieselbe
+     Klasse wie die Klemme auf 5, nur an anderer Stelle. Wer im Markt starten
+     will, kann es nicht einstellen.
+   - "Zuletzt benutzte" (`startView = -1`) ist die Vorgabe, und deshalb geht
+     das Fenster dort auf, wo man zuletzt war -- was ohne Erklaerung wie ein
+     Fehler wirkt.
+   - Wer eine Ansicht nie braucht, schaltet sie heute einzeln ueber
+     `showFeed`, `showClock` und so weiter ab; das gehoert an dieselbe Stelle.
+
+   **Beim Umsetzen aufpassen:** die Reihenfolge steckt an zwei Stellen, die
+   auseinanderlaufen koennen -- `tabViews` und `tabNamen` in `FeedTabs.qml`.
+   Der Kommentar dort sagt es bereits ("aus einer Tabelle gelesen, damit die
+   beiden nicht auseinanderlaufen"). Eine frei sortierbare Liste muss beide
+   aus **einer** Quelle speisen.
+
+2. **Laufzeit auf `org.kde.Platform` 6.11.** Hinweis des Pruefers, kein
    Fehler. Zieht `layer-shell-qt` mit. Nach der Einreichung.
-2. **Die elf uebrigen Sprachen der Seite** und der **Spendenteil** (wechselnde
+3. **Die elf uebrigen Sprachen der Seite** und der **Spendenteil** (wechselnde
    Adresse, braucht xpub und Ableitung).
-3. **Widget-Seite in den Einstellungen** fuer den Desktop -- die Auswertung
+4. **Widget-Seite in den Einstellungen** fuer den Desktop -- die Auswertung
    steht, entschieden ist nur der Android-Teil. Zu beachten: Layer-Shell geht
    **nachweislich nicht** aus dem Flatpak.
-4. **Tonsignal bei neuem Block** (QtMultimedia in allen vier Bauplaenen).
-5. **Eigener Node als Datenquelle.**
-6. **Die Pruef-VM hat keinen Zeiger.** `usb-tablet` steht jetzt in
+5. **Tonsignal bei neuem Block** (QtMultimedia in allen vier Bauplaenen).
+6. **Eigener Node als Datenquelle.**
+7. **Die Pruef-VM hat keinen Zeiger.** `usb-tablet` steht jetzt in
    `pruefvm.sh`; ob der Monitor damit wirklich einen Zeiger bewegt, ist
    **ungeprueft**.
 
@@ -287,7 +367,7 @@ noch die Einreichung bei Flathub, und die haengt an einem Menschen.**
    Leinwand kam nur eines ihrer beiden Dreiecke an. Mit `-gpu host`
    verschwindet sie. Der Weg dorthin steht in der DOKUMENTATION unter "Die
    schraege Flaeche auf Android war der Emulator".
-5. **Eigener Node als Datenquelle** -- laenger offen, siehe Abschnitt weiter
+6. **Eigener Node als Datenquelle** -- laenger offen, siehe Abschnitt weiter
    unten. Kein Termindruck.
 
 ### Die Erkenntnisse dieses Tages
