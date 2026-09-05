@@ -300,8 +300,21 @@ ShellRoot {
                     win.showLegend = v.showLegend !== false;
                     if (typeof v.bgOpacity === "number")
                         win.bgOpacity = Math.max(0.15, Math.min(1, v.bgOpacity));
-                    if (typeof v.view === "number")
-                        win.view = Math.max(0, Math.min(5, v.view));
+                    // **Keine feste Obergrenze mehr.** Hier stand
+                    // `Math.min(5, ...)` -- aus der Zeit, als es die
+                    // Ansichten 0 bis 5 gab. Der Markt kam als 6 dazu, die
+                    // Klemme wanderte nicht mit, und wer im Markt schloss,
+                    // fand beim naechsten Oeffnen die Einstellungen vor: 6
+                    // auf 5 gestutzt ist genau der Reiter. Geschrieben wurde
+                    // dabei der echte Wert, gelesen der gestutzte -- und weil
+                    // danach die 5 zurueckging, blieb es dabei.
+                    //
+                    // Statt die Zahl zu erhoehen (und beim naechsten Reiter
+                    // dieselbe Falle zu stellen) wird gar nicht mehr geklemmt.
+                    // Eine Ansicht, die es nicht gibt, faengt der Rueckfall
+                    // unten ab.
+                    if (typeof v.view === "number" && v.view >= 0)
+                        win.view = v.view;
                     if (typeof v.showRuler === "boolean")
                         win.showRuler = v.showRuler;
                     if (typeof v.frosted === "boolean")
@@ -386,6 +399,15 @@ ShellRoot {
                         win.walletEnabled = v.walletEnabled;
                     if (win.view === 4 && !win.walletEnabled)
                         win.view = 0;
+                    // **Und jede andere Ansicht, die es gerade nicht gibt.**
+                    // Dieselbe Pruefung wie in `app/qml/Main.qml`, an
+                    // derselben Art Stelle: einmal, gleich nachdem der Wert
+                    // gesetzt wurde. **Kein `onViewChanged` daneben** -- das
+                    // waere eine Bindungsschleife und liesse `FeedTabs` auf
+                    // der alten Ansicht stehen.
+                    if (tabs.tabViews.length > 0
+                            && tabs.tabViews.indexOf(win.view) < 0)
+                        win.view = tabs.tabViews[0];
                 } catch (e) {}
             }
         }
