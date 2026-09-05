@@ -83,9 +83,25 @@
     <category>Monitor</category>
   </categories>
 
+  <!-- Der Eintrag "0.1" vom 02.09.2026 stand hier, ohne dass je ein Paket
+       daraus geworden waere. Ein Release-Eintrag fuer etwas, das niemand
+       installieren konnte, ist eine Erfindung; darum ersetzt statt ergaenzt. -->
   <releases>
-    <release version="0.1" date="2026-09-02">
-      <description><p>Erste Fassung.</p></description>
+    <release version="0.1.0" date="2026-09-05">
+      <description>
+        <p>Erste Auslieferung.</p>
+        <p>
+          Der Mempool als Kachelgrafik, eine Blockuhr, Kennzahlen zum
+          Schuerfen, ein Blockforscher und die Beobachtung eigener Adressen
+          ohne Schluessel. Dazu der Markt-Reiter mit Kerzen, CVD,
+          Liquidationen und einer Heatmap, die als Schaetzung gekennzeichnet
+          ist.
+        </p>
+        <p>
+          Geprueft auf einem System, das nichts von diesem Projekt weiss:
+          Ubuntu 24.04 ohne Qt 6.6 und ohne Quickshell.
+        </p>
+      </description>
     </release>
   </releases>
 </component>
