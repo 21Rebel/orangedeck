@@ -3008,6 +3008,77 @@ Nachzusehen ist das mit
 
     niri msg windows        # Title und App ID nebeneinander, fuer jedes Fenster
 
+### Die schraege Flaeche auf Android war der Emulator, nicht die Anwendung
+
+Aufgeklaert am 05.09.2026, und der Weg dahin ist die eigentliche Lehre.
+
+**Das Bild.** Auf Android wurde aus der Kachelgrafik ein Dreieck: obere und
+linke Kante vollstaendig, unten rechts entlang einer sauberen Diagonale
+abgeschnitten. Betroffen waren der Block im Feed **und** der geplante Block im
+Explorer -- beide gehen durch `mondrian.js`, also lag der Verdacht auf der
+Packung. Seit dem 04.09. stand das als "Kosmetik Android" auf der Liste der
+offenen Punkte.
+
+**Was es nicht war.** Der Reihe nach ausgeschlossen, jedes Mal mit einem
+Gegenbild:
+
+| Vermutung | Gegenprobe | Ergebnis |
+|---|---|---|
+| Die Fensterproportion | Schreibtisch bei 440x950, derselben logischen Groesse | quadratisch |
+| Die Bildpunktdichte | `QT_SCALE_FACTOR=2.75` auf 1080x2400, exakt die Android-Werte | quadratisch |
+| Die Laufzeit (Packung laeuft sich fest) | Schreibtisch, Zeitreihe ueber vier Minuten | quadratisch |
+| Der Packer selbst | `fits`/`place` gelesen: setzt von unten links, feste Breite | ohne Befund |
+
+**Wie es doch noch aufging.** Auf Android gibt es einen Protokollkanal, der
+funktioniert: `console.warn` landet im Logcat. Die Zahlen von dort sagten
+
+    side=298.7  gridUnits=120  rowsUsed=122  step=2.000  n=3905
+
+also 240 x 244 Bildpunkte -- **rechnerisch ein Quadrat**. Die Geometrie war
+in Ordnung, das Bild nicht. Damit war klar, dass nicht die Packung, sondern
+das Zeichnen abbricht.
+
+Der entscheidende Handgriff war dann ein Rahmen: ganz am Ende von `onPaint`
+ein einzelnes `strokeRect` um die volle Rasterflaeche. **Es erschienen nur
+die obere und die linke Kante.** Ein Rechteck aus einem Aufruf kann nicht zur
+Haelfte ankommen -- es sei denn, die Flaeche selbst wird abgeschnitten. Eine
+Leinwand wird als Rechteck aus **zwei Dreiecken** gezeichnet; hier kam nur
+eines an.
+
+**Die Ursache liegt im Emulator.** Er lief mit `-gpu swiftshader_indirect`,
+also Googles Software-GL. Derselbe Bau auf derselben Maschine mit `-gpu host`
+(Mesa Intel):
+
+    GLES: Google (Intel), Android Emulator OpenGL ES Translator
+          (Mesa Intel(R) Iris(R) Xe Graphics), OpenGL ES 3.0
+
+Rahmen auf allen vier Seiten geschlossen, Kachelflaeche vollstaendig. **Kein
+Fehler in OrangeDeck; echte Geraete mit echter GPU sind nicht betroffen.**
+
+**Daraus zwei Regeln fuer den Pruefstand:**
+
+1. Den Emulator mit `-gpu host` starten. Sonst prueft man den Renderer und
+   nicht die Anwendung:
+
+       ~/Android/sdk/emulator/emulator -avd orangedeck -no-window \
+           -no-audio -no-boot-anim -gpu host
+
+2. Und die allgemeinere: **ein Bild ist ein Messwert wie jeder andere und
+   kann falsch sein.** Vier Vermutungen lang wurde die Anwendung durchsucht,
+   weil das Bild nicht in Frage stand. Der Rahmen war der erste Handgriff,
+   der den Pruefstand selbst gemessen hat -- und der hat sofort getroffen.
+
+### Drehen im Emulator
+
+`settings put system user_rotation 1` genuegt nicht, die Anzeige bleibt bei
+`rotation={0}`. Der Weg, der wirkt, geht ueber die Emulator-Konsole:
+
+    adb emu rotate                      # dreht um 90 Grad
+    adb shell dumpsys window displays | grep -m1 'cur='
+
+Zurueck ins Hochformat dann wieder ueber `settings put system user_rotation 0`.
+Beide Formate sind am 05.09.2026 so geprueft.
+
 ### Was die Pruef-VM nicht kann: einen Zeiger
 
 Stand 05.09.2026, und ausdruecklich eine **offene** Stelle.

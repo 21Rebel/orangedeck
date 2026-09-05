@@ -153,8 +153,13 @@ noch die Einreichung bei Flathub, und die haengt an einem Menschen.**
 3. **Tonsignal bei neuem Block** (Etappe 3, Rest). Braucht QtMultimedia --
    ein weiteres Qt-Modul in allen vier Bauplaenen und im Flatpak. Bewusst
    zurueckgestellt, weil der Nutzen klein und der Eingriff breit ist.
-4. **Kosmetik Android:** der Mempool-Haufen wird auf hohen schmalen Schirmen
-   zu einer schraegen Flaeche statt eines Quadrats.
+4. ~~**Kosmetik Android:** der Mempool-Haufen wird auf hohen schmalen
+   Schirmen zu einer schraegen Flaeche statt eines Quadrats.~~ **Erledigt am
+   05.09.2026 -- es war kein Fehler der Anwendung.** Die Diagonale kam vom
+   Software-Renderer des Emulators (`-gpu swiftshader_indirect`): von der
+   Leinwand kam nur eines ihrer beiden Dreiecke an. Mit `-gpu host`
+   verschwindet sie. Der Weg dorthin steht in der DOKUMENTATION unter "Die
+   schraege Flaeche auf Android war der Emulator".
 5. **Eigener Node als Datenquelle** -- laenger offen, siehe Abschnitt weiter
    unten. Kein Termindruck.
 
