@@ -51,14 +51,42 @@ GitHub-Adresse. Die kommt nach dem Push dran.
 Der alte Eintrag `0.1` vom 02.09. ist **ersetzt, nicht ergaenzt**: ein
 Release-Eintrag fuer etwas, das nie ein Paket wurde, ist eine Erfindung.
 
+### Nachmittag: vier Kleinigkeiten in der Oberflaeche
+
+Am Bild gemeldet, alle vier abgearbeitet. Drei lagen im Code, einer nicht:
+
+| | |
+|---|---|
+| Blockangaben und Legende standen ungleich hoch | jede Seite rechnete ihren Abstand selbst -- jetzt derselbe Wert |
+| Der Farbumschalter lag ohne Untergrund ueber der Halde | eigener Kasten, so breit wie die Knopfreihe wirklich ist |
+| Beim Ziehen am Schieber immer die Kurve, beim Loslassen zurueck zu Kerzen | die Breite der Kerze entscheidet das jetzt, nicht die Vorschau |
+| Der Blur im Fenstermodus war weg | **keine Zeile im Repo** -- siehe unten |
+
+Nebenbefund, gleich mit erledigt: in der Lesart "Art" ist die Legende sieben
+Zeilen laenger und schob den Umschalter in flachen Flaechen bis in die
+Fusszeile. Er endet jetzt spaetestens am unteren Rand der Halde.
+
+**Der Blur war eine Regel, die ins Leere zeigte.** niri suchte
+`match title="^Bitcoin Feed$"`; das Fenster heisst seit der Umbenennung
+`OrangeDeck`. Im Dashboard blieb der Blur, weil das als Layer-Flaeche unter
+`org.quickshell` laeuft und eine andere Regel es deckt -- daher der
+Eindruck, die Anwendung habe etwas verloren. Der Titel ist Anzeigetext; die
+`app_id` ist die Kennung. Die Regel geht jetzt darueber, und wie man sie
+anlegt, steht in `packaging/compositor/README.md`.
+
+Das ist **dieselbe Klasse wie der festgenagelte Commit von heute frueh**:
+nicht ein Pruefer, der falsch meldet, sondern einer, der an der
+entscheidenden Stelle nicht hinsieht.
+
 ### Was jetzt an dir haengt
 
-    git tag -a v0.1.0 0fbad4a -m "erste Auslieferung"
+    git tag -a v0.1.0 f5c34704d1105fedc64a1ed5234a6f46a2d958d8 -m "erste Auslieferung"
     git push origin main v0.1.0
 
-Der Tag sitzt auf `0fbad4a` (den Metadaten), **nicht** auf `c7d1cdc` (dem
-Bauplan, der darauf zeigt): gebaut wird der Tag, und der Bauplan selbst steckt
-nicht im Paket.
+Der Tag sitzt auf dem Stand, auf den der `commit:` im Bauplan zeigt --
+nachgezogen, nachdem die vier Korrekturen dazugekommen waren. **Kommen vor
+dem Tag noch Commits dazu, muss beides wieder mitwandern**; das ist die
+Stelle, die von nichts nachgeprueft wird.
 
 Danach einmal gegen die echte Adresse gegenpruefen -- der Befehl steht in
 `packaging/flathub/EINREICHEN.md` -- und dann der Pull Request gegen
