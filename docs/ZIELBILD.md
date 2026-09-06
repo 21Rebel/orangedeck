@@ -8,7 +8,7 @@ Vorgaben aus dem Gespraech vom 01.09.:
 - Alle vier Funktionsgruppen: Explorer, Desktop-Anbindung, eigene Adressen,
   Solo-Mining (Bitaxe). **Jede einzeln ueber die Einstellungen abschaltbar.**
 - Lauffaehig auf **beliebigem Linux-Desktop**, ohne DMS und ohne Quickshell.
-- **Android-Tablet als BlockClock** angedacht.
+- **Android-Tablet als Blockuhr** angedacht.
 - Datenquelle **umschaltbar**: mempool.space oder eigener Node.
 
 ## Die Messung, die die Fork-Frage entscheidet
@@ -46,7 +46,7 @@ Was ein Client-Fork von den fuenf gewuenschten Funktionen brachte:
 | Desktop-Anbindung (Leiste, Kacheln, Benachrichtigungen) | nein, geht nur in QML |
 | Eigene Adressen / Wallet | nein, gibt es dort auch nicht |
 | Bitaxe / Solo-Mining | nein, gibt es dort auch nicht |
-| Android-BlockClock | teils — als Website ueber den Browser |
+| Android-Blockuhr | teils — als Website ueber den Browser |
 
 Eine von fuenf, und ausgerechnet die, die im Kern aus HTTP-Abfragen und
 Listenansichten besteht statt aus Grafik. Dagegen stehen: ein Browser-Motor auf
@@ -77,7 +77,7 @@ austauschbaren Quellen. Alle Quellen sind einzeln abschaltbar.
     source_bitfeed   optional, Elixir-Server, nur fuer Abgangsereignisse
     source_bitaxe    HTTP gegen den Bitaxe: Hashrate, Best-Difficulty
     source_watch     Adressen/xpub ueber electrs
-    source_price     Kurs fuer Fiat-Umrechnung und BlockClock
+    source_price     Kurs fuer Fiat-Umrechnung und Blockuhr
 
 Ausgabe auf **zwei Wegen**:
 - `state.json` in `$XDG_RUNTIME_DIR/orangedeck/` — wie heute, lokal, tmpfs
@@ -108,7 +108,7 @@ Neue Ansichten, jede ueber die Einstellungen abschaltbar:
                    keine neue Grafik, also billig
     MinerView      Bitaxe: Hashrate, Best-Difficulty gegen Netzschwierigkeit,
                    Alarm beim Blockfund
-    ClockView      BlockClock: Hoehe, Gebuehren, Kurs, Halving-Countdown --
+    ClockView      Blockuhr: Hoehe, Gebuehren, Kurs, Halving-Countdown --
                    gross, ohne Bedienung
 
 Eine Einstellungsdatei, die auf allen drei Zielen gilt.
@@ -194,7 +194,7 @@ Gemessene Beispielwerte: Hashrate rund 919 EH/s; Schwierigkeitsanpassung bei
 69 % Fortschritt, +1,40 %, 625 Bloecke bis Hoehe 965.664.
 
 Damit sind Hashrate-Verlauf, Schwierigkeitsanpassung mit Countdown und
-Gebuehrenverlauf ohne Node darstellbar. Sie speisen zugleich die BlockClock
+Gebuehrenverlauf ohne Node darstellbar. Sie speisen zugleich die Blockuhr
 und die MinerView (Best-Difficulty des Bitaxe gegen die Netzschwierigkeit).
 
 ## Andere Ebenen: Liquid, Lightning, Ark — 01.09.2026 geprueft
@@ -469,5 +469,5 @@ Transaktion -> Ausgang -> naechste Transaktion.
 **Aufwandsschaetzung, ehrlich:** die Eingabeerkennung ist geschenkt und die
 Datenwege sind geklaert -- das nimmt dem Vorhaben das Ungewisse. Der Rumpf der
 Arbeit bleibt aber die Oberflaeche in QML: Suchfeld, Detailtafel mit Ein- und
-Ausgaengen, Blockhistorie, Adressansicht. Das ist mehr als BlockClock und
+Ausgaengen, Blockhistorie, Adressansicht. Das ist mehr als eine Blockuhr und
 Miner-Ansicht zusammen.

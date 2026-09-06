@@ -40,9 +40,15 @@ var NAMES = {
 var S = {
     // ---------------------------------------------------------- Ansichten
     "tab.feed": ["Feed", "Feed", "Feed", "Flux", "Feed", "Feed", "Feed", "Лента", "フィード", "动态", "Feed", "Kanał", "Kanál"],
-    // **Nicht "BlockClock"**: das ist ein Produktname von Coinkite
-    // (BlockClock Mini/Micro). Als Reitername waere er verwechselbar --
-    // das schlichte Wort fuer Uhr ist niemandes Marke.
+    // **Der Reiter heisst schlicht "Uhr".** Der naheliegende Name ist ein
+    // angemeldetes Zeichen von Coinkite (USPTO 90900261 und 97080272, dazu
+    // CIPO 2135649), gefuehrt mit (R) fuer Anzeigegeraete, die Kurs,
+    // Blockhoehe und Moscow Time zeigen -- also fuer genau das, was diese
+    // Ansicht tut. Am 06.09.2026 nachgeschlagen und daraufhin auch aus
+    // Metadaten, Antragstext und Seite entfernt.
+    //
+    // Das schlichte Wort fuer Uhr ist niemandes Marke, und "Blockhoehe" ist
+    // die Bezeichnung, die Coinkite selbst zum Beschreiben benutzt.
     "tab.clock": ["Uhr", "Clock", "Reloj", "Horloge", "Orologio", "Relógio", "Klok", "Часы", "時計", "时钟", "Relógio", "Zegar", "Hodiny"],
     "tab.miner": ["Miner", "Miner", "Minero", "Mineur", "Miner", "Minerador", "Miner", "Майнер", "マイナー", "矿机", "Minerador", "Koparka", "Těžař"],
     "tab.explorer": ["Explorer", "Explorer", "Explorador", "Explorateur", "Explorer", "Explorador", "Verkenner", "Обозреватель", "エクスプローラ", "浏览器", "Explorador", "Eksplorator", "Průzkumník"],

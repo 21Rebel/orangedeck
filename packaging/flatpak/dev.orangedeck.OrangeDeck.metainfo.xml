@@ -108,8 +108,8 @@
         <p>First release.</p>
         <p xml:lang="de">Erste Auslieferung.</p>
         <p>
-          The mempool as a tile mosaic, a block clock, mining figures, a block
-          explorer and a watch-only view of your own addresses. Alongside them
+          The mempool as a tile mosaic, a block height clock, mining figures, a
+          block explorer and a watch-only view of your own addresses. Alongside
           the market tab with candles, CVD, liquidations and a heatmap that is
           marked as an estimate.
         </p>

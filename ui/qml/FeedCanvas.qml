@@ -251,7 +251,12 @@ Item {
     onHeightChanged: clampView()
     property var mining: []             // Kacheln auf dem Weg in den Block
     property string blockPhase: "idle"  // idle | ice | fly
-    property real blockClock: 0
+    // Zeitgeber der Blockanimation. Hiess bis zum 06.09.2026 `blockClock` --
+    // umbenannt, weil BLOCKCLOCK ein angemeldetes Zeichen von Coinkite ist
+    // und der Name im Projekt nirgends mehr vorkommen soll, auch nicht dort,
+    // wo ihn niemand sieht. Ein Name, den man aus einem Grund vermeidet,
+    // vermeidet man ganz.
+    property real blockTakt: 0
     property bool blockRevealed: true
     property real blockFade: 0
     property real levelClock: 0
@@ -498,7 +503,7 @@ Item {
     function startBlockAnimation() {
         blockRevealed = false;
         blockPhase = "ice";
-        blockClock = 0;
+        blockTakt = 0;
         blockPulse = 1;
         mining = [];
 
@@ -591,13 +596,13 @@ Item {
     function stepBlockAnimation(dt) {
         if (blockPhase === "idle")
             return false;
-        blockClock += dt;
+        blockTakt += dt;
         var i, m, u;
 
         if (blockPhase === "ice") {
             for (i = 0; i < mining.length; i++) {
                 m = mining[i];
-                u = blockClock - m.delay;
+                u = blockTakt - m.delay;
                 if (u <= 0)
                     continue;
                 m.white = Math.min(1, u / 0.35);
@@ -605,10 +610,10 @@ Item {
                 m.s = m.s0 * (1 + 0.25 * p);
             }
             var ready = blockCanvas.forHeight === (feed ? feed.tipHeight : 0) && blockCanvas.squares.length > 0;
-            if (blockClock > 3 && ready && assignBlockTargets()) {
+            if (blockTakt > 3 && ready && assignBlockTargets()) {
                 blockPhase = "fly";
-                blockClock = 0;
-            } else if (blockClock > 20) {
+                blockTakt = 0;
+            } else if (blockTakt > 20) {
                 finishBlockAnimation();
             }
             return true;
@@ -618,7 +623,7 @@ Item {
             var pending = false;
             for (i = 0; i < mining.length; i++) {
                 m = mining[i];
-                u = (blockClock - m.flyDelay) / 1.2;
+                u = (blockTakt - m.flyDelay) / 1.2;
                 if (u < 1)
                     pending = true;
                 u = u < 0 ? 0 : (u > 1 ? 1 : u);
@@ -630,14 +635,14 @@ Item {
             }
             if (!pending) {
                 blockPhase = "settle";
-                blockClock = 0;
+                blockTakt = 0;
             }
             return true;
         }
 
         // settle: der fertige Block faerbt sich von Weiss nach Orange
-        blockFade = Math.min(1, blockClock / 0.9);
-        if (blockClock > 1.15)
+        blockFade = Math.min(1, blockTakt / 0.9);
+        if (blockTakt > 1.15)
             finishBlockAnimation();
         return true;
     }

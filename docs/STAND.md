@@ -1190,7 +1190,7 @@ gesetzt, global steht weiter der Klarname.
 
 ### Was heute dazugekommen ist
 
-- **Kursverlauf** in der BlockClock: sechs Zeitraeume von 24 Stunden bis Max,
+- **Kursverlauf** in der Blockuhr: sechs Zeitraeume von 24 Stunden bis Max,
   Daten von mempool.space, im Dienst auf 360 Punkte ausgeduennt (16 Jahre in
   7,5 kB statt 1,5 MB). Laeuft auch im Direktbezug.
 - **Markt-Reiter** (neu, der siebte): Kerzen aus den Live-Trades von Binance
@@ -1200,7 +1200,7 @@ gesetzt, global steht weiter der Klarname.
   Vergangenheit ueber Schieber, Ziehen oder "01.01.2021..31.03.2021".
 - **Alle Ansichten stehen jetzt einmal** in `ui/qml/FeedTabs.qml`. Vorher
   verdrahteten fuenf Wirte sie einzeln; genau daran fehlte der Wallet-Ansicht
-  ihre Sprache und der BlockClock der Kursverlauf.
+  ihre Sprache und der Blockuhr der Kursverlauf.
 - **Jeder Reiter laesst sich abschalten** -- der Schalter steht im
   Einstellungsabschnitt des jeweiligen Reiters. Die Einstellungen selbst
   bleiben immer sichtbar.
@@ -1360,7 +1360,7 @@ Push wird abgelehnt. Der Zugangshelfer im Repo loest das, siehe oben.
 
 ### Was heute dazugekommen ist
 
-- **Blockclock**: welcher Wert gross steht, ist waehlbar (Blockhoehe, Kurs,
+- **Blockuhr**: welcher Wert gross steht, ist waehlbar (Blockhoehe, Kurs,
   Moscow Time, Gebuehr, Hashrate, Mempool, Uhrzeit) und wechselt reihum.
 - **Widgets**: jede Ansicht laesst sich einzeln auf den Desktop legen -- in
   DMS ueber die Plugin-Einstellungen, ueberall sonst mit `--layer` (Anleitung
@@ -1653,7 +1653,7 @@ labwc):
     --view <0-5>   --bare   --id <name>
 
 Nachgewiesen im Bild: drei Flaechen gleichzeitig auf einem Compositor --
-Miner links oben, Blockclock rechts oben, Feed als Leiste unten, jede mit
+Miner links oben, Blockuhr rechts oben, Feed als Leiste unten, jede mit
 eigener Ansicht.
 
 Drei Dinge, die dabei zu lernen waren:
@@ -1700,12 +1700,12 @@ Fassung aussehen":
 
 **Jeder Tab laesst sich einzeln auf den Desktop legen.** Das DMS-Widget
 (`shell/dms/OrangeDeckDesktop.qml`) kennt jetzt eine Einstellung
-`widgetView` -- Feed, Blockclock, Miner oder Explorer. DMS gibt jeder
+`widgetView` -- Feed, Blockuhr, Miner oder Explorer. DMS gibt jeder
 Instanz eines Desktop-Widgets einen **eigenen** Einstellungsspeicher
 (`instanceId` + instanzgebundener `pluginService`), also kann man vier
 Widgets nebeneinander legen, jedes mit einer anderen Ansicht.
 
-**Blockclock: welcher Wert gross steht, ist waehlbar** -- Blockhoehe, Kurs,
+**Blockuhr: welcher Wert gross steht, ist waehlbar** -- Blockhoehe, Kurs,
 Moscow Time, Gebuehr, Hashrate, Mempool oder Uhrzeit, mehrere zugleich. Sind
 mehrere gewaehlt, wechselt die Anzeige reihum; das Intervall steht in den
 Einstellungen (aus / 5 / 10 / 30 / 60 s). Der gerade grosse Wert faellt aus
@@ -1796,7 +1796,7 @@ fuenf davon weg. Umgerechnet wird jetzt an einer Stelle (`money.js`).
 
 Ein- und ausblendbar ist praktisch alles: im Feed Kopf-, Fusszeile,
 Blockangaben, Kachelgrafik, Legende, Trennlinie und Weichzeichnung; in der
-BlockClock fuenf Kennzahlen einzeln plus Balken, Kurve und **Uhrzeit**; beim
+Blockuhr fuenf Kennzahlen einzeln plus Balken, Kurve und **Uhrzeit**; beim
 Miner sechs Kennzahlen plus Kurve, Rechenwerke und Bestenliste; im Explorer
 fuenf Abschnitte der Startseite und die vier Tafeln einzeln.
 
@@ -1837,7 +1837,7 @@ und als Kerbe im Band statt als angesetztes Dreieck.
 Wallet-Ansicht ist **zugesperrt** und erscheint erst nach einer Warnung, die
 gelesen und bestaetigt werden muss.
 
-**BlockClock:** Kennzahlen einzeln waehlbar, Waehrung Euro oder Dollar, und
+**Blockuhr:** Kennzahlen einzeln waehlbar, Waehrung Euro oder Dollar, und
 **Moscow Time** ist dazugekommen.
 
 ### Was aus diesem Durchgang offen geblieben ist
@@ -1985,7 +1985,7 @@ Mechanik und Stolperfallen stehen in `DOKUMENTATION.md`, das Zielbild in
 **Vier Ansichten** (Tabs oder Tasten 1-4)
 - **Feed** -- Halde und Block wie bitfeed, mit Zoom (Rad, Zusammenziehen,
   Ziehen), Tooltip, Klick auf eine Kachel fuehrt in den Explorer.
-- **BlockClock** -- Blockhoehe gross, Gebuehr, Kurs, Mempool, Hashrate,
+- **Blockuhr** -- Blockhoehe gross, Gebuehr, Kurs, Mempool, Hashrate,
   Schwierigkeit mit Countdown, Halving.
 - **Miner** -- AxeOS und cgminer, mehrere Geraete, Verlaufskurve, Bestenliste,
   Rechenwerke; Suche im eigenen Netz per `orangedeck --discover-miners`.
@@ -2223,7 +2223,7 @@ abschaltbar**:
    Netzschwierigkeit, Alarm beim Blockfund. Siehe [[bitaxe-gamma-601]].
 
 Dazu neu und richtungsweisend: **Android-App, um ein beliebiges Tablet zur
-BlockClock zu machen.** Das erzwingt eine Client-Server-Trennung — der Daemon
+Blockuhr zu machen.** Das erzwingt eine Client-Server-Trennung — der Daemon
 muss eine Netzwerkschnittstelle bekommen, das Tablet hat keinen lokalen.
 
 Ebenfalls festgelegt: Zielplattform ist **jeder Linux-Desktop**, nicht nur

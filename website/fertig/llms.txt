@@ -1,8 +1,8 @@
 # OrangeDeck
 
-> The Bitcoin mempool as a living tile mosaic, plus block clock, Bitaxe figures and block explorer. For Linux, Windows, macOS and Android. MIT, no account.
+> The Bitcoin mempool as a living tile mosaic, plus a block height clock, Bitaxe figures and a block explorer. Linux, Windows, macOS, Android. MIT.
 
-OrangeDeck is a free desktop and Android application that draws the Bitcoin mempool as a living tile mosaic. It combines six views in one window: mempool feed, block clock, Bitaxe figures, block explorer, watch-only addresses and market data. It runs on Linux, Windows, macOS and Android, is MIT licensed and requires no account.
+OrangeDeck is a free desktop and Android application that draws the Bitcoin mempool as a living tile mosaic. It combines six views in one window: mempool feed, block height clock, Bitaxe figures, block explorer, watch-only addresses and market data. It runs on Linux, Windows, macOS and Android, is MIT licensed and requires no account.
 
 ## Six views
 
