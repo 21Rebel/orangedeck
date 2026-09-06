@@ -20,12 +20,11 @@ onto a heap as a tile mosaic, confirmed ones fly into the block. It also has a
 block clock, mining figures, a block explorer and watch-only address tracking.
 
 - Upstream: https://github.com/21Rebel/orangedeck
-- Tag submitted: `v0.1.1` (the manifest pins the commit, not a branch)
+- Tag: `v0.2.0` (the manifest pins the commit, not a branch)
 - License: MIT
 
 **About the app ID.** `dev.orangedeck.OrangeDeck` is the reverse of the domain
-`21rebel.store`, which I own. The leading underscore follows Flathub's own
-rule for segments starting with a digit.
+`orangedeck.dev`, which I own and which serves the project's page.
 
 **Third-party code.** `mondrian.js` and `colors.js` are ported from bitfeed
 (MIT, mononaut). The repository carries `LICENSE-bitfeed` and `NOTICE.md`.
@@ -41,6 +40,13 @@ newer runtime. The bundle has been run on a machine that knows nothing about
 the project (Ubuntu 24.04, no Qt 6.6, no Quickshell).
 
 ---
+
+## Falle: `--body-file` zeigt nicht auf diese Datei
+
+Diese Datei ist die **Vorlage**, nicht der Antragstext -- sie traegt deutsche
+Ueberschriften, den Weg mit `gh` und diesen Hinweis. Wer sie als
+`--body-file` uebergibt, reicht das alles mit ein. Der englische Abschnitt
+unter "## Text" wird vorher herausgeschnitten.
 
 ## Vor dem Absenden
 
@@ -62,6 +68,8 @@ angemeldet, ohne Push-Recht auf das Projekt.
     git add dev.orangedeck.OrangeDeck.yml
     git commit -m "Add dev.orangedeck.OrangeDeck (OrangeDeck)"
     git push -u origin dev.orangedeck.OrangeDeck
+    # Nur den Abschnitt "## Text" herausschneiden -- siehe die Falle oben.
+    awk '/^## Text$/{an=1;next} /^---$/{an=0} an' PR-TEXT.md > /tmp/pr-body.md
     gh pr create --repo flathub/flathub --base new-pr \
         --title "Add dev.orangedeck.OrangeDeck (OrangeDeck)" \
-        --body-file ~/Schreibtisch/orangedeck/packaging/flathub/PR-TEXT.md
+        --body-file /tmp/pr-body.md
