@@ -10,3 +10,5 @@ __pycache__/
 # Baulog von aqtinstall (Android-Werkzeugkette)
 aqtinstall.log
 build-openssl-android/
+# Buendel zum Pruefen auf fremden Systemen, nicht ins Repo
+*.flatpak

@@ -2,7 +2,16 @@
 <component type="desktop-application">
   <id>dev.orangedeck.OrangeDeck</id>
   <name>OrangeDeck</name>
-  <summary>Live-Ansicht des Bitcoin-Mempools</summary>
+  <!-- **Ohne `xml:lang` ist der Text die Vorgabe**, und die liest AppStream als
+       C-Gebietsschema, also Englisch. Hier stand Deutsch ohne Marke: jeder
+       Besucher von Flathub, dessen Sprache nicht Deutsch ist, haette den
+       deutschen Satz als englischen serviert bekommen. Der Linter sieht das
+       nicht; er zaehlt keine Sprachen.
+
+       Kein doppelter Bindestrich in diesem Kommentar: XML verbietet ihn, und
+       appstreamcli bricht daran ab. Genau hier passiert, beim ersten Anlauf. -->
+  <summary>Live view of the Bitcoin mempool</summary>
+  <summary xml:lang="de">Live-Ansicht des Bitcoin-Mempools</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
   <developer id="dev.21rebel">
@@ -11,12 +20,23 @@
 
   <description>
     <p>
+      The Bitcoin mempool as a living tile mosaic: waiting transactions fall
+      onto a heap, confirmed ones fly into the block. Alongside it a block
+      clock, mining figures, a block explorer to leaf through and a
+      watch-only view of your own addresses.
+    </p>
+    <p xml:lang="de">
       Der Bitcoin-Mempool als lebendige Kachelgrafik: wartende Transaktionen
       fallen auf die Halde, bestaetigte fliegen in den Block. Dazu eine
       Blockuhr, Kennzahlen zum Schuerfen, ein Blockforscher zum
       Durchblaettern und eine Beobachtung eigener Adressen ohne Schluessel.
     </p>
     <p>
+      The application is a viewer and nothing else. It holds no private key,
+      cannot sign, and ships no library that could. There is no server of its
+      own, no counting, no crash reports and no account.
+    </p>
+    <p xml:lang="de">
       Die Anwendung ist ein reiner Betrachter. Sie kennt keinen privaten
       Schluessel, kann nicht unterschreiben und traegt keine Bibliothek mit,
       die das koennte. Es gibt keinen eigenen Server, keine Zaehlung, keine
@@ -41,33 +61,28 @@
   <screenshots>
     <screenshot type="default">
       <image>https://raw.githubusercontent.com/21Rebel/orangedeck/main/packaging/flatpak/screenshots/feed.png</image>
-      <caption>Der Mempool als lebendige Kachelgrafik</caption>
+      <caption>The mempool as a living tile graphic</caption>
       <caption xml:lang="de">Der Mempool als lebendige Kachelgrafik</caption>
-      <caption xml:lang="en">The mempool as a living tile graphic</caption>
     </screenshot>
     <screenshot>
       <image>https://raw.githubusercontent.com/21Rebel/orangedeck/main/packaging/flatpak/screenshots/uhr.png</image>
-      <caption>Blockhöhe gross, Kennzahlen und Kursverlauf</caption>
+      <caption>Block height large, metrics and price history</caption>
       <caption xml:lang="de">Blockhöhe gross, Kennzahlen und Kursverlauf</caption>
-      <caption xml:lang="en">Block height large, metrics and price history</caption>
     </screenshot>
     <screenshot>
       <image>https://raw.githubusercontent.com/21Rebel/orangedeck/main/packaging/flatpak/screenshots/explorer.png</image>
-      <caption>Blockforscher mit Suche und Kachelgrafik</caption>
+      <caption>Block explorer with search and tile graphic</caption>
       <caption xml:lang="de">Blockforscher mit Suche und Kachelgrafik</caption>
-      <caption xml:lang="en">Block explorer with search and tile graphic</caption>
     </screenshot>
     <screenshot>
       <image>https://raw.githubusercontent.com/21Rebel/orangedeck/main/packaging/flatpak/screenshots/markt.png</image>
-      <caption>Kerzen aus den Trades von Binance und Bybit</caption>
+      <caption>Candles from Binance and Bybit trades</caption>
       <caption xml:lang="de">Kerzen aus den Trades von Binance und Bybit</caption>
-      <caption xml:lang="en">Candles from Binance and Bybit trades</caption>
     </screenshot>
     <screenshot>
       <image>https://raw.githubusercontent.com/21Rebel/orangedeck/main/packaging/flatpak/screenshots/heatmap.png</image>
-      <caption>Wo Positionen liegen würden — als Schätzung gekennzeichnet</caption>
+      <caption>Where positions would sit — marked as an estimate</caption>
       <caption xml:lang="de">Wo Positionen liegen würden — als Schätzung gekennzeichnet</caption>
-      <caption xml:lang="en">Where positions would sit — marked as an estimate</caption>
     </screenshot>
   </screenshots>
 
@@ -90,8 +105,15 @@
   <releases>
     <release version="0.2.0" date="2026-09-06">
       <description>
-        <p>Erste Auslieferung.</p>
+        <p>First release.</p>
+        <p xml:lang="de">Erste Auslieferung.</p>
         <p>
+          The mempool as a tile mosaic, a block clock, mining figures, a block
+          explorer and a watch-only view of your own addresses. Alongside them
+          the market tab with candles, CVD, liquidations and a heatmap that is
+          marked as an estimate.
+        </p>
+        <p xml:lang="de">
           Der Mempool als Kachelgrafik, eine Blockuhr, Kennzahlen zum
           Schuerfen, ein Blockforscher und die Beobachtung eigener Adressen
           ohne Schluessel. Dazu der Markt-Reiter mit Kerzen, CVD,
@@ -99,21 +121,39 @@
           ist.
         </p>
         <p>
+          A new application icon: the block, packed from unequal squares, the
+          way the application draws it on screen.
+        </p>
+        <p xml:lang="de">
           Neues Anwendungssymbol: der Block, gepackt aus ungleichen Quadraten,
           wie die Anwendung ihn auch auf den Schirm zeichnet.
         </p>
         <p>
+          Its own identifier under the domain orangedeck.dev. It is the same
+          on every system; the Android package had to carry a different one
+          before.
+        </p>
+        <p xml:lang="de">
           Eigene Kennung unter der Domain orangedeck.dev. Sie gilt auf allen
           Systemen gleich; das Android-Paket trug vorher notgedrungen eine
           andere.
         </p>
         <p>
+          The tabs can be ordered: every position carries a picker, and
+          whoever never needs a view takes it out of the row entirely. Both
+          sit with the start view on a page of their own in the settings.
+        </p>
+        <p xml:lang="de">
           Die Reiter lassen sich ordnen: jede Position traegt ein
           Auswahlfeld, und wer eine Ansicht nie braucht, nimmt sie ganz aus
           der Reihe. Beides steht mit der Startansicht auf einer eigenen
           Seite in den Einstellungen.
         </p>
         <p>
+          Tested on a system that knows nothing of this project: Ubuntu 24.04
+          without Qt 6.6 and without Quickshell.
+        </p>
+        <p xml:lang="de">
           Geprueft auf einem System, das nichts von diesem Projekt weiss:
           Ubuntu 24.04 ohne Qt 6.6 und ohne Quickshell.
         </p>
