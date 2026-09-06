@@ -165,5 +165,38 @@
   "fuss_cta": "Ausprobieren",
   "fuss_herkunft": "Kachelpackung und Farbmodell aus bitfeed portiert (MIT, mononaut).",
   "fuss_lizenz": "OrangeDeck steht unter der MIT-Lizenz.",
-  "sprache_waehlen": "Sprache"
+  "sprache_waehlen": "Sprache",
+  "live": {
+    "reiter": [
+      "Feed",
+      "Uhr",
+      "Miner",
+      "Explorer",
+      "Markt",
+      "Wallet"
+    ],
+    "live": "LIVE",
+    "beispiel": "BEISPIEL",
+    "beispielHinweis": "Kein fremder Schürfer und keine fremde Wallet lassen sich von hier aus abfragen. Diese beiden Ansichten zeigen deshalb erfundene Zahlen — die Anwendung zeigt Ihre eigenen.",
+    "quelle": "Live aus dem Mempool",
+    "block": "Block",
+    "vorMin": "vor {0} Min",
+    "gebuehr": "Gebühr",
+    "kurs": "Kurs",
+    "mempool": "Mempool",
+    "hashrate": "Hashrate",
+    "moscow": "Moscow Time",
+    "schwierigkeit": "Schwierigkeit",
+    "halving": "Halving",
+    "bloecke": "Blöcke",
+    "txn": "Transaktionen",
+    "beste": "Beste Freigabe",
+    "temperatur": "Temperatur",
+    "leistung": "Leistung",
+    "guthaben": "Guthaben",
+    "adressen": "Adressen",
+    "unbestaetigt": "unbestätigt",
+    "gerechnet": "aus der Schwierigkeit gerechnet",
+    "verbindet": "verbindet …"
+  }
 }

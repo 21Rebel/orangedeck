@@ -106,10 +106,13 @@ def seite(d, alle):
   </header>
 
   <section class="schau">
-    <div class="bilder">
-      <img src="../bilder/feed.png" alt="Feed" loading="lazy">
-      <img src="../bilder/uhr.png" alt="Clock" loading="lazy">
-      <img src="../bilder/markt.png" alt="Market" loading="lazy">
+    <!-- **Das Standbild steht darunter, nicht daneben.** `live.js` blendet es
+         aus, sobald es laeuft; ohne JavaScript, ohne Netz und bei
+         `prefers-reduced-motion` bleibt es liegen. Eine Seite, deren
+         Herzstueck ein leeres Loch ist, waere schlechter als eine mit einem
+         Bild -- und ein Pruefer wie ein Crawler sieht genau das zuerst. -->
+    <div id="live" class="live">
+      <img class="live-standbild" src="../bilder/feed.png" alt="%(feed_alt)s">
     </div>
   </section>
 
@@ -156,6 +159,10 @@ def seite(d, alle):
     <nav class="sprachen">%(wahl_lang)s</nav>
   </footer>
 </div>
+<script>window.ORANGEDECK_LIVE = %(live_json)s;</script>
+<script src="../mondrian.js"></script>
+<script src="../colors.js"></script>
+<script src="../live.js" defer></script>
 </body>
 </html>
 """ % {"code": d["code"], "richtung": d["richtung"], "titel": e(d["titel"]),
@@ -172,10 +179,39 @@ def seite(d, alle):
        "fuss_cta": e(d["fuss_cta"]), "fuss_lizenz": e(d["fuss_lizenz"]),
        "fuss_herkunft": e(d["fuss_herkunft"]), "repo": e(d["repo"]),
        "sprache_waehlen": e(d["sprache_waehlen"]),
+       # Die Beschriftungen des bewegten Kopfes gehen als JSON hinein --
+       # `live.js` traegt selbst keinen Text, sonst waere es die vierzehnte
+       # Sprachdatei.
+       "live_json": json.dumps(d.get("live", {}), ensure_ascii=False,
+                               separators=(",", ":")),
+       "feed_alt": e(d["ansichten"][0][1]),
        "alternativen": "\n".join(
            '<link rel="alternate" hreflang="%s" href="https://orangedeck.dev/%s/">'
            % (a["code"], a["code"]) for a in alle)
        + '\n<link rel="alternate" hreflang="x-default" href="https://orangedeck.dev/en/">'}
+
+
+def geteilt(quelle, ziel):
+    """`ui/qml/*.js` unveraendert uebernehmen, ohne die QML-Zeile.
+
+    **Nicht nachgebaut, sondern dieselbe Datei.** `mondrian.js` setzt die
+    Kacheln und `colors.js` faerbt sie -- in der Anwendung wie auf der Seite.
+    Ein Nachbau waere im ersten Monat gleich und im dritten anders, und dann
+    zeigt die Seite eine Packung, die es nirgends gibt.
+
+    Herausfallen muss allein `.pragma library`: das ist eine Anweisung an die
+    QML-Maschine und in einem Browser ein Syntaxfehler -- die Datei bricht
+    dann stillschweigend ab, und `MondrianLayout` gibt es nicht. Der Rest ist
+    gewoehnliches JavaScript; in einem klassischen <script> werden die
+    Funktionen zu globalen Namen, genau wie `live.js` sie erwartet.
+    """
+    text = quelle.read_text(encoding="utf-8")
+    ohne = "\n".join(z for z in text.splitlines()
+                     if z.strip() != ".pragma library")
+    kopf = ("// Uebernommen aus ui/qml/%s durch tools/website.py.\n"
+            "// Nicht hier bearbeiten -- die Quelle liegt in der Anwendung.\n"
+            % quelle.name)
+    ziel.write_text(kopf + ohne + "\n", encoding="utf-8")
 
 
 def weiche(alle):
@@ -237,9 +273,13 @@ def main():
     if tun:
         (ZIEL / "index.html").write_text(weiche(alle), encoding="utf-8")
         shutil.copy2(QUELLE / "stil.css", ZIEL / "stil.css")
+        shutil.copy2(QUELLE / "live.js", ZIEL / "live.js")
         shutil.copytree(QUELLE / "bilder", ZIEL / "bilder")
+        for name in ("mondrian.js", "colors.js"):
+            geteilt(WURZEL / "ui" / "qml" / name, ZIEL / name)
     print("  %s website/fertig/index.html (Sprachweiche)" % ("schreibe" if tun else "wuerde"))
-    print("  %s stil.css und bilder/" % ("kopiere" if tun else "wuerde kopieren"))
+    print("  %s stil.css, live.js, bilder/ und die zwei geteilten Bausteine"
+          % ("kopiere" if tun else "wuerde kopieren"))
     print("\n%d Sprachen: %s" % (len(alle), ", ".join(a["code"] for a in alle)))
 
 

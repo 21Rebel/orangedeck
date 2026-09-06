@@ -104,3 +104,72 @@ footer .klein { margin-bottom: 0.3rem; font-size: 0.86rem; }
   .nav { display: none; }
   .kopf .sprachen { margin-left: auto; }
 }
+
+/* ---- Der bewegte Kopf (live.js) ---------------------------------------- */
+/* **Das Standbild ist die Grundlage, nicht der Ersatz.** Es steht im Markup
+   und wird erst weggenommen, wenn `live.js` wirklich laeuft -- ohne Skript,
+   ohne Netz und bei prefers-reduced-motion bleibt es liegen. */
+.live { position: relative; border: 1px solid var(--linie); border-radius: 12px; overflow: hidden; background: var(--grund-hell); }
+.live-standbild { width: 100%; display: block; }
+.live.laeuft { aspect-ratio: 16 / 9; }
+.live.laeuft .live-standbild { display: none; }
+
+.live-reiter { display: flex; gap: 1.3rem; padding: 0.75rem 1rem 0; flex-wrap: wrap; }
+.live-reiter-knopf {
+  background: none; border: 0; padding: 0.2rem 0; cursor: pointer;
+  color: var(--gedaempft); font: inherit; font-size: 0.88rem;
+  border-bottom: 2px solid transparent;
+}
+.live-reiter-knopf:hover { color: var(--schrift); }
+.live-reiter-knopf.an { color: var(--schrift); font-weight: 600; border-bottom-color: var(--orange); }
+
+.live-buehne { position: relative; height: calc(100% - 2.6rem); }
+.live-seite {
+  position: absolute; inset: 0; padding: 1rem;
+  display: none; flex-direction: column; gap: 0.5rem;
+}
+.live-seite.an { display: flex; animation: live-auf 0.45s ease-out; }
+@keyframes live-auf { from { opacity: 0; } to { opacity: 1; } }
+
+.live-leinwand { flex: 1; width: 100%; min-height: 0; }
+.live-linie { height: 62%; width: 100%; margin-top: auto; }
+
+.live-gross { font-size: clamp(2rem, 6vw, 3.4rem); line-height: 1.05; letter-spacing: -0.02em; }
+.live-orange { color: var(--orange); }
+.live-unter { color: var(--gedaempft); font-size: 0.86rem; margin-top: -0.3rem; }
+
+.live-gitter { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); gap: 0.7rem 1.4rem; margin-top: auto; }
+.live-feld-name { color: var(--gedaempft); font-size: 0.78rem; }
+.live-feld-wert { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+
+.live-balken { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); overflow: hidden; }
+.live-balken-fuell { height: 100%; background: var(--orange); }
+.live-balken-text { color: var(--gedaempft); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+
+.live-kopf { display: flex; align-items: center; gap: 0.7rem; }
+.live-kopf-name { color: var(--gedaempft); }
+/* Dasselbe Schild wie die Liquidations-Heatmap in der Anwendung: wo eine
+   Zahl kein Messwert ist, steht das daneben und nicht im Kleingedruckten. */
+.live-schild {
+  border: 1px solid var(--orange); color: var(--orange);
+  border-radius: 999px; padding: 0.05rem 0.5rem;
+  font-size: 0.66rem; letter-spacing: 0.09em;
+}
+.live-fussnote { color: var(--gedaempft); font-size: 0.78rem; margin-top: auto; max-width: 46ch; }
+.live-marke {
+  position: absolute; right: 1rem; top: 0.6rem;
+  color: var(--gedaempft); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+.live-bloecke { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.6rem; }
+.live-block { background: rgba(255,255,255,0.03); border: 1px solid var(--linie); border-radius: 8px; padding: 0.7rem; }
+.live-block.neu { border-color: var(--orange); }
+.live-block-hoehe { font-size: 1.1rem; font-variant-numeric: tabular-nums; color: var(--orange); }
+.live-block-zeile { color: var(--gedaempft); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.live-gedaempft { opacity: 0.7; }
+
+@media (max-width: 46rem) {
+  .live.laeuft { aspect-ratio: 4 / 3; }
+  .live-bloecke { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .live-reiter { gap: 0.9rem; font-size: 0.82rem; }
+}

@@ -31,10 +31,13 @@
   </header>
 
   <section class="schau">
-    <div class="bilder">
-      <img src="../bilder/feed.png" alt="Feed" loading="lazy">
-      <img src="../bilder/uhr.png" alt="Clock" loading="lazy">
-      <img src="../bilder/markt.png" alt="Market" loading="lazy">
+    <!-- **Das Standbild steht darunter, nicht daneben.** `live.js` blendet es
+         aus, sobald es laeuft; ohne JavaScript, ohne Netz und bei
+         `prefers-reduced-motion` bleibt es liegen. Eine Seite, deren
+         Herzstueck ein leeres Loch ist, waere schlechter als eine mit einem
+         Bild -- und ein Pruefer wie ein Crawler sieht genau das zuerst. -->
+    <div id="live" class="live">
+      <img class="live-standbild" src="../bilder/feed.png" alt="The mempool as a living mosaic, with the last block beside it. Colour by age, fee or transaction type.">
     </div>
   </section>
 
@@ -81,5 +84,9 @@
     <nav class="sprachen"><a href="../de/" hreflang="de">Deutsch</a><a href="../en/" hreflang="en" aria-current="true">English</a></nav>
   </footer>
 </div>
+<script>window.ORANGEDECK_LIVE = {"reiter":["Feed","Uhr","Miner","Explorer","Markt","Wallet"],"live":"LIVE","beispiel":"EXAMPLE","beispielHinweis":"No stranger's miner and no stranger's wallet can be queried from here. These two views therefore show invented figures — the application shows yours.","quelle":"Live from the mempool","block":"Block","vorMin":"{0} min ago","gebuehr":"Fee","kurs":"Price","mempool":"Mempool","hashrate":"Hashrate","moscow":"Moscow Time","schwierigkeit":"Difficulty","halving":"Halving","bloecke":"Blocks","txn":"transactions","beste":"Best share","temperatur":"Temperature","leistung":"Power","guthaben":"Balance","adressen":"Addresses","unbestaetigt":"unconfirmed","gerechnet":"derived from difficulty","verbindet":"connecting …"};</script>
+<script src="../mondrian.js"></script>
+<script src="../colors.js"></script>
+<script src="../live.js" defer></script>
 </body>
 </html>
