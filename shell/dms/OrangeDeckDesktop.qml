@@ -111,7 +111,8 @@ Item {
             "explorerLive": root.get("explorerLive", true),
             "explorerParts": root.getList("explorerPartsRaw", ""),
             "explorerPanels": root.getList("explorerPanelsRaw", ""),
-            "walletEnabled": root.get("walletEnabled", false)
+            "walletEnabled": root.get("walletEnabled", false),
+            "tabOrder": root.getList("tabOrderRaw", "")
         });
     }
 

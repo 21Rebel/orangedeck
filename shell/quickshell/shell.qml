@@ -27,6 +27,9 @@ ShellRoot {
         property real bgOpacity: 0.82
         property real density: 1.0
         property int startView: -1
+        // Die Reihenfolge der Reiter, vom Anwender festgelegt. Leer heisst:
+        // die Grundreihenfolge aus `views.js`.
+        property var tabOrder: []
         // "daemon" oder "direct" -- siehe FeedState.mode
         property string dataSource: "daemon"
         property string currency: "eur"
@@ -128,7 +131,8 @@ ShellRoot {
             "lang": lang,
             "bigFields": bigFields,
             "bigRotate": bigRotate,
-            "walletEnabled": walletEnabled
+            "walletEnabled": walletEnabled,
+            "tabOrder": tabOrder
         })
 
         function setOpt(key, value) {
@@ -160,6 +164,8 @@ ShellRoot {
                 clockBars = value;
             else if (key === "clockFields")
                 clockFields = value;
+            else if (key === "tabOrder")
+                tabOrder = value;
             else if (key === "minerFields")
                 minerFields = value;
             else if (key === "showHeader")
@@ -278,7 +284,8 @@ ShellRoot {
                 "lang": lang,
                 "bigFields": bigFields,
                 "bigRotate": bigRotate,
-                "walletEnabled": walletEnabled
+                "walletEnabled": walletEnabled,
+                "tabOrder": tabOrder
             }));
             hint.flash();
         }
@@ -321,8 +328,14 @@ ShellRoot {
                         win.frosted = v.frosted;
                     if (typeof v.density === "number")
                         win.density = Math.max(0.6, Math.min(2, v.density));
+                    // **Und hier dieselbe Klemme ein zweites Mal.** `min(3, ...)`
+                    // stammt aus der Zeit, als die Startansicht Feed, Uhr,
+                    // Miner und Explorer kannte. Wer Markt oder Wallet
+                    // einstellte, bekam beim naechsten Start den Explorer --
+                    // geschrieben wurde der echte Wert, gelesen der gestutzte.
+                    // Eine Ansicht, die es nicht gibt, faengt der Rueckfall ab.
                     if (typeof v.startView === "number")
-                        win.startView = Math.max(-1, Math.min(3, v.startView));
+                        win.startView = Math.max(-1, v.startView);
                     if (v.dataSource)
                         win.dataSource = v.dataSource;
                     if (v.currency)
@@ -333,6 +346,8 @@ ShellRoot {
                         win.clockBars = v.clockBars;
                     if (Array.isArray(v.clockFields))
                         win.clockFields = v.clockFields;
+                    if (Array.isArray(v.tabOrder))
+                        win.tabOrder = v.tabOrder;
                     if (Array.isArray(v.minerFields))
                         win.minerFields = v.minerFields;
                     if (typeof v.showHeader === "boolean")

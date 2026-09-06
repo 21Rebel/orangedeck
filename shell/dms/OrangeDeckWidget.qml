@@ -111,7 +111,8 @@ PluginComponent {
             "explorerLive": root.get("explorerLive", true),
             "explorerParts": root.getList("explorerPartsRaw", ""),
             "explorerPanels": root.getList("explorerPanelsRaw", ""),
-            "walletEnabled": root.get("walletEnabled", false)
+            "walletEnabled": root.get("walletEnabled", false),
+            "tabOrder": root.getList("tabOrderRaw", "")
         });
     }
 
@@ -125,7 +126,8 @@ PluginComponent {
         // Listen kommen als Feld herein und gehen als Zeichenkette hinaus --
         // eine leere Liste ueberlebt die Ablage sonst nicht.
         if (key === "clockFields" || key === "minerFields" || key === "bigFields"
-                || key === "explorerParts" || key === "explorerPanels") {
+                || key === "explorerParts" || key === "explorerPanels"
+                || key === "tabOrder") {
             root.put(key + "Raw", (value || []).join("|"));
             return;
         }

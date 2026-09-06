@@ -3155,3 +3155,110 @@ buendeln, auf eine ISO, im Gast einlegen.
 `umount`, dann tauschen. `info block` sagt, welches Laufwerk gerade was haelt;
 die Antwort des Monitors kommt mit dem Echo jedes einzelnen Zeichens zurueck
 und muss von Steuerzeichen befreit werden, bevor sie lesbar ist.
+
+
+## Die Reihenfolge der Reiter gehoert dem Anwender (`views.js`, 06.09.2026)
+
+Bis hierher lag die Reihenfolge der sieben Ansichten fest im Programm, und wer
+eine davon nicht brauchte, schaltete sie einzeln ab -- ueber einen Schalter,
+der auf der Seite eben dieser Ansicht lag. Jetzt gibt es in den Einstellungen
+eine Seite **Darstellung**: je eine Zeile pro Platz, darin ein Auswahlfeld mit
+allen Ansichten und der Schalter daneben.
+
+### Dieselbe Liste stand dreimal da
+
+    FeedTabs.tabViews    welche Reiter, in welcher Reihenfolge
+    FeedTabs.tabNamen    ihre Beschriftungen
+    SettingsView         die Auswahl der Startansicht
+
+Die ersten beiden hielt ein Kommentar zusammen ("aus einer Tabelle gelesen,
+damit die beiden nicht auseinanderlaufen"). Die dritte hielt **nichts** -- und
+sie lief auseinander: sie kannte Feed, Uhr, Miner und Explorer, weil das die
+vier Ansichten waren, als sie geschrieben wurde. Markt und Wallet kamen
+spaeter dazu und fehlten dort seither. Wer im Markt starten wollte, konnte es
+nicht einstellen.
+
+Alle drei lesen jetzt aus `ui/qml/views.js`:
+
+| id | Name | Schalter |
+|---|---|---|
+| 0 | `tab.feed` | `showFeed` |
+| 1 | `tab.clock` | `showClock` |
+| 2 | `tab.miner` | `showMiner` |
+| 3 | `tab.explorer` | `showExplorer` |
+| 6 | `tab.market` | `showMarket` |
+| 4 | `tab.wallet` | — (haengt an `walletEnabled`) |
+| 5 | `tab.settings` | — (bleibt immer) |
+
+**Die `id` ist nicht die Position.** Der Markt kam als 6 dazu und steht
+trotzdem an fuenfter Stelle. Umzunumerieren haette jeden gemerkten Wert, jedes
+`--view N` und jede Android-Verknuepfung verschoben.
+
+### `ordnung()` ist nachsichtig, und zwar in beide Richtungen
+
+    ordnung([6, 1])  ->  [6, 1, 0, 2, 3, 4, 5]
+    ordnung([9, 1])  ->  [1, 0, 2, 3, 6, 4, 5]
+
+Unbekanntes faellt weg, Fehlendes wird hinten angehaengt. Damit kommt eine
+achte Ansicht bei jedem an, der schon eine eigene Reihenfolge gespeichert
+hat -- ohne dass er sie zuruecksetzen muss. **Genau daran ist die Startansicht
+gescheitert**, und das war kein Zufall: eine feste Liste vergisst man.
+
+### Das Auswahlfeld tauscht, es fuegt nicht ein
+
+Wer an Platz 2 den Markt waehlt, will ihn dort haben -- und was dort stand,
+muss irgendwohin. Ein Tausch laesst die Liste eine Vertauschung bleiben: jede
+Ansicht kommt genau einmal vor, ohne Nachrechnen. Beim Einfuegen mit
+Nachruecken wandern dagegen alle dazwischenliegenden Reiter mit, und zwei
+Zuege hintereinander ergeben eine Reihenfolge, die niemand vorhergesehen hat.
+
+### Die Schalter sind mit umgezogen
+
+Sie lagen je auf der Seite ihrer eigenen Ansicht -- also dort, wo man sie am
+wenigsten braucht und am schlechtesten findet: **wer einen Reiter abgeschaltet
+hat, kommt auf dessen Seite nicht mehr, um ihn wieder anzuschalten.** Die
+Einstellungsseiten sind zwar auch ohne Reiter erreichbar, aber nur ueber eben
+diese Seite, auf der der Schalter bis jetzt nicht stand.
+
+### Acht Reiter passen auf einem Telefon nicht in eine Zeile
+
+`ViewTabs` ist eine `Row`: sie laeuft rechts aus dem Bild, ohne Rand und ohne
+Hinweis. Mit sieben war es auf 440 Punkten knapp, mit der achten Seite waere
+die letzte nicht mehr erreichbar gewesen. Die Reiterzeile der Einstellungen
+liegt deshalb in einem waagerechten `Flickable`, der nur dann etwas tut, wenn
+sie wirklich zu breit ist (`interactive: reiter.width > width`).
+
+### Zwei Fallen beim Auswahlfeld in einer scrollenden Seite
+
+1. **Der Rahmen ist die Seite, nicht die Zeile.** `DropDown` haengt seine
+   aufgeklappte Liste in `bounds` um. Steht dort die Zeile, wird die Liste am
+   Rand des scrollenden Bereichs abgeschnitten; `bounds: root` legt sie
+   darueber.
+2. **Die Lage wird beim Aufklappen gemessen und danach nicht mehr** (siehe den
+   Kommentar in `DropDown.qml`: eine Bindung auf `mapToItem` rechnet mit dem
+   Stand vom Erzeugen). Auf einer Seite, die scrollt, heisst das: wer bei
+   offener Liste schiebt, laesst sie stehen. Die Liste klappt deshalb zu,
+   sobald sich `contentY` aendert.
+
+### Und wieder eine Grenze, die nicht mitgewandert ist
+
+Zweimal dieselbe Klemme wie beim Markt-Reiter am Vortag, diesmal bei der
+Startansicht:
+
+    app/qml/Main.qml       else if (win.startView >= 0 && win.startView <= 3)
+    shell/quickshell/...   Math.max(-1, Math.min(3, v.startView))
+
+Die 3 stammt aus der Zeit mit vier Ansichten. Wer Markt oder Wallet
+eingestellt haette, dessen Wunsch waere beim Start stillschweigend verworfen
+worden -- geschrieben der echte Wert, gelesen der gestutzte. Geklemmt wird
+jetzt nicht mehr; eine Ansicht, die es gerade nicht gibt, faengt der Rueckfall
+in `FeedTabs.reiterPruefen()` ab.
+
+### Abgelegt wird sie wie die uebrigen Listen
+
+`tabOrder` geht als Feld von Zahlen durch `opts` und liegt je nach Wirt
+anders: die Anwendung schreibt `tabOrderRaw` als Zeichenkette mit `|`
+getrennt (QSettings kann keine leere Liste, und ein Komma gilt beim Lesen als
+Listentrenner), das Quickshell-Fenster schreibt JSON, das DMS-Plugin wieder
+eine Zeichenkette. `views.js` nimmt beim Lesen Zahlen wie Zeichenketten --
+`eintrag()` geht ueber `parseInt`.

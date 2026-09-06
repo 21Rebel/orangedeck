@@ -17,6 +17,7 @@
 // Nur `import QtQuick` -- damit laeuft es auch unter Android.
 import QtQuick
 import "strings.js" as Tr
+import "views.js" as Views
 
 Item {
     id: root
@@ -69,58 +70,44 @@ Item {
     // stuende im nackten Widget oben ein leerer Streifen in Reiterhoehe.
     readonly property real tabSpace: root.tabsVisible ? tabs.height + root.gap : 0
 
-    // Zwei Reiter fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit:
+    // Drei Reiter fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit:
     // der Miner steht im Heimnetz, die Wallet-Ableitung ist Rechenarbeit des
-    // Dienstes. Ein Reiter, hinter dem nichts sein kann, ist schlimmer als
-    // keiner.
-    // 6 ist der Markt. Er steht hinter dem Explorer und **nur mit Dienst**:
-    // die Boersenstroeme werden dort zu Kerzen verdichtet, im Direktbezug
-    // gibt es niemanden, der das tut. Ein Reiter, hinter dem nichts sein
-    // kann, ist schlimmer als keiner -- dieselbe Regel wie bei Miner und
-    // Wallet.
+    // Dienstes, und die Boersenstroeme werden dort zu Kerzen verdichtet. Ein
+    // Reiter, hinter dem nichts sein kann, ist schlimmer als keiner.
     readonly property bool canMarket: root.feed && !root.feed.direkt
 
-    // **Jeder Reiter laesst sich abschalten.** Wer keinen Miner hat, braucht
-    // den Reiter nicht; wer nur den Mempool sehen will, den Markt nicht. Was
-    // technisch nicht geht (Miner, Wallet und Markt im Direktbezug), faellt
-    // ohnehin weg -- der Schalter kommt oben drauf, er kann nichts erzwingen.
+    // **Jeder Reiter laesst sich abschalten, und die Reihenfolge gehoert dem
+    // Anwender.** Wer keinen Miner hat, braucht den Reiter nicht; wer meist
+    // auf den Markt sieht, stellt ihn nach vorn. Beides steht in `tabOrder`
+    // und in den `show...`-Schaltern, gerechnet wird es in `views.js` -- der
+    // einen Stelle, an der die Ansichten aufgezaehlt sind.
     //
-    // Die Einstellungen bleiben immer. Sonst schaltet man den letzten Reiter
-    // ab und kommt an keinen Schalter mehr heran.
-    readonly property var tabViews: {
-        var v = [];
-        if (root.o("showFeed", true))
-            v.push(0);
-        if (root.o("showClock", true))
-            v.push(1);
-        if (root.feed && root.feed.canMiner && root.o("showMiner", true))
-            v.push(2);
-        if (root.o("showExplorer", true))
-            v.push(3);
-        if (root.canMarket && root.o("showMarket", true))
-            v.push(6);
-        if (root.walletEnabled && root.feed && root.feed.canWallet)
-            v.push(4);
-        v.push(5);
-        return v;
-    }
+    // Was technisch nicht geht, faellt ohnehin weg; der Schalter kommt oben
+    // drauf und kann nichts erzwingen. Die Einstellungen bleiben immer --
+    // sonst schaltet man den letzten Reiter ab und kommt an keinen Schalter
+    // mehr heran.
+    readonly property var tabViews: Views.reiter(
+        root.o("tabOrder", []),
+        function (id) {
+            if (id === 2)
+                return !!(root.feed && root.feed.canMiner);
+            if (id === 4)
+                return root.walletEnabled && !!(root.feed && root.feed.canWallet);
+            if (id === 6)
+                return root.canMarket;
+            return true;
+        },
+        function (schluessel) {
+            return root.o(schluessel, true);
+        })
 
-    // Dieselbe Reihenfolge wie `tabViews` -- aus einer Tabelle gelesen, damit
-    // die beiden nicht auseinanderlaufen koennen.
-    readonly property var tabNamen: ({
-        "0": Tr.t("tab.feed", root.lang),
-        "1": Tr.t("tab.clock", root.lang),
-        "2": Tr.t("tab.miner", root.lang),
-        "3": Tr.t("tab.explorer", root.lang),
-        "4": Tr.t("tab.wallet", root.lang),
-        "5": Tr.t("tab.settings", root.lang),
-        "6": Tr.t("tab.market", root.lang)
-    })
-
+    // Die Beschriftungen in derselben Reihenfolge, aus derselben Tabelle.
+    // Hier stand vorher eine zweite, von Hand gepflegte Liste daneben, und
+    // ein Kommentar bat darum, sie nicht auseinanderlaufen zu lassen.
     readonly property var tabLabels: {
         var l = [];
         for (var i = 0; i < root.tabViews.length; i++)
-            l.push(root.tabNamen[String(root.tabViews[i])]);
+            l.push(Tr.t(Views.name(root.tabViews[i]), root.lang));
         return l;
     }
 
@@ -345,6 +332,22 @@ Item {
         textColor: root.textColor
         dimColor: root.dimColor
         accentColor: root.accentColor
+        lineColor: root.lineColor
+        panelColor: root.panelColor
+        // Damit die Darstellungs-Seite dazuschreiben kann, welche Ansicht
+        // gerade nichts zeigen koennte. Dieselbe Frage wie in `tabViews`,
+        // nur andersherum gestellt -- und sie steht hier, weil nur dieses
+        // Bauteil den Feed kennt.
+        nichtVerfuegbar: {
+            var aus = [];
+            if (!(root.feed && root.feed.canMiner))
+                aus.push(2);
+            if (!(root.walletEnabled && root.feed && root.feed.canWallet))
+                aus.push(4);
+            if (!root.canMarket)
+                aus.push(6);
+            return aus;
+        }
         onChanged: function (key, value) {
             root.optRequested(key, value);
         }

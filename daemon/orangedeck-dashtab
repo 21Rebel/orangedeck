@@ -125,12 +125,16 @@ Item {
     property string explorerPartsRaw: SettingsData.getPluginSetting(pid, "explorerPartsRaw", "")
     property string explorerPanelsRaw: SettingsData.getPluginSetting(pid, "explorerPanelsRaw", "")
     property string bigFieldsRaw: SettingsData.getPluginSetting(pid, "bigFieldsRaw", "height")
+    // Die Reihenfolge der Reiter, vom Anwender festgelegt. Leer heisst: die
+    // Grundreihenfolge aus `views.js`.
+    property string tabOrderRaw: SettingsData.getPluginSetting(pid, "tabOrderRaw", "")
     property int bigRotate: SettingsData.getPluginSetting(pid, "bigRotate", 0)
     readonly property var bigFields: bigFieldsRaw.length ? bigFieldsRaw.split("|") : ["height"]
     readonly property var clockFields: clockFieldsRaw.length ? clockFieldsRaw.split("|") : []
     readonly property var minerFields: minerFieldsRaw.length ? minerFieldsRaw.split("|") : []
     readonly property var explorerParts: explorerPartsRaw.length ? explorerPartsRaw.split("|") : []
     readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split("|") : []
+    readonly property var tabOrder: tabOrderRaw.length ? tabOrderRaw.split("|") : []
     // 0 = Feed, 1 = Uhr, 2 = Miner, 3 = Explorer, 4 = Wallet,
     // 5 = Einstellungen -- gemerkt wie die uebrigen Einstellungen
     property int view: SettingsData.getPluginSetting(pid, "view", 0)
@@ -179,7 +183,8 @@ Item {
         "explorerLive": explorerLive,
         "explorerParts": explorerParts,
         "explorerPanels": explorerPanels,
-        "walletEnabled": walletEnabled
+        "walletEnabled": walletEnabled,
+        "tabOrder": tabOrder
     })
 
     function put(key, value) {
@@ -190,7 +195,8 @@ Item {
     function setOpt(key, value) {
         // Listen kommen als Feld herein und gehen als Zeichenkette hinaus
         if (key === "clockFields" || key === "minerFields" || key === "bigFields"
-                || key === "explorerParts" || key === "explorerPanels") {
+                || key === "explorerParts" || key === "explorerPanels"
+                || key === "tabOrder") {
             root.put(key + "Raw", (value || []).join("|"));
             return;
         }

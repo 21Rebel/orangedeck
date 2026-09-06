@@ -12,6 +12,7 @@ import QtQuick
 import "money.js" as Money
 import "strings.js" as Tr
 import "fonts.js" as Fonts
+import "views.js" as Views
 
 pragma ComponentBehavior: Bound
 
@@ -23,6 +24,17 @@ Item {
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
     property color goodColor: "#57b894"
+    // Fuer die Auswahlfelder der Darstellungs-Seite: Rahmen und Untergrund
+    // der aufgeklappten Liste. Der Wirt reicht dieselben Toene durch, die
+    // seine uebrigen Flaechen tragen -- sonst erfindet die Liste eine eigene
+    // Deckkraft neben den Einstellungen, ueber denen sie liegt.
+    property color lineColor: "#2a2a38"
+    property color panelColor: "#16161f"
+    // Ansichten, hinter denen gerade nichts sein kann -- der Miner ohne
+    // Bitaxe, Wallet und Markt im Direktbezug. Sie stehen in der Reihenfolge
+    // trotzdem, sonst waere ihr Platz nicht einstellbar, solange man sie
+    // nicht hat; die Seite schreibt nur dazu, dass sie gerade nicht kommen.
+    property var nichtVerfuegbar: []
     property real uiFont: 13
     property string lang: "de"
     // Deckkraft und Startansicht gehoeren dem Fenster. Im Dashboard-Tab
@@ -36,6 +48,41 @@ Item {
     function val(key, fallback) {
         var v = root.opts ? root.opts[key] : undefined;
         return v === undefined ? fallback : v;
+    }
+
+    // Die Reihenfolge der Reiter, wie sie der Anwender festgelegt hat --
+    // aufgefuellt und von Unbekanntem befreit durch `views.js`. Dieselbe
+    // Rechnung wie in `FeedTabs`, aus derselben Tabelle.
+    readonly property var reihenfolge: Views.ordnung(root.val("tabOrder", []))
+
+    // Die Auswahl in jedem Feld steht in der **Grundreihenfolge**, nicht in
+    // der des Anwenders: eine Liste, die sich beim Auswaehlen selbst
+    // umsortiert, springt einem unter dem Finger weg.
+    readonly property var ansichtsListe: {
+        var out = [];
+        var a = Views.alle();
+        for (var i = 0; i < a.length; i++) {
+            out.push({ "k": String(a[i]),
+                       "l": Tr.t(Views.name(a[i]), root.lang) });
+        }
+        return out;
+    }
+
+    // **Tauschen, nicht einfuegen.** Wer an Platz 2 den Markt waehlt, will
+    // ihn dort haben -- und was dort stand, muss irgendwohin. Ein Tausch
+    // laesst die Liste eine Vertauschung bleiben: jede Ansicht kommt genau
+    // einmal vor, ohne Nachrechnen. Beim Einfuegen und Nachruecken wandern
+    // dagegen alle dazwischenliegenden Reiter mit, und zwei Zuege hintereinander
+    // ergeben eine Reihenfolge, die niemand vorhergesehen hat.
+    function reiterTauschen(pos, id) {
+        var ord = Views.ordnung(root.val("tabOrder", []));
+        var j = ord.indexOf(id);
+        if (j < 0 || j === pos)
+            return;
+        var merk = ord[pos];
+        ord[pos] = id;
+        ord[j] = merk;
+        root.changed("tabOrder", ord);
     }
 
     // Eine Mehrfachauswahl wird als Liste von Schluesseln gehalten. Leer heisst
@@ -339,31 +386,59 @@ Item {
     }
 
     // ------------------------------------------------------------ Aufbau
-    ViewTabs {
-        id: reiter
+
+    // Die Schluessel der Seiten, in der Reihenfolge der Reiter darueber --
+    // an **einer** Stelle, damit Beschriftung und Wirkung nicht
+    // auseinanderlaufen koennen. Sie standen vorher zweimal da, einmal fuer
+    // `current` und einmal im Handler.
+    readonly property var seiten: ["allgemein", "darstellung", "feed", "clock",
+                                   "miner", "explorer", "markt", "wallet"]
+
+    // **Acht Reiter passen auf einem Telefon nicht mehr in eine Zeile.**
+    // `ViewTabs` ist eine `Row`: sie laeuft rechts einfach aus dem Bild,
+    // ohne Rand und ohne Hinweis. Schon mit sieben war es auf 440 Punkten
+    // knapp -- die achte Seite waere dort schlicht nicht erreichbar gewesen.
+    // Die Reihe liegt deshalb in einem waagerechten Schieber, der nur dann
+    // etwas tut, wenn sie wirklich zu breit ist.
+    Flickable {
+        id: reiterBand
 
         anchors.left: parent.left
+        anchors.right: parent.right
         anchors.top: parent.top
-        labels: [Tr.t("set.general", root.lang), Tr.t("tab.feed", root.lang),
-                 Tr.t("tab.clock", root.lang), Tr.t("tab.miner", root.lang),
-                 Tr.t("tab.explorer", root.lang), Tr.t("tab.market", root.lang),
-                 Tr.t("tab.wallet", root.lang)]
-        current: ["allgemein", "feed", "clock", "miner", "explorer", "markt",
-                  "wallet"].indexOf(root.tab)
-        fontSize: root.uiFont
-        textColor: root.textColor
-        dimColor: root.dimColor
-        accentColor: root.accentColor
-        onPicked: function (i) {
-            root.tab = ["allgemein", "feed", "clock", "miner", "explorer", "markt",
-                        "wallet"][i];
+        height: reiter.height
+        contentWidth: reiter.width
+        contentHeight: reiter.height
+        flickableDirection: Flickable.HorizontalFlick
+        interactive: reiter.width > width
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
+
+        ViewTabs {
+            id: reiter
+
+            labels: [Tr.t("set.general", root.lang), Tr.t("set.display", root.lang),
+                     Tr.t("tab.feed", root.lang),
+                     Tr.t("tab.clock", root.lang), Tr.t("tab.miner", root.lang),
+                     Tr.t("tab.explorer", root.lang), Tr.t("tab.market", root.lang),
+                     Tr.t("tab.wallet", root.lang)]
+            current: root.seiten.indexOf(root.tab)
+            fontSize: root.uiFont
+            textColor: root.textColor
+            dimColor: root.dimColor
+            accentColor: root.accentColor
+            onPicked: function (i) {
+                root.tab = root.seiten[i];
+            }
         }
     }
 
     Flickable {
+        id: flaeche
+
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.top: reiter.bottom
+        anchors.top: reiterBand.bottom
         anchors.topMargin: root.uiFont
         anchors.bottom: parent.bottom
         contentWidth: width
@@ -460,6 +535,28 @@ Item {
                         }
                     }
                 }
+            }
+
+            // ----------------------------------------------- Darstellung
+            //
+            // **Die Reihenfolge der Reiter gehoert dem Anwender.** Sie stand
+            // vorher fest in `FeedTabs`, und die Startansicht zaehlte daneben
+            // ein zweites Mal auf, welche Ansichten es ueberhaupt gibt -- eine
+            // Liste, die bei Feed, Uhr, Miner, Explorer stehengeblieben war.
+            // Markt und Wallet kamen spaeter dazu und fehlten dort seither:
+            // wer im Markt starten wollte, konnte es nicht einstellen. Beide
+            // lesen jetzt aus `views.js`.
+            //
+            // Hierher gehoeren auch die Schalter, mit denen sich ein Reiter
+            // ganz abschalten laesst. Sie lagen vorher je auf der Seite ihrer
+            // eigenen Ansicht -- also dort, wo man sie am wenigsten braucht
+            // und am schlechtesten findet: **wer einen Reiter abgeschaltet
+            // hat, kommt auf dessen Seite nicht mehr, um ihn wieder
+            // anzuschalten.** Erreichbar war er nur noch ueber diese Seite,
+            // auf der er bis eben nicht stand.
+            Column {
+                width: parent.width
+                visible: root.tab === "darstellung"
 
                 Zeile {
                     visible: root.windowed
@@ -468,15 +565,101 @@ Item {
 
                     Wahl {
                         gewaehlt: String(root.val("startView", -1))
-                        eintraege: [
-                            { "k": "-1", "l": Tr.t("set.lastUsed", root.lang) },
-                            { "k": "0", "l": Tr.t("tab.feed", root.lang) },
-                            { "k": "1", "l": Tr.t("tab.clock", root.lang) },
-                            { "k": "2", "l": Tr.t("tab.miner", root.lang) },
-                            { "k": "3", "l": Tr.t("tab.explorer", root.lang) }
-                        ]
+                        eintraege: {
+                            var out = [{ "k": "-1",
+                                         "l": Tr.t("set.lastUsed", root.lang) }];
+                            var ord = root.reihenfolge;
+                            for (var i = 0; i < ord.length; i++) {
+                                out.push({ "k": String(ord[i]),
+                                           "l": Tr.t(Views.name(ord[i]), root.lang) });
+                            }
+                            return out;
+                        }
                         onPicked: function (k) {
                             root.changed("startView", parseInt(k, 10));
+                        }
+                    }
+                }
+
+                Repeater {
+                    model: root.reihenfolge
+
+                    Zeile {
+                        id: platz
+
+                        required property int index
+                        required property var modelData
+
+                        readonly property string schluessel: Views.schalter(platz.modelData)
+                        readonly property bool moeglich:
+                            root.nichtVerfuegbar.indexOf(platz.modelData) < 0
+
+                        label: Tr.t("set.tabPos", root.lang, platz.index + 1)
+                        // Der Hinweis steht **einmal**, an der ersten Zeile.
+                        // Siebenmal derselbe Satz untereinander liest sich
+                        // wie ein Fehler, nicht wie eine Erklaerung.
+                        help: !platz.moeglich ? Tr.t("set.tabUnavailable", root.lang)
+                              : (platz.index === 0 ? Tr.t("set.tabOrderHelp", root.lang) : "")
+
+                        DropDown {
+                            id: feld
+
+                            anchors.left: parent.left
+                            // **Immer bis an den Schalter, auch wo keiner
+                            // gezeichnet wird.** Ein unsichtbares Element
+                            // behaelt seine Breite: laesst man die Felder
+                            // ohne Schalter bis an den Rand laufen, enden
+                            // fuenf an einer Kante und zwei an einer
+                            // anderen. Der leere Platz kostet nichts, die
+                            // ausgefranste Kante faellt sofort auf.
+                            anchors.right: schalt.left
+                            anchors.rightMargin: root.uiFont * 0.7
+                            // **Der Rahmen ist die Seite, nicht die Zeile.**
+                            // Die aufgeklappte Liste haengt sich in dieses
+                            // Element um -- und es liegt ausserhalb des
+                            // Schiebers, der den Inhalt beschneidet. In der
+                            // Zeile stehend waere sie an dessen Rand
+                            // abgeschnitten worden.
+                            bounds: root
+                            model: root.ansichtsListe
+                            current: String(platz.modelData)
+                            uiFont: root.uiFont * 0.9
+                            textColor: platz.moeglich ? root.textColor : root.dimColor
+                            dimColor: root.dimColor
+                            accentColor: root.accentColor
+                            lineColor: root.lineColor
+                            flaecheColor: root.panelColor
+                            onPicked: function (k) {
+                                root.reiterTauschen(platz.index, parseInt(k, 10));
+                            }
+
+                            // Die Liste misst ihre Lage **beim Aufklappen**
+                            // und danach nicht mehr -- absichtlich, siehe
+                            // `DropDown.qml`. Auf einer Seite, die scrollt,
+                            // heisst das: wer bei offener Liste schiebt,
+                            // laesst sie stehen. Also zuklappen.
+                            Connections {
+                                target: flaeche
+
+                                function onContentYChanged() {
+                                    feld.offen = false;
+                                }
+                            }
+                        }
+
+                        Schalter {
+                            id: schalt
+
+                            anchors.right: parent.right
+                            anchors.verticalCenter: feld.verticalCenter
+                            // Einstellungen und Wallet tragen keinen: die
+                            // einen bleiben immer, die andere haengt am
+                            // Schalter mit der Warnung davor. Ein zweiter
+                            // daneben waere nur die Frage, welcher gilt.
+                            visible: platz.schluessel.length > 0
+                            an: root.val(platz.schluessel, true)
+                            onUmgelegt: root.changed(platz.schluessel,
+                                                     !root.val(platz.schluessel, true))
                         }
                     }
                 }
@@ -487,15 +670,6 @@ Item {
                 width: parent.width
                 visible: root.tab === "feed"
 
-                Zeile {
-                    label: Tr.t("set.showTab", root.lang)
-                    help: Tr.t("set.showTabHelp", root.lang)
-
-                    Schalter {
-                        an: root.val("showFeed", true)
-                        onUmgelegt: root.changed("showFeed", !root.val("showFeed", true))
-                    }
-                }
 
                 Zeile {
                     label: Tr.t("set.tileColor", root.lang)
@@ -606,15 +780,6 @@ Item {
                 width: parent.width
                 visible: root.tab === "clock"
 
-                Zeile {
-                    label: Tr.t("set.showTab", root.lang)
-                    help: Tr.t("set.showTabHelp", root.lang)
-
-                    Schalter {
-                        an: root.val("showClock", true)
-                        onUmgelegt: root.changed("showClock", !root.val("showClock", true))
-                    }
-                }
 
                 Zeile {
                     label: Tr.t("set.metrics", root.lang)
@@ -717,15 +882,6 @@ Item {
                 width: parent.width
                 visible: root.tab === "miner"
 
-                Zeile {
-                    label: Tr.t("set.showTab", root.lang)
-                    help: Tr.t("set.showTabHelp", root.lang)
-
-                    Schalter {
-                        an: root.val("showMiner", true)
-                        onUmgelegt: root.changed("showMiner", !root.val("showMiner", true))
-                    }
-                }
 
                 Zeile {
                     label: Tr.t("set.metrics", root.lang)
@@ -781,15 +937,6 @@ Item {
                 width: parent.width
                 visible: root.tab === "explorer"
 
-                Zeile {
-                    label: Tr.t("set.showTab", root.lang)
-                    help: Tr.t("set.showTabHelp", root.lang)
-
-                    Schalter {
-                        an: root.val("showExplorer", true)
-                        onUmgelegt: root.changed("showExplorer", !root.val("showExplorer", true))
-                    }
-                }
 
                 Zeile {
                     label: Tr.t("set.explorerColor", root.lang)
@@ -856,15 +1003,6 @@ Item {
                 width: parent.width
                 visible: root.tab === "markt"
 
-                Zeile {
-                    label: Tr.t("set.showTab", root.lang)
-                    help: Tr.t("set.showTabHelp", root.lang)
-
-                    Schalter {
-                        an: root.val("showMarket", true)
-                        onUmgelegt: root.changed("showMarket", !root.val("showMarket", true))
-                    }
-                }
 
                 Zeile {
                     label: Tr.t("set.crosshair", root.lang)

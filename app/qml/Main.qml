@@ -133,6 +133,13 @@ Window {
     readonly property var bigFields: bigFieldsRaw.length ? bigFieldsRaw.split("|") : ["height"]
     property int bigRotate: 0
     property bool walletEnabled: false
+    // Die Reihenfolge der Reiter, vom Anwender festgelegt. Leer heisst: die
+    // Grundreihenfolge aus `views.js`. Als Zeichenkette abgelegt, getrennt
+    // mit "|" -- aus denselben zwei Gruenden wie die uebrigen Listen: eine
+    // leere Liste schreibt QSettings als `@Invalid()`, und ein Komma in einer
+    // INI-Zeichenkette gilt beim Lesen als Listentrenner.
+    property string tabOrderRaw: ""
+    readonly property var tabOrder: tabOrderRaw.length ? tabOrderRaw.split("|") : []
     // 0 = Feed, 1 = Uhr, 2 = Miner, 3 = Explorer, 4 = Wallet. Wird
     // gemerkt, damit ein Tablet nach dem Einschalten gleich wieder als
     // Uhr hochkommt.
@@ -197,6 +204,7 @@ Window {
         property alias bigFieldsRaw: win.bigFieldsRaw
         property alias bigRotate: win.bigRotate
         property alias walletEnabled: win.walletEnabled
+        property alias tabOrderRaw: win.tabOrderRaw
     }
 
     // Beim Start in die gemerkte Ansicht -- fuer ein Tablet an der Wand ist
@@ -205,7 +213,13 @@ Window {
     Component.onCompleted: {
         if (win.forcedView >= 0)
             win.view = win.forcedView;
-        else if (win.startView >= 0 && win.startView <= 3)
+        // **Keine Obergrenze mehr.** Hier stand `<= 3` -- aus der Zeit, als
+        // die Startansicht Feed, Uhr, Miner und Explorer kannte. Markt und
+        // Wallet kamen dazu, die Grenze wanderte nicht mit: wer sie einstellen
+        // konnte, dessen Wunsch wurde beim Start stillschweigend verworfen.
+        // Eine Ansicht, die es gerade nicht gibt, faengt der Rueckfall gleich
+        // darunter ab -- dafuer braucht es hier keine Zahl.
+        else if (win.startView >= 0)
             win.view = win.startView;
         // Ausgeschaltete Wallet-Ansicht darf nicht als leere Seite dastehen
         if (win.view === 4 && !win.walletEnabled)
@@ -330,6 +344,8 @@ Window {
             win.bigFieldsRaw = (value || []).join("|");
         else if (key === "bigRotate")
             win.bigRotate = value;
+        else if (key === "tabOrder")
+            win.tabOrderRaw = (value || []).join("|");
         else if (key === "walletEnabled") {
             win.walletEnabled = value;
             // Ausgeschaltet, waehrend die Ansicht offen war -> zurueck
@@ -384,7 +400,8 @@ Window {
         "lang": win.lang,
         "bigFields": win.bigFields,
         "bigRotate": win.bigRotate,
-        "walletEnabled": win.walletEnabled
+        "walletEnabled": win.walletEnabled,
+        "tabOrder": win.tabOrder
     })
 
     FeedState {

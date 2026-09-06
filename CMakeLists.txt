@@ -85,6 +85,7 @@ set(SHARED_QML
     ui/qml/txtype.js
     ui/qml/money.js
     ui/qml/strings.js
+    ui/qml/views.js
     ui/qml/mondrian.js
     ui/qml/colors.js
     ui/qml/fonts.js

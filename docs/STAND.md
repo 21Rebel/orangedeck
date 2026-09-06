@@ -4,6 +4,96 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## 06.09.2026 -- die Darstellungs-Seite
+
+> Der Tagesabschluss darunter gilt weiter: **die Seite unter orangedeck.dev
+> muss live sein**, sonst weist Flathubs Pruefer den Antrag zurueck. Daran hat
+> sich nichts geaendert -- nachgemessen: die Domain haengt bei Cloudflare
+> (`apollo`/`fatima.ns.cloudflare.com`), aber es gibt keinen A-Eintrag, das
+> Pages-Projekt ist also noch nicht verbunden. **Punkt 1 der offenen Liste
+> unten ist erledigt**, der Rest steht unveraendert.
+
+### Was jetzt geht
+
+Jede Position der Reiterzeile hat ein Auswahlfeld mit allen Ansichten -- die
+Reihenfolge bestimmt der Anwender. Daneben der Schalter, der den Reiter ganz
+aus der Reihe nimmt. Beides auf einer neuen Seite **Darstellung** in den
+Einstellungen, zusammen mit der Startansicht.
+
+Die drei Aergernisse von gestern sind damit weg:
+
+- Die **Startansicht kennt jetzt alle sieben** Ansichten, nicht mehr nur vier.
+  Sie folgt sogar der eigenen Reihenfolge des Anwenders.
+- Die **Schalter liegen beieinander**, statt je auf der Seite ihrer eigenen
+  Ansicht. Das war nicht nur unpraktisch: wer einen Reiter abgeschaltet hat,
+  kommt auf dessen Seite nicht mehr, um ihn wieder anzuschalten.
+- "Zuletzt benutzte" steht als Vorgabe jetzt neben den Ansichten, die es
+  wirklich gibt -- wer sie nicht will, findet daneben, was er stattdessen
+  nehmen kann.
+
+### Die eine Quelle
+
+Neu ist `ui/qml/views.js`. Dieselbe Liste stand vorher **dreimal** da:
+`FeedTabs.tabViews`, `FeedTabs.tabNamen` und von Hand in der Startansicht. Die
+ersten beiden hielt ein Kommentar zusammen, die dritte nichts -- und genau die
+war stehengeblieben.
+
+`ordnung()` ist dabei nachsichtig in beide Richtungen: Unbekanntes faellt weg,
+Fehlendes wird hinten angehaengt. Eine achte Ansicht kommt dadurch auch bei
+dem an, der laengst eine eigene Reihenfolge gespeichert hat.
+
+### Und dieselbe Grenze noch zweimal
+
+Die Erkenntnis von gestern -- *eine Grenze wandert nicht von selbst mit* --
+hat beim Aufraeumen zwei weitere Fundstellen geliefert, beide bei der
+Startansicht:
+
+    app/qml/Main.qml            win.startView >= 0 && win.startView <= 3
+    shell/quickshell/shell.qml  Math.max(-1, Math.min(3, v.startView))
+
+Die 3 stammt aus der Zeit mit vier Ansichten. Haette die Startansicht Markt
+oder Wallet anbieten koennen, waere der Wunsch beim Start stillschweigend
+verworfen worden: geschrieben der echte Wert, gelesen der gestutzte. Dieselbe
+Bauart wie die Klemme auf 5 im Fenster -- nur dass sie hier gar nicht
+auffallen konnte, weil die Auswahl daneben genauso stehengeblieben war. **Zwei
+falsche Zahlen, die sich gegenseitig gedeckt haben.**
+
+Geklemmt wird jetzt nirgends mehr; eine Ansicht, die es gerade nicht gibt,
+faengt der Rueckfall in `FeedTabs.reiterPruefen()` ab.
+
+### Was noch dazukam, ohne dass es geplant war
+
+**Acht Reiter passen auf einem Telefon nicht mehr in eine Zeile.** `ViewTabs`
+ist eine `Row` und laeuft rechts einfach aus dem Bild -- ohne Rand, ohne
+Hinweis. Mit sieben war es auf 440 Punkten knapp, mit der achten Seite waere
+die letzte schlicht nicht erreichbar gewesen: eine Einstellungsseite, die man
+nicht anfassen kann. Die Reiterzeile der Einstellungen liegt jetzt in einem
+waagerechten Schieber, der nur dann etwas tut, wenn sie wirklich zu breit ist.
+
+### Gemessen
+
+Im Xvfb ueber `tools/xtest.py`, mit echten Zeigerereignissen:
+
+| Was | Ergebnis |
+|---|---|
+| Seite oeffnet, sieben Plaetze, Liste klappt auf | in Ordnung |
+| Feed und Explorer getauscht | Reiterzeile **und** Startansicht ziehen sofort mit |
+| Schalter umgelegt | Reiter faellt aus der Reihe |
+| Neustart | `tabOrderRaw=3\|1\|2\|0\|6\|4\|5` steht in der Ablage |
+| 440x950 (Hochformat) | Zeilen passen, Liste bleibt im Fenster, Reiterband schiebt |
+
+### Zu tun, bevor das DMS-Dashboard wieder laeuft
+
+`views.js` ist eine **neu hinzugekommene** geteilte Datei, und die laufende
+Shell sieht so etwas erst nach einem Neustart -- bis dahin scheitert der
+Bitcoin-Tab, weil `FeedTabs.qml` auf eine Datei zeigt, die dort noch nicht
+liegt. `tools/install-links.sh` ist bereits gelaufen; offen sind noch:
+
+    python3 daemon/orangedeck-dashtab
+    systemctl --user restart dms
+
+---
+
 ## TAGESABSCHLUSS 05.09.2026 -- wo das Projekt steht
 
 > Einstieg fuer den naechsten Tag. Alles darunter ist Journal und erklaert,
