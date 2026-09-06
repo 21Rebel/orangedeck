@@ -3,8 +3,8 @@
   "name": "English",
   "richtung": "ltr",
   "repo": "https://github.com/21Rebel/orangedeck",
-  "titel": "OrangeDeck — the Bitcoin mempool, live",
-  "beschreibung": "A live view of the Bitcoin mempool as a tile mosaic, with a block clock, miner figures, a block explorer, watch-only addresses and a market tab. Free, MIT licensed, no account.",
+  "titel": "OrangeDeck — Bitcoin mempool, block clock and miner display",
+  "beschreibung": "The Bitcoin mempool as a living tile mosaic, plus block clock, Bitaxe figures and block explorer. For Linux, Windows, macOS and Android. MIT, no account.",
   "nav": [
     [
       "What it is",
@@ -198,5 +198,6 @@
     "unbestaetigt": "unconfirmed",
     "gerechnet": "derived from difficulty",
     "verbindet": "connecting …"
-  }
+  },
+  "seo_kurz": "OrangeDeck is a free desktop and Android application that draws the Bitcoin mempool as a living tile mosaic. It combines six views in one window: mempool feed, block clock, Bitaxe figures, block explorer, watch-only addresses and market data. It runs on Linux, Windows, macOS and Android, is MIT licensed and requires no account."
 }

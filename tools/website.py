@@ -84,6 +84,18 @@ def seite(d, alle):
 <meta property="og:title" content="%(titel)s">
 <meta property="og:description" content="%(beschreibung)s">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://orangedeck.dev/%(code)s/">
+<meta property="og:locale" content="%(code)s">
+<meta property="og:site_name" content="OrangeDeck">
+<meta property="og:image" content="https://orangedeck.dev/bilder/vorschau.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="%(titel)s">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="%(titel)s">
+<meta name="twitter:description" content="%(beschreibung)s">
+<meta name="twitter:image" content="https://orangedeck.dev/bilder/vorschau.png">
+<link rel="canonical" href="https://orangedeck.dev/%(code)s/">
 <link rel="icon" href="../bilder/symbol.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../stil.css">
 %(alternativen)s
@@ -159,6 +171,7 @@ def seite(d, alle):
     <nav class="sprachen">%(wahl_lang)s</nav>
   </footer>
 </div>
+<script type="application/ld+json">%(ldjson)s</script>
 <script>window.ORANGEDECK_LIVE = %(live_json)s;</script>
 <script src="../mondrian.js"></script>
 <script src="../colors.js"></script>
@@ -185,10 +198,184 @@ def seite(d, alle):
        "live_json": json.dumps(d.get("live", {}), ensure_ascii=False,
                                separators=(",", ":")),
        "feed_alt": e(d["ansichten"][0][1]),
+       "ldjson": ldjson(d),
        "alternativen": "\n".join(
            '<link rel="alternate" hreflang="%s" href="https://orangedeck.dev/%s/">'
            % (a["code"], a["code"]) for a in alle)
        + '\n<link rel="alternate" hreflang="x-default" href="https://orangedeck.dev/en/">'}
+
+
+def robots():
+    """**Ausdruecklich statt stillschweigend.**
+
+    Ohne Datei gilt zwar "alles erlaubt", aber Cloudflare Pages liefert jede
+    unbekannte Adresse mit **HTTP 200** und dem Inhalt der Sprachweiche aus --
+    ein Crawler, der `robots.txt` holt, bekommt also HTML mit Status 200 und
+    muss raten, was das soll. Dieselbe Falle trifft `sitemap.xml`: bei Google
+    eingereicht, antwortet sie mit einer HTML-Seite.
+
+    Die KI-Crawler stehen namentlich da, obwohl `*` sie schon einschliesst.
+    Nicht aus Technik, sondern als Aussage: dieses Projekt will gelesen
+    werden.
+    """
+    return """# OrangeDeck -- https://orangedeck.dev
+# Alles offen. Auch fuer die, die daraus Antworten bauen.
+
+User-agent: *
+Allow: /
+
+# Ausdruecklich willkommen
+User-agent: GPTBot
+Allow: /
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Claude-SearchBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: Applebot-Extended
+Allow: /
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://orangedeck.dev/sitemap.xml
+"""
+
+
+def sitemap(alle):
+    """Jede Sprachseite einmal, mit den Geschwistern daneben.
+
+    `xhtml:link` wiederholt, was im Kopf der Seite schon steht -- Google
+    verlangt beides, sonst gilt die Sprachverknuepfung als unvollstaendig.
+    """
+    zeilen = ['<?xml version="1.0" encoding="UTF-8"?>',
+              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+              '        xmlns:xhtml="http://www.w3.org/1999/xhtml">']
+    for d in alle:
+        zeilen.append("  <url>")
+        zeilen.append("    <loc>https://orangedeck.dev/%s/</loc>" % d["code"])
+        for a in alle:
+            zeilen.append('    <xhtml:link rel="alternate" hreflang="%s" href="https://orangedeck.dev/%s/"/>'
+                          % (a["code"], a["code"]))
+        zeilen.append('    <xhtml:link rel="alternate" hreflang="x-default" href="https://orangedeck.dev/en/"/>')
+        zeilen.append("    <changefreq>weekly</changefreq>")
+        zeilen.append("  </url>")
+    zeilen.append("</urlset>")
+    return "\n".join(zeilen) + "\n"
+
+
+def llmstxt(alle):
+    """Die Kurzfassung in Klartext, an einem festen Ort.
+
+    Gedacht fuer Systeme, die eine Seite nicht rendern, sondern lesen. Was
+    hier steht, ist dasselbe wie auf der Seite -- nur ohne Navigation,
+    Bildunterschriften und Fusszeile dazwischen. **Keine zweite Wahrheit**:
+    steht hier etwas anderes als auf der Seite, ist eines von beidem falsch.
+    """
+    d = next((x for x in alle if x["code"] == "en"), alle[0])
+    z = ["# OrangeDeck", "", "> " + d["beschreibung"], "",
+         d.get("seo_kurz", ""), "", "## " + d["ansichten_titel"], ""]
+    for n, t in d["ansichten"]:
+        z.append("- **%s**: %s" % (n, t))
+    z += ["", "## " + d["wo_titel"], ""]
+    for n, t in d["wo"]:
+        z.append("- **%s**: %s" % (n, t))
+    z += ["", "## Data sources", "",
+          "- Blocks, mempool, fees, hashrate: wss://mempool.space/api/v1/ws, or your own instance",
+          "- Price and trades: Binance, Bybit, OKX public streams",
+          "- Liquidations: Bybit, OKX",
+          "- Open interest (heatmap model): Binance futures data",
+          "- Your own miner: http://<bitaxe>/api/system/info, never leaves the home network",
+          "", "## " + d["faq_titel"], ""]
+    for f, a in d["faq"]:
+        z += ["### " + f, "", a, ""]
+    z += ["## Origin", "",
+          "The tile packing and colour model are ports from bitfeed (MIT, mononaut).",
+          "OrangeDeck itself is MIT licensed, copyright 2026 21Rebel.",
+          "Source: " + d["repo"], ""]
+    return "\n".join(z)
+
+
+def seite404(alle):
+    """**Cloudflare Pages liefert sonst jede falsche Adresse mit 200 aus.**
+
+    Gemessen am 06.09.2026: `/robots.txt` und `/llms.txt` gaben die
+    Sprachweiche zurueck, Status 200. Fuer eine Suchmaschine ist damit jede
+    vertippte Adresse eine eigene, indexierbare Seite mit demselben Inhalt --
+    und `robots.txt` ist HTML. Eine `404.html` im Ausgabeverzeichnis stellt
+    das ab; Pages nimmt sie und antwortet dann mit dem richtigen Status.
+    """
+    liste = " ".join('<a href="/%s/">%s</a>' % (a["code"], e(a["name"])) for a in alle)
+    return """<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>404 — OrangeDeck</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/bilder/symbol.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/stil.css">
+<body>
+<div class="mitte"><header>
+  <div class="marke"><img src="/bilder/symbol.svg" alt="" width="72" height="72"><h1>404</h1></div>
+  <p class="unterzeile">Diese Seite gibt es nicht. / This page does not exist.</p>
+  <p class="sprachen">%s</p>
+</header></div>
+</body>
+</html>
+""" % liste
+
+
+def ldjson(d):
+    """Strukturierte Daten: was das Ding ist, und die Fragen mit Antworten.
+
+    **Nicht fuer Google allein.** ChatGPT, Perplexity und die Uebersichten in
+    der Suche zitieren, was sich zitieren laesst -- eine Frage mit einer
+    vollstaendigen Antwort daneben, ohne Kontext ringsherum. Die Fragen stehen
+    ohnehin schon auf der Seite; hier bekommen sie eine Form, die eine
+    Maschine ohne Raten liest.
+
+    `applicationCategory` ist absichtlich `UtilityApplication` und nicht
+    `FinanceApplication`: das Programm bewegt kein Geld, es sieht zu. Eine
+    Kennzeichnung, die mehr verspricht, als das Programm tut, faellt spaeter
+    auf einen zurueck.
+    """
+    frei = {"@type": "Offer", "price": "0", "priceCurrency": "EUR"}
+    anwendung = {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "OrangeDeck",
+        "url": "https://orangedeck.dev/%s/" % d["code"],
+        "inLanguage": d["code"],
+        "description": d.get("seo_kurz") or d["beschreibung"],
+        "applicationCategory": "UtilityApplication",
+        "operatingSystem": "Linux, Windows, macOS, Android",
+        "license": "https://opensource.org/licenses/MIT",
+        "isAccessibleForFree": True,
+        "offers": frei,
+        "image": "https://orangedeck.dev/bilder/vorschau.png",
+        "screenshot": ["https://orangedeck.dev/bilder/%s.png" % n
+                       for n in ("feed", "uhr", "markt")],
+        "codeRepository": d["repo"],
+        "author": {"@type": "Organization", "name": "21Rebel",
+                   "url": "https://orangedeck.dev/"},
+        "featureList": [n for n, _ in d["ansichten"]],
+    }
+    fragen = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "inLanguage": d["code"],
+        "mainEntity": [{"@type": "Question", "name": f,
+                        "acceptedAnswer": {"@type": "Answer", "text": a}}
+                       for f, a in d["faq"]],
+    }
+    return json.dumps([anwendung, fragen], ensure_ascii=False,
+                      separators=(",", ":"))
 
 
 def geteilt(quelle, ziel):
@@ -274,12 +461,18 @@ def main():
         (ZIEL / "index.html").write_text(weiche(alle), encoding="utf-8")
         shutil.copy2(QUELLE / "stil.css", ZIEL / "stil.css")
         shutil.copy2(QUELLE / "live.js", ZIEL / "live.js")
+        (ZIEL / "robots.txt").write_text(robots(), encoding="utf-8")
+        (ZIEL / "sitemap.xml").write_text(sitemap(alle), encoding="utf-8")
+        (ZIEL / "llms.txt").write_text(llmstxt(alle), encoding="utf-8")
+        (ZIEL / "404.html").write_text(seite404(alle), encoding="utf-8")
         shutil.copytree(QUELLE / "bilder", ZIEL / "bilder")
         for name in ("mondrian.js", "colors.js"):
             geteilt(WURZEL / "ui" / "qml" / name, ZIEL / name)
     print("  %s website/fertig/index.html (Sprachweiche)" % ("schreibe" if tun else "wuerde"))
     print("  %s stil.css, live.js, bilder/ und die zwei geteilten Bausteine"
           % ("kopiere" if tun else "wuerde kopieren"))
+    print("  %s robots.txt, sitemap.xml, llms.txt und 404.html"
+          % ("schreibe" if tun else "wuerde schreiben"))
     print("\n%d Sprachen: %s" % (len(alle), ", ".join(a["code"] for a in alle)))
 
 

@@ -2,11 +2,23 @@
 <html lang="de" dir="ltr">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OrangeDeck — der Bitcoin-Mempool, lebendig</title>
-<meta name="description" content="Der Bitcoin-Mempool als Kachelgrafik, dazu Blockuhr, Kennzahlen zum Schürfen, Blockforscher, beobachtete Adressen und ein Markt-Reiter. Frei, MIT-lizenziert, ohne Konto.">
-<meta property="og:title" content="OrangeDeck — der Bitcoin-Mempool, lebendig">
-<meta property="og:description" content="Der Bitcoin-Mempool als Kachelgrafik, dazu Blockuhr, Kennzahlen zum Schürfen, Blockforscher, beobachtete Adressen und ein Markt-Reiter. Frei, MIT-lizenziert, ohne Konto.">
+<title>OrangeDeck — Bitcoin-Mempool, Blockuhr und Miner-Anzeige</title>
+<meta name="description" content="Der Bitcoin-Mempool als lebendige Kachelgrafik, dazu Blockuhr, Bitaxe-Kennzahlen und Blockforscher. Für Linux, Windows, macOS und Android. MIT, ohne Konto.">
+<meta property="og:title" content="OrangeDeck — Bitcoin-Mempool, Blockuhr und Miner-Anzeige">
+<meta property="og:description" content="Der Bitcoin-Mempool als lebendige Kachelgrafik, dazu Blockuhr, Bitaxe-Kennzahlen und Blockforscher. Für Linux, Windows, macOS und Android. MIT, ohne Konto.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://orangedeck.dev/de/">
+<meta property="og:locale" content="de">
+<meta property="og:site_name" content="OrangeDeck">
+<meta property="og:image" content="https://orangedeck.dev/bilder/vorschau.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="OrangeDeck — Bitcoin-Mempool, Blockuhr und Miner-Anzeige">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OrangeDeck — Bitcoin-Mempool, Blockuhr und Miner-Anzeige">
+<meta name="twitter:description" content="Der Bitcoin-Mempool als lebendige Kachelgrafik, dazu Blockuhr, Bitaxe-Kennzahlen und Blockforscher. Für Linux, Windows, macOS und Android. MIT, ohne Konto.">
+<meta name="twitter:image" content="https://orangedeck.dev/bilder/vorschau.png">
+<link rel="canonical" href="https://orangedeck.dev/de/">
 <link rel="icon" href="../bilder/symbol.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../stil.css">
 <link rel="alternate" hreflang="de" href="https://orangedeck.dev/de/">
@@ -84,6 +96,7 @@
     <nav class="sprachen"><a href="../de/" hreflang="de" aria-current="true">Deutsch</a><a href="../en/" hreflang="en">English</a></nav>
   </footer>
 </div>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"SoftwareApplication","name":"OrangeDeck","url":"https://orangedeck.dev/de/","inLanguage":"de","description":"OrangeDeck ist eine freie Desktop- und Android-Anwendung, die den Bitcoin-Mempool als lebendige Kachelgrafik zeichnet. Sie vereint sechs Ansichten in einem Fenster: Mempool-Feed, Blockuhr, Bitaxe-Kennzahlen, Blockforscher, beobachtete Adressen und Marktdaten. Sie läuft auf Linux, Windows, macOS und Android, ist MIT-lizenziert und verlangt kein Konto.","applicationCategory":"UtilityApplication","operatingSystem":"Linux, Windows, macOS, Android","license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"image":"https://orangedeck.dev/bilder/vorschau.png","screenshot":["https://orangedeck.dev/bilder/feed.png","https://orangedeck.dev/bilder/uhr.png","https://orangedeck.dev/bilder/markt.png"],"codeRepository":"https://github.com/21Rebel/orangedeck","author":{"@type":"Organization","name":"21Rebel","url":"https://orangedeck.dev/"},"featureList":["Feed","Uhr","Miner","Explorer","Wallet","Markt"]},{"@context":"https://schema.org","@type":"FAQPage","inLanguage":"de","mainEntity":[{"@type":"Question","name":"Braucht es meine Schlüssel?","acceptedAnswer":{"@type":"Answer","text":"Nein. Es kann nichts unterschreiben. Beobachtete Adressen gibt man als Adresse oder xpub ein; sie verlassen den Rechner nur als Guthabenabfrage."}},{"@type":"Question","name":"Woher kommen die Daten?","acceptedAnswer":{"@type":"Answer","text":"Aus mempool.space, oder aus der eigenen Instanz — das ist eine Einstellung. Marktdaten kommen aus den öffentlichen Kanälen der Börsen."}},{"@type":"Question","name":"Telefoniert es nach Hause?","acceptedAnswer":{"@type":"Answer","text":"Nein. Es gibt keinen Server von uns, keine Auswertung und keine Absturzberichte."}},{"@type":"Question","name":"Was kostet es?","acceptedAnswer":{"@type":"Answer","text":"Nichts. MIT-lizenziert, und es gibt keine bezahlte Stufe."}},{"@type":"Question","name":"Ist die Liquidations-Heatmap echt?","acceptedAnswer":{"@type":"Answer","text":"Nein, und sie sagt es auf dem Schirm. Niemand veröffentlicht fremde Positionen; sie ist ein Modell mit ausgeschriebenen Annahmen."}},{"@type":"Question","name":"Läuft es auf einem Tablet an der Wand?","acceptedAnswer":{"@type":"Answer","text":"Dafür ist die Uhr da — große Zahlen, keine Bedienung. Der Android-Bau hat eine Verknüpfung direkt dorthin."}}]}]</script>
 <script>window.ORANGEDECK_LIVE = {"reiter":["Feed","Uhr","Miner","Explorer","Markt","Wallet"],"live":"LIVE","beispiel":"BEISPIEL","beispielHinweis":"Kein fremder Schürfer und keine fremde Wallet lassen sich von hier aus abfragen. Diese beiden Ansichten zeigen deshalb erfundene Zahlen — die Anwendung zeigt Ihre eigenen.","quelle":"Live aus dem Mempool","block":"Block","vorMin":"vor {0} Min","gebuehr":"Gebühr","kurs":"Kurs","mempool":"Mempool","hashrate":"Hashrate","moscow":"Moscow Time","schwierigkeit":"Schwierigkeit","halving":"Halving","bloecke":"Blöcke","txn":"Transaktionen","beste":"Beste Freigabe","temperatur":"Temperatur","leistung":"Leistung","guthaben":"Guthaben","adressen":"Adressen","unbestaetigt":"unbestätigt","gerechnet":"aus der Schwierigkeit gerechnet","verbindet":"verbindet …"};</script>
 <script src="../mondrian.js"></script>
 <script src="../colors.js"></script>

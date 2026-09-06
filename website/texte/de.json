@@ -3,8 +3,8 @@
   "name": "Deutsch",
   "richtung": "ltr",
   "repo": "https://github.com/21Rebel/orangedeck",
-  "titel": "OrangeDeck — der Bitcoin-Mempool, lebendig",
-  "beschreibung": "Der Bitcoin-Mempool als Kachelgrafik, dazu Blockuhr, Kennzahlen zum Schürfen, Blockforscher, beobachtete Adressen und ein Markt-Reiter. Frei, MIT-lizenziert, ohne Konto.",
+  "titel": "OrangeDeck — Bitcoin-Mempool, Blockuhr und Miner-Anzeige",
+  "beschreibung": "Der Bitcoin-Mempool als lebendige Kachelgrafik, dazu Blockuhr, Bitaxe-Kennzahlen und Blockforscher. Für Linux, Windows, macOS und Android. MIT, ohne Konto.",
   "nav": [
     [
       "Was es ist",
@@ -198,5 +198,6 @@
     "unbestaetigt": "unbestätigt",
     "gerechnet": "aus der Schwierigkeit gerechnet",
     "verbindet": "verbindet …"
-  }
+  },
+  "seo_kurz": "OrangeDeck ist eine freie Desktop- und Android-Anwendung, die den Bitcoin-Mempool als lebendige Kachelgrafik zeichnet. Sie vereint sechs Ansichten in einem Fenster: Mempool-Feed, Blockuhr, Bitaxe-Kennzahlen, Blockforscher, beobachtete Adressen und Marktdaten. Sie läuft auf Linux, Windows, macOS und Android, ist MIT-lizenziert und verlangt kein Konto."
 }
