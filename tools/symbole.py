@@ -103,7 +103,18 @@ def helligkeit(x, y, r):
     return 0.34 + 0.30 * (mx * 0.5 + (1 - my) * 0.5)
 
 # --- Geometrie -------------------------------------------------------------
-def teile(seite, rand, luecke_anteil=0.15, mit_rahmen=True):
+# **Der Rahmen ist raus.** Er stand als Kontur mit 42 % Deckkraft um die
+# Kacheln und las sich ueber dunklem Grund nicht als Orange, sondern als
+# Braun -- in der Leiste, im Starter und auf der Projektseite gleichermassen.
+# Ein Zeichen, dessen auffaelligstes Merkmal eine Farbe ist, die im Entwurf
+# nicht vorkommt, ist unsauber.
+#
+# Damit das Zeichen dabei nicht schrumpft, uebernehmen die Kacheln die
+# Flaeche, die vorher der Rahmen einnahm: der Rand faellt entsprechend
+# kleiner aus (siehe `svg_voll` und `vektor_android`).
+RAHMEN = False
+
+def teile(seite, rand, luecke_anteil=0.15, mit_rahmen=RAHMEN):
     """Liefert (Rechtecke, Rahmen) in Nutzerkoordinaten der Kantenlaenge `seite`."""
     innen = seite - 2 * rand
     e = innen / BREITE
@@ -129,8 +140,13 @@ def rundeck_pfad(x, y, w, h, r):
                y + r, r, r, x + r, y))
 
 # --- Ausgabe ---------------------------------------------------------------
-def svg_voll(seite=256, rand_anteil=0.2266, grund=True, eck=0.219):
-    """Das ganze Symbol: dunkler Grund, Rahmen, Kacheln."""
+# Mit Rahmen sassen die Kacheln bei 0,2266 und der Rahmen stand um 0,36
+# Rastereinheiten darueber hinaus -- zusammen 157 von 256. Ohne ihn nehmen die
+# Kacheln genau diese 157 ein, damit das Zeichen gleich gross bleibt.
+RAND_ANTEIL = 0.2266 if RAHMEN else 0.1934
+
+def svg_voll(seite=256, rand_anteil=RAND_ANTEIL, grund=True, eck=0.219):
+    """Das ganze Symbol: dunkler Grund und Kacheln."""
     rand = seite * rand_anteil
     stuecke, rahmen = teile(seite, rand)
     aus = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" '
@@ -168,9 +184,10 @@ def vektor_android(name_kommentar, einfarbig=False):
     # mit einer aufgelegten Kreismaske bei 47, 52, 58 und 66 dp; ab 58
     # beginnt sichtbares Anschneiden.
     aussen = 52.0
-    # Der Rahmen steht um 0,36 Rastereinheiten nach aussen, das sind 6 % der
-    # Blockkante auf jeder Seite.
-    block = aussen / 1.12
+    # Der Rahmen stand um 0,36 Rastereinheiten nach aussen, das sind 6 % der
+    # Blockkante auf jeder Seite. Ohne ihn fuellen die Kacheln die 52 dp
+    # selbst aus -- der sichere Bereich bleibt derselbe.
+    block = aussen / 1.12 if RAHMEN else aussen
     rand = (seite - block) / 2
     stuecke, rahmen = teile(seite, rand)
     zeilen = ['<!-- %s -->' % name_kommentar,
