@@ -88,7 +88,7 @@
        daraus geworden waere. Ein Release-Eintrag fuer etwas, das niemand
        installieren konnte, ist eine Erfindung; darum ersetzt statt ergaenzt. -->
   <releases>
-    <release version="0.2.0" date="2026-09-05">
+    <release version="0.2.0" date="2026-09-06">
       <description>
         <p>Erste Auslieferung.</p>
         <p>
@@ -106,6 +106,12 @@
           Eigene Kennung unter der Domain orangedeck.dev. Sie gilt auf allen
           Systemen gleich; das Android-Paket trug vorher notgedrungen eine
           andere.
+        </p>
+        <p>
+          Die Reiter lassen sich ordnen: jede Position traegt ein
+          Auswahlfeld, und wer eine Ansicht nie braucht, nimmt sie ganz aus
+          der Reihe. Beides steht mit der Startansicht auf einer eigenen
+          Seite in den Einstellungen.
         </p>
         <p>
           Geprueft auf einem System, das nichts von diesem Projekt weiss:
