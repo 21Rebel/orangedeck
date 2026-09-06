@@ -4,6 +4,80 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## 06.09.2026, spaeter Abend -- der Antrag ging raus und war in einer Minute zu
+
+### Was passiert ist
+
+PR #10105 bei `flathub/flathub`, abgesetzt um 19:14 Uhr. Um 19:15 Uhr vom
+`submission-checker` automatisch geschlossen, Etikett **"AI Slop"**:
+
+    Diagnostics: Checklist(s) not completed or missing.
+
+Technisch war alles in Ordnung -- Lint sauber, Seite live, Bau aus der echten
+Adresse, Lauf auf Ubuntu 24.04, Tag gesetzt, Pin stimmt. Gescheitert ist es an
+zwei Dingen, die nichts davon berueren.
+
+### Der unmittelbare Grund: der PR-Rumpf **ist** die Pruefliste
+
+`flathub/flathub` hat eine `pull_request_template.md` mit Haken, und ein Bot
+prueft sie stuendlich. Der Antragstext aus `PR-TEXT.md` wurde an ihre
+**Stelle** gesetzt statt **hinein** -- damit war die Liste weg.
+
+### Der schwerere Grund: KI darf den Antrag nicht stellen
+
+> AI tools or agents must not open or automate Flathub submission pull
+> requests, or generate their commit messages, descriptions, review comments,
+> or replies.
+
+Beim ersten Versuch wurden alle vier Dinge maschinell getan. Die vierte Zeile
+der Pruefliste ("I have not used AI tools or agents to generate or automate
+this submission pull request") laesst sich fuer diesen PR also nicht
+wahrheitsgemaess ankreuzen. **Der PR ist verbrannt**, ein Kommentar daran
+waere derselbe Verstoss noch einmal.
+
+Bitter daran: `EINREICHEN.md` sagte den Kern seit dem 05.09. selbst -- "die
+Einreichung laeuft ueber einen Pull Request und haengt an einer Person, nicht
+an einem Werkzeug". Der Satz stand da und wurde gelesen. Nachgeschlagen wurde
+die Richtlinie trotzdem erst, als der Bot zugeschlagen hatte.
+
+### Zwei Punkte, die vor dem naechsten Anlauf zu entscheiden sind
+
+**Offenlegung.** Von 422 Commits tragen 120 eine KI-Mitautorschaft, und zwar
+in Anwendung *und* Verpackung. Die Richtlinie verlangt Angabe der betroffenen
+Teile und des Umfangs; nicht offengelegtes Material kann zur Ablehnung
+fuehren, wiederholte Verstoesse zu einer Sperre.
+
+**Entwicklungsgeschichte.** Die eigene Arbeit laeuft vom 01.09. bis heute --
+sechs Tage, 179 Commits, drei Tags. Flathub: *"applications that have only
+existed for a very short period of time will generally not be accepted"*, und
+verlangt zusaetzlich *"evidence of real-world use"*. Das gibt es nach sechs
+Tagen kaum, unabhaengig von der Qualitaet.
+
+**Das ist der eigentliche Befund des Abends** und der einzige, der nicht durch
+Sorgfalt zu heilen ist: der Antrag kam zu frueh. Die Technik war fertig, das
+Projekt nicht.
+
+### Aufgeraeumt
+
+Der Zweig `dev.orangedeck.OrangeDeck` in der Abzweigung ist geloescht -- sein
+Commit trug eine maschinell geschriebene Nachricht, und ein Zweig, den man
+nicht weiterverwenden darf, ist eine Falle. Neu anzulegen ist er in einer
+Zeile; es geht um **eine** Datei. Die Regeln stehen jetzt ausfuehrlich in
+`packaging/flathub/EINREICHEN.md`.
+
+### Die Erkenntnis
+
+**Ein Werkzeug, das die Regeln des Gegenuebers nicht liest, ist kein
+Werkzeug, sondern ein Risiko.** Geprueft wurde diesmal alles -- der Bauplan,
+die Metadaten, der Bau, das fremde System. Ungeprueft blieb die einzige
+Frage, die vor dem Absenden zaehlte: *darf ich das ueberhaupt absenden?*
+
+Dieselbe Familie wie die Messgeraete der letzten Tage, nur eine Stufe hoeher:
+nicht ein Pruefer, der an der falschen Stelle hinsieht, sondern ein Pruefer,
+den niemand aufgestellt hat.
+
+---
+
 ## 06.09.2026, Abend -- die Seite steht, das Paket ist gemessen
 
 ### Der Stand in einem Satz

@@ -1,5 +1,12 @@
 # Flathub: was noch zu tun ist
 
+> **Der erste Versuch ist am 06.09.2026 gescheitert, und zwar nicht an der
+> Technik.** PR #10105 wurde eine Minute nach dem Absenden vom
+> `submission-checker` automatisch geschlossen und mit dem Etikett *AI Slop*
+> versehen. Zwei Ursachen, die zweite ist die schwerere -- beide stehen unten
+> unter "Die Regel, an der der erste Versuch gescheitert ist".
+
+
 Alles, was ohne ein GitHub-Konto geht, ist fertig. Was hier steht, muss der
 Nutzer selbst tun -- die Einreichung laeuft ueber einen Pull Request und
 haengt an einer Person, nicht an einem Werkzeug.
@@ -123,3 +130,86 @@ dafuer erzeugt
 
     flatpak build-bundle <repo> orangedeck.flatpak dev.orangedeck.OrangeDeck \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+
+
+## Die Regel, an der der erste Versuch gescheitert ist
+
+### 1. Der PR-Rumpf **ist** die Pruefliste
+
+`flathub/flathub` hat eine `pull_request_template.md`, und sie ist keine
+Hoeflichkeit: ein Bot laeuft stuendlich, prueft die Haken und **schliesst den
+PR automatisch**, wenn die Liste fehlt oder unvollstaendig ist. Wer den Rumpf
+durch einen eigenen Text ersetzt, loescht damit die Pruefliste.
+
+Der Text aus `PR-TEXT.md` gehoert also **in** die Vorlage (beim Punkt
+"Please describe the application briefly"), nicht an ihre Stelle.
+
+Was die Liste verlangt, mit dem, was hier fehlt:
+
+| Haken | Stand |
+|---|---|
+| Beschreibung | steht in `PR-TEXT.md` |
+| **Video der laufenden Flatpak-Fassung auf Linux** | **fehlt** |
+| Kennung nach den Regeln | erfuellt, `dev.orangedeck.OrangeDeck` aus `orangedeck.dev` |
+| Entwicklungsgeschichte, echter Gebrauch, Zusage zur Pflege | **fraglich, siehe unten** |
+| **Offenlegung KI-erzeugten Materials, mit Umfang** | **noetig, siehe unten** |
+| **Keine KI-Werkzeuge fuer diesen PR und seine Rueckmeldungen** | **war beim ersten Versuch verletzt** |
+| Autor/Entwickler des Projekts | erfuellt |
+
+### 2. KI darf den Antrag nicht stellen
+
+Flathubs Generative-AI-Richtlinie, woertlich:
+
+> AI tools or agents **must not open or automate Flathub submission pull
+> requests**, or generate their commit messages, descriptions, review
+> comments, or replies.
+
+Beim ersten Versuch wurden alle vier Dinge von einem Agenten getan: der PR
+geoeffnet, seine Beschreibung geschrieben, die Commit-Nachricht im Zweig
+verfasst. Genau das hat der Bot erkannt.
+
+**Praktisch heisst das:** der Antrag wird von Hand gestellt. Der Rumpf, die
+Commit-Nachricht im Flathub-Zweig und **jede Antwort im Pruefgespraech**
+gehoeren einem Menschen. Ein Agent darf recherchieren, bauen, messen und
+diese Datei hier schreiben -- er darf nichts davon einreichen.
+
+Der Zweig `dev.orangedeck.OrangeDeck` in der Abzweigung wurde deshalb
+geloescht: sein einziger Commit trug eine maschinell geschriebene Nachricht,
+und ein Zweig, den man nicht weiterverwenden darf, ist eine Falle. Neu
+anlegen ist eine Zeile -- es geht um **eine** Datei.
+
+### 3. Was ausserdem offengelegt werden muss
+
+> Submitters must reveal any AI-generated code, documentation, packaging, or
+> other material they know or reasonably believe is included in the
+> application or its Flathub packaging, identifying affected parts and extent.
+
+Der Umfang ist hier betraechtlich und laesst sich beziffern:
+
+    git rev-list --count HEAD                          422 Commits
+    git log --format=%b | grep -c Co-Authored-By: Claude    120
+
+Betroffen sind Anwendung **und** Verpackung. Ausgenommen von der
+Offenlegungspflicht ist nur, was zu Recherche, Gespraech und Fehlersuche
+diente und nicht im Ergebnis steht -- das trifft hier nicht zu.
+
+Nicht offengelegtes Material kann zur Ablehnung fuehren, wiederholte
+Verstoesse zu einer dauerhaften Sperre. **Das ist kein Formular, das ist eine
+Aussage.**
+
+### 4. Die Entwicklungsgeschichte ist der schwerere Punkt
+
+> Submissions must demonstrate a meaningful history of development or
+> existence, evidence of real-world use and a clear commitment to ongoing
+> maintenance. […] applications that have only existed for a very short
+> period of time will generally not be accepted.
+
+Die eigene Arbeit an OrangeDeck laeuft vom **01.09.2026 bis heute** -- sechs
+Tage, 179 Commits, drei Tags. Dicht, aber kurz. "Evidence of real-world use"
+gibt es nach sechs Tagen kaum, und das haengt nicht daran, wie gut das
+Programm ist.
+
+Das ist vor dem naechsten Anlauf zu entscheiden und nicht wegzuhaken: entweder
+das Projekt laeuft eine Weile oeffentlich, sammelt Nutzung und Ausgaben --
+oder der Antrag geht mit dem Wissen raus, dass dieser Punkt eine Rueckfrage
+ausloest.
