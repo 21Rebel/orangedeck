@@ -4,6 +4,198 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## TAGESABSCHLUSS 06.09.2026 -- wo das Projekt steht
+
+> Einstieg fuer den naechsten Tag. Alles darunter ist Journal und erklaert,
+> wie es dazu kam.
+
+### Der Stand in einem Satz
+
+**orangedeck.dev ist live und zeigt den Mempool wirklich live** -- und die
+erste Auslieferung liegt fertig gebaut da, wartet aber auf drei Dinge, die
+alle bei dir liegen: Sicherung, Signaturschluessel, und die Entscheidung, ob
+`v0.2.0` so hinausgeht oder als `v0.2.1` mit zwei Korrekturen.
+
+### Was morgen als Erstes drankommt
+
+**1. Sicherung.** Cloud und USB-Stick, vollstaendig. Dazu gehoert neuerdings
+
+    ~/.cache/orangedeck-auslieferung/    APK und Flatpak-Buendel, 56 MB
+    ~/.cache/orangedeck-vm/              Pruef-VM samt Platte, rund 2 GB
+
+**2. Der Signaturschluessel.** Erst nach der Sicherung, und das ist die
+richtige Reihenfolge: ein Schluessel, den man noch nicht sichern kann, ist
+eine Verbindlichkeit ohne Netz. **Verliert man ihn, laesst sich fuer alle,
+die die App installiert haben, nie wieder ein Update ausliefern** -- keine
+Wiederherstellung, keine Stelle, die hilft.
+
+    mkdir -p ~/.local/share/orangedeck/signing && keytool -genkeypair -v \
+        -keystore ~/.local/share/orangedeck/signing/orangedeck.jks \
+        -alias orangedeck -keyalg RSA -keysize 4096 -validity 10000
+
+Die Angaben zu Name, Organisation und Ort sind **in jedem signierten APK
+oeffentlich sichtbar**. Passwort in den Passwortspeicher, nicht in eine Datei
+daneben -- sonst sichert man beides zusammen und hat nichts gewonnen. Der
+Behaelter gehoert nie ins Repo, auch nicht voruebergehend.
+
+**3. Die Entscheidung A oder B.**
+
+Der Tag `v0.2.0` sitzt auf `18ce166`. **Zwei Korrekturen kamen danach:** die
+Umlaute im Markt-Reiter (`b4c3dc7`) und das Symbol ohne den braunen Rahmen
+(`39f335c`). Beides ist kosmetisch, beides faellt sofort auf -- ausgerechnet
+an der Stelle, die die Annahmen der Heatmap ausschreibt, und am Symbol im
+Starter.
+
+- **A:** `v0.2.0` so ausliefern. Es ist der Stand, der in der Pruef-VM auf
+  Ubuntu 24.04 gelaufen ist; die Zusage in den Freigabetexten gilt genau fuer
+  ihn. Heute fertig.
+- **B:** auf `v0.2.1` gehen. Sauberer -- kostet aber einen weiteren VM-Lauf,
+  sonst steht in den Metadaten eine Zusicherung ueber einen Stand, den
+  niemand dort laufen liess. Genau der Fehler, den wir heute Mittag bewusst
+  vermieden haben.
+
+**4. Dann:** APK signieren (`tools/apk.sh` gibt die Zeile selbst aus), auf
+beiden Geraeten pruefen -- normales Android **und** GrapheneOS --, danach die
+Freigabe mit beiden Dateien.
+
+### Was heute dazugekommen ist
+
+Vierzehn Commits.
+
+| Etappe | Stand |
+|---|---|
+| Darstellungs-Seite: Reiterfolge gehoert dem Anwender | fertig, in fuenf Wirten |
+| `views.js` -- die eine Quelle statt dreier Listen | fertig |
+| Zwei weitere Klemmen bei der Startansicht | behoben |
+| orangedeck.dev bei Cloudflare Pages | **live** |
+| Flathub-Antrag #10105 | **gestellt und in einer Minute geschlossen** |
+| `v0.2.0` getaggt, Pin gegengeprueft | fertig |
+| Lauf auf Ubuntu 24.04 in der Pruef-VM | **bestanden**, samt `tabOrder` durch den Flatpak |
+| Punkt 7: Zeiger in der Pruef-VM | **beantwortet, negativ** |
+| Markt-Reiter sprach ASCII-Umschrift | behoben |
+| Symbol ohne den braunen Rahmen, 28 Dateien | fertig |
+| Bewegter Kopf: sechs Reiter, vier davon live | fertig, im Browser gemessen |
+| SEO/GEO-Grundlage samt echtem 404 | fertig |
+| BLOCKCLOCK aus dem ganzen Projekt | fertig |
+| `tools/apk.sh` | neu |
+| APK aus `v0.2.0`, mit TLS | gebaut, **unsigniert** |
+
+### Die Erkenntnisse dieses Tages
+
+**Die teuerste zuerst: ein Werkzeug, das die Regeln des Gegenuebers nicht
+liest, ist kein Werkzeug, sondern ein Risiko.** Der Flathub-Antrag ging raus
+und war nach einer Minute zu, mit dem Etikett *AI Slop*. Nicht weil die
+Technik nicht stimmte -- Lint sauber, Seite live, Bau aus der echten Adresse,
+Lauf auf fremdem System --, sondern weil Flathubs Richtlinie das Absenden
+durch einen Agenten ausdruecklich verbietet und der PR-Rumpf eine Pruefliste
+ist, die ueberschrieben wurde.
+
+Geprueft wurde an dem Tag alles. Ungeprueft blieb die einzige Frage, die vor
+dem Absenden zaehlte: **darf ich das ueberhaupt absenden?** Dieselbe Familie
+wie die Messgeraete der Vortage, nur eine Stufe hoeher -- nicht ein Pruefer,
+der an der falschen Stelle hinsieht, sondern ein Pruefer, den niemand
+aufgestellt hat.
+
+Und der Satz stand da: `EINREICHEN.md` sagte seit dem 05.09., die Einreichung
+"haengt an einer Person, nicht an einem Werkzeug". Gelesen, nicht befolgt.
+
+**Ein Prueflauf, dessen Rueckgabewert durch ein Rohr laeuft, misst das
+Rohr.** Zweimal stand `| tail` am Ende der Befehlskette, und `$?` gehoerte
+dann dem `tail`. Der erste Flatpak-Bau meldete "exit code 0", waehrend
+`flatpak-builder` mit 1 abgebrochen war und **gar nichts gebaut** hatte.
+Aufgefallen nur, weil das Buendel danach unplausibel klein aussah.
+
+**Zwei Pruefstaende, ein Unterschied -- und der Unterschied war der Fehler.**
+Der bewegte Kopf lief in der Probeseite und nicht auf der echten Seite. Beide
+luden dasselbe Skript. Der einzige Unterschied war `defer`: ohne ist
+`readyState` waehrend des Parsens "loading", der Sofortstart entfaellt, und
+bis DOMContentLoaded ist die Datei durch. Mit `defer` war der Start faellig,
+bevor eine einzige `prototype`-Zuweisung gelaufen war. **Ein Prueffall, der
+den entscheidenden Umstand nicht nachstellt, beweist nichts** -- und er sah
+aus wie ein Beweis.
+
+**Was klaglos fehlt, ist schlimmer als was scheitert.** Drei Faelle an einem
+Tag:
+
+- Ein **APK ohne TLS** entsteht ohne Fehlermeldung, sieht aus wie eines mit
+  und waegt genauso viel. Auf dem Geraet ist die Anwendung damit
+  vollstaendig funktionslos. Auf dem Schreibtisch faellt es nie auf.
+- **Cloudflare Pages** lieferte jede unbekannte Adresse mit **HTTP 200** aus.
+  `robots.txt` gab HTML zurueck, mit Erfolgsmeldung.
+- **Deutsch ohne `xml:lang`** ist fuer AppStream die Vorgabe, also Englisch.
+  Weder `appstreamcli validate` noch der Flathub-Lint sehen das; sie pruefen
+  die Form, nicht die Sprache.
+
+Alle drei melden Erfolg. Die Gegenmassnahme ist immer dieselbe: **nicht den
+Rueckgabewert glauben, sondern nachsehen, ob das Ergebnis dasteht.**
+`tools/apk.sh` zaehlt deshalb die TLS-Bibliotheken im fertigen Paket und
+bricht ab, statt auszuliefern.
+
+**Ein Name, den man aus einem Grund vermeidet, vermeidet man ganz.**
+BLOCKCLOCK ist von Coinkite angemeldet (USPTO 90900261 und 97080272, CIPO
+2135649), fuer Anzeigegeraete, die Kurs, Blockhoehe und Moscow Time zeigen --
+also fuer genau das, was die Uhr-Ansicht tut. Der Reiter hiess nie so; der
+Name stand trotzdem an achtundzwanzig Stellen, und eine davon war der
+englische Seitentitel, dort eingesetzt **damit die Seite darauf gefunden
+wird**. Beschreibend im Fliesstext ist eine Sache; dasselbe Wort in den Titel
+setzen, damit Leute es finden, eine andere -- und genau diese Absicht sehen
+sich Markeninhaber an.
+
+**Und eine gespeicherte Einstellung ueberlebt die Annahme, unter der sie
+entstand.** Beim Aufnehmen der Bildschirmfotos zeigte der zweite Lauf die
+Einstellungen statt des Feeds: der erste Lauf hatte auf der
+Darstellungs-Seite geendet, `view=5` wurde gemerkt, und ich benutzte dieselbe
+Ablage wieder. Dieselbe Familie wie die Klemme auf 5 von gestern, nur dass
+der Pruefstand sie diesmal an sich selbst vorfuehrte.
+
+### Was heute nebenbei aufgefallen ist
+
+- **Das Projekt ist sechs Tage alt.** 179 eigene Commits vom 01.09. bis
+  heute. Flathub: *"applications that have only existed for a very short
+  period of time will generally not be accepted"*, dazu *"evidence of
+  real-world use"*. Das ist der Befund, der sich nicht durch Sorgfalt heilen
+  laesst: **der Antrag kam zu frueh.** Die Technik war fertig, das Projekt
+  nicht.
+- **Von 422 Commits tragen 120 eine KI-Mitautorschaft**, in Anwendung *und*
+  Verpackung. Flathubs Richtlinie verlangt die Offenlegung mit Umfang.
+- **`docs/STAND.md` ist 117 kB gross.** Als Einstieg fuer den naechsten Tag
+  noch brauchbar, als Datei langsam unhandlich.
+- **F-Droid ist gar nicht bedacht.** Fuer die Android-Fassung der natuerliche
+  Laden, und deutlich leichter zu betreten als Flathub: kein Video, keine
+  Pruefliste, dafuer reproduzierbare Builds -- und sie signieren selbst, das
+  unsignierte APK waere dort sogar richtig.
+
+### Was sonst noch offen ist
+
+1. **Doku-Seite unter orangedeck.dev/doku/.** Der groesste GEO-Hebel (heute
+   gibt es *eine* Seite je Sprache) und zugleich das, was Flathubs "evidence
+   of real-world use" am direktesten bedient. Neu geschrieben aus den 304 kB
+   vorhandener Doku, nicht kopiert: `STAND.md` ist ein Arbeitsjournal mit
+   Heimnetz-Adressen darin.
+2. **Die elf uebrigen Sprachen** -- und sie sind heute teurer geworden: der
+   bewegte Kopf hat 24 Schluessel dazugelegt, eine Sprachdatei umfasst jetzt
+   rund 55 Eintraege statt 31.
+3. **Der Spendenkanal.** Erst zu entscheiden, ob ueberhaupt. Empfehlung waere
+   **Silent Payments (BIP352)**: eine statische Zeichenkette, kein Server,
+   keine Verkettung, keine Lueckengrenze -- die einzige Loesung, die alle
+   Zusagen der Seite gleichzeitig einhaelt. Haken: die Unterstuetzung in
+   Zahler-Wallets ist duenn, also daneben eine gewoehnliche Adresse mit einem
+   ehrlichen Satz dazu.
+4. **`og:image` und die Bilder der Seite** liegen nur teilweise im Repo --
+   Miner, Explorer, Heatmap und Darstellung wurden heute aufgenommen, aber
+   nur die Leinwand hat sie.
+5. **Die Design-Leinwand ist veraltet**: Titel, Beschreibung und die
+   englischen Texte haben sich seit heute Mittag geaendert.
+6. **Laufzeit `org.kde.Platform` 6.11.** Hinweis des Pruefers, kein Fehler.
+7. **Widget-Seite in den Einstellungen** fuer den Desktop. Layer-Shell geht
+   **nachweislich nicht** aus dem Flatpak.
+8. **Tonsignal bei neuem Block** (QtMultimedia in allen vier Bauplaenen).
+9. **Eigener Node als Datenquelle.**
+10. **Kein Weg, einen Fehler zu melden, ausser GitHub** -- und keine
+    Sicherheitsadresse. Fuer ein Bitcoin-Projekt eine Luecke.
+
+---
+
 ## 06.09.2026, spaeter Abend -- der Antrag ging raus und war in einer Minute zu
 
 ### Was passiert ist
