@@ -3139,7 +3139,7 @@ Sauber zu trennen, sonst schreibt man Ubuntu Fehler zu, die es nicht hat:
 
 | Meldung | Ursache | Trifft echte Nutzer? |
 |---|---|---|
-| `bwrap: Creating new namespace failed` | Ubuntu 24.04 sperrt unprivilegierte Namensraeume und gibt sie ueber `/etc/apparmor.d/flatpak` frei; in der Live-Sitzung laeuft `apparmor.service` nicht, das Profil war nie geladen | nein -- `apt install flatpak` laedt es |
+| `bwrap: Creating new namespace failed` | Ubuntu 24.04 sperrt unprivilegierte Namensraeume und gibt sie ueber `/etc/apparmor.d/flatpak` frei; in der Live-Sitzung laeuft `apparmor.service` nicht, das Profil war nie geladen | nein -- auf einem **installierten** Ubuntu laedt der Dienst es beim Start (siehe Nachtrag unten) |
 | `Could not initialize GLX` | `org.freedesktop.Platform.GL.default//24.08` fehlte, weil die Laufzeit als Buendel vom Host kam | nein -- Flathub liefert sie mit |
 | `No space left` beim Installieren | `/cow` der Live-Sitzung liegt im RAM (1,2 GB) | nein |
 
@@ -3262,3 +3262,87 @@ getrennt (QSettings kann keine leere Liste, und ein Komma gilt beim Lesen als
 Listentrenner), das Quickshell-Fenster schreibt JSON, das DMS-Plugin wieder
 eine Zeichenkette. `views.js` nimmt beim Lesen Zahlen wie Zeichenketten --
 `eintrag()` geht ueber `parseInt`.
+
+
+## Der Lauf auf Ubuntu 24.04 fuer 0.2.0 (06.09.2026)
+
+Der Nachweis zu dem Satz, der in den Freigabetexten steht. Gebaut aus
+`18ce166`, gebuendelt, in der Pruef-VM installiert und gestartet.
+
+### Nachtrag zu AppArmor: das Paket legt das Profil ab, es laedt es nicht
+
+Die Tabelle oben trug in der letzten Spalte "`apt install flatpak` laedt es".
+Das stimmt nicht, und der Lauf hat es vorgefuehrt: nach `apt-get install -y
+flatpak` scheiterte `flatpak run` weiterhin mit
+
+    bwrap: Creating new namespace failed: Permission denied
+
+Gemessen wurde dann, was wirklich vorlag:
+
+    /etc/apparmor.d/flatpak                          liegt da (kam mit dem Paket)
+    systemctl is-active apparmor                     inactive
+    kernel.apparmor_restrict_unprivileged_userns     1
+
+Also: **die Kernel-Sperre greift, die Freigabe liegt ungeladen daneben.** Das
+Paket bringt die Profildatei mit; geladen wird sie von `apparmor.service`, und
+der laeuft in der Live-Sitzung nicht. Der Griff dagegen:
+
+    sudo apparmor_parser -r /etc/apparmor.d/flatpak
+
+Auf einem installierten Ubuntu startet der Dienst mit dem System und laedt das
+Profil dabei -- die Einschraenkung bleibt also eine des Pruefstands. Nur die
+Begruendung war eine andere als notiert, und **eine Ursache, die man falsch
+notiert, wird beim naechsten Mal falsch behandelt.**
+
+### Der Zeiger: siebte Konfiguration, wieder nichts
+
+`usb-tablet` steht seit dem 05.09. von Anfang an in `pruefvm.sh`. Gemessen:
+
+    (qemu) info mice
+        Mouse #2: QEMU PS/2 Mouse
+        Mouse #5: vmmouse (absolute)
+      * Mouse #3: QEMU HID Tablet (absolute)
+    (qemu) mouse_move 128 113
+      -> der Zeiger bleibt, wo er war
+
+Das Tablett ist da und aktiv, `mouse_move` bewegt trotzdem nichts. Damit sind
+es sieben erfolglose Konfigurationen. Ungeprueft bleibt QMP
+`input-send-event`; dafuer muesste die VM mit `-qmp` starten, der Monitor
+allein reicht nicht.
+
+**Was das kostet:** was am Zeiger haengt, laesst sich in der VM nicht pruefen.
+Die Darstellungs-Seite liess sich dort deshalb nicht anklicken -- ihre
+Bedienung ist im Xvfb mit echten XTEST-Ereignissen gemessen, in der VM nur
+ihre *Wirkung* ueber die Ablage. Die Arbeitsteilung von gestern gilt weiter:
+**Verhalten prueft `xtest.py` im Xvfb, fremde Umgebung prueft die VM.**
+
+### Die Reihenfolge geht durch das Flatpak durch
+
+Der eigentliche Punkt des Laufs. In der Ablage der Sandbox
+(`~/.var/app/dev.orangedeck.OrangeDeck/config/orangedeck/orangedeck.conf`)
+steht `tabOrderRaw=` -- der Schluessel ist also im ausgelieferten Paket. Mit
+
+    tabOrderRaw=6|3|1|0|2|4|5
+    showClock=false
+
+kam nach dem Neustart heraus:
+
+    Markt · Explorer · Feed · Miner · Einstellungen
+
+Die gespeicherte Folge, abzueglich Uhr (abgeschaltet) und Wallet (aus). Damit
+traegt die Kette **Wirt -> `opts` -> `views.js` -> Reiterbalken** durch den
+Flatpak hindurch, und nicht nur auf dem Entwicklungsrechner.
+
+### Was sonst noch dastand
+
+- Das Fenster kommt **deckend** hoch; der Fix vom 04.09. haelt.
+- Der Starter holt sich den Dienst selbst: Live-Daten ohne Zutun.
+- Der Reiterbalken der Einstellungen zeigt alle **acht** Seiten; bei 1100
+  Punkten passen sie in eine Zeile, der Schieber wird nicht gebraucht. Bei
+  440 Punkten schiebt er -- das ist im Xvfb gemessen, nicht hier.
+- Im Protokoll der Anwendung steht **eine** Zeile: `Qt: Session management
+  error: Could not open network socket`. Kein Sitzungsmanager im Sandkasten,
+  ohne Folgen.
+- Auf der Platte lag noch `store._21rebel.orangedeck 0.1.0` aus der Zeit vor
+  der Umbenennung. Entfernt, bevor gemessen wurde -- sonst haette man am Ende
+  nicht sagen koennen, welches Paket da lief.

@@ -4,6 +4,97 @@
 > darunter ist der **gueltige Stand**; die aelteren Abschnitte erklaeren, wie
 > es dazu kam, und stehen nur noch zum Nachschlagen.
 
+## 06.09.2026, Abend -- die Seite steht, das Paket ist gemessen
+
+### Der Stand in einem Satz
+
+**orangedeck.dev ist live**, der Flathub-Lint meldet keinen Fehler mehr, und
+`0.2.0` ist auf einem fremden System gelaufen -- der Antrag ist damit
+abschickbar.
+
+### orangedeck.dev
+
+Cloudflare Pages, verbunden mit `21Rebel/orangedeck`, ohne Bauschritt auf
+`website/fertig`. Umgeschlagen um 12:10:38, keine Minute nach einem 522.
+
+    https://orangedeck.dev/          200   972 B   Sprachweiche
+    https://orangedeck.dev/de/       200  8412 B
+    https://orangedeck.dev/en/       200  8176 B
+    https://orangedeck.dev/stil.css  200  5713 B
+
+Zwei Stolpersteine dabei, beide fuer die naechste Domain notiert:
+
+- **Der Rueckweg von GitHub faellt aus, wenn die App schon installiert ist.**
+  GitHub bricht mit "GitHub App has already been installed" ab und leitet
+  nicht zurueck -- Cloudflare erfaehrt dann nichts von der Installation und
+  zeigt das Konto nicht an. Die Rueckweg-Adresse
+  (`dash.cloudflare.com/pages/installations/github`) von Hand aufzurufen
+  reicht.
+- **Der eigene Auflöser haelt "kein Eintrag" fest.** Die negative TTL aus dem
+  SOA betraegt 1800 Sekunden; solange antwortet der Rechner mit *Could not
+  resolve host*, obwohl die Adresse laengst steht. **`flatpak-builder-lint`
+  laeuft ueber denselben Auflöser** -- er haette `appid-url-not-reachable`
+  gemeldet, obwohl die Seite live war. Ein Fehlalarm, der genau nach dem
+  Fehler ausgesehen haette, den wir gerade beheben wollten.
+
+### Was jetzt gemessen ist
+
+| Prüfung | Ergebnis |
+|---|---|
+| `bauplan-pruefen.py` | in Ordnung, Pin `18ce166` |
+| `appstreamcli validate` | erfolgreich |
+| `flatpak-builder-lint` | **`appid-url-not-reachable` weg**; uebrig nur der Laufzeit-Hinweis |
+| Bau aus echter GitHub-Adresse | `RUECKGABE=0`, geholt wurde `18ce166` |
+| Buendel | 1.148.128 Bytes |
+| Ubuntu 24.04, frisch | laeuft, Live-Daten, deckend |
+| `tabOrderRaw` durch den Flatpak | `6\|3\|1\|0\|2\|4\|5` -> `Markt · Explorer · Feed · Miner · Einstellungen` |
+| Protokoll der Anwendung | eine harmlose Zeile |
+
+### Zwei Funde, die nichts mit dem Paket zu tun haben
+
+**Deutsch stand ohne Sprachmarke da.** `<summary>` und `<description>` trugen
+kein `xml:lang`. Ohne Marke ist ein Text die *Vorgabe*, und die liest
+AppStream als C-Gebietsschema -- also Englisch. Auf Flathub haette jeder
+Nicht-Deutschsprachige den deutschen Satz als englischen bekommen, in der
+Zeile, die im Laden ganz oben steht. **Weder `appstreamcli validate` noch der
+Flathub-Lint sehen das**; sie pruefen die Form, nicht die Sprache. Die
+Bildunterschriften zeigten es sogar vor: dort standen Vorgabe *und* `de`
+*und* `en` nebeneinander, mit der deutschen als Vorgabe. Jetzt ueberall
+Englisch als Vorgabe, Deutsch mit `xml:lang="de"`.
+
+**Der AppArmor-Eintrag in der DOKUMENTATION war halb falsch.** Die Ursache
+stimmte, der Griff dagegen nicht: dort stand "`apt install flatpak` laedt
+es". Das Paket **legt das Profil ab**, geladen wird es von
+`apparmor.service` -- und der laeuft in der Live-Sitzung nicht, waehrend die
+Kernel-Sperre sehr wohl greift. Erst `apparmor_parser -r` half. Korrigiert.
+
+### Punkt 7 ist beantwortet: die VM hat keinen Zeiger
+
+Siebte Konfiguration, wieder nichts. Das Tablett ist da und aktiv
+(`* Mouse #3: QEMU HID Tablet (absolute)`), `mouse_move` bewegt trotzdem
+nichts. Ungeprueft bleibt allein QMP `input-send-event`; dafuer muesste die
+VM mit `-qmp` starten.
+
+**Was das kostet, steht jetzt fest:** die Darstellungs-Seite liess sich in
+der VM nicht anklicken. Ihre Bedienung ist im Xvfb gemessen, in der VM nur
+ihre Wirkung ueber die Ablage. Beides zusammen genuegt -- aber es ist zwei
+Messungen an zwei Orten, nicht eine.
+
+### Die Erkenntnis des Tages
+
+**Ein Prueflauf, dessen Rueckgabewert durch ein Rohr laeuft, misst das
+Rohr.** Zweimal hintereinander stand `| tail` am Ende der Befehlskette, und
+`$?` gehoerte dann dem `tail`. Der erste Flatpak-Bau meldete so "exit code
+0", waehrend `flatpak-builder` mit 1 abgebrochen war und **gar nichts
+gebaut** hatte -- die Verzeichnisse gab es hinterher nicht. Aufgefallen ist
+es nur, weil das Buendel danach unplausibel klein aussah.
+
+Dieselbe Familie wie die fuenf Messgeraete von gestern, und die Gegenmassnahme
+ist dieselbe: **nicht den Rueckgabewert glauben, sondern nachsehen, ob das
+Ergebnis dasteht.**
+
+---
+
 ## 06.09.2026 -- die Darstellungs-Seite
 
 > Der Tagesabschluss darunter gilt weiter: **die Seite unter orangedeck.dev
