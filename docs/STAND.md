@@ -18,10 +18,30 @@ alle bei dir liegen: Sicherung, Signaturschluessel, und die Entscheidung, ob
 
 ### Was morgen als Erstes drankommt
 
-**1. Sicherung.** Cloud und USB-Stick, vollstaendig. Dazu gehoert neuerdings
+**1. Sicherung.** Cloud und USB-Stick, vollstaendig -- **am 07.09. in Ordnung
+gebracht.** Der Knopf im Kontrollzentrum haette nichts von alldem gesichert:
 
-    ~/.cache/orangedeck-auslieferung/    APK und Flatpak-Buendel, 56 MB
-    ~/.cache/orangedeck-vm/              Pruef-VM samt Platte, rund 2 GB
+- Er rief `backup-proton.service`, und die Unit gibt es seit dem 30.08. nicht
+  mehr. Der Umbau auf `backup-lokal` + `backup-auslagern` hat die polkit-Regel
+  mitgezogen, das Widget nicht. Acht Tage lang war der Knopf tot, ohne
+  dass es auffiel -- die Anzeige daneben stimmte ja, sie liest den Timer-Lauf.
+- Selbst repariert haette er die Auslieferung ausgelassen: Zeile 1 der
+  Ausschlussliste ist `/home/satoshoe/.cache`. Genau dort lag sie.
+- Der Stick kannte orangedeck ueberhaupt nicht -- er sichert fuenf fest
+  eingetragene Projekte, und das war nie eines davon.
+
+Die Auslieferung liegt deshalb jetzt dort, wo sie hingehoert:
+
+    ~/.local/share/orangedeck/auslieferung/   APK und Flatpak-Buendel, 56 MB
+    ~/.local/share/orangedeck/signing/        der Signaturschluessel (Punkt 2)
+
+Beides geht ab dem naechsten Lauf nach Proton **und** auf den Stick. Die
+Pruef-VM (`~/.cache/orangedeck-vm/`, rund 2 GB) bleibt bewusst draussen: sie
+ist aus `tools/pruefvm.sh` neu herstellbar, die 56 MB Auslieferung nicht.
+
+**Die Regel dahinter:** ein Paket, das ausgeliefert werden soll, ist kein
+Zwischenspeicher. `~/.cache/` ist per Definition das, was jederzeit weg sein
+darf -- und jede Sicherung nimmt einen beim Wort.
 
 **2. Der Signaturschluessel.** Erst nach der Sicherung, und das ist die
 richtige Reihenfolge: ein Schluessel, den man noch nicht sichern kann, ist

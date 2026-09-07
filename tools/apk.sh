@@ -16,9 +16,13 @@
 #     tools/apk.sh              aus dem Arbeitsbaum bauen
 #     tools/apk.sh v0.2.0       aus einem Tag oder Commit bauen
 #
-# Das Ergebnis liegt unter ~/.cache/orangedeck-auslieferung/ -- **nicht** im
-# Kratzverzeichnis der Sitzung. Am 05.09.2026 lag die Pruef-VM dort und war
+# Das Ergebnis liegt unter ~/.local/share/orangedeck/auslieferung/ -- **nicht**
+# im Kratzverzeichnis der Sitzung. Am 05.09.2026 lag die Pruef-VM dort und war
 # am naechsten Tag weg; derselbe Fehler zweimal ist einer zu viel.
+#
+# Und **nicht** unter ~/.cache/: dort lag es bis zum 07.09.2026, und die
+# Ausschlussliste der Sicherung beginnt mit genau dieser Zeile. Ein Paket,
+# das ausgeliefert werden soll, ist kein Zwischenspeicher.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -26,7 +30,7 @@ QT="${ORANGEDECK_QT_ANDROID:-$HOME/Qt/6.11.2/android_arm64_v8a}"
 export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/Android/sdk}"
 export ANDROID_HOME="$ANDROID_SDK_ROOT"
 export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT:-$(ls -d "$ANDROID_SDK_ROOT"/ndk/* 2>/dev/null | sort -V | tail -1)}"
-ZIEL="${ORANGEDECK_APK_DIR:-$HOME/.cache/orangedeck-auslieferung}"
+ZIEL="${ORANGEDECK_APK_DIR:-$HOME/.local/share/orangedeck/auslieferung}"
 STAND="${1:-}"
 
 for p in "$QT/bin/qt-cmake" "$ANDROID_SDK_ROOT" "$ANDROID_NDK_ROOT"; do
