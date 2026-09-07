@@ -101,9 +101,15 @@
 
   <!-- Der Eintrag "0.1" vom 02.09.2026 stand hier, ohne dass je ein Paket
        daraus geworden waere. Ein Release-Eintrag fuer etwas, das niemand
-       installieren konnte, ist eine Erfindung; darum ersetzt statt ergaenzt. -->
+       installieren konnte, ist eine Erfindung; darum ersetzt statt ergaenzt.
+       Am 07.09.2026 dieselbe Regel noch einmal angewandt: "0.2.0" war
+       getaggt und gebaut, aber bei niemandem angekommen. Zwei sichtbare
+       Fehler kamen danach heraus (die ASCII-Umschrift im Markt-Reiter, der
+       braune Rahmen ums Symbol). Sie als Aenderungen gegenueber einer
+       Fassung aufzufuehren, die niemand hatte, waere wieder eine Erfindung.
+       Also traegt die erste Auslieferung die Nummer 0.2.1. -->
   <releases>
-    <release version="0.2.0" date="2026-09-06">
+    <release version="0.2.1" date="2026-09-07">
       <description>
         <p>First release.</p>
         <p xml:lang="de">Erste Auslieferung.</p>
