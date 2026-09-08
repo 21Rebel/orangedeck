@@ -155,7 +155,19 @@ Item {
         function frage(url, idx) {
             var req = new XMLHttpRequest();
             var fertig = false;
+            var frist = null;
             function ab(satz) {
+                // **Die Frist muss auf beiden Wegen weg.** Sie wurde nur im
+                // Zeitablauf-Zweig zerstoert; nach einer Antwort lief sie
+                // weiter und feuerte spaeter ins Leere. Aufgefallen am
+                // 08.09.2026 am doppelten Protokoll -- zu jeder Meldung stand
+                // eine zweite, obwohl `ab()` nur die erste annimmt. Bei fuenf
+                // Sekunden Takt bleiben so 720 Objekte je Stunde liegen.
+                if (frist) {
+                    frist.stop();
+                    frist.destroy();
+                    frist = null;
+                }
                 if (fertig)
                     return;
                 fertig = true;
@@ -181,14 +193,13 @@ Item {
             // sich verlaesslich melden wuerde. Ohne sie bliebe ein Durchlauf
             // haengen, sobald ein Geraet nicht antwortet -- und `offen` ginge
             // nie auf null.
-            var frist = Qt.createQmlObject(
+            frist = Qt.createQmlObject(
                 'import QtQuick; Timer { }', root, "DirectMiner.frist");
             frist.interval = root.timeoutMs;
             frist.repeat = false;
             frist.triggered.connect(function () {
                 req.abort();
                 ab(root.unerreichbar(url, "keine Antwort"));
-                frist.destroy();
             });
             frist.start();
             try {
