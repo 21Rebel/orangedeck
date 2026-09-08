@@ -42,6 +42,7 @@ Item {
     property int baseFont: 12
     property string lang: "de"
     property string btcZeichen: "\u20BF"
+    property string pfeilLang: "\u27F6"
 
     readonly property bool showHeader: headerVisible && height >= 108
     readonly property bool showFooter: footerVisible && height >= 168
@@ -543,20 +544,24 @@ Item {
         // als Kasten deckt er den Kurs darunter zu. Also endet er
         // spaetestens am unteren Rand der Halde.
         //
-        // Und **ohne Legende unter den Block**: ein unsichtbares Element
-        // behaelt in QML seine Hoehe, der Umschalter klebte sonst unter einer
-        // Tafel, die niemand sieht -- in der Lesart "Art" sieben Zeilen weit
-        // unten. Nach oben ging es auch nicht: auf einem Telefon reicht der
-        // Block bis fast an die Kopfzeile, und der Kasten lag auf seinen
-        // Kacheln. Zwischen Blockunterkante und Haldenoberkante ist dagegen
-        // Platz, der auf schmalen Schirmen ohnehin leer bleibt.
+        // Und **ohne Legende gleich unter die Kopfzeile**. Ein unsichtbares
+        // Element behaelt in QML seine Hoehe, unter der Legende klebte er
+        // sonst unter einer Tafel, die niemand sieht -- in der Lesart "Art"
+        // sieben Zeilen weit unten.
+        //
+        // Erst stand er hier unter dem Block, wo auf schmalen Schirmen Platz
+        // frei ist. **Das ist bei Zoom zwangslaeufig falsch:** die Lage kam
+        // aus `blockCenterY` und `blockSide`, und im Zoom kann der Block
+        // ueberall stehen -- der Kasten landete mitten im Bild. Am 08.09.2026
+        // gemeldet. Eine Lage, die sich aus dem Inhalt errechnet, wandert mit
+        // ihm; der Umschalter ist ein Bedienelement und gehoert an einen
+        // festen Platz.
         //
         // Die Klemme nach unten bleibt in beiden Faellen: was nicht passt,
         // endet am unteren Rand der Halde statt in der Fusszeile.
         y: Math.min(root.showLegend
                     ? legend.y + legend.height + 8 + 8 + 2
-                    : canvasView.y + canvasView.blockCenterY
-                      + canvasView.blockSide / 2 + root.baseFont,
+                    : canvasView.y + root.sideTopMargin,
                     canvasView.y + canvasView.height - goggles.height)
         // Genau so breit wie die Knopfreihe, damit der Untergrund dahinter
         // sie umschliesst und nicht daneben steht. `baseFont * 14` war
@@ -657,9 +662,11 @@ Item {
                 try {
                     var d = JSON.parse(req.responseText);
                     var ni = (d.vin || []).length, no = (d.vout || []).length;
-                    out = Tr.t("tip.inOut", root.lang, ni,
-                               Tr.t(ni === 1 ? "in.one" : "in.many", root.lang), no,
-                               Tr.t(no === 1 ? "out.one" : "out.many", root.lang));
+                    out = Tr.ersetzen(
+                        Tr.t("tip.inOut", root.lang, ni,
+                             Tr.t(ni === 1 ? "in.one" : "in.many", root.lang), no,
+                             Tr.t(no === 1 ? "out.one" : "out.many", root.lang)),
+                        root.btcZeichen, root.pfeilLang);
                 } catch (e) {}
             }
             root.inOutCache[txid] = out;
@@ -774,8 +781,9 @@ Item {
             }
 
             Text {
-                text: tip.tx ? Tr.t("tip.total", root.lang,Tr.fixed(
-                                    (tip.tx.a / 1e8), 8, root.lang))
+                text: tip.tx ? Tr.ersetzen(Tr.t("tip.total", root.lang, Tr.fixed(
+                                    (tip.tx.a / 1e8), 8, root.lang)),
+                                    root.btcZeichen, root.pfeilLang)
                                + "  " + root.fiat(tip.tx.a) : ""
                 color: root.textColor
                 font.pixelSize: root.baseFont - 2
