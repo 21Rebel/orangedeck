@@ -195,6 +195,76 @@ Item {
         }
     }
 
+    // **Das erste Textfeld in den Einstellungen.** Bisher gab es hier nur
+    // Schalter, Auswahllisten und Regler; was Text brauchte (Wallets, die
+    // Miner-Adresse), lief ueber die Befehlszeile oder eine Datei -- und
+    // beides gibt es auf einem Handy nicht.
+    //
+    // Vorbild ist das Suchfeld im Explorer, das einzige `TextInput` in
+    // `ui/qml/`. Von dort kommen auch die beiden Lehren mit:
+    //
+    //   Der Fokus braucht einen eigenen Ausgang. Escape gibt ihn her,
+    //   sonst sind die Reiter-Kuerzel nach einem Besuch hier tot (04.09.).
+    //
+    //   Auf dem Finger holt sich das Feld den Fokus **nicht** von selbst.
+    //   Dort haengt daran die Bildschirmtastatur, und die deckt die halbe
+    //   Ansicht zu (05.09.).
+    //
+    // Uebernommen wird erst bei Enter oder wenn das Feld den Fokus verliert
+    // -- nicht bei jedem Tastendruck. Eine Adresse, die nach dem dritten
+    // Zeichen abgefragt wird, ist eine Abfrage gegen den halben Text.
+    component Textzeile: Rectangle {
+        id: textRoot
+
+        property string wert: ""
+        property string platzhalter: ""
+
+        signal uebernommen(string neu)
+
+        width: parent ? parent.width : 0
+        height: root.uiFont * 2.2
+        radius: 6
+        color: Qt.rgba(1, 1, 1, 0.06)
+        border.width: 1
+        border.color: feld.activeFocus ? root.accentColor
+                                       : Qt.rgba(1, 1, 1, 0.14)
+
+        TextInput {
+            id: feld
+
+            anchors.fill: parent
+            anchors.leftMargin: root.uiFont * 0.6
+            anchors.rightMargin: root.uiFont * 0.6
+            verticalAlignment: TextInput.AlignVCenter
+            color: root.textColor
+            font.pixelSize: root.uiFont * 0.95
+            font.family: Fonts.mono()
+            selectByMouse: true
+            clip: true
+            text: textRoot.wert
+
+            onAccepted: textRoot.uebernommen(feld.text)
+            onActiveFocusChanged: {
+                if (!feld.activeFocus && feld.text !== textRoot.wert)
+                    textRoot.uebernommen(feld.text);
+            }
+
+            Keys.onEscapePressed: {
+                feld.text = textRoot.wert;
+                feld.focus = false;
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: feld.text.length === 0 && !feld.activeFocus
+                text: textRoot.platzhalter
+                color: root.dimColor
+                font.pixelSize: root.uiFont * 0.95
+                font.family: Fonts.mono()
+            }
+        }
+    }
+
     component Wahl: Flow {
         id: wahlRoot
 
@@ -882,6 +952,19 @@ Item {
                 width: parent.width
                 visible: root.tab === "miner"
 
+
+                Zeile {
+                    label: Tr.t("set.minerHosts", root.lang)
+                    help: Tr.t("set.minerHostsHelp", root.lang)
+
+                    Textzeile {
+                        wert: root.val("minerHostsRaw", "")
+                        platzhalter: "http://192.168.1.42"
+                        onUebernommen: function (neu) {
+                            root.changed("minerHostsRaw", neu);
+                        }
+                    }
+                }
 
                 Zeile {
                     label: Tr.t("set.metrics", root.lang)

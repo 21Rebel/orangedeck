@@ -83,6 +83,33 @@ Window {
     // "height,price" wurde stillschweigend wieder "height".
     property string minerFieldsRaw: ""
     readonly property var minerFields: minerFieldsRaw.length ? minerFieldsRaw.split("|") : []
+
+    // **Die Adressen der Miner, und zwar hier.** Bisher standen sie an drei
+    // Stellen, von denen keine ein Handy erreicht: in
+    // `~/.config/orangedeck/sources.json`, in `ORANGEDECK_MINER` und im
+    // Ergebnis von `orangedeck --discover-miners`. Auf Android gibt es weder
+    // eine Befehlszeile noch diese Datei -- und `--discover-miners` braucht
+    // rohe Sockel, die QML nicht hat.
+    //
+    // Eine vierte Quelle daneben zu stellen waere genau die Vervielfachung,
+    // an der dieses Projekt schon mehrfach hing (dieselbe Liste dreimal in
+    // `views.js`, die Klemme auf 5 in `shell.qml`). Also wird diese hier die
+    // **fuehrende**: sie liegt in den QSettings wie alles andere, damit hat
+    // sie jedes Geraet. Der Daemon liest `sources.json` zusaetzlich weiter,
+    // damit bestehende Einrichtungen nichts merken.
+    //
+    // Mehrere Adressen mit `|` getrennt, wie `minerFieldsRaw`.
+    property string minerHostsRaw: ""
+    readonly property var minerHosts: {
+        var out = [];
+        var teile = minerHostsRaw.split("|");
+        for (var i = 0; i < teile.length; i++) {
+            var t = teile[i].trim();
+            if (t.length)
+                out.push(t);
+        }
+        return out;
+    }
     // Die Wallet-Ansicht ist **abgeschaltet, bis sie ausdruecklich
     // eingeschaltet wird**. Nicht wegen der Guthaben -- die sind watch-only
     // vollstaendig geschuetzt --, sondern wegen der Verkettung: es ist der
@@ -179,6 +206,7 @@ Window {
         property alias clockBars: win.clockBars
         property alias clockFieldsRaw: win.clockFieldsRaw
         property alias minerFieldsRaw: win.minerFieldsRaw
+        property alias minerHostsRaw: win.minerHostsRaw
         property alias showHeader: win.showHeader
         property alias showFooter: win.showFooter
         property alias showBlock: win.showBlock
@@ -332,6 +360,8 @@ Window {
             win.showExplorer = value;
         else if (key === "showMarket")
             win.showMarket = value;
+        else if (key === "minerHostsRaw")
+            win.minerHostsRaw = value;
         else if (key === "minerChart")
             win.minerChart = value;
         else if (key === "minerDomains")
@@ -397,6 +427,7 @@ Window {
         "showMiner": win.showMiner,
         "showExplorer": win.showExplorer,
         "showMarket": win.showMarket,
+        "minerHostsRaw": win.minerHostsRaw,
         "minerChart": win.minerChart,
         "minerDomains": win.minerDomains,
         "minerBoard": win.minerBoard,
@@ -414,6 +445,9 @@ Window {
         id: feedState
 
         mode: win.effSource
+        // Die Adressen der Miner. Im Daemon-Betrieb ungenutzt -- dort liest
+        // der Dienst `sources.json`.
+        minerHosts: win.minerHosts
     }
 
     // **Der Rand, den sich das System nimmt.** Ab Android 15 (API 35)

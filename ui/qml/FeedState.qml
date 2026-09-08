@@ -43,9 +43,21 @@ Item {
     // dieselbe Auswertung, alle Ansichten lesen dieselben Eigenschaften.
     property string mode: "daemon"
     readonly property bool direkt: root.mode === "direct"
-    // Was der Direktbezug nicht kann -- die Ansichten blenden sich danach aus
+    // Was der Direktbezug nicht kann -- die Ansichten blenden sich danach aus.
+    //
+    // **Der Miner steht nicht mehr pauschal hier drin.** Die Begruendung war
+    // "das Geraet steht im Heimnetz, da hilft kein Direktbezug" -- und die
+    // stimmt fuer ein Handy im Mobilfunknetz. Im selben WLAN ist es
+    // erreichbar, und `DirectMiner` fragt es dort selbst ab. Was fehlt, ist
+    // nicht der Weg, sondern die Adresse: ohne Eintrag gibt es nichts zu
+    // fragen, mit Eintrag schon.
     readonly property bool canWallet: !root.direkt
     readonly property bool canMiner: !root.direkt
+                                     || (root.minerHosts || []).length > 0
+
+    // Die Adressen aus den Einstellungen. Im Daemon-Betrieb bleiben sie
+    // ungenutzt -- dort liest der Dienst `sources.json`.
+    property var minerHosts: []
 
     // Ausgelesener Zustand
     property var snap: ({})
@@ -75,15 +87,25 @@ Item {
     readonly property var hashrate: snap.hashrate || ({})
     // Miner: eine Liste, weil man mehr als ein Geraet haben kann. Der Daemon
     // liefert alle Felder normalisiert, Hashrate immer in H/s.
-    readonly property var miners: snap.miners || []
-    readonly property var minerTotal: snap.minerTotal || ({})
+    // Im Direktbezug kommen sie von `DirectMiner`, sonst aus dem Zustand des
+    // Daemons. Die Form ist dieselbe -- `MinerView` merkt den Unterschied
+    // nicht, genau wie beim Mempool.
+    readonly property var miners: root.direkt
+        ? (bergwerk.item ? bergwerk.item.miners : [])
+        : (snap.miners || [])
+    readonly property var minerTotal: root.direkt
+        ? (bergwerk.item ? bergwerk.item.minerTotal : ({}))
+        : (snap.minerTotal || ({}))
     // Kurzfassung der beobachteten Wallets. Die vollen Angaben holt die
     // Wallet-Ansicht ueber `/wallets` -- sie sind zu gross fuer den Zustand.
     readonly property var wallets: snap.wallets || []
     readonly property bool walletBusy: snap.walletBusy || false
     readonly property bool walletConfigured: wallets.length > 0
-    // Verlauf je Geraet, vom Daemon mitgeschrieben
-    readonly property var minerHistory: snap.minerHistory || ({})
+    // Verlauf je Geraet -- vom Daemon mitgeschrieben, im Direktbezug von
+    // `DirectMiner`.
+    readonly property var minerHistory: root.direkt
+        ? (bergwerk.item ? bergwerk.item.minerHistory : ({}))
+        : (snap.minerHistory || ({}))
     readonly property bool minerConfigured: miners.length > 0
     readonly property bool minerOnline: (minerTotal.online || 0) > 0
 
@@ -298,6 +320,24 @@ Item {
                 root.lastError = "Direktbezug nicht verfuegbar (QtWebSockets fehlt)";
                 root.online = false;
             }
+        }
+    }
+
+    // Der Miner im eigenen Netz. Eigener Loader neben `direkt`, damit ein
+    // Fehler hier nicht den Mempool mitnimmt -- dieselbe Begruendung wie
+    // dort. Er laeuft nur im Direktbezug: im Daemon-Betrieb fragt der Dienst.
+    Loader {
+        id: bergwerk
+
+        active: root.direkt
+        source: "DirectMiner.qml"
+        onLoaded: {
+            bergwerk.item.hosts = Qt.binding(function () {
+                return root.minerHosts || [];
+            });
+            bergwerk.item.active = Qt.binding(function () {
+                return root.active;
+            });
         }
     }
 
