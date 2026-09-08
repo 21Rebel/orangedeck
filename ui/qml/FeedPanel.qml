@@ -544,24 +544,34 @@ Item {
         // als Kasten deckt er den Kurs darunter zu. Also endet er
         // spaetestens am unteren Rand der Halde.
         //
-        // Und **ohne Legende gleich unter die Kopfzeile**. Ein unsichtbares
-        // Element behaelt in QML seine Hoehe, unter der Legende klebte er
-        // sonst unter einer Tafel, die niemand sieht -- in der Lesart "Art"
-        // sieben Zeilen weit unten.
+        // Und **ohne Legende dicht unter die Kopfzeile**, also direkt unter
+        // die Zeile mit Blockhoehe und sat/vB. Ein unsichtbares Element
+        // behaelt in QML seine Hoehe; unter der Legende klebte er sonst unter
+        // einer Tafel, die niemand sieht -- in der Lesart "Art" sieben Zeilen
+        // weit unten.
         //
-        // Erst stand er hier unter dem Block, wo auf schmalen Schirmen Platz
-        // frei ist. **Das ist bei Zoom zwangslaeufig falsch:** die Lage kam
-        // aus `blockCenterY` und `blockSide`, und im Zoom kann der Block
-        // ueberall stehen -- der Kasten landete mitten im Bild. Am 08.09.2026
-        // gemeldet. Eine Lage, die sich aus dem Inhalt errechnet, wandert mit
-        // ihm; der Umschalter ist ein Bedienelement und gehoert an einen
-        // festen Platz.
+        // Zwei Anlaeufe davor, beide am 08.09.2026 auf einem Galaxy A55
+        // verworfen:
+        //
+        //   unter dem Block   Die Lage kam aus `blockCenterY` und
+        //                     `blockSide`. **Bei Zoom zwangslaeufig falsch**,
+        //                     denn dann kann der Block ueberall stehen -- der
+        //                     Kasten landete mitten im Bild.
+        //   `sideTopMargin`   Das sind zehn Prozent der Flaechenhoehe (fuer
+        //                     die Legende gedacht, die weit oben ansetzt).
+        //                     Auf einem Telefon schob das den Kasten wieder
+        //                     auf die Kacheln.
+        //
+        // Der allgemeine Fall: **eine Lage, die sich aus dem Inhalt
+        // errechnet, wandert mit ihm.** Fuer eine Beschriftung ist das
+        // richtig, fuer ein Bedienelement nicht -- das gehoert an einen
+        // Platz, an dem man es wiederfindet, und der ist hier die Oberkante.
         //
         // Die Klemme nach unten bleibt in beiden Faellen: was nicht passt,
         // endet am unteren Rand der Halde statt in der Fusszeile.
         y: Math.min(root.showLegend
                     ? legend.y + legend.height + 8 + 8 + 2
-                    : canvasView.y + root.sideTopMargin,
+                    : canvasView.y + 2,
                     canvasView.y + canvasView.height - goggles.height)
         // Genau so breit wie die Knopfreihe, damit der Untergrund dahinter
         // sie umschliesst und nicht daneben steht. `baseFont * 14` war
