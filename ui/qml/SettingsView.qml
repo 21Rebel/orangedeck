@@ -122,7 +122,20 @@ Item {
             id: beschriftung
 
             anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
+            // **Oben ausrichten, wenn das Bedienelement hoeher ist.** Mittig
+            // stimmt fuer einen Schalter oder einen Regler. Bei einem hohen
+            // Gitter rutscht die Beschriftung dagegen in seine Mitte -- auf
+            // einem Telefon stand "Sprache" dadurch neben "Português (BR)",
+            // fuenf Zeilen unter dem ersten Knopf, zu dem sie gehoert. Am
+            // 08.09.2026 auf einem Galaxy A55 gesehen; am Schreibtisch faellt
+            // es nicht auf, weil die Gitter dort breiter und damit flacher
+            // sind.
+            anchors.verticalCenter: halter.height > beschriftung.height
+                                    ? undefined : parent.verticalCenter
+            anchors.top: halter.height > beschriftung.height
+                         ? parent.top : undefined
+            anchors.topMargin: halter.height > beschriftung.height
+                               ? root.uiFont * 0.55 : 0
             width: parent.width * 0.42
             spacing: 2
 

@@ -70,17 +70,43 @@ Item {
     signal txPicked(string txid)
 
     readonly property real side: Math.min(width, height)
-    // Ganzzahlige Rasterweite -- siehe DOKUMENTATION, sonst werden die Kacheln
-    // ungleich und es entsteht ein Karomuster.
+
+    // **Ganze Geraetepixel, nicht ganze logische Punkte.** Die Rasterweite war
+    // ganzzahlig, und das beseitigte das Karomuster (siehe DOKUMENTATION) --
+    // auf einem Schirm mit Verhaeltnis 1 oder 2. Bei 2,8125 (450 dpi) ist eine
+    // ganze logische Zahl wieder gebrochen.
+    //
+    // Am 08.09.2026 im Explorer auf einem Galaxy A55 nachgemessen, Helligkeit
+    // je Geraetepixel quer durch eine Fuge:
+    //
+    //     158 11 11 11 11 11 40      fuenf dunkle Pixel
+    //     154 11 11 11 11 11 44      fuenf
+    //     148 11 11 11 11 49         vier
+    //
+    // Also gleich breit gemeint, ungleich gezeichnet. Weniger auffaellig als
+    // im Feed, weil die Fugen hier breiter sind -- aber dieselbe Ursache.
+    // `FeedCanvas` rechnet aus demselben Grund in Geraetepixeln.
+    readonly property real dpr: Screen.devicePixelRatio > 0
+                                ? Screen.devicePixelRatio : 1
+
+    function schnapp(v) {
+        return Math.round(v * root.dpr) / root.dpr;
+    }
+
     function unit(rows) {
         var g = side / Math.max(1, rows);
-        return g < 2 ? g : Math.floor(g);
+        return g * root.dpr < 2 ? g : Math.floor(g * root.dpr) / root.dpr;
     }
 
     function pad(g) {
-        if (g < 2)
+        if (g * root.dpr < 2)
             return g / 4;
-        return Math.max(1, Math.round(g / 8));
+        // **Der Mindestrand bleibt ein logischer Punkt**, nicht ein
+        // Geraetepixel. Auf Geraetepixel geschnappt gehoert die Lage, nicht
+        // die Dichte: mit `1 / dpr` wurde die Fuge auf diesem Schirm 2,8-mal
+        // schmaler, und der Block sah dichter aus als gemeint. Die gewaehlte
+        // Dichte steht in `FeedCanvas` bei `blockPadDivisor` begruendet.
+        return Math.max(root.schnapp(1), root.schnapp(g / 8));
     }
 
     onBlockChanged: rebuild()
@@ -412,19 +438,20 @@ Item {
     }
 
     function rectFor(q, g, bx, by, p) {
-        if (g < 2) {
+        if (g * root.dpr < 2) {
             var sd = Math.max(0.35, q.r * g - p * 2);
             return { "x": bx + q.x * g + p, "y": by + q.y * g + p, "w": sd, "h": sd };
         }
-        var x0 = Math.round(bx + q.x * g), x1 = Math.round(bx + (q.x + q.r) * g);
-        var y0 = Math.round(by + q.y * g), y1 = Math.round(by + (q.y + q.r) * g);
+        var x0 = root.schnapp(bx + q.x * g), x1 = root.schnapp(bx + (q.x + q.r) * g);
+        var y0 = root.schnapp(by + q.y * g), y1 = root.schnapp(by + (q.y + q.r) * g);
         return { "x": x0 + p, "y": y0 + p,
-                 "w": Math.max(1, x1 - x0 - p * 2), "h": Math.max(1, y1 - y0 - p * 2) };
+                 "w": Math.max(1 / root.dpr, x1 - x0 - p * 2),
+                 "h": Math.max(1 / root.dpr, y1 - y0 - p * 2) };
     }
 
     readonly property real gridStep: unit(rowsUsed)
-    readonly property real originX: Math.round((side - gridUnits * gridStep) / 2)
-    readonly property real originY: Math.round((side - rowsUsed * gridStep) / 2)
+    readonly property real originX: root.schnapp((side - gridUnits * gridStep) / 2)
+    readonly property real originY: root.schnapp((side - rowsUsed * gridStep) / 2)
 
     Canvas {
         id: canvas

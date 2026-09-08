@@ -327,7 +327,11 @@ Item {
         // Originals (g/4) gebrochen, zusammen mit Kantenglaettung.
         if (g * root.dpr < 2)
             return g / 4;
-        return Math.max(1 / root.dpr, root.schnapp(
+        // **Der Mindestrand bleibt ein logischer Punkt**, nicht ein
+        // Geraetepixel: auf Geraetepixel geschnappt gehoert die Lage, nicht
+        // die Dichte. Die gewaehlte Dichte ist unten bei `blockPadDivisor`
+        // begruendet -- mit `1 / dpr` waere die Fuge 2,8-mal schmaler.
+        return Math.max(root.schnapp(1), root.schnapp(
             g / Math.max(1, blockPadDivisor)));
     }
 
