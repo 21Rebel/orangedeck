@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- **Kein doppelter Bindestrich in dieser Datei.** Zwei hintereinander sind
+     in einem XML-Kommentar verboten, und der Rest des Projekts benutzt sie
+     als Gedankenstrich. Am 08.09.2026 zweimal passiert: erst in der
+     metainfo (`appstreamcli`: "The XML of this file is malformed"), dann
+     hier (Gradle: "Failed to parse XML file"). Beide Meldungen nennen den
+     Grund nicht.
+
+     **Warum es diese Datei gibt.** Seit targetSdk 28 verbietet Android
+     unverschluesseltes HTTP standardmaessig. Das ist richtig so, und es traf
+     am 08.09.2026 den Miner-Reiter: das Geraet im Heimnetz spricht `http://`,
+     und die Anzeige meldete "Miner nicht erreichbar", obwohl der Browser auf
+     demselben Telefon hinkam. Der Browser ist eine andere Anwendung mit
+     eigener Regel.
+
+     **Warum nicht enger.** Die Regel kennt nur feste Namen und IP-Literale,
+     keine Netzbereiche; `192.168.0.0/16` laesst sich hier nicht ausdruecken.
+     Und die Adresse des Miners steht in den Einstellungen, also erst zur
+     Laufzeit fest. Eine feste Liste kann sie nicht kennen.
+
+     **Warum es trotzdem vertretbar ist.** Klartext geht damit nicht
+     "irgendwohin": die Anwendung baut genau eine Adresse aus einer
+     Benutzereingabe (den Miner), alles andere steht als `https://` bzw.
+     `wss://` fest im Quelltext, mempool.space in `DirectFeed.qml` und die
+     Boersen im Daemon. Die Grenze liegt damit in der Anwendung statt in der
+     Plattform.
+
+     Und was hier ueber Klartext geht, sind Anzeigewerte eines Geraets im
+     eigenen Netz: Hashrate, Temperatur, Freigaben. Keine Schluessel, keine
+     Betraege, nichts, was man senden koennte. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
