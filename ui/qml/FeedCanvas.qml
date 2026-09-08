@@ -81,12 +81,42 @@ Item {
     // genau das Bild, das bitfeed bei rund tausend Pixeln Breite zeigt. Breiter
     // wird das Fenster, mehr Spalten passen hinein -- die Kacheln bleiben
     // gleich. Groesser oder kleiner geht ueber die Einstellung "Kachelgroesse".
-    readonly property int unitWidth: Math.max(2, Math.min(10, Math.round(4 * density)))
-    readonly property int unitPad: Math.max(1, Math.min(3, Math.round(density)))
-    readonly property int gridSize: unitWidth + unitPad * 2
+    // **Ganze Geraetepixel, nicht ganze logische Punkte.** Diese Weiten waren
+    // ganzzahlig, und das beseitigte das Karomuster -- auf einem Schirm mit
+    // Verhaeltnis 1 oder 2. Bei 2,8125 (450 dpi, Galaxy A55) ist eine ganze
+    // logische Zahl wieder gebrochen: aus 1 Punkt Fuge werden 2,8125
+    // Geraetepixel.
+    //
+    // Am 08.09.2026 an einer Bildzeile nachgemessen: von einer Fuge ist genau
+    // **ein** Geraetepixel dunkel, der Rest verteilt sich als Teildeckung auf
+    // die Nachbarn, und die Aufteilung ist bei jeder Fuge anders (74/12/33,
+    // dann 159/72/11/37, dann 156/71/11/40). Also wirken die Fugen
+    // abwechselnd duenner und dicker und die Kanten weich -- dasselbe
+    // Karomuster, eine Koordinatenebene tiefer.
+    //
+    // Deshalb wird in Geraetepixeln gerechnet und erst am Ende zurueckgeteilt.
+    readonly property real dpr: Screen.devicePixelRatio > 0
+                                ? Screen.devicePixelRatio : 1
+
+    function schnapp(v) {
+        return Math.round(v * root.dpr) / root.dpr;
+    }
+
+    function schnappAb(v) {
+        return Math.floor(v * root.dpr) / root.dpr;
+    }
+
+    readonly property int fugeDev: Math.max(1, Math.round(
+        Math.min(3, Math.max(1, density)) * dpr))
+    readonly property int seiteDev: Math.max(2, Math.round(
+        Math.min(10, Math.max(2, 4 * density)) * dpr))
+    readonly property int zelleDev: seiteDev + fugeDev * 2
+    readonly property real unitWidth: seiteDev / dpr
+    readonly property real unitPad: fugeDev / dpr
+    readonly property real gridSize: zelleDev / dpr
     readonly property int gridW: Math.max(8, Math.floor(width / gridSize) - 1)
     readonly property int gridRows: Math.max(3, Math.floor(poolH / gridSize))
-    readonly property real gridLeft: Math.round((width - gridW * gridSize) / 2)
+    readonly property real gridLeft: root.schnapp((width - gridW * gridSize) / 2)
     // TxController.resize: blockAreaSize = min(Breite*0,75, Hoehe/2,5)
     readonly property real blockSide: Math.min(width * 0.72, height / 2.5, poolTop * 0.86)
     readonly property real blockCenterY: poolTop * 0.5
@@ -133,7 +163,7 @@ Item {
     // Die Geometrie des letzten Bildes. Wozu: siehe `clearTop` in `onPaint`.
     property real __letzteBreite: -1
     property real __letzteHoehe: -1
-    property real __letzterPoolTop: -1
+    property real __letzteLinie: -1
     // Anzahl je Transaktionsart im dargestellten Block, Index wie TxType.KINDS
     property var blockTypeCounts: []
 
@@ -295,9 +325,10 @@ Item {
         // Unter zwei Bildpunkten je Zelle gibt es keine ganzen Zahlen mehr, die
         // Kachel und Luecke zugleich hergeben -- dann das Verhaeltnis des
         // Originals (g/4) gebrochen, zusammen mit Kantenglaettung.
-        if (g < 2)
+        if (g * root.dpr < 2)
             return g / 4;
-        return Math.max(1, Math.round(g / Math.max(1, blockPadDivisor)));
+        return Math.max(1 / root.dpr, root.schnapp(
+            g / Math.max(1, blockPadDivisor)));
     }
 
     // Rasterweite des Blocks -- **ganzzahlig**. Vorher war das
@@ -320,7 +351,10 @@ Item {
         //
         // Ein Karomuster droht dort nicht: bei dieser Groesse sind ohnehin
         // alle Kacheln 1 px gross.
-        return g < 2 ? g : Math.floor(g);
+        //
+        // **Ganzzahlig in Geraetepixeln**, nicht in logischen Punkten -- die
+        // Begruendung steht oben bei `dpr`.
+        return g * root.dpr < 2 ? g : root.schnappAb(g);
     }
 
     function txSize(valueSats, vbytes) {
@@ -874,8 +908,8 @@ Item {
                 return null;
             var g = root.blockUnit(rowsUsed);
             var pad = root.blockPad(g);
-            var bx = Math.round((root.width - gridUnits * g) / 2);
-            var by = Math.round(root.blockCenterY - (rowsUsed * g) / 2);
+            var bx = root.schnapp((root.width - gridUnits * g) / 2);
+            var by = root.schnapp(root.blockCenterY - (rowsUsed * g) / 2);
             var cx = Math.floor((px - bx) / g);
             var cy = Math.floor((py - by) / g);
             var i = cellIdx[cx + ":" + cy];
@@ -892,7 +926,7 @@ Item {
             // Kantenglaettung entsteht stattdessen eine Textur -- so macht es
             // auch das Original, das ohnehin in WebGL mit gebrochenen Groessen
             // zeichnet.
-            if (g < 2) {
+            if (g * root.dpr < 2) {
                 var side = Math.max(0.35, q.r * g - pad * 2);
                 return {
                     "x": bx + q.x * g + pad,
@@ -901,15 +935,15 @@ Item {
                     "h": side
                 };
             }
-            var x0 = Math.round(bx + q.x * g);
-            var x1 = Math.round(bx + (q.x + q.r) * g);
-            var y0 = Math.round(by + q.y * g);
-            var y1 = Math.round(by + (q.y + q.r) * g);
+            var x0 = root.schnapp(bx + q.x * g);
+            var x1 = root.schnapp(bx + (q.x + q.r) * g);
+            var y0 = root.schnapp(by + q.y * g);
+            var y1 = root.schnapp(by + (q.y + q.r) * g);
             return {
                 "x": x0 + pad,
                 "y": y0 + pad,
-                "w": Math.max(1, x1 - x0 - pad * 2),
-                "h": Math.max(1, y1 - y0 - pad * 2)
+                "w": Math.max(1 / root.dpr, x1 - x0 - pad * 2),
+                "h": Math.max(1 / root.dpr, y1 - y0 - pad * 2)
             };
         }
 
@@ -918,8 +952,8 @@ Item {
             if (squares.length === 0 || !root.blockRevealed)
                 return null;
             var g = root.blockUnit(rowsUsed);
-            var bx = Math.round((root.width - gridUnits * g) / 2);
-            var by = Math.round(root.blockCenterY - (rowsUsed * g) / 2);
+            var bx = root.schnapp((root.width - gridUnits * g) / 2);
+            var by = root.schnapp(root.blockCenterY - (rowsUsed * g) / 2);
             var cx = Math.floor((px - bx) / g);
             var cy = Math.floor((py - by) / g);
             if (cx < 0 || cy < 0 || cx >= gridUnits || cy >= rowsUsed)
@@ -946,8 +980,8 @@ Item {
             var g = root.blockUnit(rowsUsed);
             var side = g * rowsUsed;
             var pad = root.blockPad(g);
-            var bx = Math.round((root.width - gridUnits * g) / 2);
-            var by = Math.round(root.blockCenterY - (rowsUsed * g) / 2);
+            var bx = root.schnapp((root.width - gridUnits * g) / 2);
+            var by = root.schnapp(root.blockCenterY - (rowsUsed * g) / 2);
             var r = blockRect(q, g, bx, by, pad);
             return {
                 "x": r.x,
@@ -968,10 +1002,10 @@ Item {
             var g = root.blockUnit(rowsUsed);
             var side = g * rowsUsed;
             var pad = root.blockPad(g);
-            var bx = Math.round((root.width - gridUnits * g) / 2);
+            var bx = root.schnapp((root.width - gridUnits * g) / 2);
             // Im Block laeuft die Rasterachse nach unten (Zeile 0 oben) -- die
             // zuerst gesetzten, grossen Transaktionen liegen dadurch oben.
-            var by = Math.round(root.blockCenterY - (rowsUsed * g) / 2);
+            var by = root.schnapp(root.blockCenterY - (rowsUsed * g) / 2);
 
             var byColor = {};
             for (var i = 0; i < squares.length; i++) {
@@ -1072,6 +1106,26 @@ Item {
         onExited: {
             root.hoveredTx = null;
             root.hoverRect = null;
+        }
+
+        // **Auf dem Finger gibt es kein "verlassen".** Der Tooltip haengt an
+        // `onPositionChanged` und wird von `onExited` weggeraeumt -- und das
+        // kommt auf Android beim Loslassen nicht: der Zeiger geht nicht
+        // hinaus, er hoert auf zu existieren. Der Tooltip blieb also stehen,
+        // am 08.09.2026 quer ueber dem Umschalter. `acceptedButtons` ist hier
+        // `NoButton`, ein `onReleased` gibt es also auch nicht.
+        //
+        // Dasselbe Muster wie der Explorer-Fokus am 04.09. und der Umschalter
+        // heute: **was nur mit Zeiger einen Ausgang hat, hat auf dem Finger
+        // keinen.** Der Handler liefert ihn nachtraeglich.
+        PointHandler {
+            enabled: Qt.platform.os === "android" || Qt.platform.os === "ios"
+            onActiveChanged: {
+                if (!active) {
+                    root.hoveredTx = null;
+                    root.hoverRect = null;
+                }
+            }
         }
     }
 
@@ -1250,37 +1304,38 @@ Item {
             // bleibt oben stehen, was zuletzt dort gezeichnet wurde -- so kam
             // die gestrichelte Linie doppelt ins Bild, einmal an ihrem Platz
             // und einmal als Rest von vorhin.
-            // **Und einmal, wenn die Halde geschrumpft ist.** Der Zoom war
-            // nur der Fall, den jemand ausgeloest hat; die Ursache ist
-            // allgemeiner, und die Richtung entscheidet:
+            // **Und die gestrichelte Linie sitzt nicht an `poolTop`.** Sie
+            // wird an `pileTopY` gezeichnet, und das ist etwas anderes:
             //
-            //   Halde waechst   -> `poolTop` wandert nach oben, `clearTop`
-            //                      mit ihm, der geraeumte Bereich wird
-            //                      groesser. Der alte Strich liegt darin.
-            //   Halde schrumpft -> `poolTop` wandert nach unten, der
-            //                      geraeumte Bereich wird kleiner, und der
-            //                      Strich von vorhin liegt **darueber**.
-            //                      Er bleibt stehen.
+            //   poolTop  = height - poolH                 das zugeteilte Band
+            //   pileTopY = height - pileRows*gridSize
+            //              + scrollPx                     der echte Fuellstand
             //
-            // Jeder Block, der gefunden wird, laesst die Halde schrumpfen.
-            // Drei Blocks, drei Striche untereinander -- am 08.09.2026 auf
-            // einem Telefon so beobachtet. Nachstellen liess es sich nicht
-            // auf Zuruf (Kaltstart und vier erzwungene Drehungen zeigten es
-            // nicht), weil beides die Halde nicht schrumpfen laesst.
+            // `scrollPx` ist waehrend der Haldenbewegung **negativ**
+            // (`-gridSize`, dann animiert auf 0). Die Linie wandert damit bis
+            // zu `gridSize + 4` Punkte ueber `poolTop` -- also aus einem
+            // Bereich heraus, der nur ab `poolTop - 8` geraeumt wird. Dort
+            // bleibt sie liegen, und beim naechsten Fuellstand steht die
+            // naechste darunter. Am 08.09.2026 auf einem Telefon als zwei
+            // Striche gesehen, einer quer durch die Aufschrift.
             //
-            // **Nicht bei jeder Aenderung von `poolTop` voll raeumen.** Der
-            // Wert wandert mit dem Fuellstand, also praktisch in jedem Bild;
-            // eine Vollraeumung daran zu haengen hiesse, die Sparmassnahme
-            // ganz abzuschaffen. Nur die eine Richtung kostet nichts.
+            // Ein erster Versuch klemmte an der Richtung von `poolTop`
+            // ("Halde geschrumpft") -- das war die falsche Groesse.
+            //
+            // Jetzt wird von der **hoechsten Stelle** geraeumt, an der in
+            // diesem oder im vorigen Bild etwas gezeichnet wurde. Das kostet
+            // ein paar Zeilen mehr als vorher und laesst die Sparmassnahme
+            // ansonsten stehen: der Block darueber bleibt unberuehrt.
+            var linie = root.pileTopY - root.gridSize - 4;
+            var vorher = root.__letzteLinie < 0 ? linie : root.__letzteLinie;
+            root.__letzteLinie = linie;
             var gewachsen = root.width !== root.__letzteBreite
                          || root.height !== root.__letzteHoehe;
-            var geschrumpft = root.poolTop > root.__letzterPoolTop + 0.5;
             root.__letzteBreite = root.width;
             root.__letzteHoehe = root.height;
-            root.__letzterPoolTop = root.poolTop;
-            var clearTop = (root.zoomed || root.__warZoom
-                            || gewachsen || geschrumpft)
-                ? 0 : Math.max(0, root.poolTop - 8);
+            var clearTop = (root.zoomed || root.__warZoom || gewachsen)
+                ? 0
+                : Math.max(0, Math.min(root.poolTop, linie, vorher) - 8);
             root.__warZoom = root.zoomed;
             ctx.clearRect(0, clearTop, root.width, root.height - clearTop);
             root.viewApply(ctx);
