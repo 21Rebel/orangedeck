@@ -21,6 +21,7 @@ Column {
     property color accentColor: "#f7931a"
     property real uiFont: 13
     property string lang: "de"
+    property string btcZeichen: "\u20BF"
 
     signal blockPicked(string hash)
 
@@ -178,7 +179,7 @@ Column {
                     anchors.verticalCenter: parent.verticalCenter
                     width: root.uiFont * 6
                     text: zeile.ex.reward
-                        ? "₿ " + Tr.fixed(zeile.ex.reward / 1e8, 3, root.lang) : ""
+                        ? root.btcZeichen + " " + Tr.fixed(zeile.ex.reward / 1e8, 3, root.lang) : ""
                     color: root.textColor
                     font.pixelSize: root.uiFont * 0.85
                 }

@@ -112,7 +112,7 @@ Item {
     function btc(sats) {
         if (sats === undefined || sats === null)
             return "–";
-        return "₿ " + Tr.fixed(sats / 1e8, 8, root.lang);
+        return root.btcZeichen + " " + Tr.fixed(sats / 1e8, 8, root.lang);
     }
 
     function shortId(id, n) {
@@ -215,6 +215,7 @@ Item {
     property string tileColorMode: "fee"
     property string currency: "eur"
     property string lang: "de"
+    property string btcZeichen: "\u20BF"
     // Abschnitte und Tafeln der Startseite, beides leer = alles
     property var homeParts: []
     property var homePanels: []
@@ -529,6 +530,7 @@ Item {
                 // sein (siehe DOKUMENTATION).
                 live: visible && root.visible && root.trackProjected
                 lang: root.lang
+                btcZeichen: root.btcZeichen
                 colorMode: root.tileColorMode
                 currency: root.currency
                 parts: root.homeParts
@@ -594,6 +596,7 @@ Item {
                 visible: root.kind === "history"
                 feed: root.feed
                 lang: root.lang
+                btcZeichen: root.btcZeichen
                 textColor: root.textColor
                 dimColor: root.dimColor
                 accentColor: root.accentColor
@@ -1363,6 +1366,7 @@ Item {
                 block: root.tiles
                 colorMode: root.tileColorMode
                 lang: root.lang
+                btcZeichen: root.btcZeichen
                 textColor: root.textColor
                 dimColor: root.dimColor
                 accentColor: root.accentColor

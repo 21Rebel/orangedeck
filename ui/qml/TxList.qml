@@ -30,6 +30,7 @@ Column {
     property color accentColor: "#f7931a"
     property real uiFont: 13
     property string lang: "de"
+    property string btcZeichen: "\u20BF"
 
     signal txPicked(string txid)
 
@@ -159,7 +160,7 @@ Column {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     width: root.uiFont * 8
-                    text: "₿ " + Tr.fixed(zeile.modelData.a / 1e8, 8, root.lang)
+                    text: root.btcZeichen + " " + Tr.fixed(zeile.modelData.a / 1e8, 8, root.lang)
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.85
                 }

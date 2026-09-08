@@ -73,6 +73,7 @@ Item {
     readonly property var one: (wallets.length > shown) ? wallets[shown] : null
     property string currency: "eur"
     property string lang: "de"
+    property string btcZeichen: "\u20BF"
 
     // Tausendertrennung in der Schreibweise der Sprache -- Deutsch nimmt den
     // Punkt, Englisch das Komma. Das ist keine Kosmetik: "1.234" heisst je
@@ -302,7 +303,7 @@ Item {
                 }
 
                 Text {
-                    text: root.one ? "₿ " + root.btc(root.one.balance) : ""
+                    text: root.one ? root.btcZeichen + " " + root.btc(root.one.balance) : ""
                     color: root.accentColor
                     font.pixelSize: root.scaleUnit * 1.7
                     font.bold: true
@@ -318,7 +319,7 @@ Item {
                     visible: root.one && root.one.pending !== 0
                     text: root.one
                         ? Tr.t("wallet.pending", root.lang,
-                               (root.one.pending > 0 ? "+" : "") + "₿ " + root.btc(root.one.pending))
+                               (root.one.pending > 0 ? "+" : "") + root.btcZeichen + " " + root.btc(root.one.pending))
                         : ""
                     color: root.goodColor
                     font.pixelSize: root.uiFont * 0.9
@@ -346,8 +347,8 @@ Item {
                         if (!w)
                             return [];
                         return [
-                            { "k": Tr.t("wallet.received", root.lang), "v": "₿ " + root.btc(w.received) },
-                            { "k": Tr.t("wallet.spent", root.lang), "v": "₿ " + root.btc(w.sent) },
+                            { "k": Tr.t("wallet.received", root.lang), "v": root.btcZeichen + " " + root.btc(w.received) },
+                            { "k": Tr.t("wallet.spent", root.lang), "v": root.btcZeichen + " " + root.btc(w.sent) },
                             { "k": Tr.t("transactions", root.lang), "v": root.grp(w.txCount) },
                             { "k": Tr.t("wallet.usedAddresses", root.lang), "v": root.grp(w.used) },
                             { "k": Tr.t("wallet.fingerprint", root.lang), "v": w.fingerprint || "–" }
@@ -515,7 +516,7 @@ Item {
                                 // Das Vorzeichen ist die Aussage: was die
                                 // Wallet gewonnen oder verloren hat.
                                 text: (zeile.modelData.d > 0 ? "+" : "")
-                                      + "₿ " + root.btc(zeile.modelData.d)
+                                      + root.btcZeichen + " " + root.btc(zeile.modelData.d)
                                 color: zeile.modelData.d > 0 ? root.goodColor
                                                              : root.textColor
                                 font.pixelSize: root.uiFont * 0.85
@@ -605,7 +606,7 @@ Item {
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: root.uiFont * 9
-                                text: "₿ " + root.btc(adrZeile.modelData.bal)
+                                text: root.btcZeichen + " " + root.btc(adrZeile.modelData.bal)
                                 color: adrZeile.modelData.bal > 0 ? root.textColor
                                                                   : root.dimColor
                                 font.pixelSize: root.uiFont * 0.85

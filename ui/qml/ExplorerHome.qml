@@ -34,6 +34,7 @@ Column {
     property color accentColor: "#f7931a"
     property real uiFont: 13
     property string lang: "de"
+    property string btcZeichen: "\u20BF"
 
     signal blockPicked(string hash)
     signal txPicked(string txid)
@@ -225,7 +226,7 @@ Column {
                     Text {
                         // `a` ist der Betrag in sat, `v` die virtuelle Groesse
                         text: trow.modelData.a !== undefined
-                            ? "₿ " + Tr.fixed(trow.modelData.a / 1e8, 8, root.lang) : ""
+                            ? root.btcZeichen + " " + Tr.fixed(trow.modelData.a / 1e8, 8, root.lang) : ""
                         color: root.dimColor
                         font.pixelSize: root.uiFont * 0.85
                     }

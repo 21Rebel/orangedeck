@@ -18,6 +18,7 @@
 import QtQuick
 import "strings.js" as Tr
 import "views.js" as Views
+import "fonts.js" as Fonts
 
 Item {
     id: root
@@ -64,6 +65,26 @@ Item {
     }
 
     readonly property string lang: root.o("lang", "de")
+
+    // **Das Bitcoin-Zeichen, wenn die Schrift es fuehrt -- sonst "BTC".**
+    // Am 08.09.2026 auf einem Galaxy A55 stand ueberall ein leeres Kaestchen
+    // mit Kreuz statt `₿`, das Euro-Zeichen daneben sass. Nachgemessen: die
+    // Standardschrift des Geraets (OneUISans) fuehrt U+20BF sehr wohl
+    // (`20a0-20bf`), Roboto nicht (`20a0-20be`) -- und Qt greift auf Android
+    // nach Roboto. Die Schrift zu erzwingen waere geraten; gefragt wird
+    // besser.
+    //
+    // Fragen kann man es in QML nicht, also messen: `₿` gegen ein Zeichen
+    // aus dem privaten Bereich, das **keine** Schrift fuehrt. Kommen beide
+    // gleich breit heraus, ist auch das erste ein Kaestchen.
+    //
+    // **Eine Eigenschaft, kein gemerkter Wert in der JS-Bibliothek.** Eine
+    // Funktion mit verstecktem Zustand wird in einer Bindung genau einmal
+    // ausgewertet; was danach gemessen wird, kommt nie an. Als Eigenschaft
+    // haengt die Anzeige daran und richtet sich mit.
+    readonly property string btcZeichen:
+        probeBtc.implicitWidth !== probeLeer.implicitWidth ? "\u20BF" : "BTC"
+
     readonly property string currency: root.o("currency", "eur")
     readonly property bool walletEnabled: root.o("walletEnabled", false)
     // **Ein unsichtbares Element behaelt seine Hoehe.** Ohne die Abfrage
@@ -138,6 +159,27 @@ Item {
 
     onTabViewsChanged: root.reiterPruefen()
 
+    Item {
+        visible: false
+
+        Text {
+            id: probeBtc
+
+            text: "\u20BF"
+            font.family: Fonts.sans()
+            font.pixelSize: 64
+        }
+
+        Text {
+            id: probeLeer
+
+            // Privater Bereich: absichtlich nichts, was je eine Schrift fuehrt.
+            text: "\uE000"
+            font.family: Fonts.sans()
+            font.pixelSize: 64
+        }
+    }
+
     ViewTabs {
         id: tabs
 
@@ -164,6 +206,7 @@ Item {
         anchors.topMargin: root.tabSpace
         feed: root.feed
         lang: root.lang
+        btcZeichen: root.btcZeichen
         currency: root.currency
         headerVisible: root.o("showHeader", true)
         footerVisible: root.o("showFooter", true)
@@ -239,6 +282,7 @@ Item {
         anchors.topMargin: root.tabSpace
         feed: root.feed
         lang: root.lang
+        btcZeichen: root.btcZeichen
         currency: root.currency
         tileColorMode: root.o("tileColorMode", "fee")
         homeParts: root.o("explorerParts", [])
@@ -308,6 +352,7 @@ Item {
         anchors.topMargin: root.tabSpace
         feed: root.feed
         lang: root.lang
+        btcZeichen: root.btcZeichen
         currency: root.currency
         textColor: root.textColor
         dimColor: root.dimColor
