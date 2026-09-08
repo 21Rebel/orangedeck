@@ -300,6 +300,8 @@ Item {
     property int occupied: 0            // belegte Rastereinheiten, Summe r*r
     property var queue: []              // wartende Ankuenfte
     property real queueAcc: 0
+    // Obergrenze der Schlange. Begruendung an `onTransactionsArrived`.
+    property int queueMax: 240
 
     signal blockLayoutChanged
 
@@ -800,10 +802,32 @@ Item {
         function onTransactionsArrived(txs) {
             if (root.paused || !root.layout)
                 return;
+            // **Nichts sammeln, was niemand sieht.** Der Takt laeuft nur bei
+            // sichtbarer Flaeche (`Timer.running` unten), die Ankuenfte kamen
+            // aber ungebremst weiter. Nach einer halben Stunde im Miner-Reiter
+            // standen Tausende in der Schlange, und `drainQueue` laesst sie
+            // mit `queue.length / 0.85` je Sekunde los -- also praktisch alle
+            // auf einmal. Am 08.09.2026 auf einem Telefon gemeldet: beim
+            // Zurueckschalten fiel die halbe Stunde in einem Guss herunter und
+            // flutete die Ansicht.
+            //
+            // Der Regen zeigt, **was gerade hereinkommt**. Was waehrend eines
+            // Blicks in einen anderen Reiter hereinkam, ist kein Regen mehr,
+            // sondern Nachrichten von gestern -- und die Halde selbst steht
+            // ohnehin weiter da.
+            if (!root.visible)
+                return;
             for (var i = 0; i < txs.length; i++) {
                 var t = txs[i];
                 root.queue.push(t);
             }
+            // **Und eine Obergrenze auch bei sichtbarer Flaeche.** Ein Rechner,
+            // der ins Stocken kommt, oder ein Schwall von mempool.space
+            // erzeugt denselben Guss. Zwei Sekunden Vorrat bei fuenf Ankuenften
+            // je Sekunde sind reichlich; was darueber liegt, waere ohnehin
+            // nicht als einzelne Kachel zu erkennen.
+            if (root.queue.length > root.queueMax)
+                root.queue.splice(0, root.queue.length - root.queueMax);
         }
 
         function onBlockMined(tip) {
