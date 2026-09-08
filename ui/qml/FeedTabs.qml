@@ -85,6 +85,18 @@ Item {
     readonly property string btcZeichen:
         probeBtc.implicitWidth !== probeLeer.implicitWidth ? "\u20BF" : "BTC"
 
+    // Dieselbe Probe fuer die Pfeile. **Je Zeichen einmal gemessen, nicht von
+    // einem auf das andere geschlossen:** auf dem Galaxy A55 fuehrt keine der
+    // Schriften einen der beiden, aber `→` ist im Allgemeinen viel weiter
+    // verbreitet als `⟶`, und eine Schrift mit dem einen und ohne das andere
+    // waere nichts Besonderes. Ein anderes Pfeilzeichen zu nehmen hilft dort
+    // ohnehin nicht -- es braucht einen Textrueckfall.
+    readonly property string pfeilLang:
+        probePfeilL.implicitWidth !== probeLeer.implicitWidth ? "\u27F6" : "->"
+
+    readonly property string pfeilKurz:
+        probePfeilK.implicitWidth !== probeLeer.implicitWidth ? "\u2192" : "->"
+
     readonly property string currency: root.o("currency", "eur")
     readonly property bool walletEnabled: root.o("walletEnabled", false)
     // **Ein unsichtbares Element behaelt seine Hoehe.** Ohne die Abfrage
@@ -171,6 +183,22 @@ Item {
         }
 
         Text {
+            id: probePfeilL
+
+            text: "\u27F6"
+            font.family: Fonts.sans()
+            font.pixelSize: 64
+        }
+
+        Text {
+            id: probePfeilK
+
+            text: "\u2192"
+            font.family: Fonts.sans()
+            font.pixelSize: 64
+        }
+
+        Text {
             id: probeLeer
 
             // Privater Bereich: absichtlich nichts, was je eine Schrift fuehrt.
@@ -207,6 +235,7 @@ Item {
         feed: root.feed
         lang: root.lang
         btcZeichen: root.btcZeichen
+        pfeilLang: root.pfeilLang
         currency: root.currency
         headerVisible: root.o("showHeader", true)
         footerVisible: root.o("showFooter", true)
@@ -283,6 +312,7 @@ Item {
         feed: root.feed
         lang: root.lang
         btcZeichen: root.btcZeichen
+        pfeilKurz: root.pfeilKurz
         currency: root.currency
         tileColorMode: root.o("tileColorMode", "fee")
         homeParts: root.o("explorerParts", [])

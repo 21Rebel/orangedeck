@@ -751,3 +751,22 @@ function fixed(n, digits, lang) {
     var ganz = group(parseInt(parts[0], 10), lang);
     return parts.length > 1 ? ganz + decimal(lang) + parts[1] : ganz;
 }
+
+// **Zeichen, die nicht jede Schrift fuehrt.** `₿` (U+20BF) und `⟶` (U+27F6)
+// stehen in der Tabelle, weil sie dorthin gehoeren -- auf einem Galaxy A55
+// (Android 16) fuehrt sie aber keine der Schriften, die Qt dort waehlt, und
+// dann steht ein leeres Kaestchen mit Kreuz. Am 08.09.2026 im Tooltip des
+// Feeds gesehen: "1 Eingang ▯ 3 {3}" und "Gesamtwert: ▯ 3,47020139".
+//
+// Gemessen wird in `FeedTabs` (dort steht auch, warum je Zeichen einzeln);
+// hier werden die Ersatzzeichen nur eingesetzt. Reine Funktion, kein Zustand
+// -- wie alles in dieser Datei.
+function ersetzen(text, btc, pfeil) {
+    if (typeof text !== "string")
+        return text;
+    if (btc && btc !== "\u20BF")
+        text = text.replace(/\u20BF/g, btc);
+    if (pfeil && pfeil !== "\u27F6")
+        text = text.replace(/\u27F6/g, pfeil);
+    return text;
+}

@@ -216,6 +216,7 @@ Item {
     property string currency: "eur"
     property string lang: "de"
     property string btcZeichen: "\u20BF"
+    property string pfeilKurz: "\u2192"
     // Abschnitte und Tafeln der Startseite, beides leer = alles
     property var homeParts: []
     property var homePanels: []
@@ -927,7 +928,9 @@ Item {
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "→"
+                    // Auch dieser stand auf dem Telefon als leeres Kaestchen
+                    // da -- siehe `pfeilKurz` in `FeedTabs`.
+                    text: root.pfeilKurz
                     color: root.dimColor
                     font.pixelSize: root.scaleUnit * 1.2
                 }
