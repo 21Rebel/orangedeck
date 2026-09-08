@@ -41,6 +41,7 @@ Item {
     property color lineColor: "#2a2a38"
     property int baseFont: 12
     property string lang: "de"
+    property string btcZeichen: "\u20BF"
 
     readonly property bool showHeader: headerVisible && height >= 108
     readonly property bool showFooter: footerVisible && height >= 168
@@ -52,6 +53,20 @@ Item {
     // dadurch **nie** eine Legende -- und mit ihr auch nicht den Umschalter
     // darunter. Gemessen passt sie samt Umschalter ab 330 in die Flaeche.
     readonly property bool showLegend: legendVisible && width >= 420 && height >= 330
+
+    // **Der Umschalter haengt nicht am Platz fuer die Legende.** Bisher tat
+    // er es, weil beide an `showLegend` hingen -- und das ist zweierlei: die
+    // Legende ist eine Tafel, die Platz braucht, der Umschalter ein
+    // Bedienelement. Auf dem Schreibtisch schaltet `c` die Lesart durch, dort
+    // darf er unter 420 Punkten weg. Ohne Tastatur ist er die **einzige**
+    // Moeglichkeit, und ihn wegzulassen nimmt die Funktion ganz weg.
+    //
+    // Am 08.09.2026 auf einem Galaxy A55 gemeldet: bei 384 dp fiel er weg,
+    // und die drei Lesarten waren nicht mehr erreichbar. `Qt.platform.os`
+    // steht hier direkt, wie in `fonts.js` -- eine Eigenschaft durch drei
+    // Ebenen zu reichen waere fuer diese eine Frage zu viel Leitung.
+    readonly property bool showGoggles: legendVisible
+        && (showLegend || Qt.platform.os === "android" || Qt.platform.os === "ios")
     // **Links und rechts derselbe Abstand zur Kopfzeile.** Vorher rechnete
     // jede Seite fuer sich: links 0,03/0,10 mit einem Mindestabstand, rechts
     // 0,04/0,10 ohne. Zwischen 460 und 520 Pixeln Hoehe kam links der
@@ -297,7 +312,7 @@ Item {
         }
 
         Text {
-            text: "₿ " + root.dec((root.block.totalValue || 0) / 1e8, 4)
+            text: root.btcZeichen + " " + root.dec((root.block.totalValue || 0) / 1e8, 4)
             color: root.textColor
             font.pixelSize: root.baseFont
         }
@@ -366,7 +381,7 @@ Item {
         }
 
         Repeater {
-            model: root.sizeMode === "vbytes" ? ["< 256", "< 1.024", "< 2.304", "< 4.096", "< 6.400"] : ["< ₿ 0,01", "< ₿ 0,1", "< ₿ 1", "< ₿ 10", "< ₿ 100"]
+            model: root.sizeMode === "vbytes" ? ["< 256", "< 1.024", "< 2.304", "< 4.096", "< 6.400"] : ["< " + root.btcZeichen + " 0,01", "< " + root.btcZeichen + " 0,1", "< " + root.btcZeichen + " 1", "< " + root.btcZeichen + " 10", "< " + root.btcZeichen + " 100"]
 
             Row {
                 spacing: 6
@@ -527,14 +542,28 @@ Item {
         // Fusszeile. Solange er nur Schrift war, sah man darueber hinweg;
         // als Kasten deckt er den Kurs darunter zu. Also endet er
         // spaetestens am unteren Rand der Halde.
-        y: Math.min(legend.y + legend.height + 8 + 8 + 2,
+        //
+        // Und **ohne Legende unter den Block**: ein unsichtbares Element
+        // behaelt in QML seine Hoehe, der Umschalter klebte sonst unter einer
+        // Tafel, die niemand sieht -- in der Lesart "Art" sieben Zeilen weit
+        // unten. Nach oben ging es auch nicht: auf einem Telefon reicht der
+        // Block bis fast an die Kopfzeile, und der Kasten lag auf seinen
+        // Kacheln. Zwischen Blockunterkante und Haldenoberkante ist dagegen
+        // Platz, der auf schmalen Schirmen ohnehin leer bleibt.
+        //
+        // Die Klemme nach unten bleibt in beiden Faellen: was nicht passt,
+        // endet am unteren Rand der Halde statt in der Fusszeile.
+        y: Math.min(root.showLegend
+                    ? legend.y + legend.height + 8 + 8 + 2
+                    : canvasView.y + canvasView.blockCenterY
+                      + canvasView.blockSide / 2 + root.baseFont,
                     canvasView.y + canvasView.height - goggles.height)
         // Genau so breit wie die Knopfreihe, damit der Untergrund dahinter
         // sie umschliesst und nicht daneben steht. `baseFont * 14` war
         // geraten und lag bei den deutschen Beschriftungen zu knapp.
         width: goggles.schalterBreite
         alignRight: true
-        visible: root.showLegend && root.width >= 420
+        visible: root.showGoggles
         mode: root.colorMode
         lang: root.lang
         modes: [
@@ -591,7 +620,7 @@ Item {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             text: root.feed
-                ? "₿ " + Tr.price1(Money.rate(root.feed.price, root.currency),
+                ? root.btcZeichen + " " + Tr.price1(Money.rate(root.feed.price, root.currency),
                                    Money.symbol(Money.actual(root.feed.price, root.currency)),
                                    root.lang)
                 : ""

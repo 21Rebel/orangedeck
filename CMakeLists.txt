@@ -14,13 +14,26 @@
 #
 # Gebaut wird also aus der Wurzel:  cmake -S . -B build
 cmake_minimum_required(VERSION 3.21)
-project(orangedeck-app VERSION 0.2.1 LANGUAGES CXX)
+project(orangedeck-app VERSION 0.2.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Qml Quick)
+# **6.9 wegen `SafeArea`.** `app/qml/Main.qml` legt die Raender der
+# Systemleisten an -- ohne die zeichnet die Anwendung ab Android 15 unter die
+# Statusleiste, und die Reiter sind nicht antippbar (08.09.2026 auf einem
+# Galaxy A55 gemessen). `SafeArea` gibt es erst ab QtQuick 6.9. Vorher stand
+# hier 6.5 (`pragma ComponentBehavior: Bound`); eine Grenze, die nicht
+# mitwandert, ist eine Behauptung.
+#
+# Alles, worauf gebaut wird, ist darueber: die Baustrecke holt 6.9.*, die
+# Flatpak-Laufzeit hat 6.9.3, Android und dieser Rechner 6.11.2.
+find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Qml Quick)
+# **Hier bleibt 6.5 stehen, und zwar mit Absicht.** `REQUIRES` setzt nicht die
+# Mindestfassung, sondern die Vorgaben der CMake-Regeln (etwa QTP0001 fuer den
+# Ressourcenpfad der QML-Module). Sie anzuheben waere eine Aenderung am Bau,
+# nicht an der Anforderung -- und die gehoert nicht in denselben Handgriff.
 qt_standard_project_setup(REQUIRES 6.5)
 
 # Freiwillig: damit wird aus dem Fenster auf Wunsch eine Layer-Shell-Flaeche

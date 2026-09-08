@@ -25,8 +25,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # 6.5 ist das Mindeste (siehe CMakeLists.txt: `pragma ComponentBehavior:
-  # Bound` gibt es erst ab da).
+  # 6.9 ist das Mindeste (siehe CMakeLists.txt: `SafeArea` gibt es erst ab
+  # da, und ohne die zeichnet Android unter die Statusleiste).
   #
   # **Nicht 6.8**: die Reihe verlinkt auf macOS noch das Framework AGL, und
   # das SDK von macOS 15 hat es nicht mehr -- der erste Lauf brach mit

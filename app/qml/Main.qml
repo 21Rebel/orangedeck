@@ -57,6 +57,12 @@ Window {
     // Bau genauso getroffen.** Richtig ist die Frage nach dem Dienst, nicht
     // nach dem Geraet.
     property string dataSource: Qt.platform.os === "linux" ? "daemon" : "direct"
+
+    // **Kein Gerät mit Tastatur.** Die Abfrage stand schon beim Suchfeld des
+    // Explorers; mit dem Tastaturhinweis wird sie zum zweiten Mal gebraucht,
+    // und eine Bedingung, die zweimal dasteht, laeuft irgendwann auseinander.
+    readonly property bool ohneTastatur: Qt.platform.os === "android"
+                                      || Qt.platform.os === "ios"
     readonly property string effSource: win.forcedSource.length ? win.forcedSource
                                                                 : win.dataSource
     property string currency: "eur"
@@ -410,48 +416,74 @@ Window {
         mode: win.effSource
     }
 
-    // **Alle Ansichten stehen in `FeedTabs`** -- dasselbe Bauteil wie im
-    // Dashboard, im Popout und auf dem Desktop. Vorher verdrahtete dieses
-    // Fenster sie selbst, und genau daran fehlte der Wallet-Ansicht ihre
-    // Sprache und der Uhr der Kursverlauf: was hier dazukam, kam
-    // dort nicht an, und umgekehrt.
-    FeedTabs {
-        id: tabs
+    // **Der Rand, den sich das System nimmt.** Ab Android 15 (API 35)
+    // zeichnet das System jede Anwendung randlos, und sie muss die Raender
+    // der Systemleisten selbst anwenden. Tut sie es nicht, liegt die
+    // Reiterzeile unter der Statusleiste -- am 08.09.2026 auf einem Galaxy
+    // A55 (Android 16, targetSdk 36) gemessen: `mAppBounds` ist der ganze
+    // Schirm, der obere Rand 89 px. "Feed" und die Uhrzeit standen
+    // uebereinander gedruckt, und **die Reiter waren nicht antippbar**: die
+    // Statusleiste ist ein eigenes Fenster darueber und nimmt die
+    // Beruehrung. Vom Feed-Reiter kam man per Finger nicht weg.
+    //
+    // `SafeArea` haengt hier an einem Behaelter und **nicht an `tabs`
+    // selbst**: die Raender richten sich nach der Lage des Elements, und ein
+    // Element, das seine eigene Lage aus ihnen ableitet, ist eine
+    // Bindungsschleife.
+    //
+    // Keine Plattformabfrage. Auf dem Schreibtisch sind diese Raender 0 --
+    // was nichts beansprucht, kostet auch nichts, und eine Abfrage waere
+    // eine zweite Stelle, an der dieselbe Entscheidung steht.
+    Item {
+        id: flaeche
 
         anchors.fill: parent
-        anchors.margins: 14
-        anchors.topMargin: 8
-        feed: feedState
-        opts: win.opts
-        view: win.view
-        // Im nackten Widget bleibt die Reiterzeile weg -- und mit ihr der
-        // Platz, den sie braucht.
-        tabsVisible: !win.bare
-        // Deckkraft und Startansicht gehoeren dem Fenster, also stehen sie
-        // hier auch in den Einstellungen.
-        windowedSettings: true
-        minerActions: !win.bare
-        gap: 6
-        tabFont: 13
-        baseFont: 13
-        onOptRequested: function (key, value) {
-            win.setOpt(key, value);
-        }
-        onViewRequested: function (v) {
-            win.view = v;
-        }
-        // Das Suchfeld des Explorers nimmt den Fokus, solange es zu sehen ist.
-        // Beim Verlassen gehoert er wieder hierher -- sonst sind die
-        // Tastenkuerzel nach einem Besuch im Explorer tot.
-        onSearchFocusReleased: keys.forceActiveFocus()
 
-        // **Auf dem Telefon holt sich das Suchfeld den Fokus nicht.** Dort
-        // haengt am Fokus die Bildschirmtastatur, und die deckt die halbe
-        // Ansicht zu: wer den Explorer oeffnet, sieht zuerst eine Tastatur
-        // und muss sie wegwischen, bevor er die Bloecke sieht. Am 05.09.2026
-        // im Emulator aufgefallen -- auf dem Schreibtisch kostet der Fokus
-        // nichts und spart einen Klick, deshalb bleibt er dort.
-        searchFocus: Qt.platform.os !== "android" && Qt.platform.os !== "ios"
+        // **Alle Ansichten stehen in `FeedTabs`** -- dasselbe Bauteil wie im
+        // Dashboard, im Popout und auf dem Desktop. Vorher verdrahtete dieses
+        // Fenster sie selbst, und genau daran fehlte der Wallet-Ansicht ihre
+        // Sprache und der Uhr der Kursverlauf: was hier dazukam, kam
+        // dort nicht an, und umgekehrt.
+        FeedTabs {
+            id: tabs
+
+            anchors.fill: parent
+            anchors.leftMargin: 14 + flaeche.SafeArea.margins.left
+            anchors.rightMargin: 14 + flaeche.SafeArea.margins.right
+            anchors.bottomMargin: 14 + flaeche.SafeArea.margins.bottom
+            anchors.topMargin: 8 + flaeche.SafeArea.margins.top
+            feed: feedState
+            opts: win.opts
+            view: win.view
+            // Im nackten Widget bleibt die Reiterzeile weg -- und mit ihr der
+            // Platz, den sie braucht.
+            tabsVisible: !win.bare
+            // Deckkraft und Startansicht gehoeren dem Fenster, also stehen sie
+            // hier auch in den Einstellungen.
+            windowedSettings: true
+            minerActions: !win.bare
+            gap: 6
+            tabFont: 13
+            baseFont: 13
+            onOptRequested: function (key, value) {
+                win.setOpt(key, value);
+            }
+            onViewRequested: function (v) {
+                win.view = v;
+            }
+            // Das Suchfeld des Explorers nimmt den Fokus, solange es zu sehen ist.
+            // Beim Verlassen gehoert er wieder hierher -- sonst sind die
+            // Tastenkuerzel nach einem Besuch im Explorer tot.
+            onSearchFocusReleased: keys.forceActiveFocus()
+
+            // **Auf dem Telefon holt sich das Suchfeld den Fokus nicht.** Dort
+            // haengt am Fokus die Bildschirmtastatur, und die deckt die halbe
+            // Ansicht zu: wer den Explorer oeffnet, sieht zuerst eine Tastatur
+            // und muss sie wegwischen, bevor er die Bloecke sieht. Am 05.09.2026
+            // im Emulator aufgefallen -- auf dem Schreibtisch kostet der Fokus
+            // nichts und spart einen Klick, deshalb bleibt er dort.
+            searchFocus: !win.ohneTastatur
+        }
     }
 
     Item {
@@ -523,10 +555,18 @@ Window {
     Text {
         id: hint
 
+        // **Nicht auf dem Telefon.** Er zaehlt Tastenkuerzel auf, und dort
+        // gibt es keine Tastatur -- gedeckt hat er dafuer die Fusszeile, quer
+        // ueber "naechster Block ... median ... BTC" und rechts
+        // abgeschnitten. Am 08.09.2026 beim Kaltstart gesehen. `flash()`
+        // darf weiter gerufen werden (eine angesteckte Tastatur waere ja
+        // moeglich), es wird nur nichts sichtbar.
+        visible: !win.ohneTastatur
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 16
+        // Auch dieser sitzt sonst hinter der Navigationsleiste.
+        anchors.bottomMargin: 16 + flaeche.SafeArea.margins.bottom
         color: "#9a94a6"
         font.pixelSize: 11
         text: "1–6 Ansicht   ·   c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft · F11 Vollbild"
