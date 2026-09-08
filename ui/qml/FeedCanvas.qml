@@ -130,6 +130,10 @@ Item {
     // War das letzte Bild vergroessert? Beim Zuruecknehmen muss einmal die
     // ganze Leinwand geraeumt werden.
     property bool __warZoom: false
+    // Die Geometrie des letzten Bildes. Wozu: siehe `clearTop` in `onPaint`.
+    property real __letzteBreite: -1
+    property real __letzteHoehe: -1
+    property real __letzterPoolTop: -1
     // Anzahl je Transaktionsart im dargestellten Block, Index wie TxType.KINDS
     property var blockTypeCounts: []
 
@@ -1000,6 +1004,27 @@ Item {
         onHeightChanged: requestPaint()
         Component.onCompleted: rebuild()
 
+        // **Der Block haengt an der Haldenoberkante.** `blockSide` rechnet
+        // `min(Breite*0,72, Hoehe/2,5, poolTop*0,86)`, und `poolTop` wandert
+        // mit dem Fuellstand. Neu gezeichnet wurde bisher nur bei Blockwechsel
+        // und bei Breite oder Hoehe -- nicht, wenn `poolTop` sich aendert.
+        //
+        // Beim Start ist die Halde leer, `poolTop` also klein und `blockSide`
+        // fast null: **der Block wird gar nicht gezeichnet.** Er kam erst
+        // zurueck, wenn man den Reiter wechselte, weil die Leinwand dann neu
+        // entsteht. Am 08.09.2026 auf einem Telefon gemeldet ("nach
+        // Tabwechsel wird das richtig angezeigt") und hier nachgestellt.
+        //
+        // Teuer ist das nicht: sobald die Halde etwas Hoehe hat, klemmen
+        // Breite und Hoehe den Wert, und `blockSide` hoert von selbst auf sich
+        // zu aendern. Die Neuzeichnungen fallen also in die ersten Sekunden.
+        Connections {
+            target: root
+            function onBlockSideChanged() {
+                blockCanvas.requestPaint();
+            }
+        }
+
         Connections {
             target: root
             function onBlockRevealedChanged() {
@@ -1225,7 +1250,36 @@ Item {
             // bleibt oben stehen, was zuletzt dort gezeichnet wurde -- so kam
             // die gestrichelte Linie doppelt ins Bild, einmal an ihrem Platz
             // und einmal als Rest von vorhin.
-            var clearTop = (root.zoomed || root.__warZoom)
+            // **Und einmal, wenn die Halde geschrumpft ist.** Der Zoom war
+            // nur der Fall, den jemand ausgeloest hat; die Ursache ist
+            // allgemeiner, und die Richtung entscheidet:
+            //
+            //   Halde waechst   -> `poolTop` wandert nach oben, `clearTop`
+            //                      mit ihm, der geraeumte Bereich wird
+            //                      groesser. Der alte Strich liegt darin.
+            //   Halde schrumpft -> `poolTop` wandert nach unten, der
+            //                      geraeumte Bereich wird kleiner, und der
+            //                      Strich von vorhin liegt **darueber**.
+            //                      Er bleibt stehen.
+            //
+            // Jeder Block, der gefunden wird, laesst die Halde schrumpfen.
+            // Drei Blocks, drei Striche untereinander -- am 08.09.2026 auf
+            // einem Telefon so beobachtet. Nachstellen liess es sich nicht
+            // auf Zuruf (Kaltstart und vier erzwungene Drehungen zeigten es
+            // nicht), weil beides die Halde nicht schrumpfen laesst.
+            //
+            // **Nicht bei jeder Aenderung von `poolTop` voll raeumen.** Der
+            // Wert wandert mit dem Fuellstand, also praktisch in jedem Bild;
+            // eine Vollraeumung daran zu haengen hiesse, die Sparmassnahme
+            // ganz abzuschaffen. Nur die eine Richtung kostet nichts.
+            var gewachsen = root.width !== root.__letzteBreite
+                         || root.height !== root.__letzteHoehe;
+            var geschrumpft = root.poolTop > root.__letzterPoolTop + 0.5;
+            root.__letzteBreite = root.width;
+            root.__letzteHoehe = root.height;
+            root.__letzterPoolTop = root.poolTop;
+            var clearTop = (root.zoomed || root.__warZoom
+                            || gewachsen || geschrumpft)
                 ? 0 : Math.max(0, root.poolTop - 8);
             root.__warZoom = root.zoomed;
             ctx.clearRect(0, clearTop, root.width, root.height - clearTop);
