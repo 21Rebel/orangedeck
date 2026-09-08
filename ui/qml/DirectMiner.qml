@@ -309,16 +309,60 @@ Item {
             "hashRate": summeHr,
             "bestDiff": beste
         };
-        // Neue Kennung, damit die Bindungen anspringen -- ein veraenderter
-        // Inhalt derselben Abbildung loest in QML nichts aus.
+        // **Auch die Arrays kopieren, nicht nur die Abbildung.** QML
+        // vergleicht Arrays nach Kennung, nicht nach Inhalt -- und
+        // `MinerChart` zeichnet neu bei `onHrChanged`:
+        //
+        //     readonly property var hr: (hist && hist.hr) || []
+        //     onHrChanged: canvas.requestPaint()
+        //
+        // Wer in dasselbe Array hineinschiebt, aendert dessen Kennung nicht.
+        // Damit feuerte `onHrChanged` nie, die Leinwand zeichnete nie, und
+        // der Graph blieb **leer** -- am 08.09.2026 auf einem Galaxy A55
+        // gemeldet ("kerzengerade").
+        //
+        // Der Daemon-Weg fiel nicht auf, weil dort jede Abfrage ein frisches
+        // JSON-Objekt liefert: neue Arrays, neue Kennung, Neuzeichnen.
+        //
+        // Fuenf Arrays von hoechstens 180 Zahlen alle fuenf Sekunden zu
+        // kopieren kostet nichts, was messbar waere.
         var kopie = ({});
+        var felderKopie = ["t", "hr", "hrNow", "temp", "err"];
         schluessel = Object.keys(hist);
-        for (i = 0; i < schluessel.length; i++)
-            kopie[schluessel[i]] = hist[schluessel[i]];
+        for (i = 0; i < schluessel.length; i++) {
+            var q = hist[schluessel[i]];
+            var z = ({});
+            for (var fk = 0; fk < felderKopie.length; fk++)
+                z[felderKopie[fk]] = (q[felderKopie[fk]] || []).slice();
+            kopie[schluessel[i]] = z;
+        }
         root.minerHistory = kopie;
     }
 
+    // **Auf den Inhalt sehen, nicht auf die Kennung.** `minerHosts` wird aus
+    // `minerHostsRaw` gerechnet und gibt bei jeder Auswertung ein **neues**
+    // Array zurueck. QML vergleicht Arrays nach Kennung, nicht nach Inhalt --
+    // also feuerte `onHostsChanged` bei jeder Neuauswertung der Bindung, und
+    // jedes Mal lief ein Durchlauf an.
+    //
+    // Gemessen am 08.09.2026: die Zeitachse des Verlaufs sagte "60 Min" nach
+    // zweieinhalb Minuten Laufzeit -- also rund fuenf Abfragen je Sekunde
+    // statt einer alle fuenf. **Die Kurve war dadurch kerzengerade**, denn die
+    // Werte lagen Millisekunden auseinander. Dazu fragte es den Miner
+    // fuenfundzwanzigmal so oft ab wie gemeint.
+    //
+    // Der Verlauf wird nur geleert, wenn sich die Liste wirklich geaendert
+    // hat; sonst waere er bei jeder Neuauswertung weg.
+    // Die Liste als **Zeichenkette**. Alles, was sonst an `hosts` haengen
+    // wuerde, haengt daran: Zeichenketten vergleicht QML nach Inhalt, Arrays
+    // nach Kennung.
+    property string hostsKey: ""
+
     onHostsChanged: {
+        var jetzt = (root.hosts || []).join("|");
+        if (jetzt === root.hostsKey)
+            return;
+        root.hostsKey = jetzt;
         root.__hist = ({});
         root.__dom = ({});
         root.lauf();
@@ -326,7 +370,19 @@ Item {
 
     Timer {
         interval: root.intervalMs
-        running: root.active && (root.hosts || []).length > 0
+        // **Nicht `root.hosts` in dieser Bedingung.** Das Array ist bei jeder
+        // Auswertung ein neues Objekt, `running` wurde also neu zugewiesen --
+        // und eine neu gestartete Uhr mit `triggeredOnStart` feuert sofort.
+        // Damit loeste jede Neuauswertung eine Abfrage aus.
+        //
+        // Am 08.09.2026 gemessen: die Zeitachse des Verlaufs sagte "60 Min"
+        // nach zweieinhalb Minuten Laufzeit, also rund fuenf Abfragen je
+        // Sekunde statt einer alle fuenf. **Die Kurve war dadurch
+        // kerzengerade** -- die Werte lagen Millisekunden auseinander -- und
+        // der Miner wurde fuenfundzwanzigmal so oft gefragt wie gemeint.
+        //
+        // `hostsKey` ist eine Zeichenkette und wird nach Inhalt verglichen.
+        running: root.active && root.hostsKey.length > 0
         repeat: true
         triggeredOnStart: true
         onTriggered: root.lauf()
