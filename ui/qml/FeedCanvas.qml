@@ -327,11 +327,21 @@ Item {
         // Originals (g/4) gebrochen, zusammen mit Kantenglaettung.
         if (g * root.dpr < 2)
             return g / 4;
-        // **Der Mindestrand bleibt ein logischer Punkt**, nicht ein
-        // Geraetepixel: auf Geraetepixel geschnappt gehoert die Lage, nicht
-        // die Dichte. Die gewaehlte Dichte ist unten bei `blockPadDivisor`
-        // begruendet -- mit `1 / dpr` waere die Fuge 2,8-mal schmaler.
-        return Math.max(root.schnapp(1), root.schnapp(
+        // **Der Mindestrand ist ein Geraetepixel, nicht ein logischer
+        // Punkt.** Ein logischer Punkt sind auf einem 450-dpi-Schirm 2,8
+        // Geraetepixel -- und bei einer Zelle von sechs Geraetepixeln bleibt
+        // davon keine Kachel uebrig. Am 08.09.2026 auf einem Galaxy A55
+        // nachgemessen: **240 Kacheln 1 px breit, 40 zwei px, zusammen 19 %
+        // aller Kacheln** -- schmaler als die Fugen dazwischen (5-6 px).
+        //
+        // Das steht dem entgegen, was unten bei `blockPadDivisor` als Absicht
+        // notiert ist: Kachel 5 auf Luecke 2, "geschlossene Flaeche statt
+        // Punktraster". Tatsaechlich war es 1 auf 5, also umgekehrt.
+        //
+        // Ein Zwischenschritt hatte diesen Rand schon einmal auf ein
+        // Geraetepixel gesetzt und dann zurueckgedreht, weil der Block
+        // "dichter als gemeint" wirkte. Dichter **war** das Gemeinte.
+        return Math.max(1 / root.dpr, root.schnapp(
             g / Math.max(1, blockPadDivisor)));
     }
 

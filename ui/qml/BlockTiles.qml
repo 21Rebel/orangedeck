@@ -101,12 +101,11 @@ Item {
     function pad(g) {
         if (g * root.dpr < 2)
             return g / 4;
-        // **Der Mindestrand bleibt ein logischer Punkt**, nicht ein
-        // Geraetepixel. Auf Geraetepixel geschnappt gehoert die Lage, nicht
-        // die Dichte: mit `1 / dpr` wurde die Fuge auf diesem Schirm 2,8-mal
-        // schmaler, und der Block sah dichter aus als gemeint. Die gewaehlte
-        // Dichte steht in `FeedCanvas` bei `blockPadDivisor` begruendet.
-        return Math.max(root.schnapp(1), root.schnapp(g / 8));
+        // **Der Mindestrand ist ein Geraetepixel, nicht ein logischer
+        // Punkt** -- Begruendung und Messung stehen in `FeedCanvas` bei
+        // `blockPad`. Kurz: ein logischer Punkt sind hier 2,8 Geraetepixel,
+        // und bei kleinen Zellen bleibt davon keine Kachel uebrig.
+        return Math.max(1 / root.dpr, root.schnapp(g / 8));
     }
 
     onBlockChanged: rebuild()
