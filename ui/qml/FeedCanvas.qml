@@ -204,8 +204,22 @@ Item {
     // gelandete Kachel sprang deshalb beim Uebergang von der einen zur
     // anderen Ebene um bis zu einen halben Rasterschritt, und die Luecke
     // daneben wurde sichtbar ungleich. Beide rechnen jetzt gleich.
+    // **Auf ganze Geraetepixel, nicht auf ganze logische Punkte.** Hier stand
+    // `Math.round(v * zoom) / zoom` -- gerundet wurde also auf einen logischen
+    // Punkt, und der liegt bei einem Verhaeltnis von 2,8125 mitten im
+    // Geraetepixel. Damit machte diese Zeile beim Zeichnen zunichte, was das
+    // Raster (`zelleDev`, `fugeDev`) vorher genau gelegt hatte.
+    //
+    // Am 08.09.2026 in der Halde nachgemessen, Fugenbreiten in Geraetepixeln:
+    // 4 px (177x), 5 px (689x), 6 px (183x), 7 px (134x) -- gemeint sind
+    // ueberall sechs. Die Rasterweite selbst war mit 17 px richtig, die
+    // Kacheln aber je ein Pixel breiter als gerechnet und frassen die Fuge an.
+    //
+    // `zoom` bleibt drin: gerundet wird im Bildschirmraum und zurueckgerechnet
+    // in Szenenkoordinaten, damit es auch im Zoom auf ganzen Punkten sitzt.
     function snap(v) {
-        return Math.round(v * zoom) / zoom;
+        var s = zoom * root.dpr;
+        return Math.round(v * s) / s;
     }
 
     function toSceneX(px) {
@@ -1434,7 +1448,10 @@ Item {
             // ein Kern von zwei Pixeln stehen -- das reicht, um sie zu finden.
             if (eigene.length) {
                 ctx.strokeStyle = String(root.ownColor);
-                ctx.lineWidth = 1;
+                // Ein Geraetepixel breit, nicht ein logischer Punkt -- sonst
+                // ist der Rahmen auf einem dichten Schirm fast drei Pixel
+                // stark und deckt den Kern der Kachel zu.
+                ctx.lineWidth = 1 / root.dpr;
                 for (i = 0; i < eigene.length; i++) {
                     var m = eigene[i];
                     var ms = m.sq.r * root.gridSize - root.unitPad * 2;
@@ -1442,9 +1459,11 @@ Item {
                         ms = 1;
                     // Auf halbe Bildpunkte: ein 1 px breiter Strich sitzt sonst
                     // je zur Haelfte auf beiden Nachbarpunkten und wird grau.
-                    ctx.strokeRect(root.snap(root.targetX(m.sq)) + 0.5 / root.zoom,
-                                   root.snap(root.targetY(m.sq)) + 0.5 / root.zoom,
-                                   ms - 1 / root.zoom, ms - 1 / root.zoom);
+                    // **Halbe Geraetepixel**, aus demselben Grund wie `snap`.
+                    var hp = 0.5 / (root.zoom * root.dpr);
+                    ctx.strokeRect(root.snap(root.targetX(m.sq)) + hp,
+                                   root.snap(root.targetY(m.sq)) + hp,
+                                   ms - hp * 2, ms - hp * 2);
                 }
             }
 
