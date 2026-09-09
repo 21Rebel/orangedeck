@@ -53,6 +53,12 @@
     <string name="widget_k_kurs">Kurs</string>
     <string name="widget_k_moscow">Moscow Time</string>
     <string name="widget_k_mempool">Mempool</string>
+
+    <string name="widget_graph_beschreibung">Verlauf</string>
+    <string name="widget_seit">%1$s %% über %2$d Punkte</string>
+    <string name="widget_kurs_gross_info">Kurs mit Verlauf</string>
+    <string name="widget_mempool_gross_info">Mempool mit Verlauf</string>
+    <string name="widget_miner_gross_info">Miner mit Hashrate-Verlauf</string>
     <string name="widget_miner_keine">Adresse nicht gesetzt</string>
     <!-- Steht da, wenn die Abfrage scheitert. Ein Strich statt einer leeren
          Flaeche: leer sieht aus wie ein Fehler des Starters. -->

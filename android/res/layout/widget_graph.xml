@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Die ausfuehrliche Kachel: Ueberschrift, Hauptwert, eine Nebenzeile und
+     darunter der Graph als Bild.
+
+     ImageView gehoert zu den Bauteilen, die RemoteViews kennt, und
+     setImageViewBitmap nimmt ein fertiges Bild. Gezeichnet wird es in
+     Graph.java.
+
+     scaleType fitXY: das Bild hat eine feste Groesse (640x220) und wird auf
+     die Kachel gezogen. Bei einer Kurve faellt das nicht auf, und es spart
+     die Frage, wie breit die Kachel gerade ist. Vor Android 12 laesst sich
+     das ohnehin nicht zuverlaessig beantworten.
+
+     Kein Doppelstrich in Kommentaren: in XML verboten. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_wurzel"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="14dp"
+    android:background="@drawable/widget_grund">
+
+    <TextView
+        android:id="@+id/widget_titel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:textSize="11sp"
+        android:letterSpacing="0.15"
+        android:textColor="#9a94a6"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/widget_gross"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:textColor="#f7931a"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/widget_zeile1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:textSize="12sp"
+        android:textColor="#9a94a6"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <ImageView
+        android:id="@+id/widget_bild"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="6dp"
+        android:scaleType="fitXY"
+        android:contentDescription="@string/widget_graph_beschreibung" />
+</LinearLayout>

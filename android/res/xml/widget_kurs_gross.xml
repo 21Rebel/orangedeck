@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Die ausfuehrliche Kachel mit Graph. 4x2 ist die kleinste Groesse, in der
+     eine Kurve neben den Zahlen noch etwas aussagt. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_kurs_gross_info"
+    android:initialLayout="@layout/widget_graph" />
