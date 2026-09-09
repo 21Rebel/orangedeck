@@ -135,12 +135,31 @@ Item {
             }
 
             var tRange = draw(root.temp, root.tempColor, 1.2);
-            // Momentanwert duenn und blass, der Zehnminutenwert kraeftig
-            // darueber -- so wie es die Weboberflaeche des Geraets zeigt, und
-            // es macht auf einen Blick klar, welche Linie die Hashrate ist.
-            var hRange = rangeOf([s, root.hrNow]);
-            drawIn(root.hrNow, hRange, root.lineColor, 1.0, 0.45);
-            drawIn(s, hRange, root.lineColor, 2.0, 1.0);
+
+            // **Nur der Momentanwert.** Bis zum 09.09.2026 lag der
+            // Zehnminutenwert (`hr`, aus `hashRate_10m`) kraeftig darueber --
+            // so zeigt es die Weboberflaeche des Geraets auch. Im Betrieb ist
+            // er aber fast immer eine Waagerechte: er ist geglaettet, und ein
+            // Miner, der laeuft, laeuft gleichmaessig. Eine Linie, die sich
+            // nicht bewegt, sagt nichts und nimmt der zweiten die Achse weg --
+            // dazu stand derselbe Wert ohnehin als Zahl daneben.
+            //
+            // **Aber nicht ersatzlos:** `hrNow` kommt aus `hashRate` und wird
+            // nur im AxeOS-Pfad gesetzt. Ein Miner an der cgminer-Schnittstelle
+            // meldet ihn nicht (`daemon/orangedeck`, "cgminer meldet MH/s"),
+            // dort ist `hrNow` durchgehend null. Waere hier nur noch `hrNow`
+            // gezeichnet, bliebe deren Graph leer. Also: den Momentanwert,
+            // wenn es ihn gibt, sonst den geglaetteten.
+            var hatNow = false;
+            for (var q = 0; q < root.hrNow.length; q++) {
+                if (root.hrNow[q] !== null && root.hrNow[q] !== undefined) {
+                    hatNow = true;
+                    break;
+                }
+            }
+            var kurve = hatNow ? root.hrNow : s;
+            var hRange = rangeOf([kurve]);
+            drawIn(kurve, hRange, root.lineColor, 2.0, 1.0);
 
             // Beschriftung **in der Farbe der jeweiligen Kurve** -- sonst ist
             // nicht zu erkennen, welche Achse zu welcher Linie gehoert.
