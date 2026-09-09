@@ -174,6 +174,7 @@ Item {
         poolCanvas.requestPaint();
         blockCanvas.requestPaint();
         flyLayer.refresh();
+        fallLayer.refresh();
     }
 
     // Farbe einer Blockkachel. Drei Lesarten:
@@ -293,6 +294,7 @@ Item {
         if (blockPhase !== "idle")
             blockAnim.requestPaint();
         flyLayer.refresh();
+        fallLayer.refresh();
     }
 
     onWidthChanged: clampView()
@@ -834,13 +836,28 @@ Item {
         // Die unterste Zeile wird beim Nachrutschen aus dem Bild geschoben --
         // keine eigene Fallanimation. Die ist den Transaktionen vorbehalten,
         // die wirklich aus dem Mempool verschwinden.
+        //
+        // **Und sie wird abgeschnitten, nicht weggenommen.** Bis zum
+        // 09.09.2026 lief sie genau eine Rasterweite mit und verschwand dann
+        // in einem Bild, waehrend sie noch vollstaendig zu sehen war. Am
+        // Geraet gemessen: die Halde endet bei y=2091, die Leinwand bei 2095,
+        // und der tiefste gezeichnete Punkt war exakt `height` -- es gab
+        // also gar kein "aus dem Bild", in das geschoben werden konnte. Das
+        // Wegblinken an der Kante ist es, was wie Herausfallen aussieht.
+        //
+        // Jetzt laeuft die Zeile mit derselben Geschwindigkeit weiter, bis
+        // sie ganz unter der Kante liegt, und `fallLayer` schneidet sie dabei
+        // ab. Sie wird also kleiner statt weg.
         if (fallout.length > 0) {
-            if (scrollPx >= 0) {
-                fallout = [];
-            } else {
-                for (var n = 0; n < fallout.length; n++)
-                    fallout[n].y = fallout[n].y0 + gridSize + scrollPx;
+            var vFall = gridSize / 0.3;     // dieselbe wie beim Nachrutschen
+            var bleibt = [];
+            for (var n = 0; n < fallout.length; n++) {
+                fallout[n].y += vFall * dt;
+                if (fallout[n].y <= height)
+                    bleibt.push(fallout[n]);
             }
+            if (bleibt.length !== fallout.length)
+                fallout = bleibt;
         }
 
         var animating = stepBlockAnimation(dt);
@@ -899,6 +916,7 @@ Item {
             if (root.step(0.033))
                 root.poolDirty = true;
             flyLayer.refresh();
+            fallLayer.refresh();
             if (root.blockPhase !== "idle")
                 blockAnim.requestPaint();
         }
@@ -935,6 +953,12 @@ Item {
         id: blockCanvas
 
         anchors.fill: parent
+        // **Ueber dem Regen, nicht darunter.** Bis zum 09.09.2026 stand
+        // `flyKachel` in der Datei nach dieser Leinwand und zeichnete damit
+        // darueber: fallende Mempool-Kacheln lagen mitten im Block. Am Galaxy
+        // A55 gemessen -- Block bei y 538..1240, Regen ueber die volle
+        // Leinwandhoehe y 298..2095, also quer hindurch.
+        z: 20
         // Nur dort glaetten, wo die Zellen kleiner als zwei Bildpunkte sind --
         // sonst bleibt die Kachelgrafik bewusst hart.
         antialiasing: rowsUsed > 0 && root.blockUnit(rowsUsed) < 2
@@ -1296,6 +1320,7 @@ Item {
         id: blockAnim
 
         anchors.fill: parent
+        z: 20                       // mit blockCanvas, siehe dort
         antialiasing: false
         visible: root.blockPhase !== "idle"
 
@@ -1550,6 +1575,70 @@ Item {
     // Fallende und eingesaugte Transaktionen als echte Rechtecke statt auf einer
     // Leinwand: es sind nur ein paar Dutzend, und so entfaellt das Vollbild-
     // Loeschen dreissigmal pro Sekunde.
+    // **Das Abgeraeumte, und nur das, wird abgeschnitten.**
+    //
+    // Warum eine eigene Schicht und nicht `clip` auf `flyLayer`: der Regen
+    // startet bei `fromY` **ueber** der Leinwand (`-side - Zufall*height/2`)
+    // und faellt von dort herein. Ein Schnitt an der Oberkante liesse ihn
+    // dort erscheinen statt hereinfallen -- die Bewegung, um die es in dieser
+    // Ansicht ueberhaupt geht. Also zwei Schichten: diese schneidet unten ab,
+    // die darueber bleibt offen.
+    //
+    // Sie liegt in der Datei vor `flyLayer` und damit darunter: eine gerade
+    // abgeraeumte Zeile verdeckt keine frisch fallende Kachel.
+    Item {
+        id: fallLayer
+
+        anchors.fill: parent
+        clip: true
+        transform: [
+            Scale { xScale: root.zoom; yScale: root.zoom },
+            Translate { x: root.viewX; y: root.viewY }
+        ]
+
+        // Eine abgeraeumte Zeile ist so breit wie das Raster; bei schmalem
+        // Fenster und kleinen Kacheln koennen das ueber hundert werden --
+        // gemessen 131 gleichzeitig am 09.09.2026.
+        readonly property int capacity: 200
+
+        function refresh() {
+            if (!root.fallout)
+                return;
+            var n = 0, i, item;
+            for (i = 0; i < root.fallout.length && n < capacity; i++) {
+                var fo = root.fallout[i];
+                item = fallRepeater.itemAt(n++);
+                if (!item)
+                    break;
+                item.x = fo.x;
+                item.y = fo.y;
+                item.width = fo.s;
+                item.height = fo.s;
+                item.color = fo.c;
+                item.visible = true;
+            }
+            for (i = n; i < capacity; i++) {
+                item = fallRepeater.itemAt(i);
+                if (!item)
+                    break;
+                if (!item.visible)
+                    break;
+                item.visible = false;
+            }
+        }
+
+        Repeater {
+            id: fallRepeater
+
+            model: fallLayer.capacity
+
+            Rectangle {
+                visible: false
+                antialiasing: false
+            }
+        }
+    }
+
     Item {
         id: flyLayer
 
@@ -1562,8 +1651,9 @@ Item {
 
         readonly property int capacity: 320
 
+
         function refresh() {
-            if (!root.flying || !root.fallout)
+            if (!root.flying)
                 return;
             var n = 0;
             var i, item;
@@ -1584,21 +1674,6 @@ Item {
                 item.visible = true;
             }
 
-            var cx = root.width / 2, cy = root.poolTop * 0.5;
-            for (i = 0; i < root.fallout.length && n < capacity; i++) {
-                var fo = root.fallout[i];
-                item = flyRepeater.itemAt(n++);
-                if (!item)
-                    break;
-                item.x = fo.x;
-                item.y = fo.y;
-                item.width = fo.s;
-                item.height = fo.s;
-                item.color = fo.c;
-                item.opacity = 1;
-                item.visible = true;
-            }
-
             for (i = n; i < capacity; i++) {
                 item = flyRepeater.itemAt(i);
                 if (!item)
@@ -1607,6 +1682,7 @@ Item {
                     break;
                 item.visible = false;
             }
+
         }
 
         Repeater {
