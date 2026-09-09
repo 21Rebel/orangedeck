@@ -493,10 +493,35 @@ Item {
     // entstehen im Inneren gar keine Loecher -- nachgemessen ueber 40 000
     // Kacheln bleibt die Dichte bei 100 %. Vorher wurde mitten aus der Halde
     // entfernt; das loechert sie unaufhaltsam aus (bis 17 %).
+    // Liefert false, wenn gerade nicht abgeraeumt werden kann.
     function shedBottomRow() {
         var base = layout.rowOffset;
+        var i;
+
+        // **Nicht abraeumen, solange in der untersten Zeile noch etwas
+        // fliegt.** Am 09.09.2026 auf dem Galaxy A55 aufgefallen: unter der
+        // Halde fielen Kacheln beschleunigt aus dem Bild, als verliessen sie
+        // den Mempool. Sie taten das Gegenteil -- sie waren nur zu alt fuer
+        // die Anzeige. Gemessen im freien Band darunter:
+        //
+        //     t=4,27 s   x432  y1258   28x5    (kommt herein)
+        //     t=4,33 s   x432  y1414   28x28   156 px in einem Bild
+        //
+        // Die Ursache stand zwei Zeilen weiter unten: `mondrian.js` legt neue
+        // Kacheln in die **unterste** freie Zeile, und diese Schleife nahm
+        // ihnen die Zeile weg, waehrend sie noch in der Luft waren. Danach
+        // war `sq.y < rowOffset`, `targetY` lag unter der Bildkante, und die
+        // Kachel flog dorthin -- getreu ihrer Anweisung.
+        //
+        // Ein Takt Wartezeit kostet nichts: der Flug dauert unter einer
+        // Sekunde, und die Halde darf so lange eine Zeile zu hoch stehen.
+        for (i = 0; i < poolTx.length; i++) {
+            if (poolTx[i].sq.y === base && poolTx[i].fly < 1)
+                return false;
+        }
+
         var keep = [];
-        for (var i = 0; i < poolTx.length; i++) {
+        for (i = 0; i < poolTx.length; i++) {
             var e = poolTx[i];
             if (e.sq.y === base) {
                 var side = Math.max(1, e.sq.r * gridSize - unitPad * 2);
@@ -507,6 +532,21 @@ Item {
                     "s": side,
                     "c": colorFor(e)
                 });
+                // **Dieselbe Buchfuehrung wie in `removeTx`.** Diese Schleife
+                // fuehrte sie nur halb: `poolTx` und das Layout wurden
+                // gepflegt, `flying`, `cellIndex` und `hoveredTx` nicht. Eine
+                // abgeraeumte Kachel blieb damit im Zeiger-Verzeichnis stehen
+                // -- der Tooltip konnte eine Transaktion nennen, die in der
+                // Halde nicht mehr liegt.
+                var fi = flying.indexOf(e);
+                if (fi >= 0)
+                    flying.splice(fi, 1);
+                for (var cx = 0; cx < e.sq.r; cx++) {
+                    for (var cy = 0; cy < e.sq.r; cy++)
+                        delete cellIndex[(e.sq.x + cx) + ":" + (e.sq.y + cy)];
+                }
+                if (hoveredTx && hoveredTx === e.tx)
+                    hoveredTx = null;
                 occupied -= e.sq.r * e.sq.r;
                 layout.remove(e.sq);
             } else {
@@ -516,6 +556,7 @@ Item {
         poolTx = keep;
         layout.dropBottomRow();
         scrollPx = -gridSize;       // die Halde rutscht sichtbar nach
+        return true;
     }
 
     // Die Halde wird **nicht** kuenstlich aufgefuellt. Jede Kachel darin ist
@@ -535,7 +576,8 @@ Item {
         var changed = false;
         var rounds = 0;
         while (layout.height() > gridRows && rounds++ < 3) {
-            shedBottomRow();
+            if (!shedBottomRow())
+                break;              // eine Kachel ist noch in der Luft
             changed = true;
         }
         return changed;
