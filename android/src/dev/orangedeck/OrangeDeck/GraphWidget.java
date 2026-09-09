@@ -16,7 +16,7 @@ import android.widget.RemoteViews;
 public abstract class GraphWidget extends DeckWidget {
 
     /** Grund der Kachel; muss zu `widget_grund.xml` passen. */
-    protected static final int GRUND = 0xff12101a;
+    protected static final int GRUND = 0xff16131f;
     protected static final int ORANGE = 0xfff7931a;
 
     @Override protected int layoutId() { return R.layout.widget_graph; }

@@ -118,7 +118,7 @@ public class WidgetMempoolGross extends DeckWidget {
         String roh = z.length > 2 && z[2] != null ? z[2] : "";
         if (roh.isEmpty()) {
             v.setImageViewBitmap(R.id.widget_bild,
-                Graph.hinweis(c.getString(R.string.widget_offline), 0xff12101a));
+                Graph.hinweis(c.getString(R.string.widget_offline), 0xff16131f));
             return;
         }
         // split() nimmt einen regulaeren Ausdruck: die Trennzeichen enthalten
@@ -140,6 +140,6 @@ public class WidgetMempoolGross extends DeckWidget {
                 zeilen[i][j - 2] = f[j].isEmpty() ? null : f[j];
         }
         v.setImageViewBitmap(R.id.widget_bild,
-                             Bloecke.zeichne(kopf, zeilen, toene, 0xff12101a));
+                             Bloecke.zeichne(kopf, zeilen, toene, 0xff16131f));
     }
 }
