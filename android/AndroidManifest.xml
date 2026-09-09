@@ -125,6 +125,18 @@
         </receiver>
 
         <receiver
+            android:name=".WidgetUhrGross"
+            android:label="@string/widget_uhr_gross"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_uhr_gross" />
+        </receiver>
+
+        <receiver
             android:name=".WidgetMiner"
             android:label="@string/widget_miner"
             android:exported="true">

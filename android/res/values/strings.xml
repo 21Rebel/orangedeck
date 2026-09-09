@@ -39,6 +39,12 @@
     <string name="widget_stufen">schnell %1$s · sparsam %2$s</string>
     <string name="widget_luefter">%1$s U/min</string>
     <string name="widget_tag">%1$s %% in 24 h</string>
+
+    <string name="widget_uhr_gross">Blockuhr</string>
+    <string name="widget_uhr_gross_info">Blockhöhe, Kurs, Mempool und die beiden Fristen</string>
+    <string name="widget_mempool_kurz">im Mempool</string>
+    <string name="widget_schwierigkeit">Schwierigkeit %1$s %% · noch %2$s Blöcke</string>
+    <string name="widget_halving">Halving bei %1$s · noch %2$s Blöcke</string>
     <string name="widget_miner_keine">Adresse nicht gesetzt</string>
     <!-- Steht da, wenn die Abfrage scheitert. Ein Strich statt einer leeren
          Flaeche: leer sieht aus wie ein Fehler des Starters. -->

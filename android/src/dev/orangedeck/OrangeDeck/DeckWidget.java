@@ -45,6 +45,23 @@ public abstract class DeckWidget extends AppWidgetProvider {
     /** Ueberschrift der Kachel. */
     protected abstract String titel(Context c);
 
+    /**
+     * Welches Layout die Kachel benutzt. Die grosse Blockuhr bringt ein
+     * eigenes mit; alle anderen teilen sich {@code widget_deck}.
+     */
+    protected int layoutId() {
+        return R.layout.widget_deck;
+    }
+
+    /**
+     * Die Textfelder unter dem Hauptwert, von oben nach unten. Ein Widget mit
+     * mehr Platz fuehrt hier mehr auf, und {@link #werte} darf entsprechend
+     * mehr Zeilen liefern.
+     */
+    protected int[] zeilenIds() {
+        return new int[] { R.id.widget_zeile1, R.id.widget_zeile2, R.id.widget_zeile3 };
+    }
+
     /** Welche Ansicht beim Antippen aufgeht -- dieselben Aktionen wie die Verknuepfungen. */
     protected abstract String aktion();
 
@@ -89,12 +106,12 @@ public abstract class DeckWidget extends AppWidgetProvider {
 
     private void zeichne(Context c, AppWidgetManager manager, int[] ids, String[] z) {
         for (int id : ids) {
-            RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_deck);
+            RemoteViews v = new RemoteViews(c.getPackageName(), layoutId());
             v.setTextViewText(R.id.widget_titel, titel(c));
             v.setTextViewText(R.id.widget_gross, z.length > 0 && z[0] != null ? z[0] : "");
-            setzeZeile(v, R.id.widget_zeile1, z.length > 1 ? z[1] : null);
-            setzeZeile(v, R.id.widget_zeile2, z.length > 2 ? z[2] : null);
-            setzeZeile(v, R.id.widget_zeile3, z.length > 3 ? z[3] : null);
+            int[] felder = zeilenIds();
+            for (int k = 0; k < felder.length; k++)
+                setzeZeile(v, felder[k], z.length > k + 1 ? z[k + 1] : null);
 
             Intent i = new Intent(aktion());
             i.setClassName(c.getPackageName(), "org.qtproject.qt.android.bindings.QtActivity");

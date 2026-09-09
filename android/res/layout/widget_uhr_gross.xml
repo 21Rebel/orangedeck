@@ -1,21 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Eine Kachel fuer alle vier Widgets. Der Unterschied steckt in den Werten,
-     nicht im Aufbau. Vier fast gleiche Layouts waeren vier Stellen, an denen
-     eine Aenderung vergessen werden kann.
+<!-- Die grosse Blockuhr, 4x2. Sie zeigt dieselben Werte wie der Reiter "Uhr"
+     in der Anwendung: Blockhoehe gross, darunter Kurs, Moscow Time, Mempool
+     und Gebuehr, und zuletzt die beiden Fristen (Schwierigkeit, Halving).
 
-     **Nur was RemoteViews kennt.** Erlaubt sind unter anderem LinearLayout,
-     FrameLayout, TextView, ImageView; ConstraintLayout ist es nicht, und ein
-     Layout mit einem nicht unterstuetzten Element wirft der Starter
-     stillschweigend weg. Deshalb schlichte LinearLayouts.
-
-     Die beiden unteren Zeilen blendet `DeckWidget` je nach Inhalt aus. -->
+     Mehr Zeilen als `widget_deck`, sonst derselbe Aufbau. Kein Doppelstrich
+     in Kommentaren: in XML verboten. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_wurzel"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center_vertical"
-    android:padding="14dp"
+    android:padding="16dp"
     android:background="@drawable/widget_grund">
 
     <TextView
@@ -24,18 +20,16 @@
         android:layout_height="wrap_content"
         android:textSize="12sp"
         android:textColor="#9a94a6"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:maxLines="1" />
 
     <TextView
         android:id="@+id/widget_gross"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="32sp"
+        android:textSize="34sp"
         android:textStyle="bold"
         android:textColor="#f7931a"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:maxLines="1" />
 
     <TextView
         android:id="@+id/widget_zeile1"
@@ -51,13 +45,32 @@
         android:id="@+id/widget_zeile2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:textSize="13sp"
+        android:textColor="#e8e4f0"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/widget_zeile3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="13sp"
+        android:textColor="#e8e4f0"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/widget_zeile4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
         android:textSize="12sp"
         android:textColor="#9a94a6"
         android:maxLines="1"
         android:ellipsize="end" />
 
     <TextView
-        android:id="@+id/widget_zeile3"
+        android:id="@+id/widget_zeile5"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="12sp"
