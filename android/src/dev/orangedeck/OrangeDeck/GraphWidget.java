@@ -24,6 +24,15 @@ public abstract class GraphWidget extends DeckWidget {
     /** Farbe der Kurve. Vorgabe ist das Orange der Anwendung. */
     protected int linienFarbe() { return ORANGE; }
 
+    /** Wie viele Punkte der Verlauf fasst. */
+    protected int punkte() { return 180; }
+
+    /** Einheit hinter den Werten der Hilfslinien, z. B. " €". */
+    protected String einheit() { return ""; }
+
+    /** Nachkommastellen der Hilfslinien-Beschriftung. */
+    protected int stellen() { return 0; }
+
     @Override
     protected void fuelle(Context c, RemoteViews v, String[] z) {
         v.setTextViewText(R.id.widget_titel, titel(c));
@@ -33,8 +42,35 @@ public abstract class GraphWidget extends DeckWidget {
         // Die Reihe steht in z[2] als Text, damit `werte()` die einzige
         // Stelle bleibt, die ins Netz geht: `fuelle()` laeuft sonst
         // moeglicherweise im Vordergrundfaden.
+        // **Die Veraenderung in Farbe, wie in der Anwendung**: gruen wenn es
+        // hinaufging, rot wenn hinunter, sonst grau.
+        String neben = z.length > 1 ? z[1] : null;
+        if (neben != null && neben.startsWith("+"))
+            v.setTextColor(R.id.widget_zeile1, 0xff4ade80);
+        else if (neben != null && (neben.startsWith("-") || neben.startsWith("\u2212")))
+            v.setTextColor(R.id.widget_zeile1, 0xffef5350);
+        else
+            v.setTextColor(R.id.widget_zeile1, 0xff9a94a6);
+
         double[] w = ausText(z.length > 2 ? z[2] : null);
-        Bitmap b = Graph.zeichne(w, linienFarbe(), GRUND);
+        // **Kein leeres schwarzes Feld.** Mempool und Miner fangen ohne
+        // Verlauf an; bis genug Punkte da sind, steht dort, dass er entsteht,
+        // statt einer Flaeche, die wie ein Fehler aussieht.
+        Bitmap b;
+        if (w.length < 3) {
+            b = Graph.hinweis(c.getString(R.string.widget_waechst, w.length, punkte()), GRUND);
+        } else {
+            double lo = w[0], hi = w[0];
+            for (double x : w) {
+                lo = Math.min(lo, x);
+                hi = Math.max(hi, x);
+            }
+            b = Graph.zeichne(w, linienFarbe(), GRUND,
+                              zahl(hi, stellen()) + einheit(),
+                              zahl(lo, stellen()) + einheit(),
+                              z.length > 3 ? z[3] : null,
+                              z.length > 4 ? z[4] : null);
+        }
         v.setImageViewBitmap(R.id.widget_bild, b);
     }
 

@@ -55,7 +55,12 @@
     <string name="widget_k_mempool">Mempool</string>
 
     <string name="widget_graph_beschreibung">Verlauf</string>
-    <string name="widget_seit">%1$s %% über %2$d Punkte</string>
+    <string name="widget_seit">%1$s %% über %2$s</string>
+    <string name="widget_punkte">%1$d Punkte</string>
+    <string name="widget_waechst">Verlauf entsteht · %1$d von %2$d Punkten</string>
+    <string name="widget_tx_kurz">%1$s tx</string>
+    <string name="widget_naechster">nächster</string>
+    <string name="widget_danach">danach</string>
     <string name="widget_kurs_gross_info">Kurs mit Verlauf</string>
     <string name="widget_mempool_gross_info">Mempool mit Verlauf</string>
     <string name="widget_miner_gross_info">Miner mit Hashrate-Verlauf</string>

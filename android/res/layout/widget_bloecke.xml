@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Die ausfuehrliche Mempool-Kachel: die beiden zuletzt gefundenen Bloecke
+     und die beiden naechsten, wie im Feed der Anwendung.
+
+     Ein Verlauf waere hier das schwaechere Bild gewesen: die Anzahl im
+     Mempool laesst sich nicht herunterladen, das Widget muesste sie erst
+     tagelang mitschreiben. Die vier Bloecke stehen dagegen sofort da, und sie
+     sagen dasselbe deutlicher.
+
+     Kein Doppelstrich in Kommentaren: in XML verboten. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_wurzel"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:padding="14dp"
+    android:background="@drawable/widget_grund">
+
+    <TextView
+        android:id="@+id/widget_titel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:textSize="11sp"
+        android:letterSpacing="0.15"
+        android:textColor="#9a94a6"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/widget_gross"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#f7931a"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/widget_zeile1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:textSize="12sp"
+        android:textColor="#9a94a6"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+
+        <LinearLayout android:id="@+id/spalte1"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical"
+            android:layout_marginEnd="3dp" android:padding="5dp"
+            android:background="@drawable/widget_block_alt">
+            <TextView android:id="@+id/b1_kopf" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="12sp" android:textColor="#e8e4f0" android:maxLines="1" />
+            <TextView android:id="@+id/b1_tx" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="10sp" android:textColor="#9a94a6" android:maxLines="1" />
+            <TextView android:id="@+id/b1_fuss" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="10sp" android:textColor="#9a94a6" android:maxLines="1" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/spalte2"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical"
+            android:layout_marginEnd="6dp" android:padding="5dp"
+            android:background="@drawable/widget_block_alt">
+            <TextView android:id="@+id/b2_kopf" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="12sp" android:textColor="#e8e4f0" android:maxLines="1" />
+            <TextView android:id="@+id/b2_tx" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="10sp" android:textColor="#9a94a6" android:maxLines="1" />
+            <TextView android:id="@+id/b2_fuss" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="10sp" android:textColor="#9a94a6" android:maxLines="1" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/spalte3"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical"
+            android:layout_marginEnd="3dp" android:padding="5dp"
+            android:background="@drawable/widget_block_neu">
+            <TextView android:id="@+id/b3_kopf" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="12sp" android:textColor="#12101a" android:maxLines="1" />
+            <TextView android:id="@+id/b3_tx" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="10sp" android:textColor="#2e2618" android:maxLines="1" />
+            <TextView android:id="@+id/b3_fuss" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="10sp" android:textColor="#2e2618" android:maxLines="1" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/spalte4"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical"
+            android:padding="5dp"
+            android:background="@drawable/widget_block_neu">
+            <TextView android:id="@+id/b4_kopf" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="12sp" android:textColor="#12101a" android:maxLines="1" />
+            <TextView android:id="@+id/b4_tx" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="10sp" android:textColor="#2e2618" android:maxLines="1" />
+            <TextView android:id="@+id/b4_fuss" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center_horizontal"
+                android:textSize="10sp" android:textColor="#2e2618" android:maxLines="1" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

@@ -33,7 +33,20 @@ final class Graph {
     static final int BREITE = 640;
     static final int HOEHE = 220;
 
-    static Bitmap zeichne(double[] w, int linienFarbe, int grundFarbe) {
+    /** Grau der Beschriftung, wie in der Anwendung. */
+    private static final int GRAU = 0xff9a94a6;
+    /** Die Hilfslinien: kaum sichtbar, wie `gridColor` in MinerChart.qml. */
+    private static final int LINIE = 0xff2b2735;
+
+    /**
+     * @param obenText   Beschriftung der oberen Hilfslinie (Hoechstwert)
+     * @param untenText  Beschriftung der unteren Hilfslinie (Tiefstwert)
+     * @param vonText    Datum links unten
+     * @param bisText    Datum rechts unten
+     */
+    static Bitmap zeichne(double[] w, int linienFarbe, int grundFarbe,
+                          String obenText, String untenText,
+                          String vonText, String bisText) {
         Bitmap b = Bitmap.createBitmap(BREITE, HOEHE, Bitmap.Config.RGB_565);
         Canvas c = new Canvas(b);
         c.drawColor(grundFarbe);
@@ -45,38 +58,70 @@ final class Graph {
             lo = Math.min(lo, v);
             hi = Math.max(hi, v);
         }
-        // Etwas Luft, damit die Kurve nicht am Rand klebt. Dieselbe
-        // Ueberlegung wie in `MinerChart.qml`: eine flache Reihe soll nicht
-        // zu einer Zickzacklinie aufgeblasen werden.
         double spanne = Math.max(hi - lo, Math.abs(hi) * 0.02);
         if (spanne <= 0)
             spanne = 1;
-        lo -= spanne * 0.15;
-        hi += spanne * 0.15;
 
-        float randL = 6, randR = 6, randO = 10, randU = 10;
+        Paint schrift = new Paint(Paint.ANTI_ALIAS_FLAG);
+        schrift.setColor(GRAU);
+        schrift.setTextSize(20f);
+
+        // **Der Platz links richtet sich nach der Beschriftung.** In der
+        // Anwendung stehen die beiden Preise am linken Rand; ohne Rueckstand
+        // liefe die Kurve darueber.
+        float randL = 6;
+        if (obenText != null || untenText != null) {
+            float br = 0;
+            if (obenText != null)
+                br = Math.max(br, schrift.measureText(obenText));
+            if (untenText != null)
+                br = Math.max(br, schrift.measureText(untenText));
+            randL = br + 14;
+        }
+        float randR = 6, randO = 16;
+        float randU = (vonText != null || bisText != null) ? 30 : 12;
         float breite = BREITE - randL - randR, hoehe = HOEHE - randO - randU;
+
+        // Hilfslinien oben und unten, wie im Kursgraphen der Anwendung. Die
+        // Kurve beruehrt sie: sie markieren Hoechst- und Tiefstwert, nicht
+        // ein gerundetes Raster.
+        Paint hl = new Paint();
+        hl.setColor(LINIE);
+        hl.setStrokeWidth(1.5f);
+        c.drawLine(randL, randO, BREITE - randR, randO, hl);
+        c.drawLine(randL, randO + hoehe, BREITE - randR, randO + hoehe, hl);
+
+        if (obenText != null)
+            c.drawText(obenText, 4, randO + 7, schrift);
+        if (untenText != null)
+            c.drawText(untenText, 4, randO + hoehe + 7, schrift);
+        if (vonText != null)
+            c.drawText(vonText, randL, HOEHE - 8, schrift);
+        if (bisText != null) {
+            schrift.setTextAlign(Paint.Align.RIGHT);
+            c.drawText(bisText, BREITE - randR, HOEHE - 8, schrift);
+            schrift.setTextAlign(Paint.Align.LEFT);
+        }
 
         Path linie = new Path();
         for (int i = 0; i < w.length; i++) {
             float x = randL + breite * i / (w.length - 1);
-            float y = randO + hoehe - (float) ((w[i] - lo) / (hi - lo) * hoehe);
+            float y = randO + hoehe - (float) ((w[i] - lo) / spanne * hoehe);
             if (i == 0)
                 linie.moveTo(x, y);
             else
                 linie.lineTo(x, y);
         }
 
-        // Die Flaeche darunter: derselbe Ton, nach unten auslaufend.
         Path flaeche = new Path(linie);
-        flaeche.lineTo(randL + breite, HOEHE);
-        flaeche.lineTo(randL, HOEHE);
+        flaeche.lineTo(randL + breite, randO + hoehe);
+        flaeche.lineTo(randL, randO + hoehe);
         flaeche.close();
 
         Paint f = new Paint(Paint.ANTI_ALIAS_FLAG);
         // Der Verlauf mischt gegen den Grund, nicht gegen Durchsichtigkeit:
         // RGB_565 kennt kein Alpha.
-        f.setShader(new LinearGradient(0, randO, 0, HOEHE,
+        f.setShader(new LinearGradient(0, randO, 0, randO + hoehe,
                 mischen(linienFarbe, grundFarbe, 0.45f), grundFarbe,
                 Shader.TileMode.CLAMP));
         c.drawPath(flaeche, f);
@@ -86,6 +131,19 @@ final class Graph {
         p.setStrokeWidth(3f);
         p.setColor(linienFarbe);
         c.drawPath(linie, p);
+        return b;
+    }
+
+    /** Ein Hinweis statt einer Kurve, solange zu wenige Punkte da sind. */
+    static Bitmap hinweis(String text, int grundFarbe) {
+        Bitmap b = Bitmap.createBitmap(BREITE, HOEHE, Bitmap.Config.RGB_565);
+        Canvas c = new Canvas(b);
+        c.drawColor(grundFarbe);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setColor(0xff9a94a6);
+        p.setTextSize(26f);
+        p.setTextAlign(Paint.Align.CENTER);
+        c.drawText(text, BREITE / 2f, HOEHE / 2f + 9f, p);
         return b;
     }
 

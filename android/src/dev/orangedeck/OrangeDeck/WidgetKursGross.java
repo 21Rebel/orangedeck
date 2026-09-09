@@ -5,26 +5,31 @@ import android.content.Context;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+
 /**
  * Kurs mit Verlauf.
  *
  * <p><b>Die Geschichte wird einmal geholt und danach fortgeschrieben.</b>
  * `historical-price` ohne Zeitstempel sind 1.477.817 Byte (gemessen am
- * 09.09.2026) und enthalten Stundenwerte ueber Monate. Zweimal je Stunde
- * abgerufen waeren das 72 MB am Tag: fuer ein Widget kein vertretbarer Preis.
- * Also einmal beim ersten Lauf, auf {@link #PUNKTE} Punkte ausgeduennt, in
- * {@link Verlauf} abgelegt. Danach kostet jede Aktualisierung nur noch den
- * aktuellen Kurs.
+ * 09.09.2026); zweimal je Stunde waeren 72 MB am Tag. Also einmal beim ersten
+ * Lauf, danach je Aktualisierung ein Punkt (160 Byte).
+ *
+ * <p><b>Und nur die letzten dreissig Tage.</b> Die Antwort reicht Jahre
+ * zurueck. Ungefiltert stand unter dem Graphen "+11 292,9 % ueber 180 Punkte"
+ * -- rechnerisch richtig, als Aussage wertlos. Der Graph zeigt jetzt einen
+ * benannten Zeitraum, und die Veraenderung gilt fuer genau diesen.
  */
 public class WidgetKursGross extends GraphWidget {
 
     private static final String SPEICHER = "kurs";
-    /** So viele Punkte traegt der Graph; mehr sind bei 640 px Breite nicht zu sehen. */
     private static final int PUNKTE = 180;
+    /** Der gezeigte Zeitraum beim ersten Lauf. */
+    private static final long FENSTER = 30L * 24 * 3600;
 
     @Override protected String titel(Context c) { return c.getString(R.string.widget_kurs); }
+    @Override protected String einheit() { return " €"; }
     @Override protected String aktion() { return "dev.orangedeck.OrangeDeck.VIEW_CLOCK"; }
-
 
     @Override
     protected String[] werte(Context c) throws Exception {
@@ -34,23 +39,41 @@ public class WidgetKursGross extends GraphWidget {
             throw new IllegalStateException("kein Kurs");
 
         double[] w;
-        if (Verlauf.leer(c, SPEICHER)) {
-            // Der einmalige grosse Abruf. Frist grosszuegig: er passiert
-            // genau einmal, und ohne ihn bliebe der Graph tagelang leer.
+        // Neu aufbauen, wenn er leer ist -- oder wenn er aus der Fassung ohne
+        // Zeitstempel stammt: der reichte Jahre zurueck, und unter dem
+        // Graphen stand "+11 292,9 % ueber 180 Punkte".
+        if (Verlauf.leer(c, SPEICHER) || Verlauf.ohneZeit(c, SPEICHER))
             w = ersteGeschichte(c, eur);
-        } else {
+        else
             w = Verlauf.anhaengen(c, SPEICHER, eur, PUNKTE);
-        }
 
-        // Die Veraenderung ueber den gezeigten Zeitraum, aus der Reihe selbst
-        // gerechnet: keine zusaetzliche Abfrage.
-        String neben = zahl(eur, 0) + " €";
+        // Veraenderung und Zeitraum aus dem Verlauf selbst: keine
+        // zusaetzliche Abfrage, und beide beschreiben dasselbe Bild.
+        String neben = null;
+        long spanne = Verlauf.spanne(c, SPEICHER);
         if (w.length >= 2 && w[0] > 0) {
             double d = (eur - w[0]) / w[0] * 100.0;
+            String zeitraum = spanne > 0 ? dauer(c, spanne)
+                                         : c.getString(R.string.widget_punkte, w.length);
             neben = c.getString(R.string.widget_seit,
-                                (d >= 0 ? "+" : "") + zahl(d, 1), w.length);
+                                (d >= 0 ? "+" : "") + zahl(d, 1), zeitraum);
         }
-        return new String[] { zahl(eur, 0) + " €", neben, alsText(w) };
+        // Die beiden Datumsangaben an den unteren Ecken, wie in der
+        // Anwendung. Sie kommen aus den Zeitstempeln des Verlaufs selbst.
+        String von = null, bis = null;
+        java.util.List<Verlauf.Punkt> p2 = Verlauf.lesen(c, SPEICHER);
+        if (p2.size() >= 2) {
+            von = datum(p2.get(0).zeit);
+            bis = datum(p2.get(p2.size() - 1).zeit);
+        }
+        return new String[] { zahl(eur, 0) + " €", neben, alsText(w), von, bis };
+    }
+
+    private static String datum(long sekunden) {
+        if (sekunden <= 0)
+            return null;
+        return new java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
+            .format(new java.util.Date(sekunden * 1000));
     }
 
     private double[] ersteGeschichte(Context c, double jetzt) {
@@ -60,22 +83,36 @@ public class WidgetKursGross extends GraphWidget {
             JSONArray a = h.optJSONArray("prices");
             if (a == null || a.length() == 0)
                 throw new IllegalStateException("kein Verlauf");
-            // Die Reihe kommt neueste zuerst. Umdrehen und ausduennen.
-            int schritt = Math.max(1, a.length() / PUNKTE);
-            java.util.ArrayList<Double> l = new java.util.ArrayList<>();
-            for (int i = a.length() - 1; i >= 0; i -= schritt) {
-                double v = a.getJSONObject(i).optDouble("EUR", 0);
+
+            long ab = System.currentTimeMillis() / 1000 - FENSTER;
+            // Die Reihe kommt neueste zuerst: einsammeln, bis das Fenster
+            // ueberschritten ist, dann ausduennen und umdrehen.
+            ArrayList<Verlauf.Punkt> roh = new ArrayList<>();
+            for (int i = 0; i < a.length(); i++) {
+                JSONObject e = a.getJSONObject(i);
+                long t = e.optLong("time", 0);
+                double v = e.optDouble("EUR", 0);
+                if (t < ab)
+                    break;
                 if (v > 0)
-                    l.add(v);
+                    roh.add(new Verlauf.Punkt(t, v));
             }
-            double[] w = new double[l.size()];
+            if (roh.size() < 2)
+                throw new IllegalStateException("Fenster leer");
+
+            int schritt = Math.max(1, roh.size() / PUNKTE);
+            ArrayList<Verlauf.Punkt> fein = new ArrayList<>();
+            for (int i = roh.size() - 1; i >= 0; i -= schritt)
+                fein.add(roh.get(i));
+
+            Verlauf.schreiben(c, SPEICHER, fein, PUNKTE);
+            double[] w = new double[fein.size()];
             for (int i = 0; i < w.length; i++)
-                w[i] = l.get(i);
-            Verlauf.schreiben(c, SPEICHER, w, PUNKTE);
+                w[i] = fein.get(i).wert;
             return w;
         } catch (Exception e) {
-            // Faellt der grosse Abruf aus, faengt der Verlauf eben bei einem
-            // Punkt an. Beim naechsten Lauf wird es noch einmal versucht.
+            // Faellt der grosse Abruf aus, faengt der Verlauf bei einem Punkt
+            // an. Beim naechsten Lauf wird es noch einmal versucht.
             return Verlauf.anhaengen(c, SPEICHER, jetzt, PUNKTE);
         }
     }
