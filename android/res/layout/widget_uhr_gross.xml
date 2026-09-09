@@ -1,24 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Die grosse Blockuhr, 4x2. Sie zeigt dieselben Werte wie der Reiter "Uhr"
-     in der Anwendung: Blockhoehe gross, darunter Kurs, Moscow Time, Mempool
-     und Gebuehr, und zuletzt die beiden Fristen (Schwierigkeit, Halving).
+<!-- Die grosse Blockuhr, nach dem Vorbild des Reiters "Uhr" in der
+     Anwendung: zentrierte Ueberschrift, grosse Zahl, eine Zeile aus
+     beschrifteten Spalten, dann Schwierigkeit mit Fortschrittsbalken und die
+     Halving-Zeile.
 
-     Mehr Zeilen als `widget_deck`, sonst derselbe Aufbau. Kein Doppelstrich
-     in Kommentaren: in XML verboten. -->
+     ProgressBar gehoert zu den Bauteilen, die RemoteViews kennt. Der Balken
+     ist damit echt und kein gezeichnetes Bild.
+
+     Vier Spalten statt der fuenf der Anwendung: die Hashrate kommt aus
+     /v1/mining/hashrate/3d, und der Aufruf brach am 09.09.2026 nach 19,7
+     Sekunden ohne Antwort ab. Ein Widget hat zehn.
+
+     Kein Doppelstrich in Kommentaren: in XML verboten. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_wurzel"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center_vertical"
-    android:padding="16dp"
+    android:padding="14dp"
     android:background="@drawable/widget_grund">
 
     <TextView
         android:id="@+id/widget_titel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="12sp"
+        android:gravity="center_horizontal"
+        android:textSize="11sp"
+        android:letterSpacing="0.15"
         android:textColor="#9a94a6"
         android:maxLines="1" />
 
@@ -26,54 +35,111 @@
         android:id="@+id/widget_gross"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
         android:textSize="34sp"
         android:textStyle="bold"
         android:textColor="#f7931a"
         android:maxLines="1" />
 
-    <TextView
-        android:id="@+id/widget_zeile1"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:textSize="13sp"
-        android:textColor="#e8e4f0"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView android:id="@+id/widget_k1"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_horizontal" android:textSize="10sp"
+                android:textColor="#9a94a6" android:maxLines="1" android:ellipsize="end" />
+            <TextView android:id="@+id/widget_v1"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_horizontal" android:textSize="14sp"
+                android:textColor="#e8e4f0" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView android:id="@+id/widget_k2"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_horizontal" android:textSize="10sp"
+                android:textColor="#9a94a6" android:maxLines="1" android:ellipsize="end" />
+            <TextView android:id="@+id/widget_v2"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_horizontal" android:textSize="14sp"
+                android:textColor="#e8e4f0" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView android:id="@+id/widget_k3"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_horizontal" android:textSize="10sp"
+                android:textColor="#9a94a6" android:maxLines="1" android:ellipsize="end" />
+            <TextView android:id="@+id/widget_v3"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_horizontal" android:textSize="14sp"
+                android:textColor="#e8e4f0" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView android:id="@+id/widget_k4"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_horizontal" android:textSize="10sp"
+                android:textColor="#9a94a6" android:maxLines="1" android:ellipsize="end" />
+            <TextView android:id="@+id/widget_v4"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_horizontal" android:textSize="14sp"
+                android:textColor="#e8e4f0" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal">
+        <TextView android:id="@+id/widget_diff_links"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:textSize="11sp"
+            android:textColor="#e8e4f0" android:maxLines="1" android:ellipsize="end" />
+        <TextView android:id="@+id/widget_diff_rechts"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:gravity="end" android:textSize="11sp"
+            android:textColor="#9a94a6" android:maxLines="1" android:ellipsize="end" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/widget_balken"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_marginTop="3dp"
+        android:max="100"
+        android:progressTint="#f7931a"
+        android:progressBackgroundTint="#3a3545" />
 
     <TextView
-        android:id="@+id/widget_zeile2"
+        android:id="@+id/widget_halving"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="13sp"
-        android:textColor="#e8e4f0"
-        android:maxLines="1"
-        android:ellipsize="end" />
-
-    <TextView
-        android:id="@+id/widget_zeile3"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="13sp"
-        android:textColor="#e8e4f0"
-        android:maxLines="1"
-        android:ellipsize="end" />
-
-    <TextView
-        android:id="@+id/widget_zeile4"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:textSize="12sp"
-        android:textColor="#9a94a6"
-        android:maxLines="1"
-        android:ellipsize="end" />
-
-    <TextView
-        android:id="@+id/widget_zeile5"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="12sp"
+        android:layout_marginTop="5dp"
+        android:textSize="11sp"
         android:textColor="#9a94a6"
         android:maxLines="1"
         android:ellipsize="end" />

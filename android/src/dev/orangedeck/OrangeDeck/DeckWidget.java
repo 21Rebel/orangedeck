@@ -107,11 +107,7 @@ public abstract class DeckWidget extends AppWidgetProvider {
     private void zeichne(Context c, AppWidgetManager manager, int[] ids, String[] z) {
         for (int id : ids) {
             RemoteViews v = new RemoteViews(c.getPackageName(), layoutId());
-            v.setTextViewText(R.id.widget_titel, titel(c));
-            v.setTextViewText(R.id.widget_gross, z.length > 0 && z[0] != null ? z[0] : "");
-            int[] felder = zeilenIds();
-            for (int k = 0; k < felder.length; k++)
-                setzeZeile(v, felder[k], z.length > k + 1 ? z[k + 1] : null);
+            fuelle(c, v, z);
 
             Intent i = new Intent(aktion());
             i.setClassName(c.getPackageName(), "org.qtproject.qt.android.bindings.QtActivity");
@@ -126,7 +122,22 @@ public abstract class DeckWidget extends AppWidgetProvider {
         }
     }
 
-    private static void setzeZeile(RemoteViews v, int id, String text) {
+    /**
+     * Traegt die Werte in die Kachel ein. Die Vorgabe passt zu
+     * {@code widget_deck}: Ueberschrift, Hauptwert, dann die Zeilen aus
+     * {@link #zeilenIds()}. Ein Widget mit eigenem Aufbau ueberschreibt das
+     * ganz -- die grosse Blockuhr tut es, weil sie Spalten und einen Balken
+     * hat und nicht nur Zeilen.
+     */
+    protected void fuelle(Context c, RemoteViews v, String[] z) {
+        v.setTextViewText(R.id.widget_titel, titel(c));
+        v.setTextViewText(R.id.widget_gross, z.length > 0 && z[0] != null ? z[0] : "");
+        int[] felder = zeilenIds();
+        for (int k = 0; k < felder.length; k++)
+            setzeZeile(v, felder[k], z.length > k + 1 ? z[k + 1] : null);
+    }
+
+    protected static void setzeZeile(RemoteViews v, int id, String text) {
         if (text == null || text.isEmpty()) {
             v.setViewVisibility(id, android.view.View.GONE);
         } else {
@@ -172,6 +183,18 @@ public abstract class DeckWidget extends AppWidgetProvider {
             i++;
         }
         return zahl(n, n >= 100 ? 0 : 2) + u[i];
+    }
+
+    /** Dauer wie in der Anwendung: "9 Tage 9 Std", "11 Std", "40 Min". */
+    protected static String dauer(Context c, long sekunden) {
+        if (sekunden <= 0)
+            return "";
+        long tage = sekunden / 86400, std = (sekunden % 86400) / 3600;
+        if (tage > 0)
+            return c.getString(R.string.widget_tage_std, zahl(tage, 0), zahl(std, 0));
+        if (std > 0)
+            return c.getString(R.string.widget_std, zahl(std, 0));
+        return c.getString(R.string.widget_min, zahl(sekunden / 60, 0));
     }
 
     protected static String hole(String pfad) throws Exception {
