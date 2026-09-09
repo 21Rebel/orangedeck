@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Eine Kachel fuer alle vier Widgets. Der Unterschied steckt in den Werten,
+     nicht im Aufbau. Vier fast gleiche Layouts waeren vier Stellen, an denen
+     eine Aenderung vergessen werden kann.
+
+     **Nur was RemoteViews kennt.** Erlaubt sind unter anderem LinearLayout,
+     FrameLayout, TextView, ImageView; ConstraintLayout ist es nicht, und ein
+     Layout mit einem nicht unterstuetzten Element wirft der Starter
+     stillschweigend weg. Deshalb schlichte LinearLayouts.
+
+     Die beiden unteren Zeilen blendet `DeckWidget` je nach Inhalt aus. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_wurzel"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_grund">
+
+    <TextView
+        android:id="@+id/widget_titel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="#9a94a6"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/widget_gross"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="#f7931a"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/widget_zeile1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textSize="13sp"
+        android:textColor="#e8e4f0"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/widget_zeile2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="#9a94a6"
+        android:maxLines="1"
+        android:ellipsize="end" />
+</LinearLayout>

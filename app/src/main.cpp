@@ -57,6 +57,13 @@ int ansichtAusAbsicht()
         {QStringLiteral("dev.orangedeck.OrangeDeck.VIEW_FEED"), 0},
         {QStringLiteral("dev.orangedeck.OrangeDeck.VIEW_CLOCK"), 1},
         {QStringLiteral("dev.orangedeck.OrangeDeck.VIEW_EXPLORER"), 3},
+        // **Der Miner kam am 09.09.2026 dazu**, und zwar fuer die
+        // Homescreen-Widgets: `WidgetMiner` springt hierher. Er stand
+        // urspruenglich nicht in dieser Liste, weil er am Dienst hing und die
+        // Verknuepfung im Emulator auf eine leere Seite fuehrte. Seit
+        // `DirectMiner.qml` (08.09.) fragt die Oberflaeche AxeOS selbst ab;
+        // der Reiter traegt auf dem Geraet also Inhalt.
+        {QStringLiteral("dev.orangedeck.OrangeDeck.VIEW_MINER"), 2},
         // Kein Markt: der haengt am Dienst, und auf Android gibt es nur den
         // Direktbezug. Die Verknuepfung dorthin oeffnete eine leere Seite.
     };

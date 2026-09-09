@@ -1,0 +1,43 @@
+package dev.orangedeck.OrangeDeck;
+
+import android.content.Context;
+import org.json.JSONObject;
+
+/**
+ * Hashrate und Temperatur des eigenen Bitaxe.
+ *
+ * <p>Fragt AxeOS direkt ab, wie {@code ui/qml/DirectMiner.qml} -- dieselbe
+ * Adresse aus denselben Einstellungen. **Es ist http, kein https**: das Geraet
+ * spricht nichts anderes, und Android verbietet Klartext seit Jahren per
+ * Vorgabe. Erlaubt wird es in {@code res/xml/network_security_config.xml}, und
+ * weil das Widget im selben Paket laeuft, gilt die Ausnahme auch hier.
+ */
+public class WidgetMiner extends DeckWidget {
+
+    @Override protected String titel(Context c) { return c.getString(R.string.widget_miner); }
+    @Override protected String aktion() { return "dev.orangedeck.OrangeDeck.VIEW_MINER"; }
+
+    @Override
+    protected String[] werte(Context c) throws Exception {
+        String adresse = minerAdresse(c);
+        if (adresse == null) {
+            // Kein Fehler, sondern eine offene Einstellung -- und der Satz
+            // sagt, wo sie steht.
+            return new String[] { "--", c.getString(R.string.widget_miner_keine), null };
+        }
+        JSONObject d = new JSONObject(holeVon("http://" + adresse + "/api/system/info", 4000));
+
+        // AxeOS meldet die Hashrate in GH/s. Ab etwa einem TH/s liest sich
+        // TH/s besser -- dieselbe Schwelle wie im Graphen der Anwendung.
+        double gh = d.optDouble("hashRate", 0);
+        String rate = gh >= 1025
+            ? zahl(gh / 1000.0, 2) + " TH/s"
+            : zahl(gh, 0) + " GH/s";
+
+        String temp = d.has("temp")
+            ? zahl(d.optDouble("temp", 0), 0) + " °C" : null;
+        String best = d.has("bestDiff")
+            ? c.getString(R.string.widget_beste, kurz(d.optString("bestDiff", ""))) : null;
+        return new String[] { rate, temp, best };
+    }
+}

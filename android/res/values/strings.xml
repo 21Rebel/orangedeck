@@ -17,5 +17,26 @@
     <string name="shortcut_clock_long">Blockuhr</string>
 
     <string name="shortcut_explorer_short">Explorer</string>
-    <string name="shortcut_explorer_long">Bloecke durchsuchen</string>
+    <string name="shortcut_explorer_long">Blöcke durchsuchen</string>
+
+    <!-- Die Homescreen-Widgets. Der Name steht in der Auswahlliste des
+         Starters, der Text darunter erklaert, was drinsteht. -->
+    <string name="widget_uhr">Blockhöhe</string>
+    <string name="widget_uhr_info">Höhe und Zeit seit dem letzten Block</string>
+    <string name="widget_mempool">Mempool</string>
+    <string name="widget_mempool_info">Unbestätigte Transaktionen und Gebühr</string>
+    <string name="widget_kurs">Kurs</string>
+    <string name="widget_kurs_info">Bitcoin in Euro und Moscow Time</string>
+    <string name="widget_miner">Miner</string>
+    <string name="widget_miner_info">Hashrate und Temperatur des eigenen Geräts</string>
+
+    <string name="widget_vor_min">vor %1$d Min</string>
+    <string name="widget_satvb">%1$s sat/vB</string>
+    <string name="widget_bloecke">%1$s Blöcke Rückstau</string>
+    <string name="widget_moscow">%1$s sat/€</string>
+    <string name="widget_beste">beste %1$s</string>
+    <string name="widget_miner_keine">Adresse nicht gesetzt</string>
+    <!-- Steht da, wenn die Abfrage scheitert. Ein Strich statt einer leeren
+         Flaeche: leer sieht aus wie ein Fehler des Starters. -->
+    <string name="widget_offline">gerade nicht erreichbar</string>
 </resources>

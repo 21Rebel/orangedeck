@@ -74,6 +74,68 @@
                 android:value="" />
         </activity>
 
+        <!-- **Die Homescreen-Widgets.** Sie sind etwas voellig anderes als die
+             Verknuepfungen oben: eine Verknuepfung startet die Anwendung, ein
+             Widget zeichnet der Systemprozess des Starters selbst, ueber
+             RemoteViews. Deshalb Java unter `src/` und kein QML; die
+             Begruendung steht ausfuehrlich in `DeckWidget.java`.
+
+             `android:exported="true"` ist Pflicht: den Rundruf
+             APPWIDGET_UPDATE schickt das System, also ein fremder Prozess.
+             Ohne das Kennzeichen bleibt das Widget in der Auswahlliste des
+             Starters unsichtbar.
+
+             Vier Empfaenger, weil ein Widget im Starter ueber seine Klasse
+             ausgewaehlt wird. Die Arbeit steckt in der gemeinsamen
+             Oberklasse. -->
+        <receiver
+            android:name=".WidgetUhr"
+            android:label="@string/widget_uhr"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_uhr" />
+        </receiver>
+
+        <receiver
+            android:name=".WidgetMempool"
+            android:label="@string/widget_mempool"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_mempool" />
+        </receiver>
+
+        <receiver
+            android:name=".WidgetKurs"
+            android:label="@string/widget_kurs"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_kurs" />
+        </receiver>
+
+        <receiver
+            android:name=".WidgetMiner"
+            android:label="@string/widget_miner"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_miner" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.qtprovider"
