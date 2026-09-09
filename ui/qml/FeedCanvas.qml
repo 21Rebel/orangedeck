@@ -336,11 +336,41 @@ Item {
     // Bewusste Abweichung vom Original; ueber blockPadDivisor einstellbar.
     property int blockPadDivisor: 8
 
+    // **Ab wann Kachel und Fuge in ganze Zahlen passen.**
+    //
+    // Die Fuge ist mindestens ein Geraetepixel (warum: siehe `blockPad`). Bei
+    // einer Zelle von acht Pixeln ist das ein Achtel, bei drei Pixeln sind es
+    // zwei Drittel -- dann ist die Kachel schmaler als der Abstand, und aus
+    // dem Block wird ein Punktraster. Am 09.09.2026 auf dem Schreibtisch
+    // gemeldet und nachgerechnet, 105 Rasterzellen breit, dpr 1:
+    //
+    //     Blockseite  Zelle  Fuge  Kachel
+    //       250 px     2 px   1 px   1 px    Punktraster
+    //       300 px     2 px   1 px   1 px    Punktraster
+    //       350 px     3 px   1 px   1 px    Fuge breiter als die Kachel
+    //       420 px     4 px   1 px   2 px    in Ordnung
+    //       840 px     8 px   1 px   6 px    so sieht es im grossen Fenster aus
+    //
+    // Unter vier Geraetepixeln gibt es **keine** ganzzahlige Aufteilung, die
+    // beides traegt. Dort wird deshalb gebrochen gerechnet und
+    // kantengeglaettet: weich statt hart. Eine weiche, gleichmaessige Textur
+    // ist ehrlicher als ein hartes Raster, das eine Struktur vortaeuscht, die
+    // keine ist.
+    //
+    // **Die Schwelle steht nur hier.** Vorher stand sie dreimal als
+    // `g * dpr < 2` und einmal als `blockUnit(...) < 2` -- letzteres in
+    // logischen Punkten, was ab dpr 2 etwas anderes bedeutet.
+    readonly property int zelleGanzAb: 4
+
+    function grobRaster(g) {
+        return g * root.dpr < root.zelleGanzAb;
+    }
+
     function blockPad(g) {
         // Unter zwei Bildpunkten je Zelle gibt es keine ganzen Zahlen mehr, die
         // Kachel und Luecke zugleich hergeben -- dann das Verhaeltnis des
         // Originals (g/4) gebrochen, zusammen mit Kantenglaettung.
-        if (g * root.dpr < 2)
+        if (root.grobRaster(g))
             return g / 4;
         // **Der Mindestrand ist ein Geraetepixel, nicht ein logischer
         // Punkt.** Ein logischer Punkt sind auf einem 450-dpi-Schirm 2,8
@@ -383,7 +413,7 @@ Item {
         //
         // **Ganzzahlig in Geraetepixeln**, nicht in logischen Punkten -- die
         // Begruendung steht oben bei `dpr`.
-        return g * root.dpr < 2 ? g : root.schnappAb(g);
+        return root.grobRaster(g) ? g : root.schnappAb(g);
     }
 
     function txSize(valueSats, vbytes) {
@@ -940,7 +970,7 @@ Item {
         z: 20
         // Nur dort glaetten, wo die Zellen kleiner als zwei Bildpunkte sind --
         // sonst bleibt die Kachelgrafik bewusst hart.
-        antialiasing: rowsUsed > 0 && root.blockUnit(rowsUsed) < 2
+        antialiasing: rowsUsed > 0 && root.grobRaster(root.blockUnit(rowsUsed))
         visible: root.showBlock
 
         property var squares: []
@@ -1023,7 +1053,7 @@ Item {
             // Kantenglaettung entsteht stattdessen eine Textur -- so macht es
             // auch das Original, das ohnehin in WebGL mit gebrochenen Groessen
             // zeichnet.
-            if (g * root.dpr < 2) {
+            if (root.grobRaster(g)) {
                 var side = Math.max(0.35, q.r * g - pad * 2);
                 return {
                     "x": bx + q.x * g + pad,
