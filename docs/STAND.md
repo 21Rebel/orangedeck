@@ -16,217 +16,273 @@
      Wandert er morgen ins Journal, kommt der von morgen an seine Stelle;
      die Datei bleibt damit so lang, wie ein Einstieg sein darf. -->
 
-## TAGESABSCHLUSS 08.09.2026 -- wo das Projekt steht
+## TAGESABSCHLUSS 09.09.2026 -- wo das Projekt steht
 
-> Einstieg fuer den naechsten Tag. Alles darunter ist Journal und erklaert,
-> wie es dazu kam.
+> Einstieg fuer den naechsten Tag. Alles Aeltere liegt im Journal unter
+> `docs/journal/`, ein Tag je Datei.
 
 ### Der Stand in einem Satz
 
-**Die Anwendung laeuft auf einem echten Android-Geraet, und der Miner laeuft
-dort ohne Daemon** -- ausgeliefert ist trotzdem nichts, weil `v0.2.2` auf
-einen Stand ohne jede heutige Korrektur zeigt und die Entscheidung dazu
-offensteht.
+**Die Anwendung hat acht Homescreen-Widgets, und drei Darstellungsfehler aus
+Geraet und Schreibtisch sind behoben** -- ausgeliefert ist weiterhin nichts,
+und inzwischen liegen **34 Commits** ueber `origin/main`, ohne dass einer
+davon gepusht waere.
 
 ### Was morgen als Erstes drankommt
 
-**1. Die Nummer entscheiden.** `v0.2.2` zeigt auf `83271b8`, und darueber
-liegen **zwoelf** Commits, die alle Gerätefunde des Tages beheben. Der Tag ist
-damit wertlos.
+**1. Pushen.** Vierunddreissig Commits liegen ueber `origin/main`, davon
+einundzwanzig von heute. Ohne den Push kein Tag `v0.2.3`, kein Bauplan-Pin,
+keine Auslieferung -- und der Durchgang wird mit jedem Tag groesser. Der
+Bauplan-Pruefer steht zu Recht rot: der Baum sagt 0.2.3, der Pin zeigt auf
+0.2.2.
 
-    A   Tag verschieben. Eine Nummer, keine Leerlauf-Tags. Aber ein
-        gepushter Tag zeigt danach auf etwas anderes -- genau das, wovon am
-        08.09. vormittags bei `v0.2.1` abgeraten wurde.
-    B   0.2.3 aufmachen, `v0.2.2` liegen lassen wie `v0.2.0` und `v0.2.1`.
-        Dieselbe Regel wie schon dreimal; die erste Auslieferung traegt dann
-        die vierte Nummer.
+**2. Die gedrueckte Schrift in den Blockkarten.** Zwei Anlaeufe daran
+gescheitert: erst feste Zeilenabstaende, dann Faktoren auf das Schriftmass
+aus `Paint.FontMetrics`. Beides hat das Bild veraendert, keines es behoben.
+Auch die Kachel um eine Zeile hoeher zu machen half nicht, sondern liess
+alles gestreckt wirken (wieder zurueckgenommen). **Die Ursache ist also eine
+andere und noch nicht gefunden.** Mit frischem Blick ansehen, nicht weiter
+an den Zahlen drehen.
 
-**Empfehlung: B.** Der Satz, der dagegen spricht, stammt vom eigenen
-Vormittag: ein gepushter Tag bleibt, wo er ist.
+**3. Die Sprachfrage entscheiden.** Die Widgets sind seit heute **alle
+englisch**, auch auf einem deutschen Telefon -- das ist gegenueber gestern
+ein Rueckschritt und muss weg. Drei Wege stehen im Abschnitt weiter unten;
+die Empfehlung ist B.
 
-**2. Der letzte Bau, der noch nicht auf dem Geraet lief.** `ff2d7a0` (die
-Schnapp-Funktion) liegt fertig gebaut da, aber die Verbindung brach ab, bevor
-er installiert war. Ursache gemessen, Wirkung nicht -- **nachmessen**, mit
-denselben Zeilen wie im Commit.
-
-**3. Dann die Auslieferung:** pushen, Fassungsnummern nachziehen, Pin
-nachziehen, Flatpak bauen, Pruef-VM, APK aus dem Tag, **eine** Signatur,
-Gerätelauf, Fingerabdruck gegen `B3:CC:83:79:...` halten.
+**4. Dann die Auslieferung 0.2.3:** Tag setzen, Pin nachziehen, Flatpak
+bauen, Pruef-VM (`tools/pruefvm.sh gast` gibt die Gast-Schritte jetzt am
+Stueck aus), APK aus dem Tag, **eine** Signatur, Gerätelauf, Fingerabdruck
+gegen `B3:CC:83:79:...`.
 
 ### Was heute dazugekommen ist
 
-Achtzehn Commits, 22 Dateien, +1260/-131 Zeilen. Sechs davon liegen auf
-`origin/main`, **zwoelf noch nicht.**
+Einundzwanzig Commits, 54 Dateien, +5599/-2816 Zeilen. **Nichts davon ist
+gepusht.**
 
-| Befund | Wie er auffiel |
+| Was | Woher der Anstoss kam |
 |---|---|
-| Reiterzeile lag unter der Statusleiste und war **nicht antippbar** | Geraet |
-| `₿` und beide Pfeile als leeres Kaestchen | Geraet |
-| Block fehlte beim Start, gestrichelte Linie blieb liegen | Geraet |
-| Tastaturhinweis deckte die Fusszeile zu | Geraet |
-| Umschalter der Kachelfarbe fehlte ganz (drei Anlaeufe zur Lage) | Geraet |
-| Ein Fuenftel der Kacheln war ein Punkt statt einer Kachel | Geraet |
-| Fugen ungleich: Feed, Explorer **und** die Schnapp-Funktion | Geraet |
-| Tooltip blieb offen, nachdem der Finger weg war | eigener Durchgang |
-| Beschriftung rutschte in die Mitte hoher Gitter | eigener Durchgang |
-| Hilfetext bei "Datenquelle" war seit demselben Tag falsch | eigener Durchgang |
-| Eine halbe Stunde Transaktionen fiel in einem Guss | Geraet |
-| Frist-Uhr blieb nach jeder Antwort liegen (720 Objekte je Stunde) | eigenes Protokoll |
-| Verlaufsgraph des Miners blieb leer, aus zwei Gruenden | Geraet |
+| Nummer auf 0.2.3 entschieden, drei Stellen nachgezogen | offener Punkt 1 von gestern |
+| Bauplan-Pruefer liest die Fassung aus dem gepinnten Stand | offener Punkt 4, zweiter Tag |
+| `pruefvm.sh gast` gibt die Gast-Schritte aus, Zeigerfrage beantwortet | offene Punkte 5 und 6 |
+| Journal geteilt: eine Datei je Tag, STAND.md 148 kB -> 16 kB | offener Punkt 12, dritter Tag |
+| Halde: Buchfuehrungsluecke in `shedBottomRow` | eigene Suche |
+| Block liegt ueber dem Regen (`z: 20`) | Geraet |
+| Kachel geht erst mit, wenn sie ganz unter der Kante liegt | Geraet |
+| Weg ist erst, was nicht mehr zu sehen ist | Geraet |
+| Miner-Graph ohne Durchschnittslinie | Anwender |
+| Block weich unter vier Geraetepixeln je Zelle | Schreibtisch |
+| **Acht Homescreen-Widgets**, vier einfach und vier ausfuehrlich | Anwender |
+| Waehrung aus der Anwendung, Vorgabe ueberall USD | Anwender |
 
-Dazu **neu**: der Miner ohne Daemon (`DirectMiner.qml`), das erste Textfeld in
-den Einstellungen, `tools/apk-signieren.sh`, `tools/axeos-nachbau.py`, eine
-`network_security_config.xml`, und die Qt-Mindestfassung auf 6.9.
+**Neu im Projekt:** `android/src/dev/orangedeck/OrangeDeck/` mit zehn
+Java-Klassen (`DeckWidget`, `GraphWidget`, `Graph`, `Bloecke`, `Verlauf` und
+fuenf Widgets), dazu vier Layouts, acht `appwidget-provider`-Dateien und
+`res/values-de/`.
 
 ### Die Erkenntnis des Tages
 
-**Ein Geraet ist keine kleinere Version des Schreibtischs, sondern ein anderer
-Ort.** Von den dreizehn Befunden oben waren **acht** auf dem Entwicklungs-
-rechner strukturell unsichtbar -- nicht schwer zu finden, sondern unmoeglich:
-kein Finger, kein 450-dpi-Schirm, keine Systemleisten, keine Schrift ohne
-`₿`. Die Pruef-VM hatte dieselbe Rolle am 04.09. und fand zwei; ein echtes
-Telefon fand an einem Tag dreizehn.
+**Zahlen aus der falschen Messstelle sind keine Messung, sondern eine
+Verkleidung.**
+
+Ich habe mehrere Stunden lang das grosse orange Quadrat in der Mitte des
+Feeds fuer die Halde gehalten. Es ist der Block. Die Halde ist das Mosaik
+ganz unten. Auf dieser Verwechslung habe ich gezaehlt, gefilmt, Statistiken
+gebaut ("19 von 61 Bildern gegen 27 von 90") und einen Commit begruendet --
+alles davon wertlos. Aufgeloest hat es erst eine Spur, die die tatsaechlichen
+Koordinaten ausgab:
+
+    blockCenterY = poolTop * 0,5 = 213 log.  ->  y 897   gemessen 890
+    blockSide    = 256 log.                  ->  720 px  gemessen 708x702
+    poolTop..height = 426..639 log.          ->  y 1496..2095
+    Mosaik unten                                 y 1554..2091
+
+Das ist die Steigerung von gestern. Gestern hiess es: *zwei flache Kurven aus
+zwei Gruenden sehen gleich aus*. Heute: **eine Messung an der falschen Stelle
+sieht aus wie eine Messung.** Der Ausweg war derselbe wie gestern -- nicht
+schaerfer hinsehen, sondern die Groessen ausgeben lassen, an die man glaubt.
 
 Dazu, alle aus demselben Holz:
 
-- **Vier Fassungen derselben Lehre an einem Tag.** "Ganzzahlig, sonst
-  Karomuster" stand seit dem 01.09. da -- in logischen Punkten. Heute kamen
-  das Raster im Feed, dasselbe in `BlockTiles` und schliesslich die
-  Schnapp-Funktion beim Zeichnen dazu. **Solange eine Stelle in der anderen
-  Einheit rechnet, ist das Ergebnis dasselbe wie ohne alle drei.**
-- **Was nur mit Zeiger einen Ausgang hat, hat auf dem Finger keinen.**
-  Dreimal an einem Tag: der Tooltip (kein `onExited` beim Loslassen), der
-  Umschalter (weggeblendet, obwohl er ohne Tastatur die einzige Moeglichkeit
-  ist), der Tastaturhinweis (nennt Tasten, die es nicht gibt). Dasselbe
-  Muster wie der Explorer-Fokus am 04.09.
-- **QML vergleicht Arrays nach Kennung, nicht nach Inhalt.** Derselbe Satz
-  erklaerte den geleerten Verlauf, die fuenffach zu haeufige Abfrage und den
-  leeren Graphen. Wer in dasselbe Array schiebt, loest nichts aus; wer bei
-  jeder Auswertung ein neues zurueckgibt, loest alles aus.
-- **Zwei Grenzen, von denen nur eine mitwandert, sind eine Grenze und ein
-  Versehen.** Der Takt lief nur bei sichtbarer Flaeche, die Ankuenfte kamen
-  ungebremst weiter. Wortgleich zur Sicherung am 07.09. (`ETAPPE=20m` neben
-  `VORLAUF_GRENZE=2400`).
-- **Ein Protokoll, das zu viel meldet, ist trotzdem nuetzlich.** Die
-  doppelten Zeilen waren Rauschen -- und ohne sie haette niemand nach der
-  liegengebliebenen Frist-Uhr gesucht.
-- **Zweimal am selben Tag: kein `--` in XML-Kommentaren.** Erst
-  `appstreamcli` ("malformed"), dann Gradle ("Failed to parse XML file").
-  Keine der beiden Meldungen nennt den Grund. Hinweis steht jetzt in beiden
-  Dateien oben.
-- **`pgrep -f` findet die Zeile, in der es selbst steht.** Steht seit dem
-  05.09. in `pruefvm.sh` -- und hat heute trotzdem einen halb geschriebenen
-  Commit-Text mitgenommen.
+- **Was man nicht nachsehen kann, ist eine Vermutung.** Der Pfad zu Qts
+  Einstellungsdatei war geraten und falsch; das Miner-Widget meldete
+  "Adresse nicht gesetzt", obwohl sie gesetzt war. `adb run-as` greift bei
+  einem Release-Bau nicht. Statt eines zweiten Rateversuchs **sucht** das
+  Widget die Datei jetzt im eigenen Verzeichnis -- das haelt auch, wenn Qt
+  den Ort verlegt.
+- **Eine Grenze, die man kennt, ist billiger als eine, gegen die man
+  laeuft.** `historical-price` ohne Zeitstempel: 1.477.817 Byte. Mit
+  Zeitstempel: 160. Zweimal je Stunde waeren das 72 MB am Tag gewesen -- fuer
+  eine einzige Prozentzahl. Und `/v1/mining/hashrate/3d` brach nach **19,7
+  Sekunden** ohne Antwort ab, waehrend ein Widget insgesamt rund zehn hat.
+  Beide Zahlen haben eine Gestaltungsentscheidung getroffen, nicht der
+  Geschmack.
+- **Der Verlauf muss nicht herunterladbar sein, damit es einen gibt.** Beim
+  Mempool und beim Miner gibt es keinen zum Holen. Also schreibt das Widget
+  ihn mit, so wie der Daemon es fuer die Miner tut. Dass er anfangs leer ist,
+  steht dann als Satz da ("Verlauf entsteht · 2 von 180 Punkten") statt als
+  schwarze Flaeche, die wie ein Fehler aussieht.
+- **Eine Vorgabe an fuenf Stellen ist eine Vorgabe und vier Fehler.**
+  `"currency", "eur"` stand in SettingsView, FeedTabs, beiden DMS-Ansichten
+  und im Dashtab. Eine davon zu aendern haette Reiter und Widget
+  auseinanderlaufen lassen. Dasselbe Muster wie `ETAPPE=20m` neben
+  `VORLAUF_GRENZE=2400` am 07.09. und die Schnapp-Funktion am 08.09.
+- **Dieselbe Schwelle an vier Stellen ist dreimal zu oft.** `g * dpr < 2`
+  stand dreimal so da und einmal als `blockUnit(...) < 2` -- letzteres in
+  logischen Punkten, was ab dpr 2 etwas anderes bedeutet. Sie steht jetzt
+  einmal (`zelleGanzAb`, `grobRaster()`).
+- **`console.log` erreicht das Android-Protokoll nicht, `console.warn`
+  schon** (Tag `qml`). Das hat einen ganzen Bau gekostet, bevor es auffiel,
+  und es steht in keiner Doku.
+- **Zum dritten und vierten Mal: kein `--` in XML-Kommentaren.** Die
+  metainfo warnt seit dem 08.09. davor. Heute zweimal hineingelaufen, beim
+  Anlegen der Widget-Ressourcen. Der Hinweis steht jetzt auch in
+  `res/drawable/widget_grund.xml`.
+
+### Was ein Widget kann und was nicht
+
+Gemessen und nachgeschlagen, damit es niemand noch einmal versucht:
+
+- **Kein Weichzeichnen.** RemoteViews kennt `setRenderEffect` nicht, ein
+  Widget hat kein eigenes Fenster fuer `setBackgroundBlurRadius`, und der
+  Umweg ueber das Hintergrundbild ist seit Android 13 zu
+  (`WallpaperManager.getDrawable()` gibt Fremden nur das Standardbild). Was
+  geht, ist getoentes Glas: Verlauf plus zarter Rand.
+- **Kein kurzer Takt.** `updatePeriodMillis` rundet alles unter 30 Minuten
+  auf 30 Minuten auf, WorkManager kommt auf 15. Fuenf Sekunden gibt es nur
+  ueber einen Vordergrunddienst mit Dauerbenachrichtigung.
+- **Aber Bilder.** `setImageViewBitmap` nimmt eine fertige Bitmap, und damit
+  geht alles: Kurven, Blockkarten mit Verlauf und Glanz, runde Ecken. Der
+  Weg dorthin ist `Canvas` und `Paint` in Java -- dieselben Mittel wie in
+  QML.
+- **RGB_565 statt ARGB_8888**, weil die Bitmap ueber Binder geht: 640x220
+  kosten in ARGB_8888 rund 563 kB, in RGB_565 die Haelfte. **Und
+  Durchsichtigkeit geht trotzdem** -- der Bitmap fehlt nur der Alphakanal zum
+  *Speichern*, halbdurchsichtig aufgetragene Farbe mischt sich beim Zeichnen
+  richtig. Das habe ich erst falsch kommentiert und dann gemessen.
+- **Java ja, Kotlin nein.** Das von androiddeployqt erzeugte Gradle-Projekt
+  legt zwar ein `kotlin.srcDirs` an, wendet aber kein Kotlin-Plugin an --
+  Kotlin-Dateien fielen stillschweigend weg. Java aus `android/src/`
+  uebersetzt es ohne Zutun.
 
 ### Und was ich selbst falsch gemacht habe
 
-Das gehoert dazu, weil es beim Suchen Zeit gekostet hat:
+Das gehoert dazu, weil es Zeit gekostet hat:
 
-- **`filter-branch` mit einer veralteten Range** hat vier schon gepushte
-  Commits mitumgeschrieben. Behoben ueber `checkout -B` und Cherry-Pick; die
-  Baeume waren nachweislich identisch, der Push blieb ein Fast-forward.
-- **Stundenlang das Falsche gemessen.** Der Miner-Graph wurde am
-  Schreibtisch geprueft -- dort laeuft die Anwendung im **Daemon**-Betrieb,
-  `DirectMiner` wird nicht geladen. Gemessen wurde also der Daemon, und der
-  war gerade neu gestartet. **Zwei flache Kurven aus zwei Gruenden sehen
-  gleich aus.**
-- **Einen Fugen-Mindestrand zurueckgedreht**, weil der Block "dichter als
-  gemeint" wirkte. Dichter **war** das Gemeinte, und der Kommentar sagte es
-  zwei Zeilen weiter unten. Augenmass ueber eine begruendete Entscheidung
-  gestellt.
-- **Eine Vermutung als Befund notiert** (Qts Leinwand zeichne nicht mit
-  `Screen.devicePixelRatio`) und im naechsten Commit zurueckziehen muessen.
-- Ein falsches `grep`-Muster ("DM uebernehmen" statt "DirectMiner:
-  uebernehmen") liess "null Abfragen" glauben, wo 22 liefen.
-- Eine Tippkoordinate von vorher benutzt, nachdem der neue Miner-Reiter die
-  Reiterzeile nach rechts geschoben hatte -- die Adressaenderung lief auf dem
-  falschen Bildschirm ins Leere.
-- **`ping` schrieb die Miner-Adresse ins Protokoll**, obwohl zugesagt war,
-  sie nicht auszugeben. Private Netzadresse, nach aussen nutzlos, aber
-  zugesagt ist zugesagt.
-
-### Der Miner ohne Daemon
-
-`DirectMiner.qml` fragt AxeOS selbst ab, deckungsgleich mit `poll_miners` und
-`probe_axeos`: dieselben Feldnamen, dieselben Konstanten (5 s, 180 Punkte, 12
-Domaenenmessungen), dieselbe Rundung. **Am echten Bitaxe geprueft:** 1,07
-TH/s, beste Freigabe 674 M von 127 T, Temperatur, Luefter, Freigaben -- und
-`pool.solomining.de` ohne die Auszahlungsadresse, wie es der Daemon auch
-macht.
-
-Die Adresse ist jetzt eine **Einstellung** und damit die fuehrende Quelle.
-Vorher stand sie an drei Stellen, von denen keine ein Handy erreicht
-(`sources.json`, Umgebungsvariable, `--discover-miners`).
-
-**Was dabei noch fehlt:** cgminer (roher Sockel auf 4028, braucht C++), der
-Subnetz-Suchlauf (ebenso), und der Daemon liest die neue Einstellung noch
-nicht mit.
+- **Block und Halde verwechselt**, siehe oben. `5c7fff6` traegt eine
+  Begruendung, die auf dieser Verwechslung steht; die Richtigstellung steht
+  im naechsten Commit, aber der Text bleibt falsch.
+- **Eine Simulation mit Pythons Rundung gebaut**, wo JavaScripts gilt.
+  Pythons `round()` rundet bei genau ,5 zur geraden Zahl, JS immer auf. Das
+  erzeugte eine Ungleichheit, die es in QML gar nicht gibt -- fast haette ich
+  einen Fehler behoben, den es nicht gab.
+- **`ls` ist hier auf `eza` gelegt**, mit Symbolen. Mein
+  `$(ls -d .../ndk/*)` hat ein Icon-Zeichen in den NDK-Pfad geschmuggelt, und
+  der Bau brach mit "CMAKE_CXX_COMPILER not set" ab -- eine Meldung, die auf
+  etwas ganz anderes zeigt. (`tools/apk.sh` ist nicht betroffen: dort laeuft
+  `ls` in einer nicht-interaktiven Bash ohne Aliase.)
+- **Ein zu breites `grep` ins Protokoll** hat 4000 Zeilen
+  WindowManager-Rauschen geliefert statt der gesuchten Ausnahme.
+- **Zweimal Steuerzeichen in einen Heredoc geschrieben**, den das Werkzeug
+  dann zu Recht abgelehnt hat.
+- **Toten Code stehengelassen**: ein `if (false)`-Block, ein doppelter
+  `setShader`, ein `"{}".equals("") ? ...`, eine abstrakte Methode, die nie
+  gerufen wurde. Alle vier beim Nachlesen selbst gefunden und entfernt --
+  aber sie waren erst einmal drin.
+- **Beim Nachmessen wiederholt den falschen Ausschnitt gegriffen**, weil die
+  Widgets ihre Plaetze wechselten.
 
 ### Was sonst noch offen ist
 
-1. **Der Markt-Reiter fehlt auf Android.** Kein Fehler, sondern eine
-   Portierung: `class Market`, `heatmap()`, `run_market`, die Trade-Parser
-   fuer Binance und Bybit, der Sekundenkerzen-Ring -- rund **800 Zeilen**
-   Python nach QML, also etwa so viel wie `DirectFeed.qml` selbst.
-   **Wichtig:** die Freigabetexte nennen den Markt-Reiter prominent. Auf
-   einer Android-Downloadseite waere das ein Versprechen, das das Paket
-   nicht haelt.
-2. **Mobil-Widgets gibt es nicht** -- nicht "noch nicht", sondern gar nicht.
-   Im Manifest steht kein `AppWidgetProvider`; Android-Widgets zeichnet der
-   Systemprozess ueber `RemoteViews`, ohne Qt und ohne QML. Zwei Wege: neu in
-   Java/Kotlin mit Text und Zahlen, oder die QML-Ansicht in ein Bild rendern
-   und als Bitmap uebergeben. Der zweite waere der interessante, weil das
-   Widget dann aussieht wie die App.
-3. **Explorer-Zoom.** Die Maschinerie steht im Feed (`root.zoomed`), in
-   `BlockTiles` nicht. Verdrahten, nicht bauen.
-4. **`tools/bauplan-pruefen.py` prueft die Form, nicht ob Nummer und Inhalt
-   zusammenpassen.** Er meldete heute "in Ordnung" fuer einen Pin, der 0.2.1
-   enthielt, waehrend die Metadaten 0.2.2 sagten. Er koennte die Fassung aus
-   dem gepinnten Stand lesen und gegenhalten. Zweiter Tag mit derselben
-   Luecke.
-5. **Die Gast-Schritte der Pruef-VM stehen in keiner Datei.** Installer
-   schliessen, `apparmor_parser -r`, zwei Einhaengungen, **und `apt install
-   flatpak` mit Netz** -- Ubuntu 24.04 bringt flatpak nicht mit, und in einer
-   Live-Sitzung ist es nach jedem Neustart wieder weg. Hat heute zweimal
-   dieselben zwei Minuten gekostet, und `pruefvm.sh` behauptet, es stelle die
-   VM wieder her.
-6. **Der Zeiger in der Pruef-VM bewegt sich nicht.** Die offene Frage aus
-   `pruefvm.sh` ist beantwortet: `info mice` zeigt das Tablett als aktives
-   absolutes Geraet, `mouse_move` bewegt nichts. Von Anfang an eingehaengt
-   statt nachgesteckt -- es hilft nicht. Die VM prueft damit Darstellung und
-   Geometrie, nicht Zeigerverhalten.
-7. **`SuccessExitStatus=SIGTERM` einspielen** (liegt fertig in
-   `~/bin/backup-setup/systemd/`) -- sonst meldet jeder bewusste Abbruch
-   weiter "Sicherung fehlgeschlagen".
-8. **Ein Proton-Lauf mit dem Signaturschluessel** steht noch aus.
-9. **Die `.idsig`-Dateien und die alten Fassungen** raus aus
-   `auslieferung/`, sobald 0.2.2 (oder 0.2.3) wirklich ausgeliefert ist.
-   Nicht vorher.
-10. **Auf dem Handy liegt die mit dem Wegwerfschluessel signierte
-    Testfassung.** Muss durch die echte ersetzt werden.
-11. **Doku-Seite unter orangedeck.dev/doku/**, die elf uebrigen Sprachen, der
-    Spendenkanal, `og:image`, die Design-Leinwand, F-Droid, Laufzeit
-    `org.kde.Platform` 6.11, eine Sicherheitsadresse -- unveraendert offen
-    vom 07.09.
-12. **`docs/STAND.md` ist ueber 140 kB gross.** Als Einstieg noch brauchbar,
-    als Datei laengst unhandlich. Zweiter Tag mit diesem Satz.
+1. **Die gedrueckte Schrift in den Blockkarten** (siehe oben, Punkt 2).
+2. **Die Sprache der Widgets.** Sie sind seit heute alle englisch, auch auf
+   einem deutschen Telefon. Ursache: in der von androiddeployqt erzeugten
+   `build.gradle` steht `defaultConfig { resConfig "en" }` -- Qt beschraenkt
+   die Ressourcen auf Englisch, `values-de/` wird beim Bauen verworfen. Am
+   Geraet gemessen: Systemsprache `de-AT`, im APK **keine einzige**
+   Sprachkonfiguration. Drei Wege:
+
+        A   eigene build.gradle mitliefern. Eine Zeile anders, aber wir
+            besitzen dann die ganze Datei und ziehen sie bei jedem
+            Qt-Sprung nach.
+        B   die Sprachen zur Laufzeit in Java fuehren, wie `strings.js`
+            es tut: Tabelle, Auswahl ueber `Locale.getDefault()`,
+            Rueckfall auf Englisch. Umgeht `resConfig` ganz und koennte
+            alle dreizehn Sprachen der Anwendung uebernehmen. Preis: die
+            Beschriftung in der Auswahlliste des Starters bliebe englisch.
+        C   A plus eine Pruefung, die meldet, wenn Qts erzeugte Fassung
+            von unserer abweicht.
+
+   **Empfehlung: B.** Die Uebersetzungen liegen ohnehin im Projekt, und wir
+   haengen uns keine Datei ans Bein, die uns nicht gehoert.
+3. **Die Miner-Bruecke** ist besprochen und freigegeben, aber nicht gebaut:
+   die Anwendung fragt den Miner ohnehin alle fuenf Sekunden ab
+   (`DirectMiner.qml`); wenn sie jeden Punkt in dieselbe Datei schreibt, aus
+   der das Widget liest, ist der Graph dicht fuer jeden Zeitraum, in dem die
+   Anwendung offen war. Braucht eine kleine C++-Bruecke (QML kann keine
+   Dateien schreiben) und eine hoehere Punktzahl -- 180 sind bei fuenf
+   Sekunden nur fuenfzehn Minuten. Ehrlicher Preis: der Verlauf wird dicht,
+   wo die Anwendung lief, und duenn dazwischen.
+4. **Einstellungen je Widget** (Konfigurations-Activity beim Platzieren):
+   Waehrung je Kachel, Deckkraft, welche Zeilen. Der Unterbau steht -- die
+   Wechselkurse kommen mit demselben Aufruf, der die Tagesveraenderung holt.
+5. **`SuccessExitStatus=SIGTERM` einspielen.** Der Unterschied ist eine Zeile
+   plus Kommentar in `backup-lokal`, `backup-stick` und `backup-auslagern`,
+   Timer unveraendert. Braucht `sudo`; der Versuch wurde heute vom
+   Klassifizierer abgelehnt. Dazu ein Blick, ob die Sicherungs-Kachel im
+   DMS-Plugin etwas davon mitbekommen muss (Einschaetzung: nein, die Zeile
+   unterdrueckt nur die falsche "fehlgeschlagen"-Meldung).
+6. **Der Hinweis zu `console.warn`** gehoert in die DOKUMENTATION; er steht
+   bisher nur in einem Commit-Text.
+7. **Die Fugenmessung fuer `ff2d7a0`** ist nie sauber nachgeholt worden. Der
+   Versuch heute Vormittag lief unter anderen Bedingungen (Mempool 84.969,
+   Rasterweite 7 px statt 17) und ist deshalb nicht mit der von gestern
+   vergleichbar. Im Explorer waere sie auf Kommando herstellbar.
+8. **Der Explorer-Zoom.** Die Maschinerie steht im Feed (`root.zoomed`), in
+   `BlockTiles` nicht. Zurueckgestellt bis nach 0.2.3, weil er genau die
+   Raster- und Fugenrechnung anfasst, die diese Woche mehrfach falsch war.
+9. **Der Markt-Reiter fehlt auf Android** -- rund 800 Zeilen Python nach QML.
+   **Wichtig:** die Freigabetexte nennen ihn prominent. Auf einer
+   Android-Downloadseite waere das ein Versprechen, das das Paket nicht
+   haelt.
+10. **Auf dem Handy liegt eine mit dem Debug-Schluessel signierte 0.2.3.**
+    Der Schluessel, mit dem die vorige Fassung signiert war, existiert nicht
+    mehr (Fingerabdruck `f055bed9...`, weder der echte `b3cc8379...` noch
+    `~/.android/debug.keystore`). Ein Wechsel heisst deshalb immer
+    deinstallieren.
+11. **Ein Proton-Lauf mit dem Signaturschluessel** steht noch aus.
+12. **Die `.idsig`-Dateien und die alten Fassungen** raus aus
+    `auslieferung/`, sobald 0.2.3 wirklich ausgeliefert ist. Nicht vorher.
+13. **`tools/bauplan-pruefen.py`** meldet jetzt richtig rot (Pin auf 0.2.2,
+    Baum auf 0.2.3). Das ist kein offener Punkt, sondern die Erinnerung, dass
+    der Pin zum Auslieferungsdurchgang gehoert.
+14. **Doku-Seite unter orangedeck.dev/doku/**, die elf uebrigen Sprachen der
+    Website, der Spendenkanal, `og:image`, die Design-Leinwand, F-Droid,
+    Laufzeit `org.kde.Platform` 6.11, eine Sicherheitsadresse -- unveraendert
+    offen vom 07.09.
 
 ### Nachtrag: die Verbindung zum Handy
 
-Das Kabel ist heute **acht Mal** abgerissen (`adb: no devices/emulators
-found`), mitten in Installationen und Messungen. Zweimal hat es einen
-Prueflauf gekostet. Wer morgen dort weitermacht: `adb devices` vor jedem
-Schritt, und lange Ketten in kurze zerlegen.
+Das Kabel hat heute wieder mehrfach ausgesetzt, und die Ursachen waren
+verschieden: einmal hatte sich der Stecker geloest (das Geraet war gar nicht
+am Bus), mehrfach war USB-Debugging am Telefon abgeschaltet (das Geraet stand
+als `04e8:6860` am Bus, `adb` sah es nicht), und einmal lag die
+Benachrichtigungsleiste heruntergezogen ueber dem Bild, ohne dass sie sich
+von hier schliessen liess. **`adb_allowed_connection_time` steht schon auf
+0**, das ist es also nicht. `svc power stayon usb` hat geholfen, aber nicht
+durchgehend.
+
+Wer morgen dort weitermacht: `lsusb | grep 04e8` unterscheidet "Stecker lose"
+von "Debugging aus" und spart das Raten.
 
 ---
 
 ## Das Journal
 
-Ein Tag je Datei, das Neueste oben. Herausgeloest am 09.09.2026 aus dieser
-Datei, unveraendert.
+Ein Tag je Datei, das Neueste oben. Herausgeloest aus dieser Datei, unveraendert.
 
 | Tag | Worum es ging |
 |---|---|
+| [08.09.2026](journal/2026-09-08.md) | Das Geraet fand dreizehn Befunde. Der Miner laeuft ohne Daemon, und `v0.2.2` zeigt auf einen Stand ohne jede Korrektur. |
 | [07.09.2026](journal/2026-09-07.md) | Die Sicherung traegt, der Signaturschluessel existiert. Offen blieb nur der Push. |
 | [06.09.2026](journal/2026-09-06.md) | orangedeck.dev ist live und zeigt den Mempool wirklich live; der Flathub-Antrag ging raus und war in einer Minute zu. |
 | [05.09.2026](journal/2026-09-05.md) | Eigene Identitaet: eigene Domain, eigenes Zeichen, eine Kennung fuer alle Systeme. Die Auslieferung geradegezogen. |
