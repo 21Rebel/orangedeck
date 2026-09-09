@@ -127,7 +127,6 @@ Item {
     // --- Zustand ---------------------------------------------------------
     property var layout: null
     property var poolTx: []                 // {sq, t0, rate, fly, fromY}
-    property var fallout: []            // unten herausfallende Transaktionen
     // Eigene Liste der noch fallenden Kacheln. Sonst muesste dreissigmal pro
     // Sekunde die ganze Halde durchlaufen werden, um die paar zu finden.
     property var flying: []
@@ -174,7 +173,6 @@ Item {
         poolCanvas.requestPaint();
         blockCanvas.requestPaint();
         flyLayer.refresh();
-        fallLayer.refresh();
     }
 
     // Farbe einer Blockkachel. Drei Lesarten:
@@ -294,7 +292,6 @@ Item {
         if (blockPhase !== "idle")
             blockAnim.requestPaint();
         flyLayer.refresh();
-        fallLayer.refresh();
     }
 
     onWidthChanged: clampView()
@@ -400,7 +397,6 @@ Item {
         queueAcc = 0;
         layout = new Mondrian.MondrianLayout(gridW);
         poolTx = [];
-        fallout = [];
         flying = [];
         scrollPx = 0;
         cellIndex = ({});
@@ -518,22 +514,32 @@ Item {
         // Ein Takt Wartezeit kostet nichts: der Flug dauert unter einer
         // Sekunde, und die Halde darf so lange eine Zeile zu hoch stehen.
         for (i = 0; i < poolTx.length; i++) {
-            if (poolTx[i].sq.y === base && poolTx[i].fly < 1)
+            if (poolTx[i].sq.y + poolTx[i].sq.r <= base + 1 && poolTx[i].fly < 1)
                 return false;
         }
 
+        // **Eine Kachel geht erst mit, wenn sie ganz unter der Kante liegt.**
+        //
+        // Bis zum 09.09.2026 stand hier `e.sq.y === base`: eine Kachel flog
+        // hinaus, sobald ihre **unterste** Zeile abgeraeumt wurde -- auch
+        // wenn sie drei Zeilen hoch war und noch weit im Bild stand. Damit
+        // wurden an der Unterkante laufend `r x r` Zellen auf einen Schlag
+        // frei, und `place()` fuellte sie sofort mit den naechstbesten
+        // kleinen Transaktionen. Der Nachschub, der die Loecher weiter oben
+        // schliessen soll, wurde also an der Kante verbraucht, wo er eine
+        // Sekunde spaeter wieder verschwindet.
+        //
+        // Jetzt bleibt sie liegen, bis `sq.y + sq.r` unter `rowOffset`
+        // gewandert ist. Solange sie das nicht ist, steht sie im Layout und
+        // besetzt ihre Zellen -- es wird kein Platz gemacht, der keiner ist.
+        // Gezeichnet wird sie dabei ueber die Kante hinaus und von der
+        // Leinwand abgeschnitten: eine grosse Transaktion ist an der
+        // Unterkante dann kein Quadrat mehr, sondern der Rest davon. Genau
+        // so ist es gemeint.
         var keep = [];
         for (i = 0; i < poolTx.length; i++) {
             var e = poolTx[i];
-            if (e.sq.y === base) {
-                var side = Math.max(1, e.sq.r * gridSize - unitPad * 2);
-                fallout.push({
-                    "x": targetX(e.sq),
-                    "y0": targetY(e.sq),
-                    "y": targetY(e.sq),
-                    "s": side,
-                    "c": colorFor(e)
-                });
+            if (e.sq.y + e.sq.r <= base + 1) {
                 // **Dieselbe Buchfuehrung wie in `removeTx`.** Diese Schleife
                 // fuehrte sie nur halb: `poolTx` und das Layout wurden
                 // gepflegt, `flying`, `cellIndex` und `hoveredTx` nicht. Eine
@@ -833,32 +839,12 @@ Item {
             scrolled = true;
         }
 
-        // Die unterste Zeile wird beim Nachrutschen aus dem Bild geschoben --
-        // keine eigene Fallanimation. Die ist den Transaktionen vorbehalten,
-        // die wirklich aus dem Mempool verschwinden.
-        //
-        // **Und sie wird abgeschnitten, nicht weggenommen.** Bis zum
-        // 09.09.2026 lief sie genau eine Rasterweite mit und verschwand dann
-        // in einem Bild, waehrend sie noch vollstaendig zu sehen war. Am
-        // Geraet gemessen: die Halde endet bei y=2091, die Leinwand bei 2095,
-        // und der tiefste gezeichnete Punkt war exakt `height` -- es gab
-        // also gar kein "aus dem Bild", in das geschoben werden konnte. Das
-        // Wegblinken an der Kante ist es, was wie Herausfallen aussieht.
-        //
-        // Jetzt laeuft die Zeile mit derselben Geschwindigkeit weiter, bis
-        // sie ganz unter der Kante liegt, und `fallLayer` schneidet sie dabei
-        // ab. Sie wird also kleiner statt weg.
-        if (fallout.length > 0) {
-            var vFall = gridSize / 0.3;     // dieselbe wie beim Nachrutschen
-            var bleibt = [];
-            for (var n = 0; n < fallout.length; n++) {
-                fallout[n].y += vFall * dt;
-                if (fallout[n].y <= height)
-                    bleibt.push(fallout[n]);
-            }
-            if (bleibt.length !== fallout.length)
-                fallout = bleibt;
-        }
+        // **Die unterste Zeile wird nicht mehr eingesammelt.** Sie bleibt bis
+        // zuletzt in `poolTx` und wird von `poolCanvas` ueber die Kante hinaus
+        // gezeichnet und dort abgeschnitten. Eine eigene Liste dafuer -- und
+        // die abgeschnittene Schicht, die sie trug -- braucht es nicht mehr:
+        // was ganz unter der Kante liegt, ist ohnehin unsichtbar, und was
+        // darueber liegt, gehoert noch zur Halde.
 
         var animating = stepBlockAnimation(dt);
         return maintainPool(dt) || settled || scrolled || animating;
@@ -916,8 +902,7 @@ Item {
             if (root.step(0.033))
                 root.poolDirty = true;
             flyLayer.refresh();
-            fallLayer.refresh();
-            if (root.blockPhase !== "idle")
+                if (root.blockPhase !== "idle")
                 blockAnim.requestPaint();
         }
     }
@@ -1575,70 +1560,6 @@ Item {
     // Fallende und eingesaugte Transaktionen als echte Rechtecke statt auf einer
     // Leinwand: es sind nur ein paar Dutzend, und so entfaellt das Vollbild-
     // Loeschen dreissigmal pro Sekunde.
-    // **Das Abgeraeumte, und nur das, wird abgeschnitten.**
-    //
-    // Warum eine eigene Schicht und nicht `clip` auf `flyLayer`: der Regen
-    // startet bei `fromY` **ueber** der Leinwand (`-side - Zufall*height/2`)
-    // und faellt von dort herein. Ein Schnitt an der Oberkante liesse ihn
-    // dort erscheinen statt hereinfallen -- die Bewegung, um die es in dieser
-    // Ansicht ueberhaupt geht. Also zwei Schichten: diese schneidet unten ab,
-    // die darueber bleibt offen.
-    //
-    // Sie liegt in der Datei vor `flyLayer` und damit darunter: eine gerade
-    // abgeraeumte Zeile verdeckt keine frisch fallende Kachel.
-    Item {
-        id: fallLayer
-
-        anchors.fill: parent
-        clip: true
-        transform: [
-            Scale { xScale: root.zoom; yScale: root.zoom },
-            Translate { x: root.viewX; y: root.viewY }
-        ]
-
-        // Eine abgeraeumte Zeile ist so breit wie das Raster; bei schmalem
-        // Fenster und kleinen Kacheln koennen das ueber hundert werden --
-        // gemessen 131 gleichzeitig am 09.09.2026.
-        readonly property int capacity: 200
-
-        function refresh() {
-            if (!root.fallout)
-                return;
-            var n = 0, i, item;
-            for (i = 0; i < root.fallout.length && n < capacity; i++) {
-                var fo = root.fallout[i];
-                item = fallRepeater.itemAt(n++);
-                if (!item)
-                    break;
-                item.x = fo.x;
-                item.y = fo.y;
-                item.width = fo.s;
-                item.height = fo.s;
-                item.color = fo.c;
-                item.visible = true;
-            }
-            for (i = n; i < capacity; i++) {
-                item = fallRepeater.itemAt(i);
-                if (!item)
-                    break;
-                if (!item.visible)
-                    break;
-                item.visible = false;
-            }
-        }
-
-        Repeater {
-            id: fallRepeater
-
-            model: fallLayer.capacity
-
-            Rectangle {
-                visible: false
-                antialiasing: false
-            }
-        }
-    }
-
     Item {
         id: flyLayer
 
