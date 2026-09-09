@@ -21,11 +21,21 @@ Der dritte Fall ist der lehrreiche: `flatpak-builder-lint` hat ihn **nicht**
 gefunden, weil er nicht baut. Diese Pruefung sieht deshalb im gepinnten Stand
 selbst nach.
 
+**Und am 07. wie am 08.09.2026 hat sie zweimal "in Ordnung" gesagt, wo es
+nicht in Ordnung war.** Beide Male hinkte der Pin um eine Fassung hinterher:
+die Metadaten sagten 0.2.2, der gepinnte Stand enthielt 0.2.1. Die Form
+stimmte -- der Commit lag auf `origin/main`, alle Dateien waren da -- also
+sagte die Pruefung nichts. Sie prueft seither auch, ob **Nummer und Inhalt
+zusammenpassen**, und das ist die einzige Frage, die sie nicht aus der Form
+beantworten kann: sie muss die Fassung aus dem gepinnten Stand lesen.
+
 Geprueft wird:
   - der `commit:` ist ein Commit, kein Zweigname und kein Tag-Objekt,
   - er ist auf `origin` veroeffentlicht (sonst kann Flathub ihn nicht holen),
   - jede Datei, die der Bauplan anfasst, liegt in diesem Stand,
-  - die Kennung in Dateinamen, Metadaten und `.desktop` ist dieselbe.
+  - die Kennung in Dateinamen, Metadaten und `.desktop` ist dieselbe,
+  - der gepinnte Stand traegt dieselbe Fassung, die das Projekt jetzt
+    ausliefern will, und traegt sie in sich selbst ueberall gleich.
 """
 import pathlib, re, subprocess, sys
 
@@ -35,6 +45,33 @@ WURZEL = pathlib.Path(__file__).resolve().parent.parent
 def git(*a):
     return subprocess.run(["git", "-C", str(WURZEL), *a],
                           capture_output=True, text=True)
+
+
+def bei_commit(commit, pfad):
+    """Inhalt einer Datei im gepinnten Stand, oder None."""
+    r = git("show", "%s:%s" % (commit, pfad))
+    return r.stdout if r.returncode == 0 else None
+
+
+# **Drei Dateien tragen die Nummer**, und jede in ihrer eigenen Schreibweise.
+# Fehlt eine der drei Zeilen, gibt die Funktion None zurueck: eine Datei, die
+# gar keine Fassung nennt, ist ein anderer Fehler als eine, die eine falsche
+# nennt, und wird unten auch anders gemeldet.
+FASSUNG = {
+    "CMakeLists.txt":
+        r"^project\([\w-]+ VERSION ([0-9][0-9.]*)",
+    "packaging/flatpak/dev.orangedeck.OrangeDeck.metainfo.xml":
+        r"<release\s+version=\"([^\"]+)\"",
+    "android/AndroidManifest.xml":
+        r"android:versionName=\"([^\"]+)\"",
+}
+
+
+def fassung(text, pfad):
+    if text is None:
+        return None
+    m = re.search(FASSUNG[pfad], text, re.M)
+    return m.group(1) if m else None
 
 
 def main():
@@ -76,6 +113,47 @@ def main():
             if git("cat-file", "-e", "%s:%s" % (commit, d)).returncode != 0:
                 fehler.append("im gepinnten Stand fehlt: %s" % d)
 
+    # **Nummer und Inhalt.** Zwei getrennte Fragen, und die Reihenfolge ist
+    # wichtig: erst muss der Baum hier mit sich selbst einig sein, sonst gibt
+    # es keine Fassung, gegen die sich der Pin halten laesst.
+    hier = {}
+    for pfad in FASSUNG:
+        datei = WURZEL / pfad
+        hier[pfad] = fassung(datei.read_text(encoding="utf-8"), pfad) \
+            if datei.exists() else None
+    fehlt = [p for p, v in hier.items() if v is None]
+    for p in sorted(fehlt):
+        fehler.append("keine Fassungsnummer gefunden in %s" % p)
+
+    genannt = sorted(set(v for v in hier.values() if v))
+    if len(genannt) > 1:
+        fehler.append("das Projekt nennt mehrere Fassungen: %s"
+                      % ", ".join("%s in %s" % (v, p)
+                                  for p, v in sorted(hier.items()) if v))
+    soll = genannt[0] if len(genannt) == 1 else None
+
+    if commit:
+        # Was der gepinnte Stand von sich selbst sagt. Der Flatpak baut aus
+        # diesem Baum -- was hier drinsteht, steht nachher im Paket.
+        dort = {}
+        for pfad in ("CMakeLists.txt",
+                     "packaging/flatpak/"
+                     "dev.orangedeck.OrangeDeck.metainfo.xml"):
+            dort[pfad] = fassung(bei_commit(commit, pfad), pfad)
+        dort_genannt = sorted(set(v for v in dort.values() if v))
+        if len(dort_genannt) > 1:
+            fehler.append("der gepinnte Stand ist mit sich selbst uneins: %s"
+                          % ", ".join("%s in %s" % (v, p)
+                                      for p, v in sorted(dort.items()) if v))
+        elif not dort_genannt:
+            fehler.append("im gepinnten Stand steht keine Fassungsnummer")
+        elif soll and dort_genannt[0] != soll:
+            fehler.append(
+                "der Pin hinkt hinterher: der Bauplan zeigt auf einen Stand "
+                "mit %s, ausgeliefert werden soll %s -- ein Bau daraus naehme "
+                "die Nummer und liesse den Inhalt zurueck"
+                % (dort_genannt[0], soll))
+
     # Die Kennung muss ueberall dieselbe sein.
     meta = WURZEL / ("packaging/flatpak/%s.metainfo.xml" % kennung)
     if not meta.exists():
@@ -95,6 +173,7 @@ def main():
         return 1
     print("Bauplan %s: in Ordnung." % plan.name)
     print("  Kennung  %s" % kennung)
+    print("  Fassung  %s" % soll)
     print("  Commit   %s (%s)" % (commit[:12], git("log", "--format=%s", "-1",
                                                    commit).stdout.strip()))
     return 0
