@@ -35,6 +35,10 @@
     <string name="widget_bloecke">%1$s Blöcke Rückstau</string>
     <string name="widget_moscow">%1$s sat/€</string>
     <string name="widget_beste">beste %1$s</string>
+    <string name="widget_tx">%1$s Transaktionen</string>
+    <string name="widget_stufen">schnell %1$s · sparsam %2$s</string>
+    <string name="widget_luefter">%1$s U/min</string>
+    <string name="widget_tag">%1$s %% in 24 h</string>
     <string name="widget_miner_keine">Adresse nicht gesetzt</string>
     <!-- Steht da, wenn die Abfrage scheitert. Ein Strich statt einer leeren
          Flaeche: leer sieht aus wie ein Fehler des Starters. -->

@@ -14,6 +14,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:gravity="center_vertical"
     android:padding="12dp"
     android:background="@drawable/widget_grund">
 
@@ -31,7 +32,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
-        android:textSize="26sp"
+        android:textSize="30sp"
         android:textStyle="bold"
         android:textColor="#f7931a"
         android:maxLines="1"
@@ -49,6 +50,15 @@
 
     <TextView
         android:id="@+id/widget_zeile2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="#9a94a6"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/widget_zeile3"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="12sp"

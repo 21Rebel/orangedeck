@@ -18,10 +18,15 @@ public class WidgetMempool extends DeckWidget {
         // Rueckstau als die reine Byte-Menge.
         double bloecke = vsize / 1000000.0;
 
-        String gebuehr = null;
+        String gebuehr = null, stufen = null;
         try {
             JSONObject g = holeObjekt("/v1/fees/recommended");
             gebuehr = c.getString(R.string.widget_satvb, zahl(g.optDouble("halfHourFee", 0), 0));
+            // Schnell und sparsam nebeneinander: die halbe Stunde allein sagt
+            // nicht, wie weit die Spanne gerade auseinandergeht.
+            stufen = c.getString(R.string.widget_stufen,
+                                 zahl(g.optDouble("fastestFee", 0), 0),
+                                 zahl(g.optDouble("economyFee", 0), 0));
         } catch (Exception e) {
             // Die Gebuehr ist die Zugabe, nicht der Zweck: faellt sie aus,
             // steht die Anzahl trotzdem da.
@@ -29,7 +34,8 @@ public class WidgetMempool extends DeckWidget {
         return new String[] {
             zahl(anzahl, 0),
             gebuehr,
-            c.getString(R.string.widget_bloecke, zahl(bloecke, 1))
+            c.getString(R.string.widget_bloecke, zahl(bloecke, 1)),
+            stufen
         };
     }
 }

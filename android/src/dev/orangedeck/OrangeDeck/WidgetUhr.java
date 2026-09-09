@@ -22,10 +22,22 @@ public class WidgetUhr extends DeckWidget {
         long hoehe = b.getLong("height");
         long zeit = b.getLong("timestamp");                 // Sekunden
         long min = Math.max(0, (System.currentTimeMillis() / 1000 - zeit) / 60);
+        // Beides steckt schon in derselben Antwort: keine zweite Abfrage,
+        // und die Frist von `goAsync()` bleibt unangetastet.
+        String tx = b.has("tx_count")
+            ? c.getString(R.string.widget_tx, zahl(b.optLong("tx_count", 0), 0)) : null;
+        String pool = null;
+        JSONObject extras = b.optJSONObject("extras");
+        if (extras != null) {
+            JSONObject p = extras.optJSONObject("pool");
+            if (p != null && p.has("name"))
+                pool = p.optString("name", null);
+        }
         return new String[] {
             zahl(hoehe, 0),
             c.getString(R.string.widget_vor_min, min),
-            null
+            tx,
+            pool
         };
     }
 }

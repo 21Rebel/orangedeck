@@ -38,6 +38,17 @@ public class WidgetMiner extends DeckWidget {
             ? zahl(d.optDouble("temp", 0), 0) + " °C" : null;
         String best = d.has("bestDiff")
             ? c.getString(R.string.widget_beste, kurz(d.optString("bestDiff", ""))) : null;
-        return new String[] { rate, temp, best };
+        // Leistung und Luefter stehen in derselben Antwort. Beide nur, wenn
+        // das Geraet sie meldet: AxeOS-Fassungen fuehren nicht dieselben
+        // Felder, und eine erfundene Zahl waere schlimmer als eine fehlende.
+        String last = null;
+        if (d.has("power") || d.has("fanrpm")) {
+            String w = d.has("power")
+                ? zahl(d.optDouble("power", 0), 1) + " W" : null;
+            String f = d.has("fanrpm")
+                ? c.getString(R.string.widget_luefter, zahl(d.optLong("fanrpm", 0), 0)) : null;
+            last = w == null ? f : (f == null ? w : w + " · " + f);
+        }
+        return new String[] { rate, temp, best, last };
     }
 }

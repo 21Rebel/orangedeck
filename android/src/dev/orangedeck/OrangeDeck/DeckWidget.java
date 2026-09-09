@@ -51,8 +51,9 @@ public abstract class DeckWidget extends AppWidgetProvider {
     /**
      * Holt die Werte. Laeuft **nicht** im Vordergrund-Faden.
      *
-     * @return drei Zeilen: gross, klein, klein. Ein {@code null} laesst die
-     *         Zeile weg.
+     * @return bis zu vier Zeilen: gross, dann drei kleine. Ein {@code null}
+     *         laesst die Zeile weg, und die uebrigen ruecken nach: bei 2x2
+     *         bliebe sonst die untere Haelfte leer.
      */
     protected abstract String[] werte(Context c) throws Exception;
 
@@ -93,6 +94,7 @@ public abstract class DeckWidget extends AppWidgetProvider {
             v.setTextViewText(R.id.widget_gross, z.length > 0 && z[0] != null ? z[0] : "");
             setzeZeile(v, R.id.widget_zeile1, z.length > 1 ? z[1] : null);
             setzeZeile(v, R.id.widget_zeile2, z.length > 2 ? z[2] : null);
+            setzeZeile(v, R.id.widget_zeile3, z.length > 3 ? z[3] : null);
 
             Intent i = new Intent(aktion());
             i.setClassName(c.getPackageName(), "org.qtproject.qt.android.bindings.QtActivity");
