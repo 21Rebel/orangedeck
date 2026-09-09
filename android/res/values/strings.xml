@@ -61,6 +61,8 @@
     <string name="widget_tx_kurz">%1$s tx</string>
     <string name="widget_naechster">nächster</string>
     <string name="widget_danach">danach</string>
+    <string name="widget_in_min">in ~%1$d Min</string>
+    <string name="widget_tx_lang">%1$s Transaktionen</string>
     <string name="widget_kurs_gross_info">Kurs mit Verlauf</string>
     <string name="widget_mempool_gross_info">Mempool mit Verlauf</string>
     <string name="widget_miner_gross_info">Miner mit Hashrate-Verlauf</string>
