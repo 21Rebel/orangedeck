@@ -14,8 +14,17 @@
 #     tools/pruefvm.sh bauen     Buendel, Daten-ISO und Platte herstellen
 #     tools/pruefvm.sh starten   QEMU starten (ohne Fenster, Monitor am Sockel)
 #     tools/pruefvm.sh anhalten  QEMU beenden
+#     tools/pruefvm.sh gast      die Schritte *im* Gast ausgeben
 #
 # Danach steuert `tools/vm.py` den Gast: Tasten senden, Bilder holen.
+#
+# **Was das Skript nicht tut, und lange so aussah, als taete es das.** Es
+# stellt den Wirt wieder her, nicht den Gast. Eine Live-Sitzung vergisst nach
+# jedem Neustart alles: das nachinstallierte flatpak, das geladene
+# AppArmor-Profil, beide Einhaengungen. Am 08.09.2026 hat dasselbe Wissen
+# zweimal dieselben zwei Minuten gekostet, weil es in keiner Datei stand,
+# sondern in drei Absaetzen der DOKUMENTATION verteilt lag. `gast` gibt es
+# jetzt am Stueck aus -- in der Reihenfolge, in der es gebraucht wird.
 set -euo pipefail
 
 VM="${ORANGEDECK_VM_DIR:-$HOME/.cache/orangedeck-vm}"
@@ -70,15 +79,28 @@ starten() {
     [ -f "$ISO" ] || { echo "Keine Ubuntu-ISO unter $ISO (ORANGEDECK_VM_ISO setzt den Pfad)"; exit 1; }
     [ -f "$VM/daten.iso" ] || { echo "Keine Daten-ISO -- erst 'tools/pruefvm.sh bauen'"; exit 1; }
     rm -f "$VM/mon.sock"
-    # **Das Tablett von Anfang an, nicht nachgesteckt.** Am 05.09.2026
-    # versucht, es in eine laufende VM zu haengen: QEMU meldete es danach als
-    # aktives absolutes Zeigegeraet, der Gast hatte es unter
-    # /dev/input/by-id/ -- und `mouse_move` bewegte trotzdem nichts. Die
-    # Ursache ist **nicht** geklaert. Es steht hier, damit der naechste Lauf
-    # es von Anfang an hat; **ob der Monitor damit einen Zeiger bewegt, ist
-    # offen und muss gemessen werden, bevor sich jemand darauf verlaesst.**
-    # Ohne Zeiger prueft die VM nur Geometrie, kein Verhalten -- was am
-    # Zeiger haengt, prueft weiterhin `xtest.py` im Xvfb.
+    # **Das Tablett von Anfang an, nicht nachgesteckt** -- und die Frage, die
+    # hier bis zum 08.09.2026 als offen stand, ist seit dem 06.09. gemessen
+    # und beantwortet: **es hilft nicht.**
+    #
+    #     (qemu) info mice
+    #         Mouse #2: QEMU PS/2 Mouse
+    #         Mouse #5: vmmouse (absolute)
+    #       * Mouse #3: QEMU HID Tablet (absolute)
+    #     (qemu) mouse_move 128 113
+    #       -> der Zeiger bleibt, wo er war
+    #
+    # Das Tablett ist da, es ist aktiv, es ist absolut -- und `mouse_move`
+    # bewegt trotzdem nichts. Von Anfang an eingehaengt statt nachgesteckt
+    # aendert daran nichts; damit sind es sieben erfolglose Konfigurationen.
+    # Ungeprueft bleibt allein QMP `input-send-event`, wofuer die VM mit
+    # `-qmp` starten muesste.
+    #
+    # **Die Folgerung, und sie ist keine Notloesung, sondern die Aufgabe
+    # dieser VM:** sie prueft Darstellung und Geometrie auf einem fremden
+    # System, kein Zeigerverhalten. Was am Zeiger haengt, prueft `xtest.py`
+    # im Xvfb; was am Finger haengt, prueft nur ein echtes Geraet. Das Tablett
+    # bleibt eingehaengt, weil es nichts kostet.
     #
     # **Zwei Laufwerke von Anfang an.** Am 04.09. wurde das Medium im Betrieb
     # getauscht; der Gast lieferte danach weiter den alten Inhalt aus dem
@@ -133,10 +155,98 @@ laeuft() {
     [ -n "$1" ] && kill -0 "$1" 2>/dev/null
 }
 
+# **Die Schritte im Gast.** Jeder einzelne davon ist auf Ubuntus Live-Sitzung
+# nach einem Neustart wieder faellig; keiner laesst sich vom Wirt aus
+# vorwegnehmen. Getippt wird ueber `tools/vm.py` Taste fuer Taste, also lohnt
+# sich die knappste Schreibweise.
+gast() {
+    cat <<'ENDE'
+== Die Schritte im Gast (Ubuntu 24.04 Live) ==
+
+Nach JEDEM Neustart der Live-Sitzung wieder faellig. Getippt wird ueber
+tools/vm.py; der Monitor kennt eigene Tastennamen (comma, spc, shift-4).
+
+ 1  Assistent schliessen und ein Terminal oeffnen
+        alt-f4          Ubuntu startet mit dem Installationsassistenten
+        ctrl-alt-t      Terminal
+
+ 2  flatpak nachinstallieren -- BRAUCHT NETZ
+        sudo apt-get install -y flatpak
+    Ubuntu 24.04 bringt flatpak nicht mit. In einer Live-Sitzung ist es
+    nach jedem Neustart wieder weg; das ist kein Fehler, das ist die
+    Bauart.
+
+ 3  Das AppArmor-Profil laden
+        sudo apparmor_parser -r /etc/apparmor.d/flatpak
+    Sonst: "bwrap: Creating new namespace failed: Permission denied".
+    Das Paket LEGT das Profil ab, es LAEDT es nicht -- das tut
+    apparmor.service, und der laeuft in der Live-Sitzung nicht, waehrend
+    die Kernel-Sperre sehr wohl greift. Auf einem installierten Ubuntu
+    faellt dieser Schritt weg.
+
+ 4  Erste Einhaengung: der Flatpak-Bestand auf die Platte
+        sudo mkfs.ext4 -q /dev/vda
+        mkdir -p ~/.local/share/flatpak
+        sudo mount /dev/vda ~/.local/share/flatpak
+        sudo chown ubuntu:ubuntu ~/.local/share/flatpak
+    Das /cow der Live-Sitzung liegt im RAM: rund 1,2 GB beschreibbar.
+    org.kde.Platform 6.9 braucht allein etwa 2 GB. Ohne diesen Schritt
+    bricht die Installation auf halbem Weg ab, und der Fehler sieht aus
+    wie einer im Flatpak.
+
+ 5  Zweite Einhaengung: die Daten-ISO
+        sudo mkdir -p /mnt/od
+        sudo mount /dev/sr1 /mnt/od          # sr0 ist die Ubuntu-ISO
+        cd /mnt/od && sha256sum -c PRUEFSUMMEN.txt
+    Das cd gehoert dazu: 'bauen' schreibt die Summen mit `sha256sum
+    ./*.flatpak` aus dem Datenverzeichnis, die Pfade darin sind also
+    relativ. Von anderswo aufgerufen sucht -c nach ./orangedeck.flatpak
+    im falschen Verzeichnis und meldet die Datei als fehlend.
+    Die Reihenfolge sr0/sr1 folgt der Reihenfolge der -drive-Zeilen in
+    'starten' oben. Die Pruefsummen sind der Grund, warum sie mit auf die
+    ISO gehen: erst gegenhalten, dann glauben.
+
+ 6  Installieren -- Laufzeit zuerst, Anwendung zuletzt
+        flatpak install -y --user /mnt/od/kde-platform-6.9.flatpak
+        flatpak install -y --user /mnt/od/gl-default-24.08.flatpak
+        flatpak install -y --user /mnt/od/orangedeck.flatpak
+        flatpak run dev.orangedeck.OrangeDeck
+    **Kein sudo.** --user installiert in den Bestand des aufrufenden
+    Kontos; mit sudo waere das der von root, und der liegt wieder im RAM
+    statt auf der Platte aus Schritt 4. Genau deshalb steht dort das
+    chown auf ubuntu.
+    Ohne die GL-Erweiterung startet die Anwendung mit "Could not
+    initialize GLX". Wer von Flathub installiert, bekommt sie automatisch;
+    ein Buendel bringt sie nicht mit.
+
+    **Herkunft der Schritte 5 und 6:** aus 'bauen' oben und den
+    Fehlermeldungen der Laeufe vom 04. und 06.09. abgeleitet, nicht aus
+    einem Protokoll abgeschrieben. Wer den naechsten Lauf macht, moege
+    korrigieren, was nicht stimmt -- die Schritte 1 bis 4 sind gemessen.
+
+== Zwei Fallen, die Zeit gekostet haben ==
+
+  * Wird ein Wechseldatentraeger getauscht, WAEHREND er eingehaengt ist,
+    liefert der Gast weiter den alten Inhalt aus dem Cache -- ls zeigt
+    schon den neuen Namen. Erst umount, dann change, dann neu einhaengen.
+    (Deshalb haengen oben beide ISOs von Anfang an.)
+
+  * Frisch messen heisst auch frischer Zustand: ~/.var/app/dev.orangedeck.*
+    loeschen, sonst prueft man eine alte Einrichtung.
+
+== Was diese VM NICHT prueft ==
+
+Zeigerverhalten. mouse_move bewegt im Gast nichts (sieben Konfigurationen,
+siehe Kommentar bei 'starten'). Geprueft werden Darstellung und Geometrie
+auf einem fremden System -- was am Finger haengt, prueft nur ein Geraet.
+ENDE
+}
+
 case "${1:-}" in
     bauen)    bauen ;;
     starten)  starten ;;
     anhalten) anhalten ;;
+    gast)     gast ;;
     # Die Hilfe ist der Kopf der Datei -- bis zur ersten Zeile, die keine
     # Kommentarzeile mehr ist. Eine feste Zeilenzahl waere beim naechsten
     # eingefuegten Absatz falsch und haette Code mit ausgegeben.
