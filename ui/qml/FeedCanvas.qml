@@ -514,54 +514,20 @@ Item {
         // Ein Takt Wartezeit kostet nichts: der Flug dauert unter einer
         // Sekunde, und die Halde darf so lange eine Zeile zu hoch stehen.
         for (i = 0; i < poolTx.length; i++) {
-            if (poolTx[i].sq.y + poolTx[i].sq.r <= base + 1 && poolTx[i].fly < 1)
+            if (poolTx[i].sq.y === base && poolTx[i].fly < 1)
                 return false;
         }
 
-        // **Eine Kachel geht erst mit, wenn sie ganz unter der Kante liegt.**
+        // **Hier wird nichts mehr weggenommen.** Bis zum 09.09.2026 flog eine
+        // Kachel hinaus, sobald ihre unterste Zeile abgeraeumt wurde -- erst
+        // bei `sq.y === base`, dann bei `sq.y + sq.r <= base + 1`. Beide
+        // Bedingungen haengen an der **Zeile**, und das ist die falsche
+        // Groesse: eine Kachel mit `r = 1` erfuellt die zweite sofort und
+        // verschwindet damit in dem Bild, in dem sie noch voll zu sehen ist.
         //
-        // Bis zum 09.09.2026 stand hier `e.sq.y === base`: eine Kachel flog
-        // hinaus, sobald ihre **unterste** Zeile abgeraeumt wurde -- auch
-        // wenn sie drei Zeilen hoch war und noch weit im Bild stand. Damit
-        // wurden an der Unterkante laufend `r x r` Zellen auf einen Schlag
-        // frei, und `place()` fuellte sie sofort mit den naechstbesten
-        // kleinen Transaktionen. Der Nachschub, der die Loecher weiter oben
-        // schliessen soll, wurde also an der Kante verbraucht, wo er eine
-        // Sekunde spaeter wieder verschwindet.
-        //
-        // Jetzt bleibt sie liegen, bis `sq.y + sq.r` unter `rowOffset`
-        // gewandert ist. Solange sie das nicht ist, steht sie im Layout und
-        // besetzt ihre Zellen -- es wird kein Platz gemacht, der keiner ist.
-        // Gezeichnet wird sie dabei ueber die Kante hinaus und von der
-        // Leinwand abgeschnitten: eine grosse Transaktion ist an der
-        // Unterkante dann kein Quadrat mehr, sondern der Rest davon. Genau
-        // so ist es gemeint.
-        var keep = [];
-        for (i = 0; i < poolTx.length; i++) {
-            var e = poolTx[i];
-            if (e.sq.y + e.sq.r <= base + 1) {
-                // **Dieselbe Buchfuehrung wie in `removeTx`.** Diese Schleife
-                // fuehrte sie nur halb: `poolTx` und das Layout wurden
-                // gepflegt, `flying`, `cellIndex` und `hoveredTx` nicht. Eine
-                // abgeraeumte Kachel blieb damit im Zeiger-Verzeichnis stehen
-                // -- der Tooltip konnte eine Transaktion nennen, die in der
-                // Halde nicht mehr liegt.
-                var fi = flying.indexOf(e);
-                if (fi >= 0)
-                    flying.splice(fi, 1);
-                for (var cx = 0; cx < e.sq.r; cx++) {
-                    for (var cy = 0; cy < e.sq.r; cy++)
-                        delete cellIndex[(e.sq.x + cx) + ":" + (e.sq.y + cy)];
-                }
-                if (hoveredTx && hoveredTx === e.tx)
-                    hoveredTx = null;
-                occupied -= e.sq.r * e.sq.r;
-                layout.remove(e.sq);
-            } else {
-                keep.push(e);
-            }
-        }
-        poolTx = keep;
+        // Ob etwas weg darf, entscheidet nicht die Zeile, sondern ob noch
+        // etwas davon zu sehen ist. Das prueft `raeumeUnsichtbare()` unten,
+        // Bild fuer Bild, und es gilt fuer jede Groesse gleich.
         layout.dropBottomRow();
         scrollPx = -gridSize;       // die Halde rutscht sichtbar nach
         return true;
@@ -574,11 +540,39 @@ Item {
     // Transaktionen (etwa fuenf pro Sekunde), nicht den Bestand des Mempools.
     // Vorher standen dort Platzhalter: die erschienen ohne zu fallen und hatten
     // keine Angaben fuer den Tooltip.
+    // **Weg ist erst, was nicht mehr zu sehen ist.**
+    //
+    // `targetY` liefert die Oberkante der Kachel. Liegt die auf oder unter
+    // der Bildkante, steht kein Bildpunkt von ihr mehr im Bild -- vorher
+    // wird sie von der Haldenleinwand angeschnitten und laeuft sichtbar
+    // hinaus. Das gilt fuer eine 1x1 genauso wie fuer eine 5x5; an der
+    // Zeilennummer haengt nichts mehr.
+    function raeumeUnsichtbare() {
+        var weg = null;
+        for (var i = 0; i < poolTx.length; i++) {
+            // Was noch fliegt, wird nicht geraeumt: es steht in der Luft,
+            // nicht an seinem Platz, und verschwaende sonst mitten im Bild.
+            if (poolTx[i].fly >= 1 && targetY(poolTx[i].sq) >= height) {
+                if (!weg)
+                    weg = [];
+                weg.push(poolTx[i]);
+            }
+        }
+        if (!weg)
+            return;
+        // Ueber `removeTx`, damit `flying`, `cellIndex`, `hoveredTx`,
+        // `occupied` und das Layout in einem Zug mitgehen.
+        for (var j = 0; j < weg.length; j++)
+            removeTx(weg[j]);
+    }
+
     function maintainPool(dt) {
         levelClock += dt;
         if (levelClock < 0.15 || !layout || gridW < 2)
             return false;
         levelClock = 0;
+
+        raeumeUnsichtbare();
 
         // Was oben ueber den Rand waechst, faellt unten heraus
         var changed = false;
