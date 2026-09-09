@@ -122,6 +122,7 @@ Startzeilen stehen in `packaging/widgets/README.md`.
 
 - `docs/ZIELBILD.md` — wohin es geht, in welcher Reihenfolge
 - `docs/STAND.md` — offene Punkte, zuerst hier nachsehen
+- `docs/journal/` — ein Tag je Datei, wie es dazu kam
 - `docs/DOKUMENTATION.md` — Mechanik und alle Stolperfallen
 - `NOTICE.md` — Herkunft und Lizenzen
 

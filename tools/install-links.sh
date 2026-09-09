@@ -75,6 +75,10 @@ done
 for f in DOKUMENTATION.md STAND.md ZIELBILD.md; do
   link "$R/docs/$f" "$P/$f"
 done
+# **Das Journal als Ganzes**, nicht Datei fuer Datei: hier kommt am Ende
+# jedes Tages eine dazu, und eine Liste, die man von Hand nachfuehren muss,
+# ist am zweiten Tag unvollstaendig.
+link "$R/docs/journal" "$P/journal"
 # die QML-Dateien des Plugins zeigen weiter auf ~/.local/share/orangedeck/qml
 for f in $QMLFILES; do
   link "$HOME/.local/share/orangedeck/qml/$f" "$P/$f"
