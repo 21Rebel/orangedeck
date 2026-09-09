@@ -68,7 +68,7 @@ Item {
     function buildOpts() {
         return ({
             "dataSource": root.get("dataSource", "daemon"),
-            "currency": root.get("currency", "eur"),
+            "currency": root.get("currency", "usd"),
             "lang": root.get("lang", "de"),
             // Die Kachelgroesse kommt hier aus der eigenen Einstellung
             "density": Math.max(0.5, root.tileDensity / 100),

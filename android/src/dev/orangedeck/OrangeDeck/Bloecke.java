@@ -151,12 +151,18 @@ final class Bloecke {
             if (anz == 0)
                 continue;
 
-            t.setTextSize(24f);
+            t.setTextSize(25f);
             Paint.FontMetrics fmGross = t.getFontMetrics();
-            t.setTextSize(17f);
+            t.setTextSize(18f);
             Paint.FontMetrics fmKlein = t.getFontMetrics();
-            float hGross = (fmGross.descent - fmGross.ascent) * 1.15f;
-            float hKlein = (fmKlein.descent - fmKlein.ascent) * 1.30f;
+
+            // **Zeilenabstand, nicht Zeilenhoehe.** Der erste Anlauf setzte
+            // die Zeilen mit dem blossen Schriftmass aneinander; sie standen
+            // dadurch gequetscht. Die Anwendung laesst zwischen den Zeilen
+            // rund die Haelfte einer Zeilenhoehe Luft, und genau das machen
+            // die Faktoren hier.
+            float hGross = (fmGross.descent - fmGross.ascent) * 1.45f;
+            float hKlein = (fmKlein.descent - fmKlein.ascent) * 1.55f;
             float gesamt = hGross + (anz - 1) * hKlein;
             float y = oben + ((unten - oben) - gesamt) / 2f;
 
@@ -165,19 +171,21 @@ final class Bloecke {
                 if (s == null || s.isEmpty())
                     continue;
                 if (k == 0) {
-                    t.setTextSize(24f);
+                    t.setTextSize(25f);
                     t.setFakeBoldText(true);
                     t.setColor(0xffffffff);
-                    y += -fmGross.ascent;
-                    c.drawText(s, x + breite / 2, y, t);
-                    y += fmGross.descent + hGross * 0.15f;
+                    c.drawText(s, x + breite / 2,
+                               y + (hGross - (fmGross.descent - fmGross.ascent)) / 2f
+                                 - fmGross.ascent, t);
+                    y += hGross;
                 } else {
-                    t.setTextSize(17f);
+                    t.setTextSize(18f);
                     t.setFakeBoldText(false);
                     t.setColor(0xe0ffffff);
-                    y += -fmKlein.ascent;
-                    c.drawText(s, x + breite / 2, y, t);
-                    y += fmKlein.descent + hKlein * 0.30f;
+                    c.drawText(s, x + breite / 2,
+                               y + (hKlein - (fmKlein.descent - fmKlein.ascent)) / 2f
+                                 - fmKlein.ascent, t);
+                    y += hKlein;
                 }
                 k++;
             }

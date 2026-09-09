@@ -83,7 +83,7 @@ Item {
     property string colorMode: SettingsData.getPluginSetting(pid, "colorMode", "age")
     property string sizeMode: SettingsData.getPluginSetting(pid, "sizeMode", "value")
     property string dataSource: SettingsData.getPluginSetting(pid, "dataSource", "daemon")
-    property string currency: SettingsData.getPluginSetting(pid, "currency", "eur")
+    property string currency: SettingsData.getPluginSetting(pid, "currency", "usd")
     property string lang: SettingsData.getPluginSetting(pid, "lang", "de")
     // Die Wallet-Ansicht bleibt aus, bis sie ausdruecklich eingeschaltet wird
     // -- hier gilt derselbe Schalter wie im Fenster.

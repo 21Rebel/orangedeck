@@ -560,7 +560,12 @@ Item {
                     help: Tr.t("set.currencyHelp", root.lang)
 
                     Wahl {
-                        gewaehlt: root.val("currency", "eur")
+                        // **Vorgabe ist USD, nicht EUR.** Bitcoin wird
+                        // weltweit in Dollar notiert; Euro ist eine bewusste
+                        // Wahl. Dieselbe Vorgabe steht in `DeckWidget.java`,
+                        // damit Reiter und Widget nicht auseinanderlaufen,
+                        // solange niemand etwas eingestellt hat.
+                        gewaehlt: root.val("currency", "usd")
                         eintraege: {
                             var out = [];
                             for (var i = 0; i < Money.CURRENCIES.length; i++) {

@@ -97,7 +97,7 @@ Item {
     readonly property string pfeilKurz:
         probePfeilK.implicitWidth !== probeLeer.implicitWidth ? "\u2192" : "->"
 
-    readonly property string currency: root.o("currency", "eur")
+    readonly property string currency: root.o("currency", "usd")
     readonly property bool walletEnabled: root.o("walletEnabled", false)
     // **Ein unsichtbares Element behaelt seine Hoehe.** Ohne die Abfrage
     // stuende im nackten Widget oben ein leerer Streifen in Reiterhoehe.

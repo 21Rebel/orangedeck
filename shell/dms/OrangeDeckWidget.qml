@@ -69,7 +69,7 @@ PluginComponent {
     function buildOpts() {
         return ({
             "dataSource": root.get("dataSource", "daemon"),
-            "currency": root.get("currency", "eur"),
+            "currency": root.get("currency", "usd"),
             "lang": root.get("lang", "de"),
             "density": root.get("density", 1),
             "colorMode": root.get("colorMode", "age"),

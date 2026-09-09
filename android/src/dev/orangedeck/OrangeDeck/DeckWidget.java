@@ -242,28 +242,33 @@ public abstract class DeckWidget extends AppWidgetProvider {
      * erste.
      */
     protected static String minerAdresse(Context c) {
+        String wert = ausEinstellungen(c, "minerHostsRaw");
+        if (wert == null || wert.isEmpty())
+            return null;
+        // Mehrere Adressen sind durch Komma getrennt; genommen wird die erste.
+        int komma = wert.indexOf(',');
+        return komma < 0 ? wert : wert.substring(0, komma).trim();
+    }
+
+    /** Ein Wert aus Qts Einstellungsdatei, oder null. */
+    protected static String ausEinstellungen(Context c, String schluessel) {
         File f = findeEinstellungen(c);
         if (f == null)
             return null;
         try {
             BufferedReader r = new BufferedReader(new java.io.FileReader(f));
-            String zeile;
-            String wert = null;
+            String zeile, wert = null;
             while ((zeile = r.readLine()) != null) {
                 int gleich = zeile.indexOf('=');
                 if (gleich < 0)
                     continue;
-                if (!zeile.substring(0, gleich).trim().equals("minerHostsRaw"))
+                if (!zeile.substring(0, gleich).trim().equals(schluessel))
                     continue;
                 wert = zeile.substring(gleich + 1).trim();
                 break;
             }
             r.close();
-            if (wert == null || wert.isEmpty())
-                return null;
-            // Mehrere Adressen sind durch Komma getrennt; genommen wird die erste.
-            int komma = wert.indexOf(',');
-            return komma < 0 ? wert : wert.substring(0, komma).trim();
+            return wert;
         } catch (Exception e) {
             return null;
         }
@@ -307,6 +312,42 @@ public abstract class DeckWidget extends AppWidgetProvider {
             }
         }
         return null;
+    }
+
+    /**
+     * Die eingestellte Waehrung, aus derselben ini wie die Miner-Adresse.
+     *
+     * <p><b>Vorgabe ist USD, nicht EUR.</b> Bitcoin wird weltweit in Dollar
+     * notiert; Euro ist eine bewusste Wahl und muss gesetzt werden. Dieselbe
+     * Vorgabe gilt in der Anwendung, damit Widget und Reiter nicht
+     * auseinanderlaufen, wenn niemand etwas eingestellt hat.
+     *
+     * <p>Die Schluessel sind die aus {@code ui/qml/money.js}: eur, usd, gbp,
+     * chf, cad, aud, jpy. {@code /v1/prices} fuehrt genau diese, in
+     * Grossbuchstaben.
+     */
+    protected static String waehrung(Context c) {
+        String w = ausEinstellungen(c, "currency");
+        if (w == null || w.isEmpty())
+            return "usd";
+        return w.toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /** Der Schluessel in `/v1/prices`: EUR, USD, ... */
+    protected static String waehrungSchluessel(Context c) {
+        return waehrung(c).toUpperCase(java.util.Locale.ROOT);
+    }
+
+    /** Das Zeichen dahinter, wie in `money.js`. */
+    protected static String waehrungZeichen(Context c) {
+        String w = waehrung(c);
+        if (w.equals("eur")) return "€";
+        if (w.equals("gbp")) return "£";
+        if (w.equals("chf")) return "CHF";
+        if (w.equals("cad")) return "CA$";
+        if (w.equals("aud")) return "A$";
+        if (w.equals("jpy")) return "¥";
+        return "$";
     }
 
     /** Alle Widgets dieser Art sofort auffrischen -- fuer den Aufruf aus der Anwendung. */

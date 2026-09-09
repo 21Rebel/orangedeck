@@ -22,19 +22,27 @@ import java.util.ArrayList;
  */
 public class WidgetKursGross extends GraphWidget {
 
-    private static final String SPEICHER = "kurs";
+    /**
+     * **Je Waehrung ein eigener Verlauf.** Sonst stuenden nach einem
+     * Wechsel Euro- und Dollarwerte in derselben Reihe, und die Kurve
+     * haette einen Sprung, den es nie gab.
+     */
+    private String speicher(Context c) { return "kurs_" + waehrung(c); }
     private static final int PUNKTE = 180;
     /** Der gezeigte Zeitraum beim ersten Lauf. */
     private static final long FENSTER = 30L * 24 * 3600;
 
     @Override protected String titel(Context c) { return c.getString(R.string.widget_kurs); }
-    @Override protected String einheit() { return " €"; }
+    private String zeichen = "$";
+    @Override protected String einheit() { return " " + zeichen; }
     @Override protected String aktion() { return "dev.orangedeck.OrangeDeck.VIEW_CLOCK"; }
 
     @Override
     protected String[] werte(Context c) throws Exception {
         JSONObject p = holeObjekt("/v1/prices");
-        double eur = p.optDouble("EUR", 0);
+        String schl = waehrungSchluessel(c);
+        zeichen = waehrungZeichen(c);
+        double eur = p.optDouble(schl, 0);
         if (eur <= 0)
             throw new IllegalStateException("kein Kurs");
 
@@ -42,15 +50,15 @@ public class WidgetKursGross extends GraphWidget {
         // Neu aufbauen, wenn er leer ist -- oder wenn er aus der Fassung ohne
         // Zeitstempel stammt: der reichte Jahre zurueck, und unter dem
         // Graphen stand "+11 292,9 % ueber 180 Punkte".
-        if (Verlauf.leer(c, SPEICHER) || Verlauf.ohneZeit(c, SPEICHER))
+        if (Verlauf.leer(c, speicher(c)) || Verlauf.ohneZeit(c, speicher(c)))
             w = ersteGeschichte(c, eur);
         else
-            w = Verlauf.anhaengen(c, SPEICHER, eur, PUNKTE);
+            w = Verlauf.anhaengen(c, speicher(c), eur, PUNKTE);
 
         // Veraenderung und Zeitraum aus dem Verlauf selbst: keine
         // zusaetzliche Abfrage, und beide beschreiben dasselbe Bild.
         String neben = null;
-        long spanne = Verlauf.spanne(c, SPEICHER);
+        long spanne = Verlauf.spanne(c, speicher(c));
         if (w.length >= 2 && w[0] > 0) {
             double d = (eur - w[0]) / w[0] * 100.0;
             String zeitraum = spanne > 0 ? dauer(c, spanne)
@@ -61,12 +69,12 @@ public class WidgetKursGross extends GraphWidget {
         // Die beiden Datumsangaben an den unteren Ecken, wie in der
         // Anwendung. Sie kommen aus den Zeitstempeln des Verlaufs selbst.
         String von = null, bis = null;
-        java.util.List<Verlauf.Punkt> p2 = Verlauf.lesen(c, SPEICHER);
+        java.util.List<Verlauf.Punkt> p2 = Verlauf.lesen(c, speicher(c));
         if (p2.size() >= 2) {
             von = datum(p2.get(0).zeit);
             bis = datum(p2.get(p2.size() - 1).zeit);
         }
-        return new String[] { zahl(eur, 0) + " €", neben, alsText(w), von, bis };
+        return new String[] { zahl(eur, 0) + " " + zeichen, neben, alsText(w), von, bis };
     }
 
     private static String datum(long sekunden) {
@@ -79,7 +87,8 @@ public class WidgetKursGross extends GraphWidget {
     private double[] ersteGeschichte(Context c, double jetzt) {
         try {
             JSONObject h = new JSONObject(
-                holeVon("https://mempool.space/api/v1/historical-price?currency=EUR", 8000));
+                holeVon("https://mempool.space/api/v1/historical-price?currency="
+                        + waehrungSchluessel(c), 8000));
             JSONArray a = h.optJSONArray("prices");
             if (a == null || a.length() == 0)
                 throw new IllegalStateException("kein Verlauf");
@@ -91,7 +100,7 @@ public class WidgetKursGross extends GraphWidget {
             for (int i = 0; i < a.length(); i++) {
                 JSONObject e = a.getJSONObject(i);
                 long t = e.optLong("time", 0);
-                double v = e.optDouble("EUR", 0);
+                double v = e.optDouble(waehrungSchluessel(c), 0);
                 if (t < ab)
                     break;
                 if (v > 0)
@@ -105,7 +114,7 @@ public class WidgetKursGross extends GraphWidget {
             for (int i = roh.size() - 1; i >= 0; i -= schritt)
                 fein.add(roh.get(i));
 
-            Verlauf.schreiben(c, SPEICHER, fein, PUNKTE);
+            Verlauf.schreiben(c, speicher(c), fein, PUNKTE);
             double[] w = new double[fein.size()];
             for (int i = 0; i < w.length; i++)
                 w[i] = fein.get(i).wert;
@@ -113,7 +122,7 @@ public class WidgetKursGross extends GraphWidget {
         } catch (Exception e) {
             // Faellt der grosse Abruf aus, faengt der Verlauf bei einem Punkt
             // an. Beim naechsten Lauf wird es noch einmal versucht.
-            return Verlauf.anhaengen(c, SPEICHER, jetzt, PUNKTE);
+            return Verlauf.anhaengen(c, speicher(c), jetzt, PUNKTE);
         }
     }
 }

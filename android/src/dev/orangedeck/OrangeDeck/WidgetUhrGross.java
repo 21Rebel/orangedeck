@@ -52,10 +52,10 @@ public class WidgetUhrGross extends DeckWidget {
         try {
             JSONObject p = new JSONObject(
                 holeVon("https://mempool.space/api/v1/prices", 3000));
-            double eur = p.optDouble("EUR", 0);
-            if (eur > 0) {
-                kurs = zahl(eur, 0) + " €";
-                moscow = zahl(Math.round(1e8 / eur), 0) + " sat";
+            double wert = p.optDouble(waehrungSchluessel(c), 0);
+            if (wert > 0) {
+                kurs = zahl(wert, 0) + " " + waehrungZeichen(c);
+                moscow = zahl(Math.round(1e8 / wert), 0) + " sat";
             }
         } catch (Exception e) { /* Spalten bleiben leer */ }
 
