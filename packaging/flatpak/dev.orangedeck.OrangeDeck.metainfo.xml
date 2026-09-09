@@ -123,11 +123,20 @@
        hatte niemand; also wieder ersetzt statt ergaenzt, und die erste
        Auslieferung heisst 0.2.2.
 
-       **Die Regel dahinter, dreimal bestaetigt:** solange ein Stand bei
+       Am 09.09.2026 zum vierten Mal, und diesmal war der Anlass kein
+       einzelner Fehler, sondern ein ganzer Tag auf einem echten Geraet:
+       dreizehn Befunde, acht davon am Schreibtisch strukturell unsichtbar.
+       Der Tag `v0.2.2` zeigte danach auf einen Stand ohne jede dieser
+       Korrekturen. Ihn zu verschieben hiesse, einen bereits gepushten Tag
+       auf etwas anderes zeigen zu lassen; genau davon war am Vormittag
+       desselben Tages bei `v0.2.1` abgeraten worden. Also bleibt er liegen
+       wie `v0.2.0` und `v0.2.1`, und die erste Auslieferung heisst 0.2.3.
+
+       **Die Regel dahinter, viermal bestaetigt:** solange ein Stand bei
        keinem Anwender liegt, ist seine Nummer frei. Erst mit der ersten
        Installation bei einem Fremden wird eine Nummer zu einer Zusage. -->
   <releases>
-    <release version="0.2.2" date="2026-09-08">
+    <release version="0.2.3" date="2026-09-09">
       <description>
         <p>First release.</p>
         <p xml:lang="de">Erste Auslieferung.</p>
