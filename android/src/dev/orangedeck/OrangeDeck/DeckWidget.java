@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.NumberFormat;
 import java.util.Locale;
 
 /**
@@ -94,6 +93,8 @@ public abstract class DeckWidget extends AppWidgetProvider {
             @Override
             public void run() {
                 String[] z;
+                // Die Sprache zuerst: `zahl()` in werte() schreibt schon nach ihr.
+                Texte.vorbereiten(c);
                 try {
                     z = werte(c);
                 } catch (Exception e) {
@@ -221,12 +222,9 @@ public abstract class DeckWidget extends AppWidgetProvider {
 
     // ---------------------------------------------------------------- Hilfen
 
-    /** Zahl mit den Trennzeichen der Geraetesprache -- 80.619, nicht 80619. */
+    /** Zahl mit den Trennzeichen der gewaehlten Sprache -- 80.619, nicht 80619 (siehe Texte.zahl). */
     protected static String zahl(double d, int stellen) {
-        NumberFormat f = NumberFormat.getInstance(Locale.getDefault());
-        f.setMinimumFractionDigits(stellen);
-        f.setMaximumFractionDigits(stellen);
-        return f.format(d);
+        return Texte.zahl(d, stellen);
     }
 
     /**

@@ -204,7 +204,7 @@ final class Texte {
             return schluessel;
         int i = spalte(c);
         String muster = i < je.length && je[i] != null ? je[i] : je[EN];
-        return werte.length == 0 ? muster : String.format(Locale.getDefault(), muster, werte);
+        return werte.length == 0 ? muster : String.format(Locale.ROOT, muster, werte);
     }
 
     // Die Sprache wird je Aktualisierung einmal nachgesehen, nicht je Text:
@@ -219,6 +219,43 @@ final class Texte {
             gemerktUm = jetzt;
         }
         return gemerkt;
+    }
+
+    /** Die Sprache fuer diese Aktualisierung bestimmen; vor dem ersten Text und der ersten Zahl. */
+    static void vorbereiten(Context c) {
+        spalte(c);
+    }
+
+    /**
+     * **Zahlen in der Schreibweise der gewaehlten Sprache, nicht des Telefons.**
+     * Bis zum 10.09.2026 formatierte das Widget nach {@code Locale.getDefault()}:
+     * die Anwendung auf Englisch, das Telefon auf de-AT, und im englischen
+     * Widget stand "966 416" und "1,0 sat/vB", waehrend die Anwendung daneben
+     * "966,416" schrieb. Dieselben Regeln wie {@code sep()} und
+     * {@code decimal()} in {@code ui/qml/strings.js}: Englisch, Japanisch und
+     * Chinesisch trennen Tausender mit Komma, Franzoesisch, Russisch,
+     * Polnisch und Tschechisch mit einem schmalen Leerzeichen (U+202F), alle
+     * uebrigen mit Punkt; das Dezimalzeichen ist bei den ersten dreien der
+     * Punkt, sonst das Komma.
+     */
+    static String zahl(double d, int stellen) {
+        int i = gemerkt >= 0 ? gemerkt : EN;
+        String s = SPRACHEN[i];
+        boolean punktDezimal = s.equals("en") || s.equals("ja") || s.equals("zh");
+        char tausender = punktDezimal ? ','
+            : (s.equals("fr") || s.equals("ru") || s.equals("pl") || s.equals("cs")) ? '\u202F' : '.';
+        java.text.DecimalFormatSymbols z = new java.text.DecimalFormatSymbols(Locale.ROOT);
+        z.setGroupingSeparator(tausender);
+        z.setDecimalSeparator(punktDezimal ? '.' : ',');
+        StringBuilder muster = new StringBuilder("#,##0");
+        if (stellen > 0) {
+            muster.append('.');
+            for (int k = 0; k < stellen; k++)
+                muster.append('0');
+        }
+        java.text.DecimalFormat f = new java.text.DecimalFormat(muster.toString(), z);
+        f.setRoundingMode(java.math.RoundingMode.HALF_UP);
+        return f.format(d);
     }
 
     /** Beim naechsten Text neu nachsehen -- nach einer Aenderung in der Anwendung. */
