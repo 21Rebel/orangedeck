@@ -68,23 +68,30 @@ final class Bloecke {
      * @param zeilen je Karte die Textzeilen; die erste steht gross
      * @param toene  Grundfarbe je Karte
      */
-    static Bitmap zeichne(String[] kopf, String[][] zeilen, int[] toene, int grundFarbe) {
-        Bitmap b = Bitmap.createBitmap(BREITE, HOEHE, Bitmap.Config.RGB_565);
-        Canvas c = new Canvas(b);
-        c.drawColor(grundFarbe);
+    static Bitmap zeichne(String[] kopf, String[][] zeilen, int[] toene, int grundFarbe,
+                          int[] px) {
+        Leinwand l = new Leinwand(BREITE, HOEHE, px, grundFarbe);
+        Canvas c = l.c;
 
         int n = Math.min(kopf.length, Math.min(zeilen.length, toene.length));
         if (n == 0)
-            return b;
+            return l.bild;
 
         float luecke = 9, trenner = 16, radius = 12;
         float breite = (BREITE - luecke * (n - 1) - trenner) / n;
-        float kopfH = 24, oben = kopfH + 7, unten = HOEHE - 4;
+        float kopfH = 24, oben = kopfH + 7, unten = l.hoehe - 4;
         int mitte = n / 2;
 
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         Paint t = new Paint(Paint.ANTI_ALIAS_FLAG);
         t.setTextAlign(Paint.Align.CENTER);
+
+        t.setTextSize(GROSS);
+        Paint.FontMetrics fmG = t.getFontMetrics();
+        t.setTextSize(KLEIN);
+        Paint.FontMetrics fmK = t.getFontMetrics();
+        float hG = fmG.descent - fmG.ascent, hK = fmK.descent - fmK.ascent;
+
 
         for (int i = 0; i < n; i++) {
             float x = i * (breite + luecke) + (i >= mitte ? trenner : 0);
@@ -140,57 +147,73 @@ final class Bloecke {
             p.setColor(0x4dffffff);
             c.drawRect(x + radius, oben + 1, x + breite - radius, oben + 2.5f, p);
 
-            // **Die Zeilen mittig, mit echten Schriftmassen.** Der erste
-            // Anlauf zaehlte feste Abstaende hoch; die Zeilen standen dadurch
-            // gestaucht und oben statt in der Mitte.
-            String[] z = zeilen[i];
-            int anz = 0;
-            for (String s : z)
-                if (s != null && !s.isEmpty())
-                    anz++;
+            // **Die Zeilen mittig.** Was nicht in die Karte passt, faellt von
+            // unten weg: Pool und Zeit vor Gebuehr und Transaktionen.
+            String[] z = belegt(zeilen[i]);
+            int anz = z.length;
+            while (anz > 1 && bedarf(anz, hG, hK) > unten - oben - 2 * RAND)
+                anz--;
             if (anz == 0)
                 continue;
 
-            t.setTextSize(25f);
-            Paint.FontMetrics fmGross = t.getFontMetrics();
-            t.setTextSize(18f);
-            Paint.FontMetrics fmKlein = t.getFontMetrics();
-
-            // **Zeilenabstand, nicht Zeilenhoehe.** Der erste Anlauf setzte
-            // die Zeilen mit dem blossen Schriftmass aneinander; sie standen
-            // dadurch gequetscht. Die Anwendung laesst zwischen den Zeilen
-            // rund die Haelfte einer Zeilenhoehe Luft, und genau das machen
-            // die Faktoren hier.
-            float hGross = (fmGross.descent - fmGross.ascent) * 1.45f;
-            float hKlein = (fmKlein.descent - fmKlein.ascent) * 1.55f;
-            float gesamt = hGross + (anz - 1) * hKlein;
-            float y = oben + ((unten - oben) - gesamt) / 2f;
-
-            int k = 0;
-            for (String s : z) {
-                if (s == null || s.isEmpty())
-                    continue;
-                if (k == 0) {
-                    t.setTextSize(25f);
-                    t.setFakeBoldText(true);
-                    t.setColor(0xffffffff);
-                    c.drawText(s, x + breite / 2,
-                               y + (hGross - (fmGross.descent - fmGross.ascent)) / 2f
-                                 - fmGross.ascent, t);
-                    y += hGross;
-                } else {
-                    t.setTextSize(18f);
-                    t.setFakeBoldText(false);
-                    t.setColor(0xe0ffffff);
-                    c.drawText(s, x + breite / 2,
-                               y + (hKlein - (fmKlein.descent - fmKlein.ascent)) / 2f
-                                 - fmKlein.ascent, t);
-                    y += hKlein;
-                }
-                k++;
+            float y = oben + ((unten - oben) - bedarf(anz, hG, hK)) / 2f;
+            for (int k = 0; k < anz; k++) {
+                boolean gross = k == 0;
+                t.setTextSize(gross ? GROSS : KLEIN);
+                t.setFakeBoldText(gross);
+                t.setColor(gross ? 0xffffffff : 0xe0ffffff);
+                // **Nur die Zeile, die seitlich uebersteht, wird kleiner** --
+                // ein langer Poolname soll nicht alle vier Karten verkleinern.
+                float w = t.measureText(z[k]);
+                if (w > breite - 2 * RAND)
+                    t.setTextSize(t.getTextSize() * (breite - 2 * RAND) / w);
+                c.drawText(z[k], x + breite / 2, y - (gross ? fmG : fmK).ascent, t);
+                y += (gross ? hG : hK) + LUFT;
             }
             t.setFakeBoldText(false);
         }
-        return b;
+        return l.bild;
+    }
+
+    /**
+     * Schrift und Luft wie in {@code BlockChain.qml}: die erste Zeile in
+     * voller Groesse, die uebrigen 0,72 davon, dazwischen 0,18 der vollen
+     * Groesse Luft.
+     *
+     * <p>Die Faktoren 1,45 und 1,55 auf die Zeilenhoehe, die hier bis zum
+     * 10.09.2026 standen, gleichen nichts in der Anwendung nach. Sie waren der
+     * zweite Anlauf gegen die gedrueckte Schrift, deren Ursache die Streckung
+     * des Bildes war (siehe {@link Leinwand}).
+     */
+    private static final float GROSS = 25f, KLEIN = 18f, LUFT = 0.18f * GROSS;
+
+    /** Abstand der Zeilen zum Kartenrand, oben, unten und seitlich. */
+    private static final float RAND = 6f;
+
+    /**
+     * **Fuer die Hoehe wird die Schrift nicht kleiner, es fallen Zeilen weg.**
+     * In einer 4x2-Kachel ist die kleine Zeile in voller Groesse rund 8,5 dp
+     * hoch; schon drei Viertel davon waeren auf dem Startbildschirm kaum zu
+     * lesen, und fuenf Zeilen, die man nicht lesen kann, sagen weniger als
+     * vier, die man lesen kann.
+     */
+    private static float bedarf(int m, float hG, float hK) {
+        if (m <= 0)
+            return 0;
+        return hG + (m - 1) * (hK + LUFT);
+    }
+
+    /** Die Zeilen einer Karte ohne die leeren. */
+    private static String[] belegt(String[] z) {
+        int m = 0;
+        for (String x : z)
+            if (x != null && !x.isEmpty())
+                m++;
+        String[] r = new String[m];
+        m = 0;
+        for (String x : z)
+            if (x != null && !x.isEmpty())
+                r[m++] = x;
+        return r;
     }
 }

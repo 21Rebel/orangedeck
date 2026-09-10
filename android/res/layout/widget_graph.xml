@@ -6,10 +6,15 @@
      setImageViewBitmap nimmt ein fertiges Bild. Gezeichnet wird es in
      Graph.java.
 
-     scaleType fitXY: das Bild hat eine feste Groesse (640x220) und wird auf
-     die Kachel gezogen. Bei einer Kurve faellt das nicht auf, und es spart
-     die Frage, wie breit die Kachel gerade ist. Vor Android 12 laesst sich
-     das ohnehin nicht zuverlaessig beantworten.
+     scaleType fitXY: das Bild wird in der Groesse dieser Flaeche gezeichnet
+     (DeckWidget.bildFlaeche, Leinwand.java), fitXY gleicht nur noch den
+     Fehler der Hoehenschaetzung aus. Bis zum 10.09.2026 hatte es eine feste
+     Groesse und wurde auf die Kachel gezogen. Bei einer Kurve fiel das nicht
+     auf, bei der Schrift in den Blockkarten schon: sie stand auf rund die
+     Haelfte gestaucht.
+
+     Wer die Abstaende oder Schriftgroessen hier aendert, muss
+     DeckWidget.bildFlaeche mitziehen: es rechnet sie nach.
 
      Kein Doppelstrich in Kommentaren: in XML verboten. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"

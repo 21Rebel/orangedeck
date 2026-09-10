@@ -6,6 +6,12 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
+import android.graphics.Paint;
+import android.graphics.Typeface;
+import android.os.Bundle;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.widget.RemoteViews;
 
 import org.json.JSONArray;
@@ -104,10 +110,21 @@ public abstract class DeckWidget extends AppWidgetProvider {
         }).start();
     }
 
+    /**
+     * Die Kachel wurde in der Groesse veraendert: neu zeichnen. Ohne das
+     * bliebe ein Bild im Seitenverhaeltnis der alten Groesse stehen und
+     * wuerde verzogen, bis in bis zu 30 Minuten der naechste Takt kommt.
+     */
+    @Override
+    public void onAppWidgetOptionsChanged(Context context, AppWidgetManager manager,
+                                          int id, Bundle neu) {
+        onUpdate(context, manager, new int[] { id });
+    }
+
     private void zeichne(Context c, AppWidgetManager manager, int[] ids, String[] z) {
         for (int id : ids) {
             RemoteViews v = new RemoteViews(c.getPackageName(), layoutId());
-            fuelle(c, v, z);
+            fuelle(c, v, z, manager.getAppWidgetOptions(id));
 
             Intent i = new Intent(aktion());
             i.setClassName(c.getPackageName(), "org.qtproject.qt.android.bindings.QtActivity");
@@ -135,6 +152,62 @@ public abstract class DeckWidget extends AppWidgetProvider {
         int[] felder = zeilenIds();
         for (int k = 0; k < felder.length; k++)
             setzeZeile(v, felder[k], z.length > k + 1 ? z[k + 1] : null);
+    }
+
+    /**
+     * Wie {@link #fuelle(Context, RemoteViews, String[])}, mit den Optionen der
+     * Kachel. Ueberschreibt, wer ein Bild zeichnet und dafuer die Groesse
+     * braucht; alle anderen bleiben bei der Fassung ohne.
+     */
+    protected void fuelle(Context c, RemoteViews v, String[] z, Bundle optionen) {
+        fuelle(c, v, z);
+    }
+
+    /**
+     * Die Bildflaeche in {@code widget_graph}, in Geraetepixeln, oder
+     * {@code null}, wenn der Starter keine Groesse meldet.
+     *
+     * <p>Der Starter nennt die Kachel nur als Spanne in dp: im Hochformat gilt
+     * die kleinste Breite und die groesste Hoehe, quer umgekehrt. Davon gehen
+     * die Abstaende aus {@code widget_graph.xml} ab -- 14dp Rand ringsum, 6dp
+     * ueber dem Bild -- und die Textzeilen darueber in der Hoehe, die eine
+     * {@code TextView} mit Schriftpolster wirklich hat. Die Schriftgroesse der
+     * Einstellungen geht dabei mit ein.
+     *
+     * @param mitZeile ob die Nebenzeile unter dem Hauptwert zu sehen ist
+     */
+    protected static int[] bildFlaeche(Context c, Bundle o, boolean mitZeile) {
+        if (o == null)
+            return null;
+        boolean quer = c.getResources().getConfiguration().orientation
+                       == Configuration.ORIENTATION_LANDSCAPE;
+        int bDp = o.getInt(quer ? AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH
+                                : AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH);
+        int hDp = o.getInt(quer ? AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT
+                                : AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT);
+        if (bDp <= 0 || hDp <= 0)
+            return null;
+
+        DisplayMetrics dm = c.getResources().getDisplayMetrics();
+        float b = (bDp - 2 * 14) * dm.density;
+        float h = (hDp - 2 * 14 - 6) * dm.density
+                  - zeilenHoehe(dm, 11, false)
+                  - zeilenHoehe(dm, 30, true)
+                  - (mitZeile ? zeilenHoehe(dm, 12, false) : 0);
+        // Darunter lohnt kein Bild; dann lieber die alte feste Groesse.
+        if (b < 32 || h < 32)
+            return null;
+        return new int[] { Math.round(b), Math.round(h) };
+    }
+
+    /** Hoehe einer einzeiligen TextView: {@code includeFontPadding} rechnet von top bis bottom. */
+    private static float zeilenHoehe(DisplayMetrics dm, float sp, boolean fett) {
+        Paint p = new Paint();
+        p.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, dm));
+        if (fett)
+            p.setTypeface(Typeface.DEFAULT_BOLD);
+        Paint.FontMetrics fm = p.getFontMetrics();
+        return fm.bottom - fm.top;
     }
 
     protected static void setzeZeile(RemoteViews v, int id, String text) {

@@ -2,6 +2,7 @@ package dev.orangedeck.OrangeDeck;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Bundle;
 import android.widget.RemoteViews;
 
 /**
@@ -34,7 +35,7 @@ public abstract class GraphWidget extends DeckWidget {
     protected int stellen() { return 0; }
 
     @Override
-    protected void fuelle(Context c, RemoteViews v, String[] z) {
+    protected void fuelle(Context c, RemoteViews v, String[] z, Bundle optionen) {
         v.setTextViewText(R.id.widget_titel, titel(c));
         v.setTextViewText(R.id.widget_gross, z.length > 0 && z[0] != null ? z[0] : "");
         setzeZeile(v, R.id.widget_zeile1, z.length > 1 ? z[1] : null);
@@ -52,13 +53,14 @@ public abstract class GraphWidget extends DeckWidget {
         else
             v.setTextColor(R.id.widget_zeile1, 0xff9a94a6);
 
+        int[] px = bildFlaeche(c, optionen, neben != null && !neben.isEmpty());
         double[] w = ausText(z.length > 2 ? z[2] : null);
         // **Kein leeres schwarzes Feld.** Mempool und Miner fangen ohne
         // Verlauf an; bis genug Punkte da sind, steht dort, dass er entsteht,
         // statt einer Flaeche, die wie ein Fehler aussieht.
         Bitmap b;
         if (w.length < 3) {
-            b = Graph.hinweis(c.getString(R.string.widget_waechst, w.length, punkte()), GRUND);
+            b = Graph.hinweis(c.getString(R.string.widget_waechst, w.length, punkte()), GRUND, px);
         } else {
             double lo = w[0], hi = w[0];
             for (double x : w) {
@@ -69,7 +71,7 @@ public abstract class GraphWidget extends DeckWidget {
                               zahl(hi, stellen()) + einheit(),
                               zahl(lo, stellen()) + einheit(),
                               z.length > 3 ? z[3] : null,
-                              z.length > 4 ? z[4] : null);
+                              z.length > 4 ? z[4] : null, px);
         }
         v.setImageViewBitmap(R.id.widget_bild, b);
     }

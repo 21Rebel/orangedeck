@@ -43,15 +43,16 @@ final class Graph {
      * @param untenText  Beschriftung der unteren Hilfslinie (Tiefstwert)
      * @param vonText    Datum links unten
      * @param bisText    Datum rechts unten
+     * @param px         Bildflaeche in Geraetepixeln, siehe {@link Leinwand}
      */
     static Bitmap zeichne(double[] w, int linienFarbe, int grundFarbe,
                           String obenText, String untenText,
-                          String vonText, String bisText) {
-        Bitmap b = Bitmap.createBitmap(BREITE, HOEHE, Bitmap.Config.RGB_565);
-        Canvas c = new Canvas(b);
-        c.drawColor(grundFarbe);
+                          String vonText, String bisText, int[] px) {
+        Leinwand l = new Leinwand(BREITE, HOEHE, px, grundFarbe);
+        Canvas c = l.c;
+        float bildH = l.hoehe;
         if (w == null || w.length < 2)
-            return b;
+            return l.bild;
 
         double lo = w[0], hi = w[0];
         for (double v : w) {
@@ -80,7 +81,7 @@ final class Graph {
         }
         float randR = 6, randO = 16;
         float randU = (vonText != null || bisText != null) ? 30 : 12;
-        float breite = BREITE - randL - randR, hoehe = HOEHE - randO - randU;
+        float breite = BREITE - randL - randR, hoehe = bildH - randO - randU;
 
         // Hilfslinien oben und unten, wie im Kursgraphen der Anwendung. Die
         // Kurve beruehrt sie: sie markieren Hoechst- und Tiefstwert, nicht
@@ -96,10 +97,10 @@ final class Graph {
         if (untenText != null)
             c.drawText(untenText, 4, randO + hoehe + 7, schrift);
         if (vonText != null)
-            c.drawText(vonText, randL, HOEHE - 8, schrift);
+            c.drawText(vonText, randL, bildH - 8, schrift);
         if (bisText != null) {
             schrift.setTextAlign(Paint.Align.RIGHT);
-            c.drawText(bisText, BREITE - randR, HOEHE - 8, schrift);
+            c.drawText(bisText, BREITE - randR, bildH - 8, schrift);
             schrift.setTextAlign(Paint.Align.LEFT);
         }
 
@@ -131,20 +132,18 @@ final class Graph {
         p.setStrokeWidth(3f);
         p.setColor(linienFarbe);
         c.drawPath(linie, p);
-        return b;
+        return l.bild;
     }
 
     /** Ein Hinweis statt einer Kurve, solange zu wenige Punkte da sind. */
-    static Bitmap hinweis(String text, int grundFarbe) {
-        Bitmap b = Bitmap.createBitmap(BREITE, HOEHE, Bitmap.Config.RGB_565);
-        Canvas c = new Canvas(b);
-        c.drawColor(grundFarbe);
+    static Bitmap hinweis(String text, int grundFarbe, int[] px) {
+        Leinwand l = new Leinwand(BREITE, HOEHE, px, grundFarbe);
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         p.setColor(0xff9a94a6);
         p.setTextSize(26f);
         p.setTextAlign(Paint.Align.CENTER);
-        c.drawText(text, BREITE / 2f, HOEHE / 2f + 9f, p);
-        return b;
+        l.c.drawText(text, BREITE / 2f, l.hoehe / 2f + 9f, p);
+        return l.bild;
     }
 
     /** Zwei Farben mischen, weil RGB_565 kein Alpha kann. */

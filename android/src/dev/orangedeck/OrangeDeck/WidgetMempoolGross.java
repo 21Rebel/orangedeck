@@ -1,6 +1,7 @@
 package dev.orangedeck.OrangeDeck;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.widget.RemoteViews;
 
 import org.json.JSONArray;
@@ -109,16 +110,18 @@ public class WidgetMempoolGross extends DeckWidget {
     }
 
     @Override
-    protected void fuelle(Context c, RemoteViews v, String[] z) {
+    protected void fuelle(Context c, RemoteViews v, String[] z, Bundle optionen) {
         v.setTextViewText(R.id.widget_titel, titel(c));
         v.setTextViewText(R.id.widget_gross, z.length > 0 && z[0] != null ? z[0] : "");
-        setzeZeile(v, R.id.widget_zeile1, z.length > 1 ? z[1] : null);
+        String neben = z.length > 1 ? z[1] : null;
+        setzeZeile(v, R.id.widget_zeile1, neben);
         v.setTextColor(R.id.widget_zeile1, 0xff9a94a6);
+        int[] px = bildFlaeche(c, optionen, neben != null && !neben.isEmpty());
 
         String roh = z.length > 2 && z[2] != null ? z[2] : "";
         if (roh.isEmpty()) {
             v.setImageViewBitmap(R.id.widget_bild,
-                Graph.hinweis(c.getString(R.string.widget_offline), 0xff16131f));
+                Graph.hinweis(c.getString(R.string.widget_offline), 0xff16131f, px));
             return;
         }
         // split() nimmt einen regulaeren Ausdruck: die Trennzeichen enthalten
@@ -140,6 +143,6 @@ public class WidgetMempoolGross extends DeckWidget {
                 zeilen[i][j - 2] = f[j].isEmpty() ? null : f[j];
         }
         v.setImageViewBitmap(R.id.widget_bild,
-                             Bloecke.zeichne(kopf, zeilen, toene, 0xff16131f));
+                             Bloecke.zeichne(kopf, zeilen, toene, 0xff16131f, px));
     }
 }
