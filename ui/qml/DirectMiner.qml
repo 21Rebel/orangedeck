@@ -45,6 +45,9 @@ Item {
     // erst am Ende eines Durchlaufs gesetzt.
     property var __hist: ({})
     property var __dom: ({})
+    // Der Verlauf, den das Geraet selbst fuehrt, je Adresse -- siehe
+    // `holeStatistik`.
+    property var __geraet: ({})
 
     // '1.23M' -> 1230000. Die Geraete melden die Bestleistung als Text mit
     // Einheit. Wortgleich zu `parse_diff` im Daemon.
@@ -108,6 +111,9 @@ Item {
             "rejected": d.sharesRejected,
             "uptime": d.uptimeSeconds,
             "paused": d.miningPaused,
+            // Sekunden zwischen zwei Eintraegen in der eigenen Aufzeichnung
+            // des Geraets; 0 heisst: es zeichnet nicht auf.
+            "statsFrequency": d.statsFrequency || 0,
             "pool": pool,
             "domains": (asics[0] && asics[0].domains) || []
         };
@@ -125,11 +131,86 @@ Item {
         };
     }
 
-    function pfad(url) {
+    function basis(url) {
         var u = String(url).trim();
         if (u.indexOf("://") < 0)
             u = "http://" + u;
-        return u.replace(/\/+$/, "") + "/api/system/info";
+        return u.replace(/\/+$/, "");
+    }
+
+    function pfad(url) {
+        return root.basis(url) + "/api/system/info";
+    }
+
+    // **Den Verlauf fuehrt das Geraet, wenn man es laesst.** AxeOS ab 2.x
+    // schreibt selbst mit, sobald `statsFrequency` gesetzt ist -- bis zu
+    // `statsLimit` Eintraege, auf dem Bitaxe am 10.09.2026 720. Bei einem
+    // Eintrag je Minute sind das zwoelf Stunden, die beim Oeffnen der
+    // Anwendung sofort da sind. Selbst mitgeschrieben hat sie nur, solange
+    // sie offen war: nach jedem Start drei Punkte und drei gerade Striche,
+    // am 10.09.2026 als "nicht aussagekraeftig" gemeldet.
+    //
+    // Nur die vier Spalten, die der Graph braucht: `columns` grenzt die
+    // Antwort ein, der Zeitstempel kommt immer mit. Die Reihenfolge der
+    // Spalten bestimmt das Geraet, nicht die Anfrage -- also nach `labels`
+    // lesen.
+    //
+    // Der Zeitstempel zaehlt Millisekunden seit dem Start des Geraets, und
+    // `currentTimestamp` ist dieselbe Uhr jetzt. Die Differenz ist das Alter
+    // des Eintrags; eine Weltzeit kennt der Miner dafuer nicht.
+    function holeStatistik(url, jetzt) {
+        var g = root.__geraet[url] || { "geholt": 0, "laeuft": 0 };
+        root.__geraet[url] = g;
+        // Eine Anfrage, die nie zurueckkam, sperrt nicht fuer immer.
+        if (g.laeuft && jetzt - g.laeuft < 30)
+            return;
+        g.laeuft = jetzt;
+        var req = new XMLHttpRequest();
+        req.onreadystatechange = function () {
+            if (req.readyState !== XMLHttpRequest.DONE)
+                return;
+            g.laeuft = 0;
+            g.geholt = jetzt;
+            if (req.status !== 200)
+                return;
+            try {
+                var d = JSON.parse(req.responseText);
+                var lab = d.labels || [];
+                var zeilen = d.statistics || [];
+                var iT = lab.indexOf("timestamp"), iHr = lab.indexOf("hashrate"),
+                    iHr10 = lab.indexOf("hashrate_10m"), iTemp = lab.indexOf("asicTemp"),
+                    iErr = lab.indexOf("errorPercentage");
+                if (iT < 0 || !d.currentTimestamp)
+                    return;
+                var r = { "t": [], "hr": [], "hrNow": [], "temp": [], "err": [] };
+                var nun = Date.now() / 1000;
+                function zahl(z, i, stellen) {
+                    if (i < 0 || typeof z[i] !== "number")
+                        return null;
+                    var f = Math.pow(10, stellen);
+                    return Math.round(z[i] * f) / f;
+                }
+                for (var k = 0; k < zeilen.length; k++) {
+                    var z = zeilen[k];
+                    r.t.push(Math.round(nun - (d.currentTimestamp - z[iT]) / 1000));
+                    r.hr.push(zahl(z, iHr10 >= 0 ? iHr10 : iHr, 1));
+                    r.hrNow.push(zahl(z, iHr, 1));
+                    r.temp.push(zahl(z, iTemp, 1));
+                    r.err.push(zahl(z, iErr, 1));
+                }
+                g.reihe = r;
+            } catch (e) {
+                // Keine Statistik ist kein Fehler: dann bleibt es beim
+                // eigenen Mitschreiben.
+            }
+        };
+        try {
+            req.open("GET", root.basis(url)
+                     + "/api/system/statistics?columns=hashrate,hashrate_10m,asicTemp,errorPercentage");
+            req.send();
+        } catch (e2) {
+            g.laeuft = 0;
+        }
     }
 
     // Ein Durchlauf ueber alle Adressen. Die Antworten kommen einzeln; erst
@@ -224,6 +305,18 @@ Item {
                 live.push(m);
         }
 
+        // Den Verlauf des Geraets auffrischen, so oft es neue Eintraege
+        // haben kann -- hoechstens jede Minute. Die Antwort kommt erst im
+        // naechsten Durchlauf zum Tragen.
+        for (i = 0; i < gefunden.length; i++) {
+            m = gefunden[i];
+            if (!m || !m.online || !(m.statsFrequency > 0))
+                continue;
+            var gg = root.__geraet[m.id];
+            if (!gg || jetzt - gg.geholt >= Math.max(60, m.statsFrequency))
+                root.holeStatistik(m.id, jetzt);
+        }
+
         // Verlauf fortschreiben. Gerundet abgelegt, wie im Daemon -- der
         // Zustand wird oft geschrieben, da zaehlt jede Stelle.
         var hist = root.__hist;
@@ -294,6 +387,10 @@ Item {
         for (i = 0; i < schluessel.length; i++)
             if (!bekannt[schluessel[i]])
                 delete dom[schluessel[i]];
+        schluessel = Object.keys(root.__geraet);
+        for (i = 0; i < schluessel.length; i++)
+            if (!bekannt[schluessel[i]])
+                delete root.__geraet[schluessel[i]];
 
         var beste = 0;
         var summeHr = 0;
@@ -326,14 +423,30 @@ Item {
         //
         // Fuenf Arrays von hoechstens 180 Zahlen alle fuenf Sekunden zu
         // kopieren kostet nichts, was messbar waere.
+        //
+        // Fuehrt das Geraet einen Verlauf, ist er die Grundlage, und die
+        // eigenen Punkte kommen nur fuer die Zeit nach seinem letzten
+        // Eintrag dazu: dort liegt der aktuelle Stand, den es noch nicht
+        // aufgeschrieben hat.
         var kopie = ({});
         var felderKopie = ["t", "hr", "hrNow", "temp", "err"];
         schluessel = Object.keys(hist);
         for (i = 0; i < schluessel.length; i++) {
             var q = hist[schluessel[i]];
+            var g2 = root.__geraet[schluessel[i]];
+            var basisReihe = g2 && g2.reihe && g2.reihe.t.length >= 2 ? g2.reihe : null;
+            var ab = 0;
+            if (basisReihe) {
+                var letzte = basisReihe.t[basisReihe.t.length - 1];
+                while (ab < q.t.length && q.t[ab] <= letzte)
+                    ab++;
+            }
             var z = ({});
-            for (var fk = 0; fk < felderKopie.length; fk++)
-                z[felderKopie[fk]] = (q[felderKopie[fk]] || []).slice();
+            for (var fk = 0; fk < felderKopie.length; fk++) {
+                var eigen = (q[felderKopie[fk]] || []).slice(ab);
+                z[felderKopie[fk]] = basisReihe
+                    ? basisReihe[felderKopie[fk]].concat(eigen) : eigen;
+            }
             kopie[schluessel[i]] = z;
         }
         root.minerHistory = kopie;
@@ -365,6 +478,7 @@ Item {
         root.hostsKey = jetzt;
         root.__hist = ({});
         root.__dom = ({});
+        root.__geraet = ({});
         root.lauf();
     }
 

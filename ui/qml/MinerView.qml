@@ -474,9 +474,27 @@ Item {
                 visible: root.showChart && root.one !== null && root.roomForChart
                          && (root.oneHist.hr || []).length > 1
                 hist: root.oneHist
+                lang: root.lang
                 lineColor: root.accentColor
                 dimColor: root.dimColor
                 labelSize: root.scaleUnit * 0.5
+            }
+
+            // **Wo der lange Verlauf herkaeme.** Zeichnet das Geraet nicht
+            // selbst auf, reicht der Graph nur so weit zurueck, wie die
+            // Anwendung offen ist. Der Schalter liegt in AxeOS, nicht hier:
+            // die Anwendung stellt am Miner nichts um, ohne dass man es sieht.
+            // `statsFrequency` meldet nur `DirectMiner`; beim Daemon fehlt es,
+            // und dort bleibt der Satz weg.
+            Text {
+                width: parent.width
+                visible: root.showChart && root.one !== null && root.roomForChart
+                         && root.one.statsFrequency === 0
+                text: Tr.t("miner.statsHint", root.lang)
+                color: root.dimColor
+                font.pixelSize: root.scaleUnit * 0.45
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
             }
 
             // ------------------------------------------ Rechenwerke einzeln

@@ -2,9 +2,16 @@
 // Weboberflaeche von AxeOS. Zwei Achsen, weil die Groessen nichts miteinander
 // zu tun haben.
 //
-// Die Daten schreibt der Daemon mit -- nicht das Geraet. AxeOS zeichnet nur
-// auf, wenn `statsFrequency` gesetzt ist, und die cgminer-Schnittstelle kennt
-// gar keinen Verlauf.
+// Die Daten schreibt der Daemon oder `DirectMiner` mit. Zeichnet das Geraet
+// selbst auf (AxeOS mit `statsFrequency`), kommt der Verlauf von dort, und
+// die Punkte liegen dann eine Minute auseinander statt fuenf Sekunden.
+//
+// **Die Zeitachse folgt den Zeitstempeln, nicht der Zahl der Punkte.** Bis
+// zum 10.09.2026 lag jeder Punkt gleich weit vom naechsten, und die
+// Beschriftung rechnete "Punkte mal fuenf Sekunden". Mit dem Verlauf aus dem
+// Geraet stimmt beides nicht mehr: zwoelf Stunden in Minutenschritten und
+// die letzten Minuten in Fuenfsekundenschritten, gleichmaessig verteilt,
+// haetten die letzten Minuten auf die halbe Breite gezogen.
 import QtQuick
 import "strings.js" as Tr
 import "fonts.js" as Fonts
@@ -34,6 +41,7 @@ Item {
     readonly property var hr: (hist && hist.hr) || []
     readonly property var hrNow: (hist && hist.hrNow) || []
     readonly property var temp: (hist && hist.temp) || []
+    readonly property var zeit: (hist && hist.t) || []
 
     onHrChanged: canvas.requestPaint()
 
@@ -53,6 +61,16 @@ Item {
             var w = width - padL - padR, h = height - padT - padB;
             if (w <= 0 || h <= 0)
                 return;
+
+            // Waagerecht nach der Zeit, wenn es fuer jeden Punkt eine gibt;
+            // sonst (Verlauf ohne Zeitstempel) wie bisher nach der Reihenfolge.
+            var zt = root.zeit;
+            var nachZeit = zt.length === s.length && zt[zt.length - 1] > zt[0];
+            function xAt(i, n) {
+                if (nachZeit)
+                    return padL + w * (zt[i] - zt[0]) / (zt[zt.length - 1] - zt[0]);
+                return padL + w * i / Math.max(1, n - 1);
+            }
 
             // Waagerechte Hilfslinien
             ctx.strokeStyle = root.gridColor;
@@ -93,7 +111,7 @@ Item {
                 for (var i = 0; i < vals.length; i++) {
                     if (vals[i] === null || vals[i] === undefined)
                         continue;
-                    var x = padL + w * i / Math.max(1, vals.length - 1);
+                    var x = xAt(i, vals.length);
                     var y = padT + h - h * (vals[i] - lo) / (hi - lo);
                     started ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
                     started = true;
@@ -124,7 +142,7 @@ Item {
                 hi += span * 0.15;
                 ctx.beginPath();
                 for (var k = 0; k < pts.length; k++) {
-                    var x = padL + w * pts[k][0] / (vals.length - 1);
+                    var x = xAt(pts[k][0], vals.length);
                     var y = padT + h - h * (pts[k][1] - lo) / (hi - lo);
                     k === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
                 }
@@ -157,7 +175,16 @@ Item {
                     break;
                 }
             }
-            var kurve = hatNow ? root.hrNow : s;
+            //
+            // **Und nur ueber kurze Zeit.** Seit der Verlauf aus dem Geraet
+            // kommt (10.09.2026), reicht er zwoelf Stunden zurueck, und dort
+            // ist es umgekehrt: 720 Momentanwerte sind ein Band aus Rauschen,
+            // das den Gang des Tages verdeckt, waehrend der Zehnminutenwert
+            // genau diesen Gang zeigt. Die Grenze ist eine Stunde -- darunter
+            // ist der geglaettete Wert eine Waagerechte, darueber der
+            // Momentanwert ein Band.
+            var sekSpanne = nachZeit ? zt[zt.length - 1] - zt[0] : s.length * 5;
+            var kurve = hatNow && sekSpanne < 3600 ? root.hrNow : s;
             var hRange = rangeOf([kurve]);
             drawIn(kurve, hRange, root.lineColor, 2.0, 1.0);
 
@@ -178,8 +205,12 @@ Item {
             }
             ctx.fillStyle = root.dimColor;
             ctx.textAlign = "center";
-            ctx.fillText(Tr.t("duration.min", root.lang, Math.round(s.length * 5 / 60)),
-                         padL + w / 2, height - 2);
+            var sek = sekSpanne;
+            var spanne = sek >= 3600
+                ? Tr.t("duration.hourMin", root.lang, Math.floor(sek / 3600),
+                       Math.round(sek % 3600 / 60))
+                : Tr.t("duration.min", root.lang, Math.round(sek / 60));
+            ctx.fillText(spanne, padL + w / 2, height - 2);
         }
     }
 }
