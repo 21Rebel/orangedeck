@@ -18,6 +18,9 @@
 //                     bleibt die Packung dabei dicht (0,7 % -> 3,0 % freie
 //                     Zellen, fast alle an der Oberkante) -- genau dafuer
 //                     fuehrt `mondrian.js` eine exakte Belegungskarte.
+//                     Was die Zugaenge nicht fuellen, schliesst danach die
+//                     Schwerkraft (`MondrianLayout.gravity`, wie bei
+//                     mempool.space) -- ohne sie blieben Loecher stehen.
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
@@ -256,6 +259,20 @@ Item {
         repaintAll();
     }
 
+    // **Luecken schliessen, in zwei Stufen.** Nach jeder Aktualisierung die
+    // Schwerkraft (wie bei mempool.space): wenig Bewegung, drittelt die
+    // Loecher. Werden es trotzdem mehr als ein Prozent der Flaeche, stabil neu
+    // packen -- dann springt rund jede zehnte Kachel, danach ist der Block
+    // dicht. Messungen und Begruendung stehen in `mondrian.js`.
+    function lueckenSchliessen(lay, eintraege) {
+        lay.gravity(eintraege);
+        if (lay.enclosedHoles() <= lay.width * lay.width * 0.01)
+            return lay;
+        var neu = Mondrian.repackStable(lay.width, eintraege);
+        root.__lay = neu;
+        return neu;
+    }
+
     // Nachfuehren statt neu packen: erst alle Abgaenge, damit ihre Flaeche
     // wieder zur Verfuegung steht, dann die Zugaenge in der Reihenfolge, in der
     // sie geliefert wurden (nach Gebuehrenrate absteigend).
@@ -292,6 +309,7 @@ Item {
             neu[r.id] = e;
             out.push(e);
         }
+        lay = root.lueckenSchliessen(lay, out);
 
         root.squares = out;
         root.__byId = neu;
@@ -360,6 +378,9 @@ Item {
                 fresh.push(out.length);
             out.push(byId[id]);
         }
+        // Erst jetzt, wo Ab- und Zugaenge eingearbeitet sind: die Luecken,
+        // die kein Zugang gefuellt hat, schliessen sich von hinten.
+        lay = root.lueckenSchliessen(lay, out);
 
         root.squares = out;
         root.__byId = byId;
