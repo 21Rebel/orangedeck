@@ -11,4 +11,5 @@
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_uhr_gross_info"
+    android:previewImage="@drawable/vorschau_uhr_gross"
     android:initialLayout="@layout/widget_uhr_gross" />

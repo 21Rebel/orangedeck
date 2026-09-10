@@ -16,4 +16,5 @@
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_mempool_info"
+    android:previewImage="@drawable/vorschau_mempool"
     android:initialLayout="@layout/widget_deck" />

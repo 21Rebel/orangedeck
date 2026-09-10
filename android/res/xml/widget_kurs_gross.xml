@@ -10,4 +10,5 @@
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_kurs_gross_info"
+    android:previewImage="@drawable/vorschau_kurs_gross"
     android:initialLayout="@layout/widget_graph" />

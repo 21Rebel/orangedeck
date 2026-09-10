@@ -10,4 +10,5 @@
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_miner_gross_info"
+    android:previewImage="@drawable/vorschau_miner_gross"
     android:initialLayout="@layout/widget_graph" />

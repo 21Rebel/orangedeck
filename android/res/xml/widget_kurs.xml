@@ -16,4 +16,5 @@
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_kurs_info"
+    android:previewImage="@drawable/vorschau_kurs"
     android:initialLayout="@layout/widget_deck" />

@@ -10,4 +10,5 @@
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_mempool_gross_info"
+    android:previewImage="@drawable/vorschau_mempool_gross"
     android:initialLayout="@layout/widget_graph" />

@@ -16,4 +16,5 @@
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_miner_info"
+    android:previewImage="@drawable/vorschau_miner"
     android:initialLayout="@layout/widget_deck" />
