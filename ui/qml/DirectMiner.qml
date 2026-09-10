@@ -144,9 +144,16 @@ Item {
 
     // **Den Verlauf fuehrt das Geraet, wenn man es laesst.** AxeOS ab 2.x
     // schreibt selbst mit, sobald `statsFrequency` gesetzt ist -- bis zu
-    // `statsLimit` Eintraege, auf dem Bitaxe am 10.09.2026 720. Bei einem
-    // Eintrag je Minute sind das zwoelf Stunden, die beim Oeffnen der
-    // Anwendung sofort da sind. Selbst mitgeschrieben hat sie nur, solange
+    // `statsLimit` Eintraege, auf dem Bitaxe am 10.09.2026 720.
+    //
+    // **`statsFrequency` ist nicht der Takt, sondern die Zielspanne.** Am
+    // selben Tag auf 60 gesetzt, kamen die Eintraege trotzdem im
+    // Sekundentakt. ESP-Miner (main/tasks/statistics_task.c) misst immer
+    // jede Sekunde; ist der Puffer voll, duennt es aeltere Eintraege aus,
+    // bis die Spanne `statsLimit * statsFrequency` erreicht ist -- hier
+    // zwoelf Stunden, hinten dichter als vorn. Der Verlauf waechst also nach
+    // dem Einschalten ueber zwoelf Stunden an, und die Abstaende sind
+    // ungleich; MinerChart zeichnet deshalb nach den Zeitstempeln. Selbst mitgeschrieben hat sie nur, solange
     // sie offen war: nach jedem Start drei Punkte und drei gerade Striche,
     // am 10.09.2026 als "nicht aussagekraeftig" gemeldet.
     //
