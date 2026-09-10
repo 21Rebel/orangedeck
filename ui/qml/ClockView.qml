@@ -170,24 +170,11 @@ Item {
         anchors.bottomMargin: kurve.visible ? root.scaleUnit * 0.3 : 0
         clip: true
         contentWidth: width
-        contentHeight: body.implicitHeight * body.scale + root.scaleUnit
+        contentHeight: body.implicitHeight + root.scaleUnit
         boundsBehavior: Flickable.StopAtBounds
 
     Column {
         id: body
-
-        // **Kleiner statt rollen, wenn es eng wird.** Auf einem Telefon im
-        // Querformat, zumal im Vollbild als Blockuhr, sind es 384 Punkte
-        // Hoehe; die Spalte passte nicht und rollte hinter dem Kursgraphen,
-        // "Halving bei ..." stand halb verdeckt. An der Wand rollt niemand.
-        // `scale` aendert die Groesse fuers Layout nicht -- implicitHeight
-        // bleibt, woraus sie gerechnet wird, und es entsteht keine Schleife.
-        // Unter 60 % waere die Schrift zu klein; dann rollt es wie bisher.
-        readonly property real passt: implicitHeight > 0
-            ? Math.max(0.6, Math.min(1, (flick.height - root.scaleUnit * 0.3) / implicitHeight))
-            : 1
-        scale: passt
-        transformOrigin: Item.Top
 
         width: parent.width * 0.86
         x: (flick.width - width) / 2
@@ -196,7 +183,7 @@ Item {
         // erster abgeschnitten -- die Spalte fuellte die Flaeche schon vorher
         // genau aus. Jetzt bekommt die Kurve ihren Platz zuerst, und der Rest
         // mittet sich in dem, was uebrig bleibt.
-        y: Math.max(0, (flick.height - implicitHeight * scale) / 2)
+        y: Math.max(0, (flick.height - implicitHeight) / 2)
         spacing: root.scaleUnit * (kurve.visible ? 0.35 : 0.5)
 
         // -------------------------------------------------------- Uhrzeit
