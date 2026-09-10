@@ -141,11 +141,19 @@
        `v0.2.3` liegen wie die vier davor, und die erste Auslieferung heisst
        0.2.4.
 
+       Am selben Abend zum sechsten Mal. `v0.2.4` war getaggt, gebaut,
+       geprueft, signiert und auf dem Telefon bestaetigt, der Text fuer die
+       Freigabe lag bereit. Dann: die Sprache folgte dem System nicht, die
+       Widgets zogen nach einem Sprachwechsel nicht mit, "keine Verbindung"
+       war auf dem Block kaum lesbar, und die Widget-Auswahl zeigte statt
+       Vorschaubildern nur das App-Symbol. Veroeffentlicht war wieder
+       nichts. Die erste Auslieferung heisst 0.2.5.
+
        **Die Regel dahinter, viermal bestaetigt:** solange ein Stand bei
        keinem Anwender liegt, ist seine Nummer frei. Erst mit der ersten
        Installation bei einem Fremden wird eine Nummer zu einer Zusage. -->
   <releases>
-    <release version="0.2.4" date="2026-09-10">
+    <release version="0.2.5" date="2026-09-10">
       <description>
         <p>First release.</p>
         <p xml:lang="de">Erste Auslieferung.</p>
@@ -200,12 +208,12 @@
           und Reiter, und der Bildschirm bleibt an, solange es laeuft.
         </p>
         <p>
-          On first start the application speaks the language of the system,
-          as long as it is one of its thirteen.
+          The application follows the language of the system, as long as it
+          is one of its thirteen, until you pick one in the settings.
         </p>
         <p xml:lang="de">
-          Beim ersten Start spricht die Anwendung die Sprache des Systems,
-          sofern sie eine ihrer dreizehn ist.
+          Die Anwendung folgt der Sprache des Systems, sofern sie eine ihrer
+          dreizehn ist, bis man in den Einstellungen eine waehlt.
         </p>
         <p>
           Tested on a system that knows nothing of this project: Ubuntu 24.04
