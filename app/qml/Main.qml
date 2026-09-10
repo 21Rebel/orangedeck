@@ -163,8 +163,16 @@ Window {
     // "height,price" wurde stillschweigend wieder "height".
     property string explorerPanelsRaw: ""
     readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split("|") : []
-    // Vorgabe ist die Sprache des Systems, siehe Tr.systemLang().
-    property string lang: Tr.systemLang()
+    // **Gewaehlt ist nur, was jemand waehlt.** Leer heisst: die Sprache des
+    // Systems. Bis zum 10.09.2026 stand hier `lang` mit der Systemsprache als
+    // Vorgabe -- und QML-Settings schreibt beim Beenden auch Vorgaben in die
+    // ini. Danach war die Sprache festgeschrieben: das Telefon auf en_US
+    // umgestellt, die Anwendung blieb deutsch. Gespeichert wird deshalb nur
+    // noch die Wahl, unter neuem Schluessel; das alte `lang` stand bei jeder
+    // Installation, auch ohne dass je jemand gewaehlt haette, und wird nicht
+    // mehr gelesen. Die Widgets lesen denselben Schluessel (Texte.java).
+    property string langWahl: ""
+    readonly property string lang: win.langWahl.length ? win.langWahl : Tr.systemLang()
     // Grosse Anzeige der Uhr -- als Zeichenkette abgelegt, siehe
     // die uebrigen Listen.
     property string bigFieldsRaw: "height"
@@ -255,7 +263,7 @@ Window {
         property alias explorerLive: win.explorerLive
         property alias explorerPartsRaw: win.explorerPartsRaw
         property alias explorerPanelsRaw: win.explorerPanelsRaw
-        property alias lang: win.lang
+        property alias langWahl: win.langWahl
         property alias bigFieldsRaw: win.bigFieldsRaw
         property alias bigRotate: win.bigRotate
         property alias walletEnabled: win.walletEnabled
@@ -399,7 +407,7 @@ Window {
         else if (key === "explorerPanels")
             win.explorerPanelsRaw = (value || []).join("|");
         else if (key === "lang")
-            win.lang = value;
+            win.langWahl = value || "";
         else if (key === "bigFields")
             win.bigFieldsRaw = (value || []).join("|");
         else if (key === "bigRotate")
@@ -459,6 +467,7 @@ Window {
         "explorerParts": win.explorerParts,
         "explorerPanels": win.explorerPanels,
         "lang": win.lang,
+        "langWahl": win.langWahl,
         "bigFields": win.bigFields,
         "bigRotate": win.bigRotate,
         "walletEnabled": win.walletEnabled,

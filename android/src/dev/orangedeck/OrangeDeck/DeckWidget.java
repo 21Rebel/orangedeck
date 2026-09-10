@@ -423,6 +423,22 @@ public abstract class DeckWidget extends AppWidgetProvider {
         return "$";
     }
 
+    /**
+     * **Alle Widgets auffrischen, wenn sich in der Anwendung etwas aendert,
+     * das sie zeigen:** Sprache, Waehrung, Miner-Adresse. Aufgerufen aus
+     * main.cpp. Ohne das zogen sie erst beim naechsten Takt nach, bis zu
+     * 30 Minuten spaeter; am 10.09.2026 blieben sie nach dem Umstellen auf
+     * Englisch deutsch, waehrend neu platzierte schon englisch waren.
+     */
+    public static void alleAnstossen(Context c) {
+        Texte.vergessen();
+        Class<?>[] arten = { WidgetUhr.class, WidgetUhrGross.class, WidgetMempool.class,
+                             WidgetMempoolGross.class, WidgetKurs.class, WidgetKursGross.class,
+                             WidgetMiner.class, WidgetMinerGross.class };
+        for (Class<?> a : arten)
+            anstossen(c, a.asSubclass(DeckWidget.class));
+    }
+
     /** Alle Widgets dieser Art sofort auffrischen -- fuer den Aufruf aus der Anwendung. */
     static void anstossen(Context c, Class<? extends DeckWidget> art) {
         AppWidgetManager m = AppWidgetManager.getInstance(c);

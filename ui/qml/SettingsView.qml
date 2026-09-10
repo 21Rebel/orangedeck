@@ -593,9 +593,14 @@ Item {
                     label: Tr.t("set.language", root.lang)
                     help: Tr.t("set.languageHelp", root.lang)
 
+                    // **"Systemsprache" vorn: leer heisst, dem System folgen.**
+                    // Wirte ohne `langWahl` (DMS, Quickshell) speichern das
+                    // Leere unter `lang`, und FeedTabs faellt dann ebenso auf
+                    // die Systemsprache zurueck.
                     Wahl {
-                        gewaehlt: root.lang
-                        eintraege: Tr.languages()
+                        gewaehlt: root.val("langWahl", root.val("lang", root.lang))
+                        eintraege: [{ "k": "", "l": Tr.t("set.langSystem", root.lang) }]
+                                   .concat(Tr.languages())
                         onPicked: function (k) {
                             root.changed("lang", k);
                         }

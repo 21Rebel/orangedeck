@@ -27,9 +27,12 @@ import java.util.Map;
  * darf sie umstellen ({@code %2$s} vor {@code %1$s}), muss aber dieselben
  * enthalten.
  *
- * <p><b>Welche Sprache.</b> Die in der Anwendung eingestellte (Schluessel
- * {@code lang}, dieselbe ini wie die Waehrung), sonst die des Telefons, wenn
- * wir sie fuehren, sonst Englisch.
+ * <p><b>Welche Sprache.</b> Die in der Anwendung gewaehlte (Schluessel
+ * {@code langWahl}, dieselbe ini wie die Waehrung), sonst die des Telefons,
+ * wenn wir sie fuehren, sonst Englisch. Nicht mehr {@code lang}: das schrieb
+ * die Anwendung bis zum 10.09.2026 bei jedem Beenden hinein, auch ohne dass
+ * jemand gewaehlt hatte, und wer das Telefon danach auf Englisch stellte,
+ * behielt deutsche Widgets.
  */
 final class Texte {
 
@@ -212,9 +215,14 @@ final class Texte {
         return gemerkt;
     }
 
+    /** Beim naechsten Text neu nachsehen -- nach einer Aenderung in der Anwendung. */
+    static synchronized void vergessen() {
+        gemerkt = -1;
+    }
+
     /** Die Sprache als Schluessel aus {@link #SPRACHEN}. */
     static String sprache(Context c) {
-        String a = DeckWidget.ausEinstellungen(c, "lang");
+        String a = DeckWidget.ausEinstellungen(c, "langWahl");
         if (a != null && index(a) >= 0)
             return a;
 

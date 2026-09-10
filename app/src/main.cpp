@@ -13,6 +13,7 @@
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
 #include <QQmlProperty>
+#include <QTimer>
 #include <QMargins>
 
 #ifdef ORANGEDECK_LAYERSHELL
@@ -150,6 +151,52 @@ public slots:
 
 private:
     QObject *m_fenster;
+};
+
+// **Die Widgets ziehen nach, wenn sich in der Anwendung etwas aendert, das
+// sie zeigen:** Sprache, Waehrung, Miner-Adresse. Sie lesen dieselbe ini wie
+// die Anwendung, frischen sich aber nur alle 30 Minuten auf; am 10.09.2026
+// blieben sie nach dem Umstellen auf Englisch deutsch, waehrend neu
+// platzierte schon englisch waren.
+//
+// **Zwei Sekunden nach der letzten Aenderung, nicht sofort.** QML-Settings
+// schreibt eine Aenderung erst nach kurzer Frist in die ini; ein Widget, das
+// sofort liest, laese noch den alten Wert. Und wer sich durch die Sprachen
+// klickt, loest so einen Anstoss aus statt dreizehn.
+class WidgetWecker : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit WidgetWecker(QObject *fenster)
+        : QObject(fenster)
+    {
+        m_frist.setSingleShot(true);
+        m_frist.setInterval(2000);
+        connect(&m_frist, &QTimer::timeout, this, &WidgetWecker::wecken);
+    }
+
+public slots:
+    void geaendert()
+    {
+        m_frist.start();
+    }
+
+private:
+    void wecken()
+    {
+#ifdef Q_OS_ANDROID
+        QJniObject kontext = QNativeInterface::QAndroidApplication::context();
+        if (!kontext.isValid())
+            return;
+        QJniObject::callStaticMethod<void>("dev/orangedeck/OrangeDeck/DeckWidget",
+                                           "alleAnstossen",
+                                           "(Landroid/content/Context;)V",
+                                           kontext.object<jobject>());
+#endif
+    }
+
+    QTimer m_frist;
 };
 
 int main(int argc, char *argv[])
@@ -304,6 +351,10 @@ int main(int argc, char *argv[])
         qWarning("--layer ist nicht einkompiliert: layer-shell-qt (Qt6) fehlte beim Bauen.");
     }
 #endif
+
+    auto *wecker = new WidgetWecker(fenster);
+    for (const char *name : {"lang", "currency", "minerHostsRaw"})
+        QQmlProperty(fenster, QString::fromLatin1(name)).connectNotifySignal(wecker, SLOT(geaendert()));
 
     auto *wache = new Wache(fenster);
     QQmlProperty(fenster, QStringLiteral("vollbild")).connectNotifySignal(wache, SLOT(anpassen()));
