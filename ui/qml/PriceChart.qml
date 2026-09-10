@@ -101,11 +101,18 @@ Item {
     }
 
     // ------------------------------------------------------- Zeitraumwahl
+    // **Passen Kopf und Knoepfe nicht nebeneinander, kommen die Knoepfe in
+    // eine eigene Zeile darunter.** Seit sie am Telefon fuer den Finger
+    // groesser sind (10.09.2026), lagen sie hochkant ueber dem Kurs: "24 Std"
+    // stand quer auf "77.219 $".
+    readonly property bool gestapelt: kopf.width + wahl.schalterBreite + root.baseFont > root.width
+
     TileGoggles {
         id: wahl
 
         anchors.right: parent.right
-        anchors.top: parent.top
+        anchors.top: root.gestapelt ? kopf.bottom : parent.top
+        anchors.topMargin: root.gestapelt ? root.baseFont * 0.5 : 0
         width: Math.min(parent.width, root.baseFont * 22)
         alignRight: true
         modes: root.spans
@@ -174,7 +181,9 @@ Item {
         // Kopfzeile links und Zeitraumwahl rechts stehen nebeneinander und
         // sind verschieden hoch. Ohne das Maximum schob sich der Hoechstwert
         // der Kurve unter die Prozentangabe.
-        anchors.topMargin: Math.max(kopf.height, wahl.height) + root.baseFont * 0.6
+        anchors.topMargin: (root.gestapelt ? kopf.height + root.baseFont * 0.5 + wahl.height
+                                           : Math.max(kopf.height, wahl.height))
+                           + root.baseFont * 0.6
         antialiasing: true
 
         // Breit genug fuer die laengste Beschriftung, gemessen statt geraten:
