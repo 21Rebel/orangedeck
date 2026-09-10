@@ -230,7 +230,7 @@ Item {
             // Schrittweite ist gerechnet, nicht fest -- fest 5000 gaebe im
             // Tagesverlauf keine einzige Linie und bei "Max" zwei Dutzend.
             // Genommen wird die kleinste runde Weite (1, 2, 2,5 oder 5 mal
-            // einer Zehnerpotenz) fuer hoechstens rund vier Linien; bei
+            // einer Zehnerpotenz) fuer hoechstens rund fuenf Linien; bei
             // 62.553 bis 81.476 $ sind das genau 5000. Blasser als die
             // Grundlinien, damit die Kurve nicht in einem Gitter untergeht.
             var schritt = root.rasterSchritt(root.minWert, root.maxWert);
@@ -335,7 +335,10 @@ Item {
         var spanne = hi - lo;
         if (!(spanne > 0))
             return 0;
-        var roh = spanne / 4;
+        // Hoechstens rund fuenf Linien. Mit vier waren es bei neunzig Tagen
+        // (58.348 bis 81.272 $) nur 10.000er-Schritte und eine einzige
+        // beschriftete Linie; gewuenscht war "alle 5000 $".
+        var roh = spanne / 5;
         var zehner = Math.pow(10, Math.floor(Math.log(roh) / Math.LN10));
         var stufen = [1, 2, 2.5, 5, 10];
         for (var i = 0; i < stufen.length; i++) {
