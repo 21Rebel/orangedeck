@@ -1720,7 +1720,7 @@ def price_series(span, cur):
     """
     d = price_history()
     punkte = d["points"]
-    cur = (cur or "eur").lower()
+    cur = (cur or "usd").lower()
     dauer = SPANS.get(span, 0)
     if dauer:
         grenze = time.time() - dauer

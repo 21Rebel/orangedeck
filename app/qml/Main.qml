@@ -65,7 +65,11 @@ Window {
                                       || Qt.platform.os === "ios"
     readonly property string effSource: win.forcedSource.length ? win.forcedSource
                                                                 : win.dataSource
-    property string currency: "eur"
+    // Vorgabe USD wie in FeedTabs, SettingsView, den DMS-Ansichten, dem
+    // Dashtab und DeckWidget.waehrung(). Am 09.09.2026 wurden die fuenf dort
+    // umgestellt und diese sechste Stelle vergessen: die Anwendung zeigte
+    // ohne Einstellung EUR, das Widget daneben USD.
+    property string currency: "usd"
     property string tileColorMode: "fee"
     property bool clockBars: true
     // Leere Liste heisst: alles zeigen

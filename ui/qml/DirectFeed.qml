@@ -539,7 +539,7 @@ Item {
     }
 
     function __preisReihe(span, cur) {
-        var alle = root.__preise.points, w = String(cur || "eur").toLowerCase();
+        var alle = root.__preise.points, w = String(cur || "usd").toLowerCase();
         var dauer = root.__spans[span] || 0;
         var punkte = alle;
         if (dauer) {

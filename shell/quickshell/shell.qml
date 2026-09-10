@@ -32,7 +32,8 @@ ShellRoot {
         property var tabOrder: []
         // "daemon" oder "direct" -- siehe FeedState.mode
         property string dataSource: "daemon"
-        property string currency: "eur"
+        // Vorgabe USD, wie in app/qml/Main.qml und FeedTabs.
+        property string currency: "usd"
         property string tileColorMode: "fee"
         property bool clockBars: true
         property var clockFields: []
