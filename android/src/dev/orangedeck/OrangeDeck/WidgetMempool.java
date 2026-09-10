@@ -6,7 +6,7 @@ import org.json.JSONObject;
 /** Unbestaetigte Transaktionen und die Gebuehr, die gerade traegt. */
 public class WidgetMempool extends DeckWidget {
 
-    @Override protected String titel(Context c) { return c.getString(R.string.widget_mempool); }
+    @Override protected String titel(Context c) { return Texte.t(c, "mempool"); }
     @Override protected String aktion() { return "dev.orangedeck.OrangeDeck.VIEW_FEED"; }
 
     @Override
@@ -21,10 +21,10 @@ public class WidgetMempool extends DeckWidget {
         String gebuehr = null, stufen = null;
         try {
             JSONObject g = holeObjekt("/v1/fees/recommended");
-            gebuehr = c.getString(R.string.widget_satvb, zahl(g.optDouble("halfHourFee", 0), 0));
+            gebuehr = Texte.t(c, "satvb", zahl(g.optDouble("halfHourFee", 0), 0));
             // Schnell und sparsam nebeneinander: die halbe Stunde allein sagt
             // nicht, wie weit die Spanne gerade auseinandergeht.
-            stufen = c.getString(R.string.widget_stufen,
+            stufen = Texte.t(c, "stufen",
                                  zahl(g.optDouble("fastestFee", 0), 0),
                                  zahl(g.optDouble("economyFee", 0), 0));
         } catch (Exception e) {
@@ -34,7 +34,7 @@ public class WidgetMempool extends DeckWidget {
         return new String[] {
             zahl(anzahl, 0),
             gebuehr,
-            c.getString(R.string.widget_bloecke, zahl(bloecke, 1)),
+            Texte.t(c, "bloecke", zahl(bloecke, 1)),
             stufen
         };
     }

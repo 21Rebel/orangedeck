@@ -32,7 +32,7 @@ public class WidgetKursGross extends GraphWidget {
     /** Der gezeigte Zeitraum beim ersten Lauf. */
     private static final long FENSTER = 30L * 24 * 3600;
 
-    @Override protected String titel(Context c) { return c.getString(R.string.widget_kurs); }
+    @Override protected String titel(Context c) { return Texte.t(c, "kurs"); }
     private String zeichen = "$";
     @Override protected String einheit() { return " " + zeichen; }
     @Override protected String aktion() { return "dev.orangedeck.OrangeDeck.VIEW_CLOCK"; }
@@ -62,8 +62,8 @@ public class WidgetKursGross extends GraphWidget {
         if (w.length >= 2 && w[0] > 0) {
             double d = (eur - w[0]) / w[0] * 100.0;
             String zeitraum = spanne > 0 ? dauer(c, spanne)
-                                         : c.getString(R.string.widget_punkte, w.length);
-            neben = c.getString(R.string.widget_seit,
+                                         : Texte.t(c, "punkte", w.length);
+            neben = Texte.t(c, "seit",
                                 (d >= 0 ? "+" : "") + zahl(d, 1), zeitraum);
         }
         // Die beiden Datumsangaben an den unteren Ecken, wie in der

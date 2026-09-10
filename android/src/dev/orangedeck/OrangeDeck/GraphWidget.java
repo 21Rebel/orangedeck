@@ -60,7 +60,7 @@ public abstract class GraphWidget extends DeckWidget {
         // statt einer Flaeche, die wie ein Fehler aussieht.
         Bitmap b;
         if (w.length < 3) {
-            b = Graph.hinweis(c.getString(R.string.widget_waechst, w.length, punkte()), GRUND, px);
+            b = Graph.hinweis(Texte.t(c, "waechst", w.length, punkte()), GRUND, px);
         } else {
             double lo = w[0], hi = w[0];
             for (double x : w) {

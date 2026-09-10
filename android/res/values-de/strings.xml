@@ -30,44 +30,13 @@
     <string name="widget_miner">Miner</string>
     <string name="widget_miner_info">Hashrate und Temperatur des eigenen Geräts</string>
 
-    <string name="widget_vor_min">vor %1$d Min</string>
-    <string name="widget_satvb">%1$s sat/vB</string>
-    <string name="widget_bloecke">%1$s Blöcke Rückstau</string>
-    <string name="widget_moscow">%1$s sat/%2$s</string>
-    <string name="widget_beste">beste %1$s</string>
-    <string name="widget_tx">%1$s Transaktionen</string>
-    <string name="widget_stufen">schnell %1$s · sparsam %2$s</string>
-    <string name="widget_luefter">%1$s U/min</string>
-    <string name="widget_tag">%1$s %% in 24 h</string>
-
     <string name="widget_uhr_gross">Blockuhr</string>
     <string name="widget_uhr_gross_info">Blockhöhe, Kurs, Mempool und die beiden Fristen</string>
-    <string name="widget_mempool_kurz">im Mempool</string>
-    <string name="widget_halving">Halving bei %1$s · noch %2$s Blöcke · rund %3$s</string>
-    <string name="widget_schwierigkeit_links">Schwierigkeit %1$s %%</string>
-    <string name="widget_schwierigkeit_rechts">noch %1$s Blöcke · %2$s</string>
-    <string name="widget_tage_std">%1$s Tage %2$s Std</string>
-    <string name="widget_std">%1$s Std</string>
-    <string name="widget_min">%1$s Min</string>
-    <string name="widget_k_gebuehr">Gebühr</string>
-    <string name="widget_k_kurs">Kurs</string>
-    <string name="widget_k_moscow">Moscow Time</string>
-    <string name="widget_k_mempool">Mempool</string>
 
     <string name="widget_graph_beschreibung">Verlauf</string>
-    <string name="widget_seit">%1$s %% über %2$s</string>
-    <string name="widget_punkte">%1$d Punkte</string>
-    <string name="widget_waechst">Verlauf entsteht · %1$d von %2$d Punkten</string>
-    <string name="widget_tx_kurz">%1$s tx</string>
-    <string name="widget_naechster">nächster</string>
-    <string name="widget_danach">danach</string>
-    <string name="widget_in_min">in ~%1$d Min</string>
-    <string name="widget_tx_lang">%1$s Transaktionen</string>
     <string name="widget_kurs_gross_info">Kurs mit Verlauf</string>
     <string name="widget_mempool_gross_info">Mempool mit Verlauf</string>
     <string name="widget_miner_gross_info">Miner mit Hashrate-Verlauf</string>
-    <string name="widget_miner_keine">Adresse nicht gesetzt</string>
     <!-- Steht da, wenn die Abfrage scheitert. Ein Strich statt einer leeren
          Flaeche: leer sieht aus wie ein Fehler des Starters. -->
-    <string name="widget_offline">gerade nicht erreichbar</string>
 </resources>

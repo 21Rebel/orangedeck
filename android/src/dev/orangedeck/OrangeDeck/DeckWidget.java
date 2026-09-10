@@ -99,7 +99,7 @@ public abstract class DeckWidget extends AppWidgetProvider {
                 } catch (Exception e) {
                     // Kein leeres Widget: ein Strich sagt "gerade nichts da",
                     // eine leere Flaeche sieht aus wie ein Fehler im Launcher.
-                    z = new String[] { "--", c.getString(R.string.widget_offline), null };
+                    z = new String[] { "--", Texte.t(c, "offline"), null };
                 }
                 try {
                     zeichne(c, manager, ids, z);
@@ -264,10 +264,10 @@ public abstract class DeckWidget extends AppWidgetProvider {
             return "";
         long tage = sekunden / 86400, std = (sekunden % 86400) / 3600;
         if (tage > 0)
-            return c.getString(R.string.widget_tage_std, zahl(tage, 0), zahl(std, 0));
+            return Texte.t(c, "tage_std", zahl(tage, 0), zahl(std, 0));
         if (std > 0)
-            return c.getString(R.string.widget_std, zahl(std, 0));
-        return c.getString(R.string.widget_min, zahl(sekunden / 60, 0));
+            return Texte.t(c, "std", zahl(std, 0));
+        return Texte.t(c, "min", zahl(sekunden / 60, 0));
     }
 
     protected static String hole(String pfad) throws Exception {

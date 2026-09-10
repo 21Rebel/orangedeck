@@ -24,7 +24,7 @@ public class WidgetMinerGross extends GraphWidget {
     private static final String SPEICHER = "miner";
     private static final int PUNKTE = 180;
 
-    @Override protected String titel(Context c) { return c.getString(R.string.widget_miner); }
+    @Override protected String titel(Context c) { return Texte.t(c, "miner"); }
     @Override protected String aktion() { return "dev.orangedeck.OrangeDeck.VIEW_MINER"; }
 
 
@@ -32,7 +32,7 @@ public class WidgetMinerGross extends GraphWidget {
     protected String[] werte(Context c) throws Exception {
         String adresse = minerAdresse(c);
         if (adresse == null)
-            return new String[] { "–", c.getString(R.string.widget_miner_keine), "" };
+            return new String[] { "–", Texte.t(c, "miner_keine"), "" };
 
         JSONObject d = new JSONObject(holeVon("http://" + adresse + "/api/system/info", 4000));
         double gh = d.optDouble("hashRate", 0);
@@ -45,7 +45,7 @@ public class WidgetMinerGross extends GraphWidget {
         if (d.has("bestDiff")) {
             if (neben.length() > 0)
                 neben.append(" · ");
-            neben.append(c.getString(R.string.widget_beste, kurz(d.optString("bestDiff", ""))));
+            neben.append(Texte.t(c, "beste", kurz(d.optString("bestDiff", ""))));
         }
         return new String[] { rate, neben.length() > 0 ? neben.toString() : null, alsText(w) };
     }

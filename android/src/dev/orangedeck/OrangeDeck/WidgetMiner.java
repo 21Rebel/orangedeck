@@ -14,7 +14,7 @@ import org.json.JSONObject;
  */
 public class WidgetMiner extends DeckWidget {
 
-    @Override protected String titel(Context c) { return c.getString(R.string.widget_miner); }
+    @Override protected String titel(Context c) { return Texte.t(c, "miner"); }
     @Override protected String aktion() { return "dev.orangedeck.OrangeDeck.VIEW_MINER"; }
 
     @Override
@@ -23,7 +23,7 @@ public class WidgetMiner extends DeckWidget {
         if (adresse == null) {
             // Kein Fehler, sondern eine offene Einstellung -- und der Satz
             // sagt, wo sie steht.
-            return new String[] { "--", c.getString(R.string.widget_miner_keine), null };
+            return new String[] { "--", Texte.t(c, "miner_keine"), null };
         }
         JSONObject d = new JSONObject(holeVon("http://" + adresse + "/api/system/info", 4000));
 
@@ -37,7 +37,7 @@ public class WidgetMiner extends DeckWidget {
         String temp = d.has("temp")
             ? zahl(d.optDouble("temp", 0), 0) + " °C" : null;
         String best = d.has("bestDiff")
-            ? c.getString(R.string.widget_beste, kurz(d.optString("bestDiff", ""))) : null;
+            ? Texte.t(c, "beste", kurz(d.optString("bestDiff", ""))) : null;
         // Leistung und Luefter stehen in derselben Antwort. Beide nur, wenn
         // das Geraet sie meldet: AxeOS-Fassungen fuehren nicht dieselben
         // Felder, und eine erfundene Zahl waere schlimmer als eine fehlende.
@@ -46,7 +46,7 @@ public class WidgetMiner extends DeckWidget {
             String w = d.has("power")
                 ? zahl(d.optDouble("power", 0), 1) + " W" : null;
             String f = d.has("fanrpm")
-                ? c.getString(R.string.widget_luefter, zahl(d.optLong("fanrpm", 0), 0)) : null;
+                ? Texte.t(c, "luefter", zahl(d.optLong("fanrpm", 0), 0)) : null;
             last = w == null ? f : (f == null ? w : w + " · " + f);
         }
         return new String[] { rate, temp, best, last };

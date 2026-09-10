@@ -30,7 +30,7 @@ public class WidgetMempoolGross extends DeckWidget {
     private static final String KARTE = "|#|";
     private static final String FELD = "|~|";
 
-    @Override protected String titel(Context c) { return c.getString(R.string.widget_mempool); }
+    @Override protected String titel(Context c) { return Texte.t(c, "mempool"); }
     @Override protected String aktion() { return "dev.orangedeck.OrangeDeck.VIEW_EXPLORER"; }
     @Override protected int layoutId() { return R.layout.widget_graph; }
 
@@ -42,8 +42,8 @@ public class WidgetMempoolGross extends DeckWidget {
         String neben = null;
         try {
             JSONObject g = holeObjekt("/v1/fees/recommended");
-            neben = c.getString(R.string.widget_satvb, zahl(g.optDouble("halfHourFee", 0), 0))
-                  + " · " + c.getString(R.string.widget_bloecke,
+            neben = Texte.t(c, "satvb", zahl(g.optDouble("halfHourFee", 0), 0))
+                  + " · " + Texte.t(c, "bloecke",
                                              zahl(m.optLong("vsize", 0) / 1000000.0, 1));
         } catch (Exception e) { /* Nebenzeile faellt weg */ }
 
@@ -63,10 +63,10 @@ public class WidgetMempoolGross extends DeckWidget {
                       + zahl(sp.optDouble(sp.length() - 1, 0), 1)
                     : null;
                 karte(karten, String.valueOf(Bloecke.gebuehrenTon(med)),
-                      c.getString(R.string.widget_in_min, (i + 1) * 10),
+                      Texte.t(c, "in_min", (i + 1) * 10),
                       "~" + zahl(med, 1) + " sat/vB",
                       spanne,
-                      c.getString(R.string.widget_tx_lang, zahl(b.optLong("nTx", 0), 0)),
+                      Texte.t(c, "tx", zahl(b.optLong("nTx", 0), 0)),
                       zahl(b.optDouble("blockVSize", 0) / 1e6, 2) + " MB",
                       null, null);
             }
@@ -91,9 +91,9 @@ public class WidgetMempoolGross extends DeckWidget {
                       zahl(b.optLong("height", 0), 0),
                       "~" + zahl(med, 1) + " sat/vB",
                       ex != null ? zahl(ex.optDouble("reward", 0) / 1e8, 3) + " BTC" : null,
-                      c.getString(R.string.widget_tx_lang, zahl(b.optLong("tx_count", 0), 0)),
+                      Texte.t(c, "tx", zahl(b.optLong("tx_count", 0), 0)),
                       zahl(b.optLong("size", 0) / 1048576.0, 2) + " MB",
-                      c.getString(R.string.widget_vor_min, min),
+                      Texte.t(c, "vor_min", min),
                       pool);
             }
         } catch (Exception e) { /* Karten fallen weg */ }
@@ -121,7 +121,7 @@ public class WidgetMempoolGross extends DeckWidget {
         String roh = z.length > 2 && z[2] != null ? z[2] : "";
         if (roh.isEmpty()) {
             v.setImageViewBitmap(R.id.widget_bild,
-                Graph.hinweis(c.getString(R.string.widget_offline), 0xff16131f, px));
+                Graph.hinweis(Texte.t(c, "offline"), 0xff16131f, px));
             return;
         }
         // split() nimmt einen regulaeren Ausdruck: die Trennzeichen enthalten

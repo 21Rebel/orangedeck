@@ -7,7 +7,7 @@ import org.json.JSONObject;
 /** Kurs in Euro, dazu die Moscow Time. */
 public class WidgetKurs extends DeckWidget {
 
-    @Override protected String titel(Context c) { return c.getString(R.string.widget_kurs); }
+    @Override protected String titel(Context c) { return Texte.t(c, "kurs"); }
     @Override protected String aktion() { return "dev.orangedeck.OrangeDeck.VIEW_CLOCK"; }
 
     @Override
@@ -33,7 +33,7 @@ public class WidgetKurs extends DeckWidget {
                 double alt = reihe.getJSONObject(0).optDouble(schl, 0);
                 if (alt > 0) {
                     double d = (kurs - alt) / alt * 100.0;
-                    tag = c.getString(R.string.widget_tag,
+                    tag = Texte.t(c, "tag",
                                       (d >= 0 ? "+" : "") + zahl(d, 2));
                 }
             }
@@ -46,7 +46,7 @@ public class WidgetKurs extends DeckWidget {
             ? zahl(p.optDouble("USD", 0), 0) + " $" : null;
         return new String[] {
             zahl(kurs, 0) + " " + zeichen,
-            c.getString(R.string.widget_moscow, zahl(sats, 0), zeichen),
+            Texte.t(c, "moscow", zahl(sats, 0), zeichen),
             zweit,
             tag
         };

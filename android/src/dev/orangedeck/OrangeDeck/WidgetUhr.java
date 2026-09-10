@@ -7,7 +7,7 @@ import org.json.JSONObject;
 /** Blockhoehe und wie lange der letzte Block her ist. */
 public class WidgetUhr extends DeckWidget {
 
-    @Override protected String titel(Context c) { return c.getString(R.string.widget_uhr); }
+    @Override protected String titel(Context c) { return Texte.t(c, "uhr"); }
     @Override protected String aktion() { return "dev.orangedeck.OrangeDeck.VIEW_CLOCK"; }
 
     @Override
@@ -25,7 +25,7 @@ public class WidgetUhr extends DeckWidget {
         // Beides steckt schon in derselben Antwort: keine zweite Abfrage,
         // und die Frist von `goAsync()` bleibt unangetastet.
         String tx = b.has("tx_count")
-            ? c.getString(R.string.widget_tx, zahl(b.optLong("tx_count", 0), 0)) : null;
+            ? Texte.t(c, "tx", zahl(b.optLong("tx_count", 0), 0)) : null;
         String pool = null;
         JSONObject extras = b.optJSONObject("extras");
         if (extras != null) {
@@ -35,7 +35,7 @@ public class WidgetUhr extends DeckWidget {
         }
         return new String[] {
             zahl(hoehe, 0),
-            c.getString(R.string.widget_vor_min, min),
+            Texte.t(c, "vor_min", min),
             tx,
             pool
         };

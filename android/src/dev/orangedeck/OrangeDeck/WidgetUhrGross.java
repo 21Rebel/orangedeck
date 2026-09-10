@@ -29,7 +29,7 @@ public class WidgetUhrGross extends DeckWidget {
     /** Zielabstand zweier Bloecke in Sekunden. */
     private static final long BLOCKZEIT = 600;
 
-    @Override protected String titel(Context c) { return c.getString(R.string.widget_uhr_gross); }
+    @Override protected String titel(Context c) { return Texte.t(c, "uhr_gross"); }
     @Override protected String aktion() { return "dev.orangedeck.OrangeDeck.VIEW_CLOCK"; }
     @Override protected int layoutId() { return R.layout.widget_uhr_gross; }
 
@@ -70,10 +70,10 @@ public class WidgetUhrGross extends DeckWidget {
             JSONObject d = new JSONObject(
                 holeVon("https://mempool.space/api/v1/difficulty-adjustment", 3000));
             double aend = d.optDouble("difficultyChange", 0);
-            diffLinks = c.getString(R.string.widget_schwierigkeit_links,
+            diffLinks = Texte.t(c, "schwierigkeit_links",
                                     (aend >= 0 ? "+" : "") + zahl(aend, 2));
             long rest = d.optLong("remainingBlocks", 0);
-            diffRechts = c.getString(R.string.widget_schwierigkeit_rechts,
+            diffRechts = Texte.t(c, "schwierigkeit_rechts",
                                      zahl(rest, 0),
                                      dauer(c, d.optLong("remainingTime", 0) / 1000));
             fortschritt = String.valueOf(Math.round(d.optDouble("progressPercent", 0)));
@@ -82,7 +82,7 @@ public class WidgetUhrGross extends DeckWidget {
         // Das Halving ist reine Rechnung, keine fuenfte Abfrage.
         long naechstes = (hoehe / HALVING_ABSTAND + 1) * HALVING_ABSTAND;
         long fehlt = naechstes - hoehe;
-        String halving = c.getString(R.string.widget_halving,
+        String halving = Texte.t(c, "halving",
                                      zahl(naechstes, 0), zahl(fehlt, 0),
                                      dauer(c, fehlt * BLOCKZEIT));
 
@@ -92,16 +92,16 @@ public class WidgetUhrGross extends DeckWidget {
 
     @Override
     protected void fuelle(Context c, RemoteViews v, String[] z) {
-        v.setTextViewText(R.id.widget_titel, c.getString(R.string.widget_uhr));
+        v.setTextViewText(R.id.widget_titel, Texte.t(c, "uhr"));
         v.setTextViewText(R.id.widget_gross, wert(z, 0));
 
-        v.setTextViewText(R.id.widget_k1, c.getString(R.string.widget_k_gebuehr));
+        v.setTextViewText(R.id.widget_k1, Texte.t(c, "k_gebuehr"));
         v.setTextViewText(R.id.widget_v1, wert(z, 1));
-        v.setTextViewText(R.id.widget_k2, c.getString(R.string.widget_k_kurs));
+        v.setTextViewText(R.id.widget_k2, Texte.t(c, "k_kurs"));
         v.setTextViewText(R.id.widget_v2, wert(z, 2));
-        v.setTextViewText(R.id.widget_k3, c.getString(R.string.widget_k_moscow));
+        v.setTextViewText(R.id.widget_k3, Texte.t(c, "k_moscow"));
         v.setTextViewText(R.id.widget_v3, wert(z, 3));
-        v.setTextViewText(R.id.widget_k4, c.getString(R.string.widget_k_mempool));
+        v.setTextViewText(R.id.widget_k4, Texte.t(c, "k_mempool"));
         v.setTextViewText(R.id.widget_v4, wert(z, 4));
 
         setzeZeile(v, R.id.widget_diff_links, z.length > 5 ? z[5] : null);
