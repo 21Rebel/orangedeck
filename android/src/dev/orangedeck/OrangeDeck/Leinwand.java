@@ -21,14 +21,26 @@ import android.graphics.Canvas;
  * Geraetepixel der Flaeche. Waagerecht sieht damit alles aus wie vorher, und
  * {@code fitXY} streckt nur noch um den Fehler der Hoehenschaetzung.
  *
- * <p><b>Ein Pixelbudget statt einer festen Groesse</b>, weil die Bitmap ueber
- * Binder geht: 250.000 Pixel sind in RGB_565 rund 500 kB, so viel wie die
- * alte 700x360. Eine groessere Flaeche wird mit weniger Aufloesung gezeichnet,
- * aber im selben Seitenverhaeltnis.
+ * <p><b>ARGB_8888 mit durchsichtigem Grund, nicht RGB_565.</b> Bis zum
+ * 10.09.2026 war die Bitmap RGB_565, um sie klein zu halten. Das hatte zwei
+ * sichtbare Folgen, am Geraet nachgemessen: ohne Alphakanal musste das Bild
+ * einen eigenen Grund malen, flach (24, 20, 32), waehrend der Verlauf der
+ * Kachel darunter schon bei (14, 12, 20) stand -- die Kante war zu sehen.
+ * Und mit fuenf Bit Rot sprang der orange Verlauf unter der Kurve in Stufen
+ * von acht (101, 94, 86, 78 ...): Streifen. Jetzt scheint der Verlauf der
+ * Kachel durch, und Verlaeufe haben 256 Stufen.
+ *
+ * <p><b>Ein Pixelbudget statt einer festen Groesse.</b> Die Flaeche einer
+ * 4x2 sind am Geraet rund 1050x315 Pixel, in ARGB_8888 1,3 MB. Binder legt
+ * eine Bitmap dieser Groesse in geteilten Speicher, statt sie in die 1-MB-
+ * Transaktion zu kopieren; gemessen am 10.09.2026 ohne
+ * TransactionTooLargeException. Das Budget begrenzt nur den Speicher im
+ * Starter: eine groessere Flaeche wird mit weniger Aufloesung gezeichnet,
+ * im selben Seitenverhaeltnis.
  */
 final class Leinwand {
 
-    private static final float PIXELBUDGET = 250_000f;
+    private static final float PIXELBUDGET = 500_000f;
 
     final Bitmap bild;
     final Canvas c;
@@ -43,7 +55,7 @@ final class Leinwand {
      * @param px            Breite und Hoehe der Flaeche in Geraetepixeln, oder
      *                      {@code null}; dann gilt die alte feste Groesse
      */
-    Leinwand(int breite, int hoeheVorgabe, int[] px, int grund) {
+    Leinwand(int breite, int hoeheVorgabe, int[] px) {
         float pb = breite, ph = hoeheVorgabe;
         if (px != null && px[0] > 0 && px[1] > 0) {
             pb = px[0];
@@ -55,9 +67,9 @@ final class Leinwand {
 
         this.breite = breite;
         this.hoehe = (float) breite * bh / bb;
-        bild = Bitmap.createBitmap(bb, bh, Bitmap.Config.RGB_565);
+        // Eine neue Bitmap ist ganz durchsichtig; der Grund kommt von der Kachel.
+        bild = Bitmap.createBitmap(bb, bh, Bitmap.Config.ARGB_8888);
         c = new Canvas(bild);
-        c.drawColor(grund);
         float m = (float) bb / breite;
         c.scale(m, m);
     }

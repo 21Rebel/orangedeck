@@ -16,8 +16,6 @@ import android.widget.RemoteViews;
  */
 public abstract class GraphWidget extends DeckWidget {
 
-    /** Grund der Kachel; muss zu `widget_grund.xml` passen. */
-    protected static final int GRUND = 0xff16131f;
     protected static final int ORANGE = 0xfff7931a;
 
     @Override protected int layoutId() { return R.layout.widget_graph; }
@@ -60,14 +58,14 @@ public abstract class GraphWidget extends DeckWidget {
         // statt einer Flaeche, die wie ein Fehler aussieht.
         Bitmap b;
         if (w.length < 3) {
-            b = Graph.hinweis(Texte.t(c, "waechst", w.length, punkte()), GRUND, px);
+            b = Graph.hinweis(Texte.t(c, "waechst", w.length, punkte()), px);
         } else {
             double lo = w[0], hi = w[0];
             for (double x : w) {
                 lo = Math.min(lo, x);
                 hi = Math.max(hi, x);
             }
-            b = Graph.zeichne(w, linienFarbe(), GRUND,
+            b = Graph.zeichne(w, linienFarbe(),
                               zahl(hi, stellen()) + einheit(),
                               zahl(lo, stellen()) + einheit(),
                               z.length > 3 ? z[3] : null,

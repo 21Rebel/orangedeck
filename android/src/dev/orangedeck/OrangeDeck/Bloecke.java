@@ -25,10 +25,9 @@ import android.graphics.Shader;
  * weisser Glanz ueber die obere Haelfte (0,22 nach 0, halbe Deckkraft), ein
  * Rand in {@code rgba(1,1,1,0.16)} und eine hellere Oberkante.
  *
- * <p><b>Durchsichtigkeit geht auch auf RGB_565.</b> Der Bitmap fehlt der
- * Alphakanal, aber halbdurchsichtig aufgetragene Farbe mischt sich beim
- * Zeichnen trotzdem richtig mit dem, was schon da ist. Nur speichern kann sie
- * die Durchsichtigkeit nicht, und das braucht sie hier nicht.
+ * <p><b>Zwischen den Karten scheint die Kachel durch.</b> Das Bild malt
+ * keinen eigenen Grund mehr, siehe {@link Leinwand}. Die Verlaeufe sind
+ * gedithert, damit auch die dunklen Karten ohne Baender auskommen.
  */
 final class Bloecke {
 
@@ -68,9 +67,8 @@ final class Bloecke {
      * @param zeilen je Karte die Textzeilen; die erste steht gross
      * @param toene  Grundfarbe je Karte
      */
-    static Bitmap zeichne(String[] kopf, String[][] zeilen, int[] toene, int grundFarbe,
-                          int[] px) {
-        Leinwand l = new Leinwand(BREITE, HOEHE, px, grundFarbe);
+    static Bitmap zeichne(String[] kopf, String[][] zeilen, int[] toene, int[] px) {
+        Leinwand l = new Leinwand(BREITE, HOEHE, px);
         Canvas c = l.c;
 
         int n = Math.min(kopf.length, Math.min(zeilen.length, toene.length));
@@ -82,7 +80,7 @@ final class Bloecke {
         float kopfH = 24, oben = kopfH + 7, unten = l.hoehe - 4;
         int mitte = n / 2;
 
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
         Paint t = new Paint(Paint.ANTI_ALIAS_FLAG);
         t.setTextAlign(Paint.Align.CENTER);
 
@@ -130,7 +128,7 @@ final class Bloecke {
             form.addRoundRect(r, radius, radius, Path.Direction.CW);
             c.clipPath(form);
             c.rotate(-7, x + breite / 2, oben + (unten - oben) * 0.31f);
-            Paint g = new Paint(Paint.ANTI_ALIAS_FLAG);
+            Paint g = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
             float gh = (unten - oben) * 0.62f;
             g.setShader(new LinearGradient(0, oben - gh * 0.1f, 0, oben + gh,
                     0x38ffffff, 0x00ffffff, Shader.TileMode.CLAMP));

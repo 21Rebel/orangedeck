@@ -16,11 +16,8 @@ import android.graphics.Shader;
  * wird hier also mit denselben Mitteln wie in der Anwendung, nur in Java
  * statt in QML.
  *
- * <p><b>RGB_565, nicht ARGB_8888.</b> Die Bitmap geht ueber Binder zum
- * Starter, und dafuer gilt eine Groessengrenze. 640x220 kosten in ARGB_8888
- * rund 563 kB, in RGB_565 die Haelfte. Durchsichtigkeit braucht das Bild
- * nicht: der Grund der Kachel ist ohnehin deckend, und die Farbe steht hier
- * mit drin.
+ * <p><b>Durchsichtiger Grund.</b> Das Bild malt keinen eigenen Hintergrund,
+ * der Verlauf der Kachel scheint durch; warum, steht in {@link Leinwand}.
  *
  * <p>Die Kurve bekommt einen Verlauf darunter, wie der Kursgraph der
  * Anwendung. Keine Achsen, keine Beschriftung: bei dieser Groesse waere
@@ -45,10 +42,10 @@ final class Graph {
      * @param bisText    Datum rechts unten
      * @param px         Bildflaeche in Geraetepixeln, siehe {@link Leinwand}
      */
-    static Bitmap zeichne(double[] w, int linienFarbe, int grundFarbe,
+    static Bitmap zeichne(double[] w, int linienFarbe,
                           String obenText, String untenText,
                           String vonText, String bisText, int[] px) {
-        Leinwand l = new Leinwand(BREITE, HOEHE, px, grundFarbe);
+        Leinwand l = new Leinwand(BREITE, HOEHE, px);
         Canvas c = l.c;
         float bildH = l.hoehe;
         if (w == null || w.length < 2)
@@ -119,11 +116,12 @@ final class Graph {
         flaeche.lineTo(randL, randO + hoehe);
         flaeche.close();
 
-        Paint f = new Paint(Paint.ANTI_ALIAS_FLAG);
-        // Der Verlauf mischt gegen den Grund, nicht gegen Durchsichtigkeit:
-        // RGB_565 kennt kein Alpha.
+        // Der Verlauf laeuft von der Linienfarbe bei 45 % Deckkraft ins
+        // Durchsichtige. Dithering verteilt die letzten Rundungsstufen, sonst
+        // blieben auf dem dunklen Grund feine Baender stehen.
+        Paint f = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
         f.setShader(new LinearGradient(0, randO, 0, randO + hoehe,
-                mischen(linienFarbe, grundFarbe, 0.45f), grundFarbe,
+                (linienFarbe & 0x00ffffff) | 0x73000000, linienFarbe & 0x00ffffff,
                 Shader.TileMode.CLAMP));
         c.drawPath(flaeche, f);
 
@@ -136,23 +134,13 @@ final class Graph {
     }
 
     /** Ein Hinweis statt einer Kurve, solange zu wenige Punkte da sind. */
-    static Bitmap hinweis(String text, int grundFarbe, int[] px) {
-        Leinwand l = new Leinwand(BREITE, HOEHE, px, grundFarbe);
+    static Bitmap hinweis(String text, int[] px) {
+        Leinwand l = new Leinwand(BREITE, HOEHE, px);
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         p.setColor(0xff9a94a6);
         p.setTextSize(26f);
         p.setTextAlign(Paint.Align.CENTER);
         l.c.drawText(text, BREITE / 2f, l.hoehe / 2f + 9f, p);
         return l.bild;
-    }
-
-    /** Zwei Farben mischen, weil RGB_565 kein Alpha kann. */
-    private static int mischen(int a, int b, float anteil) {
-        int ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
-        int br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;
-        int r = Math.round(ar * anteil + br * (1 - anteil));
-        int g = Math.round(ag * anteil + bg * (1 - anteil));
-        int bl = Math.round(ab * anteil + bb * (1 - anteil));
-        return 0xff000000 | (r << 16) | (g << 8) | bl;
     }
 }
