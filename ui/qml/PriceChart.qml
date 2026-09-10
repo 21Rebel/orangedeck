@@ -69,11 +69,21 @@ Item {
         return a ? (b - a) / a * 100 : 0;
     }
 
+    // **Nur die letzte Anfrage zaehlt.** Beim Start fragt der Graph mit der
+    // Vorgabe "30d", bevor die Einstellungen geladen sind, und gleich danach
+    // mit dem gespeicherten Zeitraum. Im Direktbezug laedt jede der beiden
+    // den ganzen Datensatz (1,5 MB), und welche zuletzt ankommt, gewann: am
+    // 10.09.2026 stand auf dem Telefon "90 T" gewaehlt ueber dreissig Tagen.
+    property int __anfrage: 0
+
     function holen() {
         if (!root.feed || !root.live)
             return;
         root.laden = true;
+        var nr = ++root.__anfrage;
         root.feed.prices(root.span, root.currency, function (d, err) {
+            if (nr !== root.__anfrage)
+                return;
             root.laden = false;
             if (err || !d) {
                 root.fehler = err || "nicht erreichbar";
@@ -239,6 +249,23 @@ Item {
                     ctx.lineTo(width - padR, ry);
                 }
                 ctx.stroke();
+
+                // Beschriftet, links wie Hoechst- und Tiefstwert, aber
+                // leichter als diese: sie sind Orientierung, keine Aussage.
+                // Liegt eine zu nah an den Grenzwerten, bleibt sie ohne
+                // Zahl -- zwei Beschriftungen uebereinander liest niemand.
+                ctx.fillStyle = Qt.rgba(root.dimColor.r, root.dimColor.g,
+                                        root.dimColor.b, 0.5);
+                ctx.font = (root.baseFont - 3) + "px " + Fonts.sansCss();
+                ctx.textAlign = "left";
+                for (var w = Math.ceil(root.minWert / schritt) * schritt;
+                     w < root.maxWert; w += schritt) {
+                    var ly = yBei(w);
+                    if (ly - padT < root.baseFont * 1.1 || height - padB - ly < root.baseFont * 1.1)
+                        continue;
+                    ctx.fillText(Tr.price1(w, root.zeichen, root.lang), 0,
+                                 ly + (root.baseFont - 3) * 0.35);
+                }
             }
 
             // Grundlinien oben und unten: Hoechst- und Tiefstwert.
