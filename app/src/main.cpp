@@ -12,6 +12,7 @@
 #include <QCommandLineParser>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
+#include <QQmlProperty>
 #include <QMargins>
 
 #ifdef ORANGEDECK_LAYERSHELL
@@ -105,6 +106,51 @@ LSWindow::Anchors kantenAus(const QString &s)
 #endif
 
 } // namespace
+
+// **Der Bildschirm bleibt an, solange das Fenster im Vollbild ist.** Fuer ein
+// altes Telefon oder Tablet als Blockuhr an der Wand ist das der ganze Zweck;
+// ohne das geht der Schirm nach der eingestellten Frist aus. QML kennt das
+// Fensterflag nicht, also hoert diese Klasse auf `vollbild` in Main.qml und
+// setzt oder loescht FLAG_KEEP_SCREEN_ON an der Activity. Es gilt nur fuer
+// dieses Fenster und nur, solange es vorn ist -- keine Berechtigung noetig,
+// und die Anwendung im Hintergrund haelt nichts wach.
+//
+// Auf dem Schreibtisch tut sie nichts: dort entscheidet der Anwender ueber
+// den Bildschirmschoner.
+class Wache : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit Wache(QObject *fenster)
+        : QObject(fenster), m_fenster(fenster)
+    {
+    }
+
+public slots:
+    void anpassen()
+    {
+#ifdef Q_OS_ANDROID
+        const bool an = m_fenster->property("vollbild").toBool();
+        // Fensterflags gehoeren dem UI-Faden von Android, nicht dem von Qt.
+        QNativeInterface::QAndroidApplication::runOnAndroidMainThread([an]() {
+            QJniObject activity = QNativeInterface::QAndroidApplication::context();
+            if (!activity.isValid())
+                return;
+            QJniObject fenster = activity.callObjectMethod(
+                "getWindow", "()Landroid/view/Window;");
+            if (!fenster.isValid())
+                return;
+            const jint FLAG_KEEP_SCREEN_ON = 0x00000080;
+            fenster.callMethod<void>(an ? "addFlags" : "clearFlags", "(I)V",
+                                     FLAG_KEEP_SCREEN_ON);
+        });
+#endif
+    }
+
+private:
+    QObject *m_fenster;
+};
 
 int main(int argc, char *argv[])
 {
@@ -259,6 +305,13 @@ int main(int argc, char *argv[])
     }
 #endif
 
+    auto *wache = new Wache(fenster);
+    QQmlProperty(fenster, QStringLiteral("vollbild")).connectNotifySignal(wache, SLOT(anpassen()));
+    wache->anpassen();
+
     fenster->setVisible(true);
     return app.exec();
 }
+
+#include "main.moc"
+

@@ -189,6 +189,22 @@ Window {
     // Von der Befehlszeile (`--source`), ebenfalls nicht gespeichert
     property string forcedSource: ""
 
+    // **Vollbild als Blockuhr.** Ohne Systemleisten und ohne Reiterzeile,
+    // und solange es an ist, bleibt der Bildschirm an (das setzt main.cpp,
+    // QML kann das Fensterflag nicht). Gespeichert, damit ein altes Tablet
+    // nach dem Einschalten gleich wieder als Uhr an der Wand steht -- wie
+    // `view` darueber. Heraus geht es mit dem Knopf, der nach einem Tipp
+    // erscheint, mit der Zurueck-Geste oder mit F11.
+    property bool vollbild: false
+
+    function vollbildAnwenden() {
+        if (win.bare)
+            return;
+        win.visibility = win.vollbild ? Window.FullScreen : Window.Windowed;
+    }
+
+    onVollbildChanged: vollbildAnwenden()
+
     // Bleibt auf dem Geraet: QSettings schreibt nach
     // ~/.config/orangedeck/orangedeck.conf (Linux) bzw. in den App-Speicher (Android).
     Settings {
@@ -243,12 +259,15 @@ Window {
         property alias bigRotate: win.bigRotate
         property alias walletEnabled: win.walletEnabled
         property alias tabOrderRaw: win.tabOrderRaw
+        property alias vollbild: win.vollbild
     }
 
     // Beim Start in die gemerkte Ansicht -- fuer ein Tablet an der Wand ist
     // das meist die Uhr. Der Reiter "Wallet" faellt weg, solange er
     // nicht eingeschaltet ist.
     Component.onCompleted: {
+        if (win.vollbild)
+            vollbildAnwenden();
         if (win.forcedView >= 0)
             win.view = win.forcedView;
         // **Keine Obergrenze mehr.** Hier stand `<= 3` -- aus der Zeit, als
@@ -495,7 +514,7 @@ Window {
             view: win.view
             // Im nackten Widget bleibt die Reiterzeile weg -- und mit ihr der
             // Platz, den sie braucht.
-            tabsVisible: !win.bare
+            tabsVisible: !win.bare && !win.vollbild
             // Deckkraft und Startansicht gehoeren dem Fenster, also stehen sie
             // hier auch in den Einstellungen.
             windowedSettings: true
@@ -577,8 +596,15 @@ Window {
                 }
                 break;
             case Qt.Key_F11:
-                win.visibility = win.visibility === Window.FullScreen
-                    ? Window.Windowed : Window.FullScreen;
+                win.vollbild = !win.vollbild;
+                break;
+            case Qt.Key_Back:
+                // Die Zurueck-Geste verlaesst zuerst das Vollbild und erst
+                // beim zweiten Mal die Anwendung. Nicht angenommen, geht sie
+                // an Android weiter.
+                if (!win.vollbild)
+                    return;
+                win.vollbild = false;
                 break;
             case Qt.Key_Q:
                 Qt.quit();
@@ -628,6 +654,107 @@ Window {
 
             interval: 2600
             onTriggered: hint.opacity = 0
+        }
+    }
+
+    // **Im Vollbild zeigt ein Tipp den Knopf zum Verlassen.** Die Ansicht
+    // bekommt den Tipp trotzdem: der Druck wird hier nur bemerkt und nicht
+    // angenommen, er geht an das Element darunter weiter. Ein Knopf, der
+    // immer da waere, laege auf der Uhr quer ueber "im Mempool" oder dem
+    // Kurs -- genau dort, wo man an der Wand hinschaut.
+    MouseArea {
+        anchors.fill: parent
+        z: 40
+        enabled: win.vollbild
+        onPressed: mouse => {
+            vollKnopf.zeigen();
+            mouse.accepted = false;
+        }
+    }
+
+    Item {
+        id: vollKnopf
+
+        property bool gezeigt: false
+
+        function zeigen() {
+            gezeigt = true;
+            ausblenden.restart();
+        }
+
+        visible: !win.bare
+        z: 50
+        width: 44
+        height: 44
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.topMargin: (win.vollbild ? 6 : 0) + flaeche.SafeArea.margins.top
+        anchors.rightMargin: 6 + flaeche.SafeArea.margins.right
+        opacity: win.vollbild ? (gezeigt ? 0.85 : 0) : 1
+        enabled: opacity > 0
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 300
+            }
+        }
+
+        Timer {
+            id: ausblenden
+
+            interval: 3000
+            onTriggered: vollKnopf.gezeigt = false
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: 36
+            height: 36
+            radius: 18
+            color: win.vollbild ? "#16131f" : "transparent"
+        }
+
+        // Vier Ecken, gezeichnet statt als Schriftzeichen: fuer U+26F6 hat
+        // nicht jede Schrift eine Glyphe, und ein leeres Kaestchen stand
+        // hier schon einmal statt des Bitcoin-Zeichens. Nach aussen weisend
+        // heisst "hinein ins Vollbild", nach innen "heraus".
+        Item {
+            id: zeichen
+
+            anchors.centerIn: parent
+            width: 16
+            height: 16
+
+            Repeater {
+                model: 4
+
+                Item {
+                    required property int index
+
+                    width: 6
+                    height: 6
+                    x: index % 2 ? zeichen.width - width : 0
+                    y: index >= 2 ? zeichen.height - height : 0
+                    rotation: [0, 90, 270, 180][index] + (win.vollbild ? 180 : 0)
+
+                    Rectangle {
+                        width: parent.width
+                        height: 2
+                        color: "#9a94a6"
+                    }
+
+                    Rectangle {
+                        width: 2
+                        height: parent.height
+                        color: "#9a94a6"
+                    }
+                }
+            }
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: win.vollbild = !win.vollbild
         }
     }
 }
