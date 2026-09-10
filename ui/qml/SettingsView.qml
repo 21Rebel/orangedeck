@@ -130,12 +130,21 @@ Item {
             // 08.09.2026 auf einem Galaxy A55 gesehen; am Schreibtisch faellt
             // es nicht auf, weil die Gitter dort breiter und damit flacher
             // sind.
-            anchors.verticalCenter: halter.height > beschriftung.height
-                                    ? undefined : parent.verticalCenter
-            anchors.top: halter.height > beschriftung.height
-                         ? parent.top : undefined
-            anchors.topMargin: halter.height > beschriftung.height
-                               ? root.uiFont * 0.55 : 0
+            //
+            // **Als gerechnete Lage, nicht als wechselnde Anker.** Bis zum
+            // 10.09.2026 stand hier `anchors.verticalCenter` oder
+            // `anchors.top`, je nach derselben Bedingung. Beim Drehen des
+            // Telefons von quer auf hoch wird die Flaeche schmaler, die Knoepfe
+            // der Sprachwahl brechen auf mehr Zeilen um, `halter` wird hoeher,
+            // und die Bedingung kippt -- mitten in der Benachrichtigung ueber
+            // die neue Geometrie. Qt haengte die Anker um, waehrend es die
+            // Liste ihrer Beobachter noch durchlief, und las einen Nullzeiger:
+            // Absturz in jeder Ansicht, denn die Einstellungen sind immer
+            // angelegt, auch unsichtbar. Am Schreibtisch nachgestellt mit
+            // wechselnder Fenstergroesse im Xvfb; ohne SettingsView lief es,
+            // mit jeder anderen fehlenden Ansicht nicht.
+            y: halter.height > beschriftung.height
+               ? root.uiFont * 0.55 : (parent.height - height) / 2
             width: parent.width * 0.42
             spacing: 2
 
