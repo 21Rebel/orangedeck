@@ -69,7 +69,8 @@ Item {
         return ({
             "dataSource": root.get("dataSource", "daemon"),
             "currency": root.get("currency", "usd"),
-            "lang": root.get("lang", "de"),
+            // Leer heisst: FeedTabs nimmt die Sprache des Systems.
+            "lang": root.get("lang", ""),
             // Die Kachelgroesse kommt hier aus der eigenen Einstellung
             "density": Math.max(0.5, root.tileDensity / 100),
             "colorMode": root.get("colorMode", "age"),

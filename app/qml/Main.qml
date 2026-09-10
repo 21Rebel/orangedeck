@@ -163,7 +163,8 @@ Window {
     // "height,price" wurde stillschweigend wieder "height".
     property string explorerPanelsRaw: ""
     readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split("|") : []
-    property string lang: "de"
+    // Vorgabe ist die Sprache des Systems, siehe Tr.systemLang().
+    property string lang: Tr.systemLang()
     // Grosse Anzeige der Uhr -- als Zeichenkette abgelegt, siehe
     // die uebrigen Listen.
     property string bigFieldsRaw: "height"

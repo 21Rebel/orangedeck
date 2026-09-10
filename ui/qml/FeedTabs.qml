@@ -67,7 +67,8 @@ Item {
         return root.opts[key] === undefined ? def : root.opts[key];
     }
 
-    readonly property string lang: root.o("lang", "de")
+    // Nichts gewaehlt (fehlt oder leer): die Sprache des Systems.
+    readonly property string lang: root.o("lang", "") || Tr.systemLang()
 
     // **Das Bitcoin-Zeichen, wenn die Schrift es fuehrt -- sonst "BTC".**
     // Am 08.09.2026 auf einem Galaxy A55 stand ueberall ein leeres Kaestchen

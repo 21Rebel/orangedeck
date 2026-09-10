@@ -70,7 +70,8 @@ PluginComponent {
         return ({
             "dataSource": root.get("dataSource", "daemon"),
             "currency": root.get("currency", "usd"),
-            "lang": root.get("lang", "de"),
+            // Leer heisst: FeedTabs nimmt die Sprache des Systems.
+            "lang": root.get("lang", ""),
             "density": root.get("density", 1),
             "colorMode": root.get("colorMode", "age"),
             "sizeMode": root.get("sizeMode", "value"),

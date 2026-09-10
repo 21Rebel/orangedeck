@@ -68,7 +68,7 @@ ShellRoot {
         property bool explorerLive: true
         property var explorerParts: []
         property var explorerPanels: []
-        property string lang: "de"
+        property string lang: Tr.systemLang()
         property var bigFields: ["height"]
         property int bigRotate: 0
         // Aus, bis sie in den Einstellungen ausdruecklich eingeschaltet wird

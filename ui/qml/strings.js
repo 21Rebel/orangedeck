@@ -20,6 +20,28 @@
 var LANGS = ["de", "en", "es", "fr", "it", "pt-pt", "nl", "ru", "ja", "zh",
              "pt-br", "pl", "cs"];
 
+// **Die Sprache des Systems, als Schluessel aus LANGS; sonst Englisch.**
+// Bis zum 10.09.2026 fing jede Oberflaeche auf Deutsch an, auch auf einem
+// englischen Ubuntu (in der Pruef-VM gesehen) oder einem spanischen
+// Telefon. Eine gewaehlte Sprache bleibt: das hier ist nur die Vorgabe.
+// **Sie gilt beim ersten Start und wird dann festgehalten** -- QML-Settings
+// schreibt beim Beenden auch Werte, die niemand geaendert hat (am 10.09.2026
+// nachgesehen: nach einem Lauf unter en_US stand `lang=en` in der ini).
+// Wer spaeter die Systemsprache wechselt, stellt die Anwendung also in den
+// Einstellungen um. Die Widgets lesen dieselbe ini (`Texte.java`) und
+// folgen damit derselben Sprache.
+//
+// `Qt.locale().name` ist "de_AT", "pt_BR", "zh_CN" -- Portugiesisch gibt es
+// zweimal, Brasilien fuer sich, alle anderen europaeisch.
+function systemLang() {
+    var name = (typeof Qt !== "undefined" && Qt.locale) ? String(Qt.locale().name) : "";
+    var teile = name.toLowerCase().replace("-", "_").split("_");
+    var sprache = teile[0], land = teile.length > 1 ? teile[1] : "";
+    if (sprache === "pt")
+        return land === "br" ? "pt-br" : "pt-pt";
+    return LANGS.indexOf(sprache) >= 0 ? sprache : "en";
+}
+
 var NAMES = {
     "de": "Deutsch",
     "en": "English",
