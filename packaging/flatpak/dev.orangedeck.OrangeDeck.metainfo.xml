@@ -136,7 +136,7 @@
        keinem Anwender liegt, ist seine Nummer frei. Erst mit der ersten
        Installation bei einem Fremden wird eine Nummer zu einer Zusage. -->
   <releases>
-    <release version="0.2.3" date="2026-09-09">
+    <release version="0.2.3" date="2026-09-10">
       <description>
         <p>First release.</p>
         <p xml:lang="de">Erste Auslieferung.</p>
