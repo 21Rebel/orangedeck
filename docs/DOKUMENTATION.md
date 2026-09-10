@@ -2615,6 +2615,54 @@ So gefunden: der Griff oben, und der Ueberlappungsfehler in der Kopfzeile
 bei 695 Punkten Breite.
 
 
+## Pruefen am Telefon -- und woran man merkt, dass nichts geprueft wurde
+
+Gesammelt am 10.09.2026 an einem Galaxy A55 (SM-A556B, Android 16). Die
+Regel darueber: **jeder Test sieht nach, ob er stattgefunden hat.** Drei
+Tests haben an dem Tag Erfolg gemeldet, ohne gelaufen zu sein.
+
+    lsusb | grep 04e8                 nichts: Stecker los; da, aber adb leer: Debugging aus
+    adb shell wm user-rotation lock N echte Drehung (0 hoch, 1 quer)
+    adb shell dumpsys window displays | grep mRotation   hat es gedreht?
+    adb shell wm user-rotation free   immer zurueck, am besten per trap
+    adb shell dumpsys window | grep isKeyguardShowing    gesperrt? dann geht nichts
+    adb shell uiautomator dump /sdcard/ui.xml            Umrisse von Widgets und Knoepfen
+    adb shell input draganddrop x1 y1 x2 y2 ms           Widget aus der Auswahl ziehen
+
+- **`settings put system user_rotation` dreht das Galaxy nicht.** Die
+  Einstellung wird geschrieben, der Bildschirm bleibt. Nur `wm user-rotation`
+  wirkt, und `mRotation` zeigt es.
+- **Ein gesperrtes Telefon schluckt Tipps und Drehungen**, ohne Fehler.
+- **`uiautomator dump` spricht die Systemsprache:** die Seitenanzeige des
+  Startbildschirms heisst "Seite 3 von 6" oder "Home screen Page 5 of 6.".
+  Beide Formen suchen.
+- **"Hinzufuegen" in der Widget-Auswahl des Samsung-Starters** legt auf eine
+  feste Seite, nicht auf die gerade sichtbare -- dort liegen oft die Widgets
+  des Anwenders. Stattdessen lange druecken und mit `input draganddrop`
+  ziehen. Einen Eintrag nur greifen, wenn er ganz im Bild ist.
+- **`svc power stayon usb`** haelt das Telefon am Kabel wach;
+  `svc power stayon false` nimmt es zurueck.
+
+Am Schreibtisch, fuer dieselben Fehler ohne Telefon:
+
+    QT_FORCE_STDERR_LOGGING=1 ./orangedeck 2>log   Qt schreibt sonst nach journald,
+                                                    sobald stderr kein Terminal ist
+    unshare -rn ./orangedeck                        ohne Netz ("keine Verbindung")
+    Xvfb, Fenstergroesse wechseln                   Drehen nachstellen
+    tools/xtest.py X Y                              Klick ins Xvfb-Fenster
+
+Der Absturz beim Drehen (`7f71c24`) liess sich so am Schreibtisch
+ausloesen, mit demselben Stapel. Gefunden hat ihn das Ausschlussverfahren
+-- je eine Ansicht aus `FeedTabs` nehmen --, nicht der Stapel: der begann
+in `QQuickSafeArea`, die Ursache sass in `SettingsView`.
+
+**Die Pruef-VM** (`tools/pruefvm.sh`) mit `setsid` starten. Laeuft QEMU in
+einer Aufgabe, die beendet wird, stirbt es mit. Im Terminal der VM erst auf
+die Eingabeaufforderung warten, sonst fehlen die ersten Zeichen; und nach
+einem **gerechneten** Ergebnis suchen (`echo ERGEBNIS-$((6*7))`, gesucht
+`ERGEBNIS-42`), sonst findet die Texterkennung den getippten Befehl.
+
+
 ## Android im Emulator -- und das TLS-Loch, das er aufgedeckt hat
 
 Am 04.09.2026 eingerichtet. Damit braucht der Android-Test **kein Telefon,
