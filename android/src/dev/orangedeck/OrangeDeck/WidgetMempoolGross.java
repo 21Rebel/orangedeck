@@ -39,13 +39,19 @@ public class WidgetMempoolGross extends DeckWidget {
         JSONObject m = holeObjekt("/mempool");
         long anzahl = m.optLong("count", 0);
 
-        String neben = null;
+        // **Die wartenden Transaktionen stehen klein darunter, nicht gross.**
+        // Gross steht die Blockhoehe -- dieses Widget zeigt Bloecke, und ueber
+        // den Karten liest man die Hoehe zuerst. Am 10.09.2026 so gewuenscht.
+        // Das kleine Mempool-Widget behaelt die Anzahl als Hauptwert: dort
+        // ist sie die Aussage, und fuer die Hoehe gibt es ein eigenes.
+        String neben = Texte.t(c, "unbestaetigt", zahl(anzahl, 0));
         try {
             JSONObject g = holeObjekt("/v1/fees/recommended");
-            neben = Texte.t(c, "satvb", zahl(g.optDouble("halfHourFee", 0), 0))
-                  + " · " + Texte.t(c, "bloecke",
+            neben += " · " + Texte.t(c, "satvb", zahl(g.optDouble("halfHourFee", 0), 0))
+                   + " · " + Texte.t(c, "bloecke",
                                              zahl(m.optLong("vsize", 0) / 1000000.0, 1));
-        } catch (Exception e) { /* Nebenzeile faellt weg */ }
+        } catch (Exception e) { /* Gebuehr und Rueckstau fallen weg */ }
+        long hoehe = 0;
 
         StringBuilder karten = new StringBuilder();
 
@@ -75,6 +81,8 @@ public class WidgetMempoolGross extends DeckWidget {
         // Die zwei zuletzt gefundenen, neueste links an der Trennlinie.
         try {
             JSONArray a = holeFeld("/v1/blocks");
+            if (a.length() > 0)
+                hoehe = a.getJSONObject(0).optLong("height", 0);
             for (int i = 0; i < 2 && i < a.length(); i++) {
                 JSONObject b = a.getJSONObject(i);
                 JSONObject ex = b.optJSONObject("extras");
@@ -98,7 +106,7 @@ public class WidgetMempoolGross extends DeckWidget {
             }
         } catch (Exception e) { /* Karten fallen weg */ }
 
-        return new String[] { zahl(anzahl, 0), neben, karten.toString() };
+        return new String[] { hoehe > 0 ? zahl(hoehe, 0) : "–", neben, karten.toString() };
     }
 
     private static void karte(StringBuilder s, String ton, String kopf, String... zeilen) {

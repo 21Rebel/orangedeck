@@ -92,6 +92,12 @@ final class Texte {
           "%1$s blokken achterstand", "%1$s блока в очереди", "%1$s ブロック分の滞留",
           "积压 %1$s 个区块", "%1$s blocos na fila", "%1$s bloku w kolejce",
           "%1$s bloku ve frontě");
+        // Wie "feed.mempoolLine" in strings.js; wo die Mehrzahl von der Zahl
+        // abhaengt, steht die Zahl hinter dem Wort.
+        t("unbestaetigt", "%1$s unbestätigt", "%1$s unconfirmed", "%1$s sin confirmar",
+          "%1$s non confirmées", "%1$s non confermate", "%1$s não confirmadas",
+          "%1$s onbevestigd", "не подтверждено: %1$s", "未承認 %1$s 件", "%1$s 笔未确认",
+          "%1$s não confirmadas", "niepotwierdzone: %1$s", "nepotvrzené: %1$s");
         t("stufen", "schnell %1$s · sparsam %2$s", "fast %1$s · economy %2$s",
           "rápida %1$s · económica %2$s", "rapide %1$s · économique %2$s",
           "veloce %1$s · economica %2$s", "rápida %1$s · económica %2$s",
