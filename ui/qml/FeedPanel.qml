@@ -801,11 +801,29 @@ Item {
         }
     }
 
-    Text {
+    // **Auf eigenem Grund, nicht blank ueber dem Block.** Mittig stand der
+    // Satz genau auf dem orangen Block, in blasser Schrift -- am 10.09.2026
+    // auf dem Telefon als "kaum lesbar" gemeldet. Die Pille traegt dieselbe
+    // Deckkraft wie der Tooltip, und das Rot ist dasselbe wie bei "keine
+    // Verbindung" in der Uhr.
+    Rectangle {
         anchors.centerIn: parent
         visible: root.feed !== null && !root.feed.online
-        text: Tr.t("feed.noConnection", root.lang)
-        color: root.dimColor
-        font.pixelSize: root.baseFont
+        z: 25
+        width: keineVerbindung.implicitWidth + root.baseFont * 1.6
+        height: keineVerbindung.implicitHeight + root.baseFont * 0.9
+        radius: height / 2
+        color: Qt.rgba(0.05, 0.05, 0.08, 0.92)
+        border.width: 1
+        border.color: Qt.rgba(1, 1, 1, 0.12)
+
+        Text {
+            id: keineVerbindung
+
+            anchors.centerIn: parent
+            text: Tr.t("feed.noConnection", root.lang)
+            color: "#e06c6c"
+            font.pixelSize: root.baseFont
+        }
     }
 }
