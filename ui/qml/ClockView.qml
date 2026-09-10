@@ -33,6 +33,9 @@ Item {
     // damit er ueber Sitzungen bleibt.
     property bool showPrice: true
     property string priceSpan: "30d"
+    // Bedienung mit dem Finger: groessere Knoepfe am Kursverlauf. Setzt der
+    // Wirt (Main.qml auf dem Telefon), nicht die Ansicht selbst.
+    property bool finger: false
 
     signal priceSpanRequested(string s)
 
@@ -153,24 +156,47 @@ Item {
         return Tr.t("duration.min", root.lang, m);
     }
 
-    // Auch hier kann es eng werden -- im Dashboard-Tab und auf einem hochkant
-    // gehaltenen Tablet.
+    // **Die ganze Seite rollt gemeinsam.** Bis zum 10.09.2026 lag der
+    // Kursverlauf fest am unteren Rand, mit einer Hoehe aus der Fensterhoehe,
+    // und nur die Spalte darueber rollte in dem, was uebrig blieb. Am Telefon
+    // gab das hochkant ein grosses Loch zwischen Uhr und Kurve und quer eine
+    // auf einen Streifen gedrueckte Kurve, waehrend die Uhr allein rollte.
+    //
+    // Jetzt stehen beide untereinander in einer Flaeche. Die Kurve bekommt
+    // ihre Hoehe aus der Breite, nicht aus der Hoehe -- quer wird sie nicht
+    // mehr gestaucht. Passt beides, steht es als Gruppe mittig, und hochkant
+    // darf die Kurve in den freien Platz wachsen. Passt es nicht, fuellt die
+    // Uhr den ersten Bildschirm wie bisher, und die Kurve liegt darunter:
+    // an der Wand sieht man die Uhr, wer den Kurs sehen will, rollt.
+    readonly property real rand: root.scaleUnit * 0.4
+    readonly property real luecke: root.scaleUnit * 0.8
+    readonly property real kurveHoehe: {
+        if (!kurve.visible)
+            return 0;
+        var basis = Math.max(120, Math.min(root.width * 0.42, 380));
+        var frei = root.height - body.implicitHeight - root.luecke - 2 * root.rand;
+        return Math.max(basis, Math.min(root.width * 0.75, frei));
+    }
+    readonly property bool passtAlles: body.implicitHeight + root.luecke + root.kurveHoehe
+                                       + 2 * root.rand <= root.height
+    readonly property real bodyY: root.passtAlles
+        ? (root.height - body.implicitHeight - root.luecke - root.kurveHoehe) / 2
+        : Math.max(root.rand, (root.height - body.implicitHeight) / 2)
+    // Passt es nicht, beginnt die Kurve erst unter dem ersten Bildschirm --
+    // nicht angeschnitten am unteren Rand.
+    readonly property real kurveY: root.passtAlles
+        ? root.bodyY + body.implicitHeight + root.luecke
+        : Math.max(root.bodyY + body.implicitHeight + root.luecke, root.height)
+
     Flickable {
         id: flick
 
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        // **Die Spalte hoert dort auf, wo die Kurve anfaengt.** Sie mittig zu
-        // setzen und der Kurve den Platz nur rechnerisch abzuziehen genuegte
-        // nicht: ist die Spalte hoeher als der Rest, laeuft sie ueber die
-        // Kurve. So bekommt sie eine eigene Flaeche und rollt darin, statt zu
-        // ueberzeichnen.
-        anchors.bottom: kurve.visible ? kurve.top : parent.bottom
-        anchors.bottomMargin: kurve.visible ? root.scaleUnit * 0.3 : 0
+        anchors.fill: parent
         clip: true
         contentWidth: width
-        contentHeight: body.implicitHeight + root.scaleUnit
+        contentHeight: kurve.visible
+            ? root.kurveY + root.kurveHoehe + root.rand
+            : Math.max(root.height, root.bodyY + body.implicitHeight + root.rand)
         boundsBehavior: Flickable.StopAtBounds
 
     Column {
@@ -180,10 +206,8 @@ Item {
         x: (flick.width - width) / 2
         // **Die Kurve steht nicht in dieser Spalte, sondern unter ihr.** In der
         // Spalte war sie ein Posten unter sieben und wurde jedes Mal als
-        // erster abgeschnitten -- die Spalte fuellte die Flaeche schon vorher
-        // genau aus. Jetzt bekommt die Kurve ihren Platz zuerst, und der Rest
-        // mittet sich in dem, was uebrig bleibt.
-        y: Math.max(0, (flick.height - implicitHeight) / 2)
+        // erster abgeschnitten. Die Lage beider rechnen `bodyY` und `kurveY`.
+        y: root.bodyY
         spacing: root.scaleUnit * (kurve.visible ? 0.35 : 0.5)
 
         // -------------------------------------------------------- Uhrzeit
@@ -424,8 +448,6 @@ Item {
             }
         }
         }
-    }
-
 
         // ----------------------------------------------- Kursverlauf
         // Braucht Hoehe, sonst ist eine Kurve nicht zu lesen. In flachen
@@ -439,29 +461,25 @@ Item {
     PriceChart {
         id: kurve
 
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: root.width * 0.07
-        anchors.bottomMargin: root.scaleUnit * 0.4
-        // Gut ein Viertel der Flaeche, gedeckelt: mehr braucht eine Kurve
-        // nicht, und im Dashboard-Format haengt genau daran, ob ueber ihr noch
-        // die Halving-Zeile steht oder die Spalte gerollt werden muss.
-        height: Math.max(90, Math.min(root.height * 0.26, root.scaleUnit * 7))
-        // 420 war zu hoch gegriffen -- **gemessen** bleiben der Uhr
-        // im Dashboard-Tab 409 Punkte (460 Tabhoehe minus Raender und
-        // Reiterzeile), und die Kurve fiel damit ausgerechnet dort weg,
-        // wo sie am ehesten gebraucht wird. Ab 330 traegt sie noch: die
-        // Kurve selbst behaelt rund hundert Punkte Hoehe.
-        visible: root.showPrice && root.height >= 330
+        x: root.width * 0.07
+        y: root.kurveY
+        width: root.width * 0.86
+        height: root.kurveHoehe
+        // Gerollt wird jetzt, statt Platz abzuziehen; weg bleibt die Kurve
+        // nur noch in wirklich flachen Flaechen (Leistenpopout, schmales
+        // Desktop-Widget), wo sie auch gerollt keinen Sinn haette.
+        visible: root.showPrice && root.height >= 250
         live: root.visible
         feed: root.feed
         lang: root.lang
         currency: root.currency
         span: root.priceSpan
         // Kleiner als die Kennzahlen darueber: die Beschriftung einer
-        // Kurve ist Beiwerk, keine Aussage.
-        baseFont: root.scaleUnit * 0.5
+        // Kurve ist Beiwerk, keine Aussage. **Aber nicht unter 13 Punkte
+        // am Telefon:** hochkant waren es 7, und die Zeitraum-Knoepfe waren
+        // fuer einen Finger kaum zu treffen.
+        baseFont: root.finger ? Math.max(13, root.scaleUnit * 0.5) : root.scaleUnit * 0.5
+        minTap: root.finger ? 40 : 0
         textColor: root.textColor
         dimColor: root.dimColor
         accentColor: root.accentColor
@@ -469,6 +487,7 @@ Item {
         onSpanRequested: function (sp) {
             root.priceSpanRequested(sp);
         }
+    }
     }
 
     // Bei fehlender Verbindung nicht luegen, sondern es sagen

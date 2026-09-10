@@ -39,6 +39,9 @@ Item {
     // trotzdem dieses Bauteil, damit die Ansichten nur an einer Stelle
     // verdrahtet sind.
     property bool tabsVisible: true
+    // Bedienung mit dem Finger (Telefon, Tablet): groessere Tippflaechen.
+    // Setzt der Wirt, der weiss, wo er laeuft.
+    property bool finger: false
     // Darf sich das Suchfeld des Explorers beim Aufschlagen den Tastaturfokus
     // holen? Auf dem Desktop-Widget nicht -- dort tippt niemand.
     property bool searchFocus: true
@@ -275,6 +278,7 @@ Item {
         showTime: root.o("clockTime", false)
         showPrice: root.o("clockPrice", true)
         priceSpan: root.o("priceSpan", "30d")
+        finger: root.finger
         onPriceSpanRequested: function (sp) {
             root.optRequested("priceSpan", sp);
         }

@@ -515,6 +515,7 @@ Window {
             // Im nackten Widget bleibt die Reiterzeile weg -- und mit ihr der
             // Platz, den sie braucht.
             tabsVisible: !win.bare && !win.vollbild
+            finger: win.ohneTastatur
             // Deckkraft und Startansicht gehoeren dem Fenster, also stehen sie
             // hier auch in den Einstellungen.
             windowedSettings: true

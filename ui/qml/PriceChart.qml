@@ -29,6 +29,8 @@ Item {
     property color accentColor: "#f7931a"
     property color lineColor: "#2a2a38"
     property real baseFont: 12
+    // Mindesthoehe der Tippflaeche der Zeitraum-Knoepfe, 0 = wie gezeichnet
+    property real minTap: 0
 
     signal spanRequested(string s)
 
@@ -117,6 +119,7 @@ Item {
         dimColor: root.dimColor
         accentColor: root.accentColor
         uiFont: root.baseFont
+        minTap: root.minTap
         onPicked: function (m) {
             root.spanRequested(m);
         }

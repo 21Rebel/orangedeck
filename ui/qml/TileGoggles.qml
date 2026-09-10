@@ -38,6 +38,11 @@ Column {
     property color dimColor: "#9a94a6"
     property color accentColor: "#f7931a"
     property real uiFont: 13
+    // **Die Tippflaeche darf groesser sein als der Knopf.** Mit dem Finger
+    // braucht es rund 40 Punkte Hoehe, gezeichnet sind die Knoepfe oft ein
+    // Drittel davon. Nur nach oben und unten erweitert: seitlich liegen die
+    // Nachbarn zu dicht, sie wuerden sich die Beruehrung streitig machen.
+    property real minTap: 0
     property string lang: "de"
     // Was vor den Knoepfen steht. Der Umschalter wird nicht nur fuer Farben
     // benutzt, sondern auch fuer die Zeitraeume der Kurskurve -- dort waere
@@ -109,6 +114,8 @@ Column {
                     id: maus
 
                     anchors.fill: parent
+                    anchors.topMargin: -Math.max(0, (root.minTap - knopf.height) / 2)
+                    anchors.bottomMargin: -Math.max(0, (root.minTap - knopf.height) / 2)
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.picked(knopf.modelData.k)
