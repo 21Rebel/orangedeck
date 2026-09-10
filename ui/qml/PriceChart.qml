@@ -215,8 +215,33 @@ Item {
             if (n < 2)
                 return;
 
-            // Grundlinien: nur oben und unten, damit die Kurve nicht in einem
-            // Gitter untergeht.
+            // **Feine Linien auf runden Betraegen, zur Orientierung.**
+            // Gewuenscht am 10.09.2026: "alle 5000 $ eine feine Linie". Die
+            // Schrittweite ist gerechnet, nicht fest -- fest 5000 gaebe im
+            // Tagesverlauf keine einzige Linie und bei "Max" zwei Dutzend.
+            // Genommen wird die kleinste runde Weite (1, 2, 2,5 oder 5 mal
+            // einer Zehnerpotenz) fuer hoechstens rund vier Linien; bei
+            // 62.553 bis 81.476 $ sind das genau 5000. Blasser als die
+            // Grundlinien, damit die Kurve nicht in einem Gitter untergeht.
+            var schritt = root.rasterSchritt(root.minWert, root.maxWert);
+            if (schritt > 0) {
+                ctx.strokeStyle = Qt.rgba(root.dimColor.r, root.dimColor.g,
+                                          root.dimColor.b, 0.14);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (var v = Math.ceil(root.minWert / schritt) * schritt;
+                     v < root.maxWert; v += schritt) {
+                    var ry = Math.round(yBei(v)) + 0.5;
+                    // Nicht auf die Grundlinien oben und unten legen
+                    if (ry - padT < 4 || height - padB - ry < 4)
+                        continue;
+                    ctx.moveTo(padL, ry);
+                    ctx.lineTo(width - padR, ry);
+                }
+                ctx.stroke();
+            }
+
+            // Grundlinien oben und unten: Hoechst- und Tiefstwert.
             ctx.strokeStyle = root.lineColor;
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -276,6 +301,21 @@ Item {
         visible: false
         text: Tr.price1(root.maxWert || 88888, root.zeichen, root.lang)
         font.pixelSize: root.baseFont - 2
+    }
+
+    // Runde Schrittweite fuer die feinen Linien, siehe onPaint
+    function rasterSchritt(lo, hi) {
+        var spanne = hi - lo;
+        if (!(spanne > 0))
+            return 0;
+        var roh = spanne / 4;
+        var zehner = Math.pow(10, Math.floor(Math.log(roh) / Math.LN10));
+        var stufen = [1, 2, 2.5, 5, 10];
+        for (var i = 0; i < stufen.length; i++) {
+            if (stufen[i] * zehner >= roh)
+                return stufen[i] * zehner;
+        }
+        return 10 * zehner;
     }
 
     function datum(ts) {
