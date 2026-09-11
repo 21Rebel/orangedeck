@@ -165,11 +165,19 @@
        schmalen Fenster und eine Tastenhilfe ueber der Fusszeile. Die erste
        Auslieferung heisst 0.2.7.
 
+       Am selben Tag zum neunten Mal, und wieder aus einem Durchgang: diesmal
+       derselbe Satz Ansichten auf jedem erreichbaren System, Bild fuer Bild
+       nebeneinandergelegt. Er fand den Fluss einer Transaktion halb
+       gezeichnet, deutsche Texte in englischer Oberflaeche (Suchfeld,
+       Tastenhilfe, Fehlergruende) und Einstellungsseiten fuer Markt und
+       Wallet unter Android, wo es beide Ansichten nicht gibt. Die erste
+       Auslieferung heisst 0.2.8.
+
        **Die Regel dahinter, viermal bestaetigt:** solange ein Stand bei
        keinem Anwender liegt, ist seine Nummer frei. Erst mit der ersten
        Installation bei einem Fremden wird eine Nummer zu einer Zusage. -->
   <releases>
-    <release version="0.2.7" date="2026-09-11">
+    <release version="0.2.8" date="2026-09-11">
       <description>
         <p>First release.</p>
         <p xml:lang="de">Erste Auslieferung.</p>

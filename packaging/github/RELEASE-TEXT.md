@@ -1,7 +1,13 @@
 <!-- Text fuer das GitHub-Release der ersten Auslieferung. Vorbereitet am
      10.09.2026 fuer 0.2.5, am 11.09.2026 auf 0.2.6 nachgezogen (Mining-Reiter
      mit Netzwerk, zwei Widgets dazu) und nach dem Bildschirmdurchgang auf
-     0.2.7. Vor dem Veroeffentlichen:
+     0.2.7, nach dem Bildschirmvergleich ueber alle Systeme auf 0.2.8. Vor
+     dem Veroeffentlichen:
+     **Fuer 0.2.8 stehen die beiden VM-Laeufe noch aus** (Ubuntu GNOME,
+     Fedora KDE) -- der Abschnitt "Tested on" nennt sie, also erst laufen
+     lassen, dann veroeffentlichen.
+
+
      Fassung ersetzen, die beiden Pruefsummen aus
      ~/.local/share/orangedeck/auslieferung/PRUEFSUMMEN.txt eintragen, und
      nachsehen, ob jede Aussage fuer den getaggten Stand noch stimmt.
@@ -11,7 +17,7 @@
 
 A Bitcoin dashboard: the mempool as a live tile mosaic, a block height clock, mining figures for the whole network and your own Bitaxe, and a block explorer. MIT, no account.
 
-## Android — `orangedeck-0.2.7-arm64-v8a.apk`
+## Android — `orangedeck-0.2.8-arm64-v8a.apk`
 
 For phones and tablets with a 64-bit ARM processor (arm64-v8a), Android 9 or newer.
 
@@ -27,17 +33,17 @@ Widgets refresh every 30 minutes at most — Android does not allow a shorter in
 
 **Check the signature before installing.** The APK is not from an app store, so this is the only way to confirm it comes from us:
 
-    apksigner verify --print-certs orangedeck-0.2.7-arm64-v8a.apk
+    apksigner verify --print-certs orangedeck-0.2.8-arm64-v8a.apk
 
 The SHA-256 fingerprint of the signing certificate must be:
 
     B3:CC:83:79:CE:27:93:4D:30:B5:48:B3:F5:A1:D5:51:6E:E1:11:14:FF:D5:4E:F1:7E:57:D2:38:12:02:92:E0
 
-## Linux — `orangedeck-0.2.7.flatpak`
+## Linux — `orangedeck-0.2.8.flatpak`
 
 Until the Flathub listing is through, as a bundle:
 
-    flatpak install --user orangedeck-0.2.7.flatpak
+    flatpak install --user orangedeck-0.2.8.flatpak
 
 It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included, market and wallet too.
 
@@ -49,8 +55,8 @@ It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included, 
 
 ## Checksums (SHA-256)
 
-    <PRUEFSUMME-APK>  orangedeck-0.2.7-arm64-v8a.apk
-    <PRUEFSUMME-FLATPAK>  orangedeck-0.2.7.flatpak
+    <PRUEFSUMME-APK>  orangedeck-0.2.8-arm64-v8a.apk
+    <PRUEFSUMME-FLATPAK>  orangedeck-0.2.8.flatpak
 
 ---
 
