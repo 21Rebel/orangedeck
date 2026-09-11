@@ -72,6 +72,8 @@ ShellRoot {
         property var minerPanes: []
         property var netParts: []
         property bool minerSolo: true
+        property int tabRotate: 0
+        property var tabRotateViews: []
         property var explorerPanels: []
         property string lang: Tr.systemLang()
         property var bigFields: ["height"]
@@ -138,6 +140,8 @@ ShellRoot {
             "minerPanes": minerPanes,
             "netParts": netParts,
             "minerSolo": minerSolo,
+            "tabRotate": tabRotate,
+            "tabRotateViews": tabRotateViews,
             "explorerPanels": explorerPanels,
             "lang": lang,
             "bigFields": bigFields,
@@ -241,6 +245,10 @@ ShellRoot {
                 netParts = value;
             else if (key === "minerSolo")
                 minerSolo = value;
+            else if (key === "tabRotate")
+                tabRotate = value;
+            else if (key === "tabRotateViews")
+                tabRotateViews = value;
             else if (key === "explorerPanels")
                 explorerPanels = value;
             else if (key === "lang")
@@ -306,6 +314,8 @@ ShellRoot {
                 "minerPanes": minerPanes,
                 "netParts": netParts,
                 "minerSolo": minerSolo,
+                "tabRotate": tabRotate,
+                "tabRotateViews": tabRotateViews,
                 "explorerPanels": explorerPanels,
                 "lang": lang,
                 "bigFields": bigFields,
@@ -438,6 +448,10 @@ ShellRoot {
                         win.netParts = v.netParts;
                     if (typeof v.minerSolo === "boolean")
                         win.minerSolo = v.minerSolo;
+                    if (typeof v.tabRotate === "number")
+                        win.tabRotate = v.tabRotate;
+                    if (Array.isArray(v.tabRotateViews))
+                        win.tabRotateViews = v.tabRotateViews;
                     if (Array.isArray(v.explorerPanels))
                         win.explorerPanels = v.explorerPanels;
                     if (v.lang)
@@ -483,6 +497,7 @@ ShellRoot {
             opts: win.opts
             view: win.view
             tabsVisible: !win.bare
+            rotationAllowed: !win.bare
             windowedSettings: true
             minerActions: !win.bare
             gap: 6

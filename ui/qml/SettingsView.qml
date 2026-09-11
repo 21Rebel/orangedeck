@@ -351,7 +351,11 @@ Item {
 
         signal gezogen(real w)
 
-        width: root.uiFont * 16
+        // **Nicht breiter als die Spalte.** Fest 16 Schrifthoehen waren am
+        // Telefon breiter als die rechte Haelfte der Zeile, und die Zahl
+        // rechts neben der Bahn stand abgeschnitten am Rand (11.09.2026,
+        // Galaxy A55).
+        width: Math.min(root.uiFont * 16, parent ? parent.width : root.uiFont * 16)
         height: root.uiFont * 1.6
 
         Rectangle {
@@ -607,8 +611,12 @@ Item {
                     }
                 }
 
+                // **Nicht auf Android.** Die Activity wird dort immer deckend
+                // gezeichnet; der Regler bewegte am Telefon nichts
+                // (11.09.2026).
                 Zeile {
-                    visible: root.windowed
+                    visible: root.windowed && Qt.platform.os !== "android"
+                             && Qt.platform.os !== "ios"
                     label: Tr.t("set.opacity", root.lang)
                     help: Tr.t("set.opacityHelp", root.lang)
 
@@ -679,6 +687,53 @@ Item {
                         }
                         onPicked: function (k) {
                             root.changed("startView", parseInt(k, 10));
+                        }
+                    }
+                }
+
+                // Reiter im Wechsel, fuer eine Blockuhr an der Wand. Der Takt
+                // laeuft in `FeedTabs`.
+                Zeile {
+                    label: Tr.t("set.tabRotate", root.lang)
+                    help: Tr.t("set.tabRotateHelp", root.lang)
+
+                    Wahl {
+                        gewaehlt: String(root.val("tabRotate", 0))
+                        eintraege: [
+                            { "k": "0", "l": Tr.t("set.off", root.lang) },
+                            { "k": "30", "l": Tr.t("duration.sec", root.lang, 30) },
+                            { "k": "60", "l": Tr.t("duration.min", root.lang, 1) },
+                            { "k": "120", "l": Tr.t("duration.min", root.lang, 2) },
+                            { "k": "300", "l": Tr.t("duration.min", root.lang, 5) },
+                            { "k": "600", "l": Tr.t("duration.min", root.lang, 10) }
+                        ]
+                        onPicked: function (k) {
+                            root.changed("tabRotate", parseInt(k, 10));
+                        }
+                    }
+                }
+
+                Zeile {
+                    visible: root.val("tabRotate", 0) > 0
+                    label: Tr.t("set.tabRotateViews", root.lang)
+                    help: Tr.t("set.tabRotateViewsHelp", root.lang)
+
+                    Haken {
+                        schluessel: "tabRotateViews"
+                        alle: ["feed", "clock", "device", "net", "explorer", "market"]
+                        eintraege: {
+                            var m = Tr.t("tab.miner", root.lang) + " · ";
+                            var out = [
+                                { "id": "feed", "l": Tr.t("tab.feed", root.lang) },
+                                { "id": "clock", "l": Tr.t("tab.clock", root.lang) },
+                                { "id": "device", "l": m + Tr.t("miner.paneDevice", root.lang) },
+                                { "id": "net", "l": m + Tr.t("miner.paneNet", root.lang) },
+                                { "id": "explorer", "l": Tr.t("tab.explorer", root.lang) }
+                            ];
+                            // Den Markt nur, wo es ihn gibt (nicht im Direktbezug)
+                            if (root.nichtVerfuegbar.indexOf(6) < 0)
+                                out.push({ "id": "market", "l": Tr.t("tab.market", root.lang) });
+                            return out;
                         }
                     }
                 }

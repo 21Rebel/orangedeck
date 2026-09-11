@@ -223,10 +223,10 @@ Item {
 
             width: flick.width * 0.9
             x: (flick.width - width) / 2
-            // **Oben, nicht mittig.** Mittig stand am Telefon ein Loch ueber
-            // den Kennzahlen, so hoch wie der Rest der Seite -- sie ist eine
-            // Seite zum Lesen, keine Anzeige wie die Uhr.
-            y: root.scaleUnit * 0.3
+            // Mittig, solange Platz ist, wie die Geraeteseite -- sonst oben
+            // anfangen. Am Telefon ist die Seite hoeher als der Schirm und
+            // beginnt damit ohnehin oben.
+            y: Math.max(root.scaleUnit * 0.3, (flick.height - implicitHeight) / 2)
             spacing: root.scaleUnit * 0.7
 
             // ------------------------------------------------ Kennzahlen

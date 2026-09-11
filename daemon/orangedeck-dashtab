@@ -128,6 +128,8 @@ Item {
     property string minerPanesRaw: SettingsData.getPluginSetting(pid, "minerPanesRaw", "")
     property string netPartsRaw: SettingsData.getPluginSetting(pid, "netPartsRaw", "")
     property bool minerSolo: SettingsData.getPluginSetting(pid, "minerSolo", true)
+    property int tabRotate: SettingsData.getPluginSetting(pid, "tabRotate", 0)
+    property string tabRotateViewsRaw: SettingsData.getPluginSetting(pid, "tabRotateViewsRaw", "")
     property string explorerPanelsRaw: SettingsData.getPluginSetting(pid, "explorerPanelsRaw", "")
     property string bigFieldsRaw: SettingsData.getPluginSetting(pid, "bigFieldsRaw", "height")
     // Die Reihenfolge der Reiter, vom Anwender festgelegt. Leer heisst: die
@@ -140,6 +142,7 @@ Item {
     readonly property var explorerParts: explorerPartsRaw.length ? explorerPartsRaw.split("|") : []
     readonly property var minerPanes: minerPanesRaw.length ? minerPanesRaw.split("|") : []
     readonly property var netParts: netPartsRaw.length ? netPartsRaw.split("|") : []
+    readonly property var tabRotateViews: tabRotateViewsRaw.length ? tabRotateViewsRaw.split("|") : []
     readonly property var explorerPanels: explorerPanelsRaw.length ? explorerPanelsRaw.split("|") : []
     readonly property var tabOrder: tabOrderRaw.length ? tabOrderRaw.split("|") : []
     // 0 = Feed, 1 = Uhr, 2 = Miner, 3 = Explorer, 4 = Wallet,
@@ -194,6 +197,8 @@ Item {
         "minerPanes": minerPanes,
         "netParts": netParts,
         "minerSolo": minerSolo,
+        "tabRotate": tabRotate,
+        "tabRotateViews": tabRotateViews,
         "explorerPanels": explorerPanels,
         "walletEnabled": walletEnabled,
         "tabOrder": tabOrder
@@ -209,6 +214,7 @@ Item {
         if (key === "clockFields" || key === "minerFields" || key === "bigFields"
                 || key === "explorerParts" || key === "explorerPanels"
                 || key === "minerPanes" || key === "netParts"
+                || key === "tabRotateViews"
                 || key === "tabOrder") {
             root.put(key + "Raw", (value || []).join("|"));
             return;

@@ -111,7 +111,19 @@ Item {
         info.open = !info.open;
     }
     // Weboberflaeche des Geraets oeffnen. Gilt fuer jeden Miner, der eine hat.
-    readonly property string webUrl: (one && one.type === "axeos") ? one.id : ""
+    //
+    // **Mit Schema.** Die Kennung ist die Adresse, wie sie eingetragen wurde
+    // -- am Telefon oft ohne "http://". `DirectMiner` setzt es fuer die
+    // Abfragen selbst davor (`basis()`), hier fehlte es: Qt las die blanke
+    // Adresse als Pfad relativ zur QML-Datei, und Android meldete
+    // "No Activity found to handle Intent { dat=qrc:/... }". Der Pfeil tat
+    // am Galaxy A55 nichts (11.09.2026).
+    readonly property string webUrl: {
+        if (!(root.one && root.one.type === "axeos"))
+            return "";
+        var u = String(root.one.id).trim();
+        return u.indexOf("://") < 0 ? "http://" + u : u;
+    }
     function openWeb() {
         if (webUrl)
             Qt.openUrlExternally(webUrl);
@@ -419,11 +431,11 @@ Item {
 
                 width: flick.width * 0.9
                 x: (flick.width - width) / 2
-                // **Oben, nicht mittig** -- wie die Netzwerk-Seite. Seit oben
-                // der Umschalter sitzt, stand am Telefon hochkant ein Loch
-                // von einem Drittel des Bildschirms zwischen ihm und dem
-                // Namen des Geraets (11.09.2026).
-                y: root.scaleUnit * 0.3
+                // Mittig, solange Platz ist -- sonst oben anfangen. Am
+                // 11.09.2026 kurz oben festgesetzt; mit nur der Geraeteseite
+                // hing der Inhalt dann am oberen Rand und die untere Haelfte
+                // blieb leer. Zurueck, auf Wunsch des Anwenders.
+                y: Math.max(root.scaleUnit * 0.3, (flick.height - implicitHeight) / 2)
                 spacing: root.scaleUnit * 0.45
 
             Text {

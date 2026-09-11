@@ -116,6 +116,8 @@ Item {
             "minerPanes": root.getList("minerPanesRaw", ""),
             "netParts": root.getList("netPartsRaw", ""),
             "minerSolo": root.get("minerSolo", true),
+            "tabRotate": root.get("tabRotate", 0),
+            "tabRotateViews": root.getList("tabRotateViewsRaw", ""),
             "explorerPanels": root.getList("explorerPanelsRaw", ""),
             "walletEnabled": root.get("walletEnabled", false),
             "tabOrder": root.getList("tabOrderRaw", "")
@@ -157,6 +159,8 @@ Item {
         anchors.margins: Theme.spacingM
         // Eine Ansicht, keine Reiterzeile
         tabsVisible: false
+        // Eine Ansicht je Widget, kein Wechsel
+        rotationAllowed: false
         view: root.viewIndex
         feed: feedState
         opts: root.opts

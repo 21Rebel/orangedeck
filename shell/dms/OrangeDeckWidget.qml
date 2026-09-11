@@ -116,6 +116,8 @@ PluginComponent {
             "minerPanes": root.getList("minerPanesRaw", ""),
             "netParts": root.getList("netPartsRaw", ""),
             "minerSolo": root.get("minerSolo", true),
+            "tabRotate": root.get("tabRotate", 0),
+            "tabRotateViews": root.getList("tabRotateViewsRaw", ""),
             "explorerPanels": root.getList("explorerPanelsRaw", ""),
             "walletEnabled": root.get("walletEnabled", false),
             "tabOrder": root.getList("tabOrderRaw", "")
@@ -134,6 +136,7 @@ PluginComponent {
         if (key === "clockFields" || key === "minerFields" || key === "bigFields"
                 || key === "explorerParts" || key === "explorerPanels"
                 || key === "minerPanes" || key === "netParts"
+                || key === "tabRotateViews"
                 || key === "tabOrder") {
             root.put(key + "Raw", (value || []).join("|"));
             return;

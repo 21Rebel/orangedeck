@@ -167,6 +167,10 @@ Window {
     property string netPartsRaw: ""
     readonly property var netParts: netPartsRaw.length ? netPartsRaw.split("|") : []
     property bool minerSolo: true
+    // Reiter im Wechsel: Sekunden (0 aus) und welche Stationen
+    property int tabRotate: 0
+    property string tabRotateViewsRaw: ""
+    readonly property var tabRotateViews: tabRotateViewsRaw.length ? tabRotateViewsRaw.split("|") : []
     readonly property var explorerParts: explorerPartsRaw.length ? explorerPartsRaw.split("|") : []
     // Als Zeichenkette abgelegt, getrennt mit "|". Zwei Fallen von QSettings
     // stecken darin: eine **leere** Liste wird als `@Invalid()` geschrieben und
@@ -284,6 +288,8 @@ Window {
         property alias minerPanesRaw: win.minerPanesRaw
         property alias netPartsRaw: win.netPartsRaw
         property alias minerSolo: win.minerSolo
+        property alias tabRotate: win.tabRotate
+        property alias tabRotateViewsRaw: win.tabRotateViewsRaw
         property alias explorerPanelsRaw: win.explorerPanelsRaw
         property alias langWahl: win.langWahl
         property alias bigFieldsRaw: win.bigFieldsRaw
@@ -438,6 +444,10 @@ Window {
             win.netPartsRaw = (value || []).join("|");
         else if (key === "minerSolo")
             win.minerSolo = value;
+        else if (key === "tabRotate")
+            win.tabRotate = value;
+        else if (key === "tabRotateViews")
+            win.tabRotateViewsRaw = (value || []).join("|");
         else if (key === "explorerPanels")
             win.explorerPanelsRaw = (value || []).join("|");
         else if (key === "lang")
@@ -504,6 +514,8 @@ Window {
         "minerPanes": win.minerPanes,
         "netParts": win.netParts,
         "minerSolo": win.minerSolo,
+        "tabRotate": win.tabRotate,
+        "tabRotateViews": win.tabRotateViews,
         "explorerPanels": win.explorerPanels,
         "lang": win.lang,
         "langWahl": win.langWahl,
@@ -564,6 +576,9 @@ Window {
             // Im nackten Widget bleibt die Reiterzeile weg -- und mit ihr der
             // Platz, den sie braucht.
             tabsVisible: !win.bare && !win.vollbild
+            // Der Reiterwechsel laeuft auch im Vollbild -- gerade dort, an
+            // der Wand. Nur das nackte Widget zeigt immer dieselbe Ansicht.
+            rotationAllowed: !win.bare
             finger: win.ohneTastatur
             // Deckkraft und Startansicht gehoeren dem Fenster, also stehen sie
             // hier auch in den Einstellungen.

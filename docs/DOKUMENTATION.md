@@ -874,6 +874,28 @@ den Kennzahlen. Am Finger ist `scaleUnit` mindestens 20: er folgt sonst der
 Breite, und hochkant standen die Beschriftungen in knapp neun Punkten. Der
 Graph bekommt seine Hoehe aus der Breite (0,7, hoechstens 360).
 
+### Reiter im Wechsel (Blockuhr an der Wand)
+
+Einstellungen · Darstellung: "Reiter wechseln" (aus, 30 s, 1, 2, 5, 10 Min;
+`tabRotate` in Sekunden) und "Im Wechsel" (`tabRotateViews`: feed, clock,
+device, net, explorer, market; leer heisst alle). Mining zaehlt doppelt,
+Geraet und Netzwerk sind eigene Stationen. Wallet und Einstellungen laufen nie
+mit; stehen die Einstellungen offen, steht der Wechsel still.
+
+Der Takt steckt in `FeedTabs` und wechselt ueber dieselben Wege wie ein Tipp
+(`viewRequested`, `optRequested("minerPane")`). Er laeuft auch im Vollbild --
+dort ist die Reiterzeile weg, deshalb haengt er an `rotationAllowed`, nicht an
+`tabsVisible`. Aus nur im nackten Widget und im DMS-Desktop-Widget.
+
+**Eine Beruehrung setzt den Takt zurueck.** Ein `PointHandler` liest mit, und
+zwar in einer eigenen obersten Schicht (`z: 1000`): am Wurzelelement kam er
+erst nach den Ansichten dran, und ein Graph mit MouseArea hatte den Druck
+schon genommen. Im Xvfb nachgemessen: Klick bei 8,2 s, bei 13,1 s noch
+dieselbe Ansicht, bei 20,1 s die naechste.
+
+Welche Werte die **Uhr** gross zeigt und wie oft sie wechseln, war schon
+vorher einstellbar (Einstellungen · Uhr, `bigFields`, `bigRotate`).
+
 ### Widgets
 
 Titel "Mining-Netzwerk" (englisch "Mining Network"): auf dem Startbildschirm

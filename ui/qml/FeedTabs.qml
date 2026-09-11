@@ -177,6 +177,84 @@ Item {
 
     onTabViewsChanged: root.reiterPruefen()
 
+    // ------------------------------------------------- Reiter im Wechsel
+    // **Fuer eine Blockuhr an der Wand** (Wunsch vom 11.09.2026): alle
+    // `tabRotate` Sekunden die naechste Station. Mining zaehlt doppelt --
+    // Geraet und Netzwerk sind zwei Stationen, sonst saehe man an der Wand
+    // immer nur die Seite, die zuletzt offen war.
+    //
+    // Gewechselt wird ueber dieselben Wege wie beim Antippen (`viewRequested`,
+    // `optRequested("minerPane")`); der Wirt legt beides ab wie immer.
+    //
+    // Nicht im Wechsel: Wallet (gehoert nicht an eine Wand) und die
+    // Einstellungen. Stehen die Einstellungen offen, steht der Wechsel still
+    // -- sonst zoege er einem die Seite beim Einstellen weg.
+    property bool rotationAllowed: true
+    readonly property int rotateSec: root.o("tabRotate", 0)
+    readonly property var stationen: {
+        var wahl = root.o("tabRotateViews", []);
+        var alle = !wahl || !wahl.length || typeof wahl.indexOf !== "function";
+        function mit(k) {
+            return alle || wahl.indexOf(k) >= 0;
+        }
+        var namen = { "0": "feed", "1": "clock", "3": "explorer", "6": "market" };
+        var out = [];
+        for (var i = 0; i < root.tabViews.length; i++) {
+            var v = root.tabViews[i];
+            if (v === 2) {
+                if (miner.mitGeraet && mit("device"))
+                    out.push({ "v": 2, "pane": "device" });
+                if (miner.mitNetz && mit("net"))
+                    out.push({ "v": 2, "pane": "net" });
+            } else if (namen[String(v)] && mit(namen[String(v)])) {
+                out.push({ "v": v, "pane": "" });
+            }
+        }
+        return out;
+    }
+
+    function naechsteStation() {
+        var st = root.stationen;
+        var hier = -1;
+        for (var i = 0; i < st.length; i++) {
+            if (st[i].v === root.view && (st[i].v !== 2 || st[i].pane === miner.paneNow))
+                hier = i;
+        }
+        var ziel = st[(hier + 1) % st.length];
+        if (ziel.v === 2 && ziel.pane !== miner.paneNow)
+            root.optRequested("minerPane", ziel.pane);
+        if (ziel.v !== root.view)
+            root.viewRequested(ziel.v);
+    }
+
+    Timer {
+        id: wechsel
+
+        interval: Math.max(10, root.rotateSec) * 1000
+        repeat: true
+        running: root.live && root.rotationAllowed && root.rotateSec > 0
+                 && root.stationen.length > 1 && root.view !== 5
+        onTriggered: root.naechsteStation()
+    }
+
+    // **Eine Beruehrung setzt den Takt zurueck.** Wer an der Wand etwas
+    // nachliest, dem soll die Seite nicht unter dem Finger wegwechseln. Nur
+    // mitlesen (PointHandler greift nicht zu): Knoepfe, Graphen und Rollen
+    // bekommen ihre Ereignisse wie vorher.
+    //
+    // **In einer eigenen obersten Schicht**, nicht am Wurzelelement: dort
+    // kam er erst nach den Ansichten dran, und ein Graph mit eigener
+    // MouseArea hatte den Druck schon genommen (11.09.2026 im Xvfb, der
+    // Wechsel kam trotz Klick nach Takt).
+    Item {
+        anchors.fill: parent
+        z: 1000
+
+        PointHandler {
+            onActiveChanged: if (active && wechsel.running) wechsel.restart()
+        }
+    }
+
     Item {
         visible: false
 
