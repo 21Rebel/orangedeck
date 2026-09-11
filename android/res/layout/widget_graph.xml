@@ -16,6 +16,10 @@
      Wer die Abstaende oder Schriftgroessen hier aendert, muss
      DeckWidget.bildFlaeche mitziehen: es rechnet sie nach.
 
+     Die Nebenzeile ist 18dp hoch und verkleinert sich, statt abzuschneiden
+     (autoSize): am 11.09.2026 stand im grossen Mempool-Widget auf dem
+     Pixel-Starter "... 42.0 blocks ...". bildFlaeche rechnet dieselben 18dp.
+
      Kein Doppelstrich in Kommentaren: in XML verboten. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_wurzel"
@@ -48,12 +52,15 @@
     <TextView
         android:id="@+id/widget_zeile1"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
+        android:layout_height="18dp"
+        android:gravity="center"
         android:textSize="12sp"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="8sp"
+        android:autoSizeMaxTextSize="12sp"
+        android:autoSizeStepGranularity="0.5sp"
         android:textColor="#9a94a6"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:maxLines="1" />
 
     <ImageView
         android:id="@+id/widget_bild"

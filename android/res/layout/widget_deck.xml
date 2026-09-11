@@ -9,6 +9,13 @@
      stillschweigend weg. Deshalb schlichte LinearLayouts.
 
      Die beiden unteren Zeilen blendet `DeckWidget` je nach Inhalt aus. -->
+<!-- Wert und Zeilen verkleinern sich, statt abzuschneiden (autoSize).
+     Am 11.09.2026 auf dem Pixel-Starter im Emulator gesehen: fuenf Spalten
+     statt vier wie bei Samsung, ein 2x2-Widget ist dort rund 135 dp breit,
+     und aus "77.271 $" wurde "77,2...", aus "934 EH/s" "934 ...". Auto-Size
+     braucht eine feste Hoehe; sie entspricht der vollen Schriftgroesse, die
+     auf breiten Startern unveraendert bleibt. Bei grosser Systemschrift
+     schrumpft der Text eben auch in der Hoehe, statt gekappt zu werden. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_wurzel"
     android:layout_width="match_parent"
@@ -32,42 +39,54 @@
     <TextView
         android:id="@+id/widget_gross"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
+        android:layout_height="44dp"
+        android:gravity="center"
         android:textSize="32sp"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="14sp"
+        android:autoSizeMaxTextSize="32sp"
+        android:autoSizeStepGranularity="1sp"
         android:textStyle="bold"
         android:textColor="#f7931a"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:maxLines="1" />
 
     <TextView
         android:id="@+id/widget_zeile1"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
+        android:layout_height="20dp"
+        android:gravity="center"
         android:layout_marginTop="4dp"
         android:textSize="13sp"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="9sp"
+        android:autoSizeMaxTextSize="13sp"
+        android:autoSizeStepGranularity="0.5sp"
         android:textColor="#e8e4f0"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:maxLines="1" />
 
     <TextView
         android:id="@+id/widget_zeile2"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
+        android:layout_height="18dp"
+        android:gravity="center"
         android:textSize="12sp"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="9sp"
+        android:autoSizeMaxTextSize="12sp"
+        android:autoSizeStepGranularity="0.5sp"
         android:textColor="#9a94a6"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:maxLines="1" />
 
     <TextView
         android:id="@+id/widget_zeile3"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
+        android:layout_height="18dp"
+        android:gravity="center"
         android:textSize="12sp"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="9sp"
+        android:autoSizeMaxTextSize="12sp"
+        android:autoSizeStepGranularity="0.5sp"
         android:textColor="#9a94a6"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:maxLines="1" />
 </LinearLayout>

@@ -194,7 +194,9 @@ public abstract class DeckWidget extends AppWidgetProvider {
         float h = (hDp - 2 * 14 - 6) * dm.density
                   - zeilenHoehe(dm, 11, false)
                   - zeilenHoehe(dm, 30, true)
-                  - (mitZeile ? zeilenHoehe(dm, 12, false) : 0);
+                  // Die Nebenzeile hat seit dem 11.09.2026 eine feste Hoehe
+                  // (autoSize in widget_graph.xml), nicht mehr die der Schrift.
+                  - (mitZeile ? 18 * dm.density : 0);
         // Darunter lohnt kein Bild; dann lieber die alte feste Groesse.
         if (b < 32 || h < 32)
             return null;

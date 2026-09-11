@@ -12,6 +12,10 @@
      Sekunden ohne Antwort ab. Ein Widget hat zehn.
 
      Kein Doppelstrich in Kommentaren: in XML verboten. -->
+<!-- Jede einzeilige Zeile verkleinert sich, statt abzuschneiden (autoSize),
+     mit ihrer bisherigen Groesse als Obergrenze. Am 11.09.2026 auf dem
+     Pixel-Starter im Emulator: "2.0 sat/...", "Moscow Ti...", "7 day...".
+     Auto-Size braucht eine feste Hoehe, daher dp statt wrap_content. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_wurzel"
     android:layout_width="match_parent"
@@ -24,9 +28,9 @@
     <TextView
         android:id="@+id/widget_titel"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="16dp"
         android:gravity="center_horizontal"
-        android:textSize="11sp"
+        android:textSize="11sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="8sp" android:autoSizeMaxTextSize="11sp" android:autoSizeStepGranularity="0.5sp"
         android:letterSpacing="0.15"
         android:textColor="#9a94a6"
         android:maxLines="1" />
@@ -34,9 +38,9 @@
     <TextView
         android:id="@+id/widget_gross"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="46dp"
         android:gravity="center_horizontal"
-        android:textSize="34sp"
+        android:textSize="34sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="20sp" android:autoSizeMaxTextSize="34sp" android:autoSizeStepGranularity="0.5sp"
         android:textStyle="bold"
         android:textColor="#f7931a"
         android:maxLines="1" />
@@ -54,13 +58,13 @@
             android:layout_weight="1"
             android:orientation="vertical">
             <TextView android:id="@+id/widget_k1"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:gravity="center_horizontal" android:textSize="10sp"
-                android:textColor="#9a94a6" android:maxLines="1" android:ellipsize="end" />
+                android:layout_width="match_parent" android:layout_height="15dp"
+                android:gravity="center_horizontal" android:textSize="10sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="7sp" android:autoSizeMaxTextSize="10sp" android:autoSizeStepGranularity="0.5sp"
+                android:textColor="#9a94a6" android:maxLines="1" />
             <TextView android:id="@+id/widget_v1"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:gravity="center_horizontal" android:textSize="14sp"
-                android:textColor="#e8e4f0" android:maxLines="1" android:ellipsize="end" />
+                android:layout_width="match_parent" android:layout_height="20dp"
+                android:gravity="center_horizontal" android:textSize="14sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="10sp" android:autoSizeMaxTextSize="14sp" android:autoSizeStepGranularity="0.5sp"
+                android:textColor="#e8e4f0" android:maxLines="1" />
         </LinearLayout>
 
         <LinearLayout
@@ -69,13 +73,13 @@
             android:layout_weight="1"
             android:orientation="vertical">
             <TextView android:id="@+id/widget_k2"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:gravity="center_horizontal" android:textSize="10sp"
-                android:textColor="#9a94a6" android:maxLines="1" android:ellipsize="end" />
+                android:layout_width="match_parent" android:layout_height="15dp"
+                android:gravity="center_horizontal" android:textSize="10sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="7sp" android:autoSizeMaxTextSize="10sp" android:autoSizeStepGranularity="0.5sp"
+                android:textColor="#9a94a6" android:maxLines="1" />
             <TextView android:id="@+id/widget_v2"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:gravity="center_horizontal" android:textSize="14sp"
-                android:textColor="#e8e4f0" android:maxLines="1" android:ellipsize="end" />
+                android:layout_width="match_parent" android:layout_height="20dp"
+                android:gravity="center_horizontal" android:textSize="14sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="10sp" android:autoSizeMaxTextSize="14sp" android:autoSizeStepGranularity="0.5sp"
+                android:textColor="#e8e4f0" android:maxLines="1" />
         </LinearLayout>
 
         <LinearLayout
@@ -84,13 +88,13 @@
             android:layout_weight="1"
             android:orientation="vertical">
             <TextView android:id="@+id/widget_k3"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:gravity="center_horizontal" android:textSize="10sp"
-                android:textColor="#9a94a6" android:maxLines="1" android:ellipsize="end" />
+                android:layout_width="match_parent" android:layout_height="15dp"
+                android:gravity="center_horizontal" android:textSize="10sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="7sp" android:autoSizeMaxTextSize="10sp" android:autoSizeStepGranularity="0.5sp"
+                android:textColor="#9a94a6" android:maxLines="1" />
             <TextView android:id="@+id/widget_v3"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:gravity="center_horizontal" android:textSize="14sp"
-                android:textColor="#e8e4f0" android:maxLines="1" android:ellipsize="end" />
+                android:layout_width="match_parent" android:layout_height="20dp"
+                android:gravity="center_horizontal" android:textSize="14sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="10sp" android:autoSizeMaxTextSize="14sp" android:autoSizeStepGranularity="0.5sp"
+                android:textColor="#e8e4f0" android:maxLines="1" />
         </LinearLayout>
 
         <LinearLayout
@@ -99,13 +103,13 @@
             android:layout_weight="1"
             android:orientation="vertical">
             <TextView android:id="@+id/widget_k4"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:gravity="center_horizontal" android:textSize="10sp"
-                android:textColor="#9a94a6" android:maxLines="1" android:ellipsize="end" />
+                android:layout_width="match_parent" android:layout_height="15dp"
+                android:gravity="center_horizontal" android:textSize="10sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="7sp" android:autoSizeMaxTextSize="10sp" android:autoSizeStepGranularity="0.5sp"
+                android:textColor="#9a94a6" android:maxLines="1" />
             <TextView android:id="@+id/widget_v4"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:gravity="center_horizontal" android:textSize="14sp"
-                android:textColor="#e8e4f0" android:maxLines="1" android:ellipsize="end" />
+                android:layout_width="match_parent" android:layout_height="20dp"
+                android:gravity="center_horizontal" android:textSize="14sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="10sp" android:autoSizeMaxTextSize="14sp" android:autoSizeStepGranularity="0.5sp"
+                android:textColor="#e8e4f0" android:maxLines="1" />
         </LinearLayout>
     </LinearLayout>
 
@@ -115,13 +119,13 @@
         android:layout_marginTop="10dp"
         android:orientation="horizontal">
         <TextView android:id="@+id/widget_diff_links"
-            android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:textSize="11sp"
-            android:textColor="#e8e4f0" android:maxLines="1" android:ellipsize="end" />
+            android:layout_width="0dp" android:layout_height="16dp"
+            android:layout_weight="1" android:textSize="11sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="8sp" android:autoSizeMaxTextSize="11sp" android:autoSizeStepGranularity="0.5sp"
+            android:textColor="#e8e4f0" android:maxLines="1" />
         <TextView android:id="@+id/widget_diff_rechts"
-            android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:gravity="end" android:textSize="11sp"
-            android:textColor="#9a94a6" android:maxLines="1" android:ellipsize="end" />
+            android:layout_width="0dp" android:layout_height="16dp"
+            android:layout_weight="1" android:gravity="end" android:textSize="11sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="8sp" android:autoSizeMaxTextSize="11sp" android:autoSizeStepGranularity="0.5sp"
+            android:textColor="#9a94a6" android:maxLines="1" />
     </LinearLayout>
 
     <ProgressBar
@@ -137,10 +141,10 @@
     <TextView
         android:id="@+id/widget_halving"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="16dp"
         android:layout_marginTop="5dp"
-        android:textSize="11sp"
+        android:textSize="11sp" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="8sp" android:autoSizeMaxTextSize="11sp" android:autoSizeStepGranularity="0.5sp"
         android:textColor="#9a94a6"
         android:maxLines="1"
-        android:ellipsize="end" />
+        />
 </LinearLayout>

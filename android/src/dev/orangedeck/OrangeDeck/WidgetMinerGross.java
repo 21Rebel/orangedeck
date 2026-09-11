@@ -44,7 +44,10 @@ public class WidgetMinerGross extends GraphWidget {
     protected String[] werte(Context c) throws Exception {
         String adresse = minerAdresse(c);
         if (adresse == null)
-            return new String[] { "–", Texte.t(c, "miner_keine"), "" };
+            // Kein Verlauf: `null` statt "" -- sonst stuende unter "Adresse
+            // nicht gesetzt" ein "Verlauf entsteht · 0 von 180 Punkten", und
+            // ohne Adresse entsteht keiner (11.09.2026 im Emulator).
+            return new String[] { "–", Texte.t(c, "miner_keine"), null };
 
         JSONObject d = new JSONObject(holeVon("http://" + adresse + "/api/system/info", 4000));
         double gh = d.optDouble("hashRate", 0);

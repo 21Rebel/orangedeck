@@ -57,7 +57,11 @@ public abstract class GraphWidget extends DeckWidget {
         // Verlauf an; bis genug Punkte da sind, steht dort, dass er entsteht,
         // statt einer Flaeche, die wie ein Fehler aussieht.
         Bitmap b;
-        if (w.length < 3) {
+        if (z.length > 2 && z[2] == null) {
+            // Es gibt nichts, das einen Verlauf haben koennte (Miner ohne
+            // Adresse): leere Flaeche, kein "Verlauf entsteht".
+            b = Graph.hinweis("", px);
+        } else if (w.length < 3) {
             b = Graph.hinweis(Texte.t(c, "waechst", w.length, punkte()), px);
         } else {
             double lo = w[0], hi = w[0];
