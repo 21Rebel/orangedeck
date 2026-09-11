@@ -157,11 +157,19 @@
        Reihenfolge: erst der Durchgang am Telefon, dann der Tag. Die erste
        Auslieferung heisst 0.2.6.
 
+       Am selben Tag zum achten Mal, und zum ersten Mal nach einem Tag, der
+       schon getaggt, gepinnt, gebaut, signiert und in zwei Pruef-VMs
+       bestanden war: vor der Freigabe ein Bildschirmdurchgang durch alle
+       Reiter auf allen erreichbaren Systemen. Er fand ein Kaestchen statt
+       des Bitcoin-Zeichens unter Android 11, eine Legende ueber dem Block im
+       schmalen Fenster und eine Tastenhilfe ueber der Fusszeile. Die erste
+       Auslieferung heisst 0.2.7.
+
        **Die Regel dahinter, viermal bestaetigt:** solange ein Stand bei
        keinem Anwender liegt, ist seine Nummer frei. Erst mit der ersten
        Installation bei einem Fremden wird eine Nummer zu einer Zusage. -->
   <releases>
-    <release version="0.2.6" date="2026-09-11">
+    <release version="0.2.7" date="2026-09-11">
       <description>
         <p>First release.</p>
         <p xml:lang="de">Erste Auslieferung.</p>
