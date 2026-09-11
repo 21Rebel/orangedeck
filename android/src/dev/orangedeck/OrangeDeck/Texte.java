@@ -64,6 +64,12 @@ final class Texte {
           "価格", "价格", "Preço", "Kurs", "Kurz");
         t("miner", "Miner", "Miner", "Minero", "Mineur", "Miner", "Minerador", "Miner",
           "Майнер", "マイナー", "矿机", "Minerador", "Koparka", "Těžař");
+        // Nicht nur "Netzwerk": auf dem Startbildschirm steht das Widget ohne
+        // die App drumherum, und "Netzwerk" allein koennte auch das WLAN sein.
+        t("netz", "Mining-Netzwerk", "Mining Network", "Red de minería",
+          "Réseau de minage", "Rete di mining", "Rede de mineração", "Miningnetwerk",
+          "Сеть майнинга", "マイニングネットワーク", "挖矿网络", "Rede de mineração",
+          "Sieć wydobywcza", "Těžební síť");
 
         // ------------------------------- Beschriftungen der grossen Blockuhr
         t("k_gebuehr", "Gebühr", "Fee", "Comisión", "Frais", "Commissione", "Taxa", "Kosten",
@@ -137,6 +143,23 @@ final class Texte {
         t("luefter", "%1$s U/min", "%1$s RPM", "%1$s RPM", "%1$s tr/min", "%1$s RPM",
           "%1$s RPM", "%1$s RPM", "%1$s об/мин", "%1$s RPM", "%1$s 转/分", "%1$s RPM",
           "%1$s obr./min", "%1$s ot./min");
+        // Das Netz-Widget. Die Woerter wie "difficulty", "net.nextAdj" und
+        // "net.blockTime" in strings.js.
+        t("schwierigkeit_wert", "Schwierigkeit %1$s", "Difficulty %1$s",
+          "Dificultad %1$s", "Difficulté %1$s", "Difficoltà %1$s", "Dificuldade %1$s",
+          "Moeilijkheid %1$s", "Сложность %1$s", "難易度 %1$s", "难度 %1$s",
+          "Dificuldade %1$s", "Trudność %1$s", "Obtížnost %1$s");
+        // Ohne die Restzeit: in 2x2 passen rund 22 Zeichen, "Adjustment
+        // +3.0 % · 7 days 20 h" wurde am 11.09.2026 abgeschnitten.
+        t("anpassung", "Anpassung %1$s %%", "Adjustment %1$s %%", "Ajuste %1$s %%",
+          "Ajustement %1$s %%", "Aggiustamento %1$s %%", "Ajuste %1$s %%",
+          "Aanpassing %1$s %%", "Корректировка %1$s %%", "調整 %1$s %%", "调整 %1$s %%",
+          "Ajuste %1$s %%", "Korekta %1$s %%", "Úprava %1$s %%");
+        t("blockzeit", "Ø Blockzeit %1$s", "Avg. block time %1$s",
+          "Tiempo medio de bloque %1$s", "Temps moyen de bloc %1$s",
+          "Tempo medio di blocco %1$s", "Tempo médio de bloco %1$s", "Gem. bloktijd %1$s",
+          "Ср. время блока %1$s", "平均ブロック時間 %1$s", "平均出块时间 %1$s",
+          "Tempo médio de bloco %1$s", "Śr. czas bloku %1$s", "Prům. doba bloku %1$s");
 
         // ---------------------------------------------- Fristen und Zeiten
         t("halving", "Halving bei %1$s · noch %2$s Blöcke · rund %3$s",

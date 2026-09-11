@@ -66,10 +66,33 @@ int ansichtAusAbsicht()
         // `DirectMiner.qml` (08.09.) fragt die Oberflaeche AxeOS selbst ab;
         // der Reiter traegt auf dem Geraet also Inhalt.
         {QStringLiteral("dev.orangedeck.OrangeDeck.VIEW_MINER"), 2},
+        // Das Netz-Widget (11.09.2026): derselbe Reiter, aber die Seite
+        // "Netz" -- siehe `seiteAusAbsicht()`.
+        {QStringLiteral("dev.orangedeck.OrangeDeck.VIEW_NETWORK"), 2},
         // Kein Markt: der haengt am Dienst, und auf Android gibt es nur den
         // Direktbezug. Die Verknuepfung dorthin oeffnete eine leere Seite.
     };
     return karte.value(aktion.toString(), -1);
+}
+
+// Die Seite im Miner-Reiter, wenn die Aktion eine bestimmt. Nur das
+// Netz-Widget tut das: wer es antippt, will das Netz sehen, auch wenn ein
+// eigenes Geraet eingetragen ist und zuletzt dessen Seite offen war.
+QString seiteAusAbsicht()
+{
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    if (!activity.isValid())
+        return {};
+    QJniObject absicht = activity.callObjectMethod(
+        "getIntent", "()Landroid/content/Intent;");
+    if (!absicht.isValid())
+        return {};
+    QJniObject aktion = absicht.callObjectMethod(
+        "getAction", "()Ljava/lang/String;");
+    if (aktion.isValid()
+        && aktion.toString() == QLatin1String("dev.orangedeck.OrangeDeck.VIEW_NETWORK"))
+        return QStringLiteral("net");
+    return {};
 }
 #endif
 
@@ -302,6 +325,9 @@ int main(int argc, char *argv[])
         const int nr = ansichtAusAbsicht();
         if (nr >= 0)
             start.insert(QStringLiteral("forcedView"), nr);
+        const QString seite = seiteAusAbsicht();
+        if (!seite.isEmpty())
+            start.insert(QStringLiteral("forcedPane"), seite);
     }
 #endif
     if (p.isSet(oNackt))

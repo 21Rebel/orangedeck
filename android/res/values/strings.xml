@@ -41,6 +41,8 @@
     <string name="widget_kurs_info">Bitcoin price and Moscow Time</string>
     <string name="widget_miner">Miner</string>
     <string name="widget_miner_info">Hashrate and temperature of your own device</string>
+    <string name="widget_netz">Mining network</string>
+    <string name="widget_netz_info">Bitcoin network hashrate, difficulty and next adjustment</string>
 
     <string name="widget_uhr_gross">Block clock</string>
     <string name="widget_uhr_gross_info">Block height, price, mempool and both countdowns</string>
@@ -49,4 +51,5 @@
     <string name="widget_kurs_gross_info">Price with history</string>
     <string name="widget_mempool_gross_info">Mempool with blocks</string>
     <string name="widget_miner_gross_info">Miner with hashrate history</string>
+    <string name="widget_netz_gross_info">Bitcoin network hashrate over 90 days</string>
 </resources>

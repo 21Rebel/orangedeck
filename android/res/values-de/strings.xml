@@ -29,6 +29,8 @@
     <string name="widget_kurs_info">Bitcoin-Kurs und Moscow Time</string>
     <string name="widget_miner">Miner</string>
     <string name="widget_miner_info">Hashrate und Temperatur des eigenen Geräts</string>
+    <string name="widget_netz">Mining-Netzwerk</string>
+    <string name="widget_netz_info">Hashrate des Netzes, Schwierigkeit und nächste Anpassung</string>
 
     <string name="widget_uhr_gross">Blockuhr</string>
     <string name="widget_uhr_gross_info">Blockhöhe, Kurs, Mempool und die beiden Fristen</string>
@@ -37,6 +39,7 @@
     <string name="widget_kurs_gross_info">Kurs mit Verlauf</string>
     <string name="widget_mempool_gross_info">Mempool mit Verlauf</string>
     <string name="widget_miner_gross_info">Miner mit Hashrate-Verlauf</string>
+    <string name="widget_netz_gross_info">Hashrate des Netzes über 90 Tage</string>
     <!-- Steht da, wenn die Abfrage scheitert. Ein Strich statt einer leeren
          Flaeche: leer sieht aus wie ein Fehler des Starters. -->
 </resources>

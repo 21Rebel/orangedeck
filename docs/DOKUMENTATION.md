@@ -789,6 +789,106 @@ Kurve und Bestenliste erscheinen erst ab 330 bzw. 460 Bildpunkten Hoehe -- im
 Dashboard-Tab ist dafuer kein Platz, dort bleiben die Kennzahlen.
 
 
+## Miner: das Netz (seit 11.09.2026)
+
+Der Reiter heisst seit dem 11.09.2026 **Mining** (vorher "Miner") und hat zwei
+Seiten, **Geraet** und **Netzwerk**, umgeschaltet oben in der Mitte. In den
+Einstellungen (Mining) laesst sich waehlen, welche Seiten es gibt
+(`minerPanes`), ob die Solo-Chance steht (`minerSolo`) und was die
+Netzwerk-Seite zeigt (`netParts`: Kennzahlen, Verlauf, Pools; leer heisst
+alles). Ohne eingetragenes Geraet gibt es nur das Netz und keinen
+Umschalter -- der Reiter ist damit immer da; vorher blieb er auf dem Telefon
+ohne Miner-Adresse ganz weg (`canMiner` in `FeedState` ist entfallen). Die
+Wahl steht in `minerPane` ("" = von selbst, "device", "net"), der Zeitraum
+des Graphen in `netSpan`; beide in allen fuenf Wirten wie `priceSpan`.
+
+`NetworkView.qml` zeigt:
+
+    Kennzahlen   Hashrate, Schwierigkeit, naechste Anpassung (mit Bloecken
+                 und Zeit), Ø Blockzeit der Epoche, letzter Block mit Pool --
+                 alles aus dem Zustand (`hashrate`, `difficulty`, `tip`)
+    Graph        `NetworkChart.qml`, Zeitraeume 30 T, 90 T, 1 J, 3 J, Max
+    Pools        Anteile an den Bloecken der letzten sieben Tage, die sechs
+                 groessten einzeln, der Rest als "uebrige"
+
+### Datenweg
+
+Verlauf und Pools sind **nicht im Zustand**, aus demselben Grund wie der
+Kursverlauf: sie aendern sich einmal am Tag. `feed.network(span, done)` holt
+sie, nur solange die Seite zu sehen ist.
+
+    Daemon       /network?span=30d|90d|1y|3y|max   (network_series)
+    Direktbezug  DirectFeed.network()               dieselbe Form
+
+Dahinter `/v1/mining/hashrate/{1m,3m,1y,3y,all}` und `/v1/mining/pools/1w`.
+Gemessen am 11.09.2026: 2,2 kB fuer 30 Tage, 25 kB fuer ein Jahr, 428 kB fuer
+alles. Ausgeduennt auf hoechstens 360 Punkte, **je Fach der Mittelwert** --
+nicht ein Punkt je Fach wie beim Kurs, weil ein einzelner Tag der Hashrate
+zufaellig hoch oder tief liegt. "Max" sind danach 34 kB. Puffer: eine Stunde,
+fuer "Max" sechs, Pools eine halbe. Faellt die Abfrage aus, kommt der letzte
+Stand.
+
+Im Direktbezug kann `done` **zweimal** kommen: erst mit dem Graphen, dann noch
+einmal mit den nachgereichten Pools.
+
+### Der Graph: eine Achse fuer Hashrate und Schwierigkeit
+
+Die Schwierigkeit D setzt eine Rechenleistung voraus: D * 2^32 Versuche je
+Block, ein Block je 600 s, also **D * 2^32 / 600 H/s**. In diese Einheit
+umgerechnet liegt die Treppe der Anpassungen auf derselben Achse wie die
+Hashrate, und man sieht, wie sie hinterherlaeuft. Links steht die Achse als
+Hashrate (orange), rechts dieselbe Hoehe als Schwierigkeit (hell).
+
+Die Treppe beginnt am linken Rand mit dem Wert **vor** der ersten Anpassung im
+Zeitraum: `Schwierigkeit / adjustment` der ersten Stufe. Sonst finge sie bei
+30 Tagen oft erst in der Mitte an.
+
+**Das Mittel ueber sieben Tage ist die Linie.** Die Hashrate eines Tages ist
+eine Schaetzung aus rund 144 Bloecken; im ersten Bild war das Jahr ein Band
+aus Zacken zwischen 850 und 1306 EH/s. Jetzt wie im Miner-Graphen: die
+Tageswerte duenn und blass, das mittige Mittel (±3,5 Tage) kraeftig, Flaeche
+und Zeiger daran. Die Veraenderung in der Kopfzeile kommt aus dem Mittel.
+Nachlaufend gemittelt kaeme es selbst dreieinhalb Tage zu spaet und
+verfaelschte, was der Graph zeigen soll.
+
+**Ueber alles logarithmisch**, ab drei Zehnerpotenzen Spanne: von 2 MH/s 2009
+bis 1000 EH/s linear waeren elf Jahre ein Strich auf der Grundlinie. Die
+feinen Linien liegen dann auf 1 kH/s, 1 MH/s, ... 
+
+**Bei E ist Schluss** (`Tr.big` in `strings.js`): mit "Z" stand an der Achse
+"1,31 ZH/s" und darueber "928 EH/s".
+
+### Solo-Chance (Seite Geraet)
+
+    Anteil     eigene Hashrate / Hashrate des Netzes
+    pro Tag    Anteil * 144                  -> "1 zu 6,00 M pro Tag"
+    Wartezeit  1 / (Anteil * 144) Tage        -> "im Mittel alle 16.428 Jahre"
+
+Beides Erwartungswerte eines Zufalls ohne Gedaechtnis; die Erklaerung hinter
+dem i-Knopf sagt es.
+
+### Am Telefon
+
+Die Seite beginnt oben, nicht mittig -- mittig stand hochkant ein Loch ueber
+den Kennzahlen. Am Finger ist `scaleUnit` mindestens 20: er folgt sonst der
+Breite, und hochkant standen die Beschriftungen in knapp neun Punkten. Der
+Graph bekommt seine Hoehe aus der Breite (0,7, hoechstens 360).
+
+### Widgets
+
+Titel "Mining-Netzwerk" (englisch "Mining Network"): auf dem Startbildschirm
+koennte "Netzwerk" allein auch das WLAN sein. Der Name in der Widget-Auswahl
+ist englisch wie bei allen Widgets (`resConfig 'en'`, siehe `Texte.java`).
+
+`WidgetNetz` (2x2: Hashrate, Schwierigkeit, Anpassung, Ø Blockzeit) und
+`WidgetNetzGross` (4x2, Verlauf ueber 90 Tage als Sieben-Tage-Mittel). Beide
+holen bei jedem Takt neu -- `/v1/mining/hashrate/3d` sind 292 Byte, `/3m`
+6,4 kB --, ein eigener Speicher wie beim Kurs lohnt nicht. Ein Tipp oeffnet
+mit der Aktion `VIEW_NETWORK` den Miner-Reiter **auf der Seite Netz**
+(`seiteAusAbsicht()` in `main.cpp`, `forcedPane` in `Main.qml`), auch wenn
+ein Geraet eingetragen ist.
+
+
 ## Ansichten und Tabs
 
 `ViewTabs.qml` ist der Umschalter zwischen Feed, Uhr und Miner --
@@ -2649,7 +2749,12 @@ Am Schreibtisch, fuer dieselben Fehler ohne Telefon:
                                                     sobald stderr kein Terminal ist
     unshare -rn ./orangedeck                        ohne Netz ("keine Verbindung")
     Xvfb, Fenstergroesse wechseln                   Drehen nachstellen
-    tools/xtest.py X Y                              Klick ins Xvfb-Fenster
+    tools/xtest.py B H                              Fenstergroesse im Xvfb setzen
+    python3 -c 'import sys; sys.path.insert(0, "tools"); import xtest; xtest.klick(X, Y)'
+                                                    Klick ins Xvfb-Fenster -- **nicht**
+                                                    `xtest.py X Y`, das setzt die
+                                                    Groesse (am 11.09.2026 so auf
+                                                    619x66 geschrumpft)
 
 Der Absturz beim Drehen (`7f71c24`) liess sich so am Schreibtisch
 ausloesen, mit demselben Stapel. Gefunden hat ihn das Ausschlussverfahren

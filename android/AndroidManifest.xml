@@ -149,6 +149,30 @@
         </receiver>
 
         <receiver
+            android:name=".WidgetNetz"
+            android:label="@string/widget_netz"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_netz" />
+        </receiver>
+
+        <receiver
+            android:name=".WidgetNetzGross"
+            android:label="@string/widget_netz"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_netz_gross" />
+        </receiver>
+
+        <receiver
             android:name=".WidgetKursGross"
             android:label="@string/widget_kurs"
             android:exported="true">

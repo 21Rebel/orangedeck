@@ -432,7 +432,8 @@ public abstract class DeckWidget extends AppWidgetProvider {
         Texte.vergessen();
         Class<?>[] arten = { WidgetUhr.class, WidgetUhrGross.class, WidgetMempool.class,
                              WidgetMempoolGross.class, WidgetKurs.class, WidgetKursGross.class,
-                             WidgetMiner.class, WidgetMinerGross.class };
+                             WidgetMiner.class, WidgetMinerGross.class,
+                             WidgetNetz.class, WidgetNetzGross.class };
         for (Class<?> a : arten)
             anstossen(c, a.asSubclass(DeckWidget.class));
     }
