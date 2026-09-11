@@ -525,6 +525,10 @@ Item {
         // gerade nichts zeigen koennte. Dieselbe Frage wie in `tabViews`,
         // nur andersherum gestellt -- und sie steht hier, weil nur dieses
         // Bauteil den Feed kennt.
+        // Was der Wirt technisch nicht kann, bekommt auch keine Seite in den
+        // Einstellungen (siehe dort).
+        kannMarkt: root.canMarket
+        kannWallet: !!(root.feed && root.feed.canWallet)
         nichtVerfuegbar: {
             var aus = [];
             if (!(root.walletEnabled && root.feed && root.feed.canWallet))

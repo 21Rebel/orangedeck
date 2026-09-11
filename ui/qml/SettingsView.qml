@@ -35,6 +35,16 @@ Item {
     // trotzdem, sonst waere ihr Platz nicht einstellbar, solange man sie
     // nicht hat; die Seite schreibt nur dazu, dass sie gerade nicht kommen.
     property var nichtVerfuegbar: []
+
+    // **Seiten fuer Ansichten, die es hier nicht gibt, gehoeren weg.** Unter
+    // Android laufen Markt und Wallet nicht (beide brauchen den Dienst), die
+    // Schalter dafuer standen aber trotzdem in den Einstellungen -- am
+    // 11.09.2026 im Emulator gesehen. Anders als `nichtVerfuegbar` fragt das
+    // hier nicht, ob der Anwender etwas abgeschaltet hat, sondern ob es
+    // technisch geht: die Wallet-Seite ist die einzige Stelle, an der sich
+    // die Wallet einschalten laesst.
+    property bool kannMarkt: true
+    property bool kannWallet: true
     property real uiFont: 13
     property string lang: "de"
     // Deckkraft und Startansicht gehoeren dem Fenster. Im Dashboard-Tab
@@ -487,8 +497,18 @@ Item {
     // an **einer** Stelle, damit Beschriftung und Wirkung nicht
     // auseinanderlaufen koennen. Sie standen vorher zweimal da, einmal fuer
     // `current` und einmal im Handler.
-    readonly property var seiten: ["allgemein", "darstellung", "feed", "clock",
-                                   "miner", "explorer", "markt", "wallet"]
+    readonly property var seiten: {
+        var l = ["allgemein", "darstellung", "feed", "clock", "miner", "explorer"];
+        if (root.kannMarkt)
+            l.push("markt");
+        if (root.kannWallet)
+            l.push("wallet");
+        return l;
+    }
+
+    // Faellt die offene Seite weg, bleibt der Reiter sonst ohne Inhalt stehen.
+    onSeitenChanged: if (root.seiten.indexOf(root.tab) < 0)
+        root.tab = "allgemein";
 
     // **Acht Reiter passen auf einem Telefon nicht mehr in eine Zeile.**
     // `ViewTabs` ist eine `Row`: sie laeuft rechts einfach aus dem Bild,
@@ -513,11 +533,16 @@ Item {
         ViewTabs {
             id: reiter
 
-            labels: [Tr.t("set.general", root.lang), Tr.t("set.display", root.lang),
-                     Tr.t("tab.feed", root.lang),
-                     Tr.t("tab.clock", root.lang), Tr.t("tab.miner", root.lang),
-                     Tr.t("tab.explorer", root.lang), Tr.t("tab.market", root.lang),
-                     Tr.t("tab.wallet", root.lang)]
+            labels: {
+                var n = { "allgemein": "set.general", "darstellung": "set.display",
+                          "feed": "tab.feed", "clock": "tab.clock", "miner": "tab.miner",
+                          "explorer": "tab.explorer", "markt": "tab.market",
+                          "wallet": "tab.wallet" };
+                var l = [];
+                for (var i = 0; i < root.seiten.length; i++)
+                    l.push(Tr.t(n[root.seiten[i]], root.lang));
+                return l;
+            }
             current: root.seiten.indexOf(root.tab)
             fontSize: root.uiFont
             textColor: root.textColor
