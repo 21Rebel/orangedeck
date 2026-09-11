@@ -329,7 +329,7 @@ Item {
                     visible: root.one && root.one.error
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: root.one ? root.one.error : ""
+                    text: root.one ? Tr.grund(root.one.error, root.lang) : ""
                     color: root.badColor
                     font.pixelSize: root.uiFont * 0.9
                 }
@@ -645,7 +645,7 @@ Item {
             Text {
                 width: parent.width
                 visible: root.error.length > 0
-                text: root.error
+                text: Tr.grund(root.error, root.lang)
                 color: root.badColor
                 font.pixelSize: root.uiFont * 0.9
             }

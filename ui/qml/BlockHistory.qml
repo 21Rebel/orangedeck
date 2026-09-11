@@ -102,7 +102,7 @@ Column {
     Text {
         width: parent.width
         visible: root.error.length > 0
-        text: root.error
+        text: Tr.grund(root.error, root.lang)
         color: "#e06c6c"
         font.pixelSize: root.uiFont * 0.9
     }

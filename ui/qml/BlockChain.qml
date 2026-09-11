@@ -447,7 +447,7 @@ Item {
     Text {
         anchors.centerIn: parent
         visible: root.blocks.length === 0
-        text: root.error.length ? root.error : Tr.t("loading", root.lang)
+        text: root.error.length ? Tr.grund(root.error, root.lang) : Tr.t("loading", root.lang)
         color: root.dimColor
         font.pixelSize: root.uiFont * 0.85
     }

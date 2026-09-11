@@ -586,7 +586,7 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.WordWrap
         visible: !root.laden && root.fehler !== "" && root.reihe.length < 2
-        text: Tr.t("net.failed", root.lang, root.fehler)
+        text: Tr.t("net.failed", root.lang, Tr.grund(root.fehler, root.lang))
         color: root.dimColor
         font.pixelSize: root.baseFont - 1
     }

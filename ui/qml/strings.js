@@ -559,6 +559,16 @@ var S = {
     "search.searching": ["sucht …", "searching …", "buscando …", "recherche …", "ricerca …", "a procurar …", "zoeken …", "поиск …", "検索中 …", "搜索中 …", "procurando …", "szukanie …", "hledání …"],
     "search.invalid": ["Keine gültige Eingabe.", "Not a valid input.", "Entrada no válida.", "Saisie non valide.", "Voce non valida.", "Entrada inválida.", "Geen geldige invoer.", "Недопустимый ввод.", "入力が正しくありません。", "输入无效。", "Entrada inválida.", "Nieprawidłowe dane.", "Neplatný vstup."],
     "search.xpub": ["Erweiterte Schlüssel gehören in die Wallet-Ansicht — sie kommen später.", "Extended keys belong in the wallet view — they go there instead.", "Las claves extendidas van en la vista de cartera.", "Les clés étendues vont dans la vue portefeuille.", "Le chiavi estese vanno nella vista portafoglio.", "As chaves estendidas pertencem à vista da carteira.", "Uitgebreide sleutels horen in de walletweergave.", "Расширенные ключи — во вкладке кошелька.", "拡張鍵はウォレット画面で扱います。", "扩展公钥请在钱包视图中使用。", "As chaves estendidas pertencem à vista da carteira.", "Klucze rozszerzone należą do widoku portfela.", "Rozšířené klíče patří do zobrazení peněženky."],
+    // Der Hinweis rechts im Suchfeld: was die Eingabe ist oder werden kann.
+    // Bis 0.2.7 stand er fest auf Deutsch in search.js -- am 11.09.2026 im
+    // Bildschirmvergleich unter englischer Oberflaeche gefunden.
+    "search.kind.blockhash": ["Blockhash", "Block hash", "Hash de bloque", "Hash de bloc", "Hash del blocco", "Hash do bloco", "Blokhash", "Хеш блока", "ブロックハッシュ", "区块哈希", "Hash do bloco", "Hash bloku", "Hash bloku"],
+    "search.kind.input": ["Transaktionseingang", "Transaction input", "Entrada de transacción", "Entrée de transaction", "Input della transazione", "Entrada da transação", "Transactie-invoer", "Вход транзакции", "トランザクションの入力", "交易输入", "Entrada da transação", "Wejście transakcji", "Vstup transakce"],
+    "search.kind.output": ["Transaktionsausgang", "Transaction output", "Salida de transacción", "Sortie de transaction", "Output della transazione", "Saída da transação", "Transactie-uitvoer", "Выход транзакции", "トランザクションの出力", "交易输出", "Saída da transação", "Wyjście transakcji", "Výstup transakce"],
+    "search.kind.segwit": ["Adresse (SegWit)", "Address (SegWit)", "Dirección (SegWit)", "Adresse (SegWit)", "Indirizzo (SegWit)", "Endereço (SegWit)", "Adres (SegWit)", "Адрес (SegWit)", "アドレス（SegWit）", "地址（SegWit）", "Endereço (SegWit)", "Adres (SegWit)", "Adresa (SegWit)"],
+    "search.kind.xpub": ["Erweiterter öffentlicher Schlüssel", "Extended public key", "Clave pública extendida", "Clé publique étendue", "Chiave pubblica estesa", "Chave pública estendida", "Uitgebreide publieke sleutel", "Расширенный открытый ключ", "拡張公開鍵", "扩展公钥", "Chave pública estendida", "Rozszerzony klucz publiczny", "Rozšířený veřejný klíč"],
+    "search.moreChars": ["noch {0} Zeichen bis zu einer TxID", "{0} more characters to a TxID", "faltan {0} caracteres para un TxID", "encore {0} caractères jusqu’à un TxID", "ancora {0} caratteri per un TxID", "faltam {0} caracteres para um TxID", "nog {0} tekens tot een TxID", "ещё {0} символов до TxID", "TxID まであと {0} 文字", "距 TxID 还差 {0} 个字符", "faltam {0} caracteres para um TxID", "jeszcze {0} znaków do TxID", "ještě {0} znaků do TxID"],
+    "search.invalidHint": ["keine gültige Eingabe", "not a valid input", "entrada no válida", "saisie non valide", "voce non valida", "entrada inválida", "geen geldige invoer", "недопустимый ввод", "無効な入力", "输入无效", "entrada inválida", "nieprawidłowe dane", "neplatný vstup"],
     "search.noFormat": ["(kein Adressformat)", "(not an address format)", "(no es un formato de dirección)", "(pas un format d’adresse)", "(non è un formato di indirizzo)", "(não é um formato de endereço)", "(geen adresformaat)", "(не формат адреса)", "(アドレス形式ではありません)", "（非地址格式）", "(não é um formato de endereço)", "(to nie format adresu)", "(není to formát adresy)"],
     "block.prev": ["‹ vorheriger Block", "‹ Previous block", "‹ Bloque anterior", "‹ Bloc précédent", "‹ Blocco precedente", "‹ Bloco anterior", "‹ Vorig blok", "‹ Предыдущий блок", "‹ 前のブロック", "‹ 上一个区块", "‹ Bloco anterior", "‹ Poprzedni blok", "‹ Předchozí blok"],
     "block.next": ["nächster Block ›", "Next block ›", "Bloque siguiente ›", "Bloc suivant ›", "Blocco successivo ›", "Bloco seguinte ›", "Volgend blok ›", "Следующий блок ›", "次のブロック ›", "下一个区块 ›", "Próximo bloco ›", "Następny blok ›", "Další blok ›"],
@@ -789,8 +799,44 @@ var S = {
         "Vlastní služba drží jedno připojení pro všechna okna a zvládne peněženku. Přímo služba není potřeba — peněženka vypadne, ale miner je dosažitelný i tak, jakmile zadáte jeho adresu."
     ],
     "src.daemon": ["Eigener Dienst", "Own service", "Servicio propio", "Service local", "Servizio locale", "Serviço próprio", "Eigen dienst", "Собственная служба", "自前のサービス", "本地服务", "Serviço próprio", "Własna usługa", "Vlastní služba"],
-    "src.direct": ["Direkt zu mempool.space", "Directly to mempool.space", "Directo a mempool.space", "Directement à mempool.space", "Diretto a mempool.space", "Diretamente ao mempool.space", "Rechtstreeks naar mempool.space", "Напрямую к mempool.space", "mempool.space に直接", "直连 mempool.space", "Diretamente ao mempool.space", "Bezpośrednio do mempool.space", "Přímo na mempool.space"]
+    "src.direct": ["Direkt zu mempool.space", "Directly to mempool.space", "Directo a mempool.space", "Directement à mempool.space", "Diretto a mempool.space", "Diretamente ao mempool.space", "Rechtstreeks naar mempool.space", "Напрямую к mempool.space", "mempool.space に直接", "直连 mempool.space", "Diretamente ao mempool.space", "Bezpośrednio do mempool.space", "Přímo na mempool.space"],
+
+    // ------------------------------------------- Gruende (siehe grund())
+    "err.unreachable": ["nicht erreichbar", "unreachable", "no disponible", "injoignable", "non raggiungibile", "inacessível", "niet bereikbaar", "недоступно", "接続できません", "无法连接", "inacessível", "nieosiągalne", "nedostupné"],
+    "err.unreadable": ["Antwort nicht lesbar", "response not readable", "respuesta ilegible", "réponse illisible", "risposta illeggibile", "resposta ilegível", "antwoord onleesbaar", "ответ не читается", "応答を読み取れません", "响应无法读取", "resposta ilegível", "nieczytelna odpowiedź", "nečitelná odpověď"],
+    "err.noAnswer": ["keine Antwort", "no response", "sin respuesta", "pas de réponse", "nessuna risposta", "sem resposta", "geen antwoord", "нет ответа", "応答がありません", "无响应", "sem resposta", "brak odpowiedzi", "žádná odpověď"],
+    "err.directNotReady": ["Direktbezug nicht bereit", "direct connection not ready", "conexión directa no lista", "connexion directe pas prête", "connessione diretta non pronta", "ligação direta não pronta", "directe verbinding niet gereed", "прямое подключение не готово", "直接接続の準備ができていません", "直连尚未就绪", "conexão direta não pronta", "połączenie bezpośrednie niegotowe", "přímé připojení není připraveno"],
+    "err.notInDirect": ["im Direktbezug nicht verfügbar", "not available with the direct connection", "no disponible con la conexión directa", "indisponible en connexion directe", "non disponibile con la connessione diretta", "indisponível com a ligação direta", "niet beschikbaar bij directe verbinding", "недоступно при прямом подключении", "直接接続では利用できません", "直连模式下不可用", "indisponível com a conexão direta", "niedostępne przy połączeniu bezpośrednim", "při přímém připojení nedostupné"],
+    "err.noWebSockets": ["Direktbezug nicht verfügbar (QtWebSockets fehlt)", "direct connection unavailable (QtWebSockets missing)", "conexión directa no disponible (falta QtWebSockets)", "connexion directe indisponible (QtWebSockets manquant)", "connessione diretta non disponibile (manca QtWebSockets)", "ligação direta indisponível (falta QtWebSockets)", "directe verbinding niet beschikbaar (QtWebSockets ontbreekt)", "прямое подключение недоступно (нет QtWebSockets)", "直接接続は利用できません（QtWebSockets がありません）", "直连不可用（缺少 QtWebSockets）", "conexão direta indisponível (falta QtWebSockets)", "połączenie bezpośrednie niedostępne (brak QtWebSockets)", "přímé připojení nedostupné (chybí QtWebSockets)"],
+    "err.incomplete": ["Abfrage unvollständig", "query incomplete", "consulta incompleta", "requête incomplète", "richiesta incompleta", "consulta incompleta", "opvraging onvolledig", "запрос неполный", "取得が不完全です", "查询不完整", "consulta incompleta", "zapytanie niepełne", "dotaz neúplný"],
+    "err.unknownPath": ["unbekannter Pfad", "unknown path", "ruta desconocida", "chemin inconnu", "percorso sconosciuto", "caminho desconhecido", "onbekend pad", "неизвестный путь", "不明なパス", "未知路径", "caminho desconhecido", "nieznana ścieżka", "neznámá cesta"],
+
+    // Die Tastenhilfe, die nach einem Tastendruck kurz eingeblendet wird. Bis
+    // 0.2.7 fest auf Deutsch in Main.qml und shell.qml.
+    "keys.help": ["1–6 Ansicht · c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft", "1–6 View · c Color · s Size · i Block info · l Legend · + − Opacity", "1–6 Vista · c Color · s Tamaño · i Datos del bloque · l Leyenda · + − Opacidad", "1–6 Vue · c Couleur · s Taille · i Infos du bloc · l Légende · + − Opacité", "1–6 Vista · c Colore · s Dimensione · i Dati del blocco · l Legenda · + − Opacità", "1–6 Vista · c Cor · s Tamanho · i Dados do bloco · l Legenda · + − Opacidade", "1–6 Weergave · c Kleur · s Grootte · i Blokgegevens · l Legenda · + − Dekking", "1–6 Вид · c Цвет · s Размер · i Данные блока · l Легенда · + − Непрозрачность", "1–6 表示 · c 色 · s サイズ · i ブロック情報 · l 凡例 · + − 不透明度", "1–6 视图 · c 颜色 · s 大小 · i 区块信息 · l 图例 · + − 不透明度", "1–6 Tela · c Cor · s Tamanho · i Dados do bloco · l Legenda · + − Opacidade", "1–6 Widok · c Kolor · s Rozmiar · i Dane bloku · l Legenda · + − Krycie", "1–6 Zobrazení · c Barva · s Velikost · i Údaje bloku · l Legenda · + − Krytí"],
+    "keys.fullscreen": ["F11 Vollbild", "F11 Full screen", "F11 Pantalla completa", "F11 Plein écran", "F11 Schermo intero", "F11 Ecrã inteiro", "F11 Volledig scherm", "F11 Полный экран", "F11 全画面", "F11 全屏", "F11 Tela cheia", "F11 Pełny ekran", "F11 Celá obrazovka"]
 };
+
+// **Gruende, die als Text aus dem Datenweg kommen** -- FeedState, DirectFeed,
+// DirectMiner und der Daemon melden sie auf Deutsch, und sie landen in
+// Saetzen wie "Network data unavailable ({0})". Uebersetzt wird erst beim
+// Anzeigen, mit `grund()`; was hier nicht steht (HTTP-Status, Meldungen aus
+// Python), bleibt, wie es kam.
+var GRUENDE = {
+    "nicht erreichbar": "err.unreachable",
+    "Antwort nicht lesbar": "err.unreadable",
+    "keine Antwort": "err.noAnswer",
+    "Direktbezug nicht bereit": "err.directNotReady",
+    "im Direktbezug nicht verfuegbar": "err.notInDirect",
+    "Direktbezug nicht verfuegbar (QtWebSockets fehlt)": "err.noWebSockets",
+    "Abfrage unvollstaendig": "err.incomplete",
+    "unbekannter Pfad": "err.unknownPath"
+};
+
+function grund(text, lang) {
+    var k = GRUENDE[String(text)];
+    return k ? t(k, lang) : text;
+}
 
 // Text holen. `lang` bestimmt die Spalte; fehlt der Schluessel oder die
 // Sprache, wird auf Englisch und zuletzt auf den Schluessel selbst

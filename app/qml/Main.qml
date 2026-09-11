@@ -726,7 +726,7 @@ Window {
             horizontalAlignment: Text.AlignHCenter
             color: "#9a94a6"
             font.pixelSize: 11
-            text: "1–6 Ansicht   ·   c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft · F11 Vollbild"
+            text: Tr.t("keys.help", win.lang) + " · " + Tr.t("keys.fullscreen", win.lang)
         }
 
         function flash() {

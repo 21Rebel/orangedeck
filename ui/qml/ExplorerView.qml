@@ -471,7 +471,9 @@ Item {
                 // Bei leerem Feld stuende hier dasselbe wie im Platzhalter --
                 // also nichts.
                 text: root.busy ? Tr.t("search.searching", root.lang)
-                                : (field.text.length ? Search.hintFor(field.text) : "")
+                                : (field.text.length ? Search.hintFor(field.text, function (k, a) {
+                                      return Tr.t(k, root.lang, a);
+                                  }) : "")
                 color: root.busy ? root.accentColor : root.dimColor
                 font.pixelSize: root.uiFont * 0.82
             }
@@ -619,7 +621,7 @@ Item {
             spacing: root.scaleUnit * 0.45
 
             readonly property var d: root.result
-            readonly property bool confirmed: d.status && d.status.confirmed
+            readonly property bool confirmed: !!(d.status && d.status.confirmed)
 
             Row {
                 spacing: root.uiFont * 0.6
@@ -690,7 +692,10 @@ Item {
 
                     width: Math.min(flick.width - root.uiFont * 6, implicitWidth)
                     elide: Text.ElideMiddle
-                    text: root.result.txid
+                    // Beim Wechsel der Seite steht hier kurz ein Ergebnis ohne
+                    // txid -- ohne das `|| ""` meldet Qt "Unable to assign
+                    // [undefined] to QString".
+                    text: root.result.txid || ""
                     color: root.accentColor
                     font.pixelSize: root.scaleUnit * 0.8
                     font.family: Fonts.mono()
@@ -704,8 +709,8 @@ Item {
 
                 CopyButton {
                     anchors.verticalCenter: txidLabel.verticalCenter
-                    text: root.result.txid
-                    done: root.copied === root.result.txid
+                    text: root.result.txid || ""
+                    done: root.copied === (root.result.txid || "")
                     size: root.uiFont * 1.05
                     iconColor: root.dimColor
                     hoverColor: root.textColor

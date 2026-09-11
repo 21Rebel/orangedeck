@@ -434,7 +434,7 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.WordWrap
         visible: root.fehler !== "" && !root.punkte.length
-        text: Tr.t("price.failed", root.lang, root.fehler)
+        text: Tr.t("price.failed", root.lang, Tr.grund(root.fehler, root.lang))
         color: root.dimColor
         font.pixelSize: root.baseFont - 1
     }

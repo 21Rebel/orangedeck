@@ -187,7 +187,7 @@ Column {
         width: parent.width
         text: {
             if (root.error.length)
-                return root.error;
+                return Tr.grund(root.error, root.lang);
             if (root.busy)
                 return Tr.t("proj.fetching", root.lang);
             if (!root.tiles)
