@@ -108,9 +108,14 @@ PluginComponent {
             "minerChart": root.get("minerChart", true),
             "minerDomains": root.get("minerDomains", true),
             "minerBoard": root.get("minerBoard", true),
+            "minerPane": root.get("minerPane", ""),
+            "netSpan": root.get("netSpan", "1y"),
             "minerFields": root.getList("minerFieldsRaw", ""),
             "explorerLive": root.get("explorerLive", true),
             "explorerParts": root.getList("explorerPartsRaw", ""),
+            "minerPanes": root.getList("minerPanesRaw", ""),
+            "netParts": root.getList("netPartsRaw", ""),
+            "minerSolo": root.get("minerSolo", true),
             "explorerPanels": root.getList("explorerPanelsRaw", ""),
             "walletEnabled": root.get("walletEnabled", false),
             "tabOrder": root.getList("tabOrderRaw", "")
@@ -128,6 +133,7 @@ PluginComponent {
         // eine leere Liste ueberlebt die Ablage sonst nicht.
         if (key === "clockFields" || key === "minerFields" || key === "bigFields"
                 || key === "explorerParts" || key === "explorerPanels"
+                || key === "minerPanes" || key === "netParts"
                 || key === "tabOrder") {
             root.put(key + "Raw", (value || []).join("|"));
             return;

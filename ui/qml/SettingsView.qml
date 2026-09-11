@@ -984,6 +984,21 @@ Item {
                 width: parent.width
                 visible: root.tab === "miner"
 
+                // Welche Seiten der Reiter hat. Ohne "Geraet" nur das Netz,
+                // auch mit eingetragenem Miner.
+                Zeile {
+                    label: Tr.t("set.minerPanes", root.lang)
+                    help: Tr.t("set.minerPanesHelp", root.lang)
+
+                    Haken {
+                        schluessel: "minerPanes"
+                        alle: ["device", "net"]
+                        eintraege: [
+                            { "id": "device", "l": Tr.t("miner.paneDevice", root.lang) },
+                            { "id": "net", "l": Tr.t("miner.paneNet", root.lang) }
+                        ]
+                    }
+                }
 
                 Zeile {
                     label: Tr.t("set.minerHosts", root.lang)
@@ -1043,6 +1058,31 @@ Item {
                     Schalter {
                         an: root.val("minerBoard", true)
                         onUmgelegt: root.changed("minerBoard", !root.val("minerBoard", true))
+                    }
+                }
+
+                Zeile {
+                    label: Tr.t("miner.solo", root.lang)
+                    help: Tr.t("set.minerSoloHelp", root.lang)
+
+                    Schalter {
+                        an: root.val("minerSolo", true)
+                        onUmgelegt: root.changed("minerSolo", !root.val("minerSolo", true))
+                    }
+                }
+
+                Zeile {
+                    label: Tr.t("set.netParts", root.lang)
+                    help: Tr.t("set.netPartsHelp", root.lang)
+
+                    Haken {
+                        schluessel: "netParts"
+                        alle: ["stats", "chart", "pools"]
+                        eintraege: [
+                            { "id": "stats", "l": Tr.t("set.metrics", root.lang) },
+                            { "id": "chart", "l": Tr.t("set.minerChart", root.lang) },
+                            { "id": "pools", "l": Tr.t("net.poolsLabel", root.lang) }
+                        ]
                     }
                 }
             }

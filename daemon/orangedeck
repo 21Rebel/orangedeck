@@ -1766,6 +1766,135 @@ def price_series(span, cur):
 
 
 # --------------------------------------------------------------------------
+# Das Netz: Hashrate, Schwierigkeit, Pools
+# --------------------------------------------------------------------------
+# Fuer den Reiter "Netz" in der Miner-Ansicht. **Nicht im Zustand**, aus
+# demselben Grund wie der Kursverlauf: der wird 2,5-mal je Sekunde geholt,
+# diese Reihen aendern sich einmal am Tag. Sie kommen nur, wenn jemand den
+# Reiter offen hat.
+#
+# Die Zeitraeume heissen wie beim Kurs, damit beide Graphen dieselben Knoepfe
+# haben. Dahinter stehen die Namen von mempool.space. 24 Stunden und sieben
+# Tage gibt es nicht: die Reihe hat einen Punkt am Tag, das waeren einer und
+# sieben.
+NET_SPANS = {"30d": "1m", "90d": "3m", "1y": "1y", "3y": "3y", "max": "all"}
+# Gemessen am 11.09.2026: 1m 2,2 kB, 1y 25 kB, 3y 75 kB, all 428 kB.
+NET_TTL = {"max": 6 * 3600}
+NET_TTL_DEFAULT = 3600
+POOLS_TTL = 1800
+_net_lock = threading.Lock()
+_net_cache = {}     # Zeitraum -> (Zeitpunkt, Antwort)
+
+
+def _duennen_mittel(reihe, anzahl):
+    """Auf hoechstens `anzahl` Punkte, je Fach **der Mittelwert**.
+
+    Beim Kurs wird aus jedem Fach ein Punkt genommen; dort ist jeder Punkt
+    ein echter Kurs. Die Hashrate ist dagegen schon eine Schaetzung aus den
+    Bloecken eines Tages und springt von Tag zu Tag um zehn, zwanzig Prozent.
+    Ein herausgegriffener Tag wuerde zufaellig hoch oder tief liegen, das
+    Mittel zeigt den Gang. Die Zeit eines Fachs ist ebenso das Mittel seiner
+    Tage."""
+    if len(reihe) <= anzahl:
+        return reihe
+    t0, t1 = reihe[0][0], reihe[-1][0]
+    breite = max(1, (t1 - t0) / anzahl)
+    out, fach, summe, zeiten, n = [], None, 0.0, 0, 0
+    for t, v in reihe:
+        f = int((t - t0) / breite)
+        if f != fach and n:
+            out.append([round(zeiten / n), summe / n])
+            summe, zeiten, n = 0.0, 0, 0
+        fach = f
+        summe += v
+        zeiten += t
+        n += 1
+    if n:
+        out.append([round(zeiten / n), summe / n])
+    return out
+
+
+def _pools_holen():
+    """Anteile der Pools an den Bloecken der letzten Woche.
+
+    Eine Woche, weil ein Tag mit 144 Bloecken bei den kleinen Pools nur
+    Zufall zeigt, und ein Monat den Wechsel eines grossen Pools verschleppt.
+    Der Zeitraum steht in der Antwort; die Oberflaeche schreibt ihn dazu."""
+    with _net_lock:
+        hit = _net_cache.get("pools")
+        if hit and time.time() - hit[0] < POOLS_TTL:
+            return hit[1]
+    try:
+        d = http_json("/v1/mining/pools/1w")
+    except Exception as e:
+        sys.stderr.write("Pools: %s\n" % e)
+        return hit[1] if hit else None
+    liste = [{"name": p.get("name") or "",
+              "slug": p.get("slug") or "",
+              "blocks": int(p.get("blockCount") or 0)}
+             for p in (d.get("pools") or [])]
+    liste.sort(key=lambda p: -p["blocks"])
+    pools = {"span": "1w", "blockCount": int(d.get("blockCount") or 0),
+             "list": liste}
+    with _net_lock:
+        _net_cache["pools"] = (time.time(), pools)
+    return pools
+
+
+def network_series(span):
+    """Hashrate und Schwierigkeit ueber einen Zeitraum, dazu die Pools.
+
+        hashrate    [[Zeit, H/s], ...], hoechstens PRICE_POINTS Punkte
+        difficulty  [[Zeit, Schwierigkeit, Hoehe, Faktor], ...] -- jede
+                    Anpassung im Zeitraum. Der Faktor ist das Verhaeltnis
+                    zur vorigen; damit laesst sich die Treppe am linken Rand
+                    mit dem Wert **vor** der ersten Anpassung beginnen.
+
+    Scheitert die Abfrage, kommt der letzte Stand -- ein Verlauf von gestern
+    ist besser als gar keiner."""
+    if span not in NET_SPANS:
+        span = "1y"
+    ttl = NET_TTL.get(span, NET_TTL_DEFAULT)
+    with _net_lock:
+        hit = _net_cache.get(span)
+    if hit and time.time() - hit[0] < ttl:
+        d = dict(hit[1])
+    else:
+        try:
+            roh = http_json("/v1/mining/hashrate/" + NET_SPANS[span], timeout=30)
+            reihe = [[int(p.get("timestamp") or 0), float(p.get("avgHashrate") or 0)]
+                     for p in (roh.get("hashrates") or [])]
+            # Die ersten Tage von 2009 tragen 0 -- auf einer linearen Achse
+            # stoert das nicht, es gibt aber keinen Wert, der dort zu lesen
+            # waere.
+            reihe = [p for p in reihe if p[0] and p[1] > 0]
+            stufen = [[int(x.get("time") or 0), float(x.get("difficulty") or 0),
+                       int(x.get("height") or 0),
+                       round(float(x.get("adjustment") or 1), 6)]
+                      for x in (roh.get("difficulty") or [])]
+            d = {
+                "span": span,
+                "hashrate": [[t, round(v)] for t, v in
+                             _duennen_mittel(reihe, PRICE_POINTS)],
+                "difficulty": [s for s in stufen if s[0] and s[1] > 0],
+                "current": roh.get("currentHashrate"),
+                "currentDifficulty": roh.get("currentDifficulty"),
+                "ts": round(time.time(), 2),
+            }
+            with _net_lock:
+                _net_cache[span] = (time.time(), d)
+            d = dict(d)
+        except Exception as e:
+            sys.stderr.write("Netz-Hashrate (%s): %s\n" % (span, e))
+            if not hit:
+                return {"span": span, "hashrate": [], "difficulty": [],
+                        "pools": _pools_holen(), "error": str(e)}
+            d = dict(hit[1])
+    d["pools"] = _pools_holen()
+    return d
+
+
+# --------------------------------------------------------------------------
 # Zustand
 # --------------------------------------------------------------------------
 class Feed:
@@ -2431,6 +2560,17 @@ class _Handler(BaseHTTPRequestHandler):
                     elif name == "cur" and wert.isalpha() and len(wert) == 3:
                         cur = wert.lower()
                 self._send(json.dumps(price_series(span, cur),
+                                      separators=(",", ":")))
+            elif path == "/network":
+                # `?span=30d|90d|1y|3y|max` -- Hashrate, Schwierigkeit und
+                # Pools fuer den Reiter "Netz". Nicht im Zustand, siehe
+                # network_series().
+                span = "1y"
+                for teil in (zerlegt.query or "").split("&"):
+                    name, _, wert = teil.partition("=")
+                    if name == "span" and wert in NET_SPANS:
+                        span = wert
+                self._send(json.dumps(network_series(span),
                                       separators=(",", ":")))
             elif path == "/wallets":
                 # Absichtlich nicht im Zustand: die Wallet-Angaben sind rund

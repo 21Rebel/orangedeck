@@ -599,6 +599,136 @@ Item {
         return { "span": span, "cur": w, "points": reihe, "converted": umgerechnet };
     }
 
+    // ----------------------------------------------------------------- Netz
+    // Hashrate, Schwierigkeit und Pools fuer den Reiter "Netz". Dieselbe Form
+    // wie `/network` beim Dienst (`network_series`), dieselben Zeitraeume,
+    // dieselben Fristen. Gehalten wird je Zeitraum die fertige Antwort.
+    readonly property var __netSpans: ({ "30d": "1m", "90d": "3m", "1y": "1y",
+                                         "3y": "3y", "max": "all" })
+    property var __netCache: ({})
+
+    function network(span, done) {
+        if (!root.__netSpans[span])
+            span = "1y";
+        var jetzt = Date.now() / 1000;
+        var alt = root.__netCache[span];
+        var frist = span === "max" ? 6 * 3600 : 3600;
+        var fertig = function () {
+            var pools = root.__netCache.pools;
+            var d = {};
+            var basis = root.__netCache[span] ? root.__netCache[span].d : null;
+            if (!basis) {
+                done(null, "nicht erreichbar");
+                return;
+            }
+            for (var k in basis)
+                d[k] = basis[k];
+            d.pools = pools ? pools.d : null;
+            done(d, null);
+        };
+        // Die Pools laufen nebenher; kommen sie nicht, steht der Graph
+        // trotzdem. **`done` kann deshalb zweimal kommen**: erst mit dem
+        // Graphen, dann noch einmal, wenn die Pools nachgereicht sind. Der
+        // Aufrufer nimmt einfach die neuere Antwort.
+        var p = root.__netCache.pools;
+        if (!p || jetzt - p.ts > 1800) {
+            root.__get("/v1/mining/pools/1w", function (txt) {
+                try {
+                    var roh = JSON.parse(txt);
+                    var liste = (roh.pools || []).map(function (x) {
+                        return { "name": x.name || "", "slug": x.slug || "",
+                                 "blocks": root.__num(x.blockCount) };
+                    });
+                    liste.sort(function (a, b) {
+                        return b.blocks - a.blocks;
+                    });
+                    var c = root.__netCache;
+                    c.pools = { "ts": Date.now() / 1000,
+                                "d": { "span": "1w",
+                                       "blockCount": root.__num(roh.blockCount),
+                                       "list": liste } };
+                    root.__netCache = c;
+                } catch (e) {}
+                if (root.__netCache[span])
+                    fertig();
+            });
+        }
+        if (alt && jetzt - alt.ts < frist) {
+            fertig();
+            return;
+        }
+        root.__get("/v1/mining/hashrate/" + root.__netSpans[span], function (txt) {
+            var roh;
+            try {
+                roh = JSON.parse(txt);
+            } catch (e) {
+                if (alt)
+                    fertig();
+                else
+                    done(null, "Antwort nicht lesbar");
+                return;
+            }
+            var reihe = [];
+            var h = roh.hashrates || [];
+            for (var i = 0; i < h.length; i++) {
+                var t = root.__num(h[i].timestamp), v = root.__num(h[i].avgHashrate);
+                if (t && v > 0)
+                    reihe.push([t, v]);
+            }
+            var stufen = [];
+            var s = roh.difficulty || [];
+            for (var j = 0; j < s.length; j++) {
+                var st = root.__num(s[j].time), sd = root.__num(s[j].difficulty);
+                if (st && sd > 0)
+                    stufen.push([st, sd, root.__num(s[j].height),
+                                 root.__num(s[j].adjustment) || 1]);
+            }
+            var c = root.__netCache;
+            c[span] = { "ts": Date.now() / 1000,
+                        "d": { "span": span,
+                               "hashrate": root.__duennenMittel(reihe, root.__maxPunkte),
+                               "difficulty": stufen,
+                               "current": roh.currentHashrate,
+                               "currentDifficulty": roh.currentDifficulty,
+                               "ts": Date.now() / 1000 } };
+            root.__netCache = c;
+            fertig();
+        }, function () {
+            // Ein Verlauf von gestern ist besser als gar keiner
+            if (alt)
+                fertig();
+            else
+                done(null, "nicht erreichbar");
+        });
+    }
+
+    // Wie `_duennen_mittel` im Dienst: je Fach der **Mittelwert**, nicht ein
+    // herausgegriffener Tag -- die Hashrate ist eine Tagesschaetzung und
+    // springt von Tag zu Tag um zehn, zwanzig Prozent.
+    function __duennenMittel(reihe, anzahl) {
+        if (reihe.length <= anzahl)
+            return reihe;
+        var t0 = reihe[0][0], t1 = reihe[reihe.length - 1][0];
+        var breite = Math.max(1, (t1 - t0) / anzahl);
+        var out = [], fach = null, summe = 0, zeiten = 0, n = 0;
+        for (var i = 0; i < reihe.length; i++) {
+            var f = Math.floor((reihe[i][0] - t0) / breite);
+            if (f !== fach && n) {
+                out.push([Math.round(zeiten / n), summe / n]);
+                summe = 0;
+                zeiten = 0;
+                n = 0;
+            }
+            fach = f;
+            summe += reihe[i][1];
+            zeiten += reihe[i][0];
+            n++;
+        }
+        if (n)
+            out.push([Math.round(zeiten / n), summe / n]);
+        return out;
+    }
+
     function lookup(kind, arg, done) {
         if (kind === "projectedtiles") {
             // Jede Abfrage verlaengert das Mithoeren; hoert die Ansicht auf zu

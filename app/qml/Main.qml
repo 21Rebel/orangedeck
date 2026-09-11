@@ -148,6 +148,10 @@ Window {
     property bool minerChart: true
     property bool minerDomains: true
     property bool minerBoard: true
+    // Miner-Reiter: welche Seite ("" von selbst, "device", "net") und der
+    // Zeitraum des Netz-Graphen
+    property string minerPane: ""
+    property string netSpan: "1y"
     property bool explorerLive: true
     // Als Zeichenkette abgelegt, getrennt mit "|". Zwei Fallen von QSettings
     // stecken darin: eine **leere** Liste wird als `@Invalid()` geschrieben und
@@ -155,6 +159,14 @@ Window {
     // INI-Zeichenkette gilt beim Lesen als **Listentrenner**, aus
     // "height,price" wurde stillschweigend wieder "height".
     property string explorerPartsRaw: ""
+    // Mining-Reiter: welche Seiten ("device", "net") und was auf der
+    // Netz-Seite ("stats", "chart", "pools"). Leer heisst alles; abgelegt
+    // wie `explorerPartsRaw`, aus denselben zwei Gruenden.
+    property string minerPanesRaw: ""
+    readonly property var minerPanes: minerPanesRaw.length ? minerPanesRaw.split("|") : []
+    property string netPartsRaw: ""
+    readonly property var netParts: netPartsRaw.length ? netPartsRaw.split("|") : []
+    property bool minerSolo: true
     readonly property var explorerParts: explorerPartsRaw.length ? explorerPartsRaw.split("|") : []
     // Als Zeichenkette abgelegt, getrennt mit "|". Zwei Fallen von QSettings
     // stecken darin: eine **leere** Liste wird als `@Invalid()` geschrieben und
@@ -197,6 +209,11 @@ Window {
     property bool bare: false
     // Von der Befehlszeile (`--source`), ebenfalls nicht gespeichert
     property string forcedSource: ""
+    // Vom Netz-Widget: die Seite "Netz" im Miner-Reiter. **Diese wird
+    // gespeichert** -- anders als `forcedView` ist sie keine Eigenschaft eines
+    // Widgets an der Wand, sondern die zuletzt gewaehlte Seite, wie ein Tipp
+    // auf den Umschalter.
+    property string forcedPane: ""
 
     // **Vollbild als Blockuhr.** Ohne Systemleisten und ohne Reiterzeile,
     // und solange es an ist, bleibt der Bildschirm an (das setzt main.cpp,
@@ -260,8 +277,13 @@ Window {
         property alias minerChart: win.minerChart
         property alias minerDomains: win.minerDomains
         property alias minerBoard: win.minerBoard
+        property alias minerPane: win.minerPane
+        property alias netSpan: win.netSpan
         property alias explorerLive: win.explorerLive
         property alias explorerPartsRaw: win.explorerPartsRaw
+        property alias minerPanesRaw: win.minerPanesRaw
+        property alias netPartsRaw: win.netPartsRaw
+        property alias minerSolo: win.minerSolo
         property alias explorerPanelsRaw: win.explorerPanelsRaw
         property alias langWahl: win.langWahl
         property alias bigFieldsRaw: win.bigFieldsRaw
@@ -277,6 +299,8 @@ Window {
     Component.onCompleted: {
         if (win.vollbild)
             vollbildAnwenden();
+        if (win.forcedPane !== "")
+            win.minerPane = win.forcedPane;
         if (win.forcedView >= 0)
             win.view = win.forcedView;
         // **Keine Obergrenze mehr.** Hier stand `<= 3` -- aus der Zeit, als
@@ -400,10 +424,20 @@ Window {
             win.minerDomains = value;
         else if (key === "minerBoard")
             win.minerBoard = value;
+        else if (key === "minerPane")
+            win.minerPane = value;
+        else if (key === "netSpan")
+            win.netSpan = value;
         else if (key === "explorerLive")
             win.explorerLive = value;
         else if (key === "explorerParts")
             win.explorerPartsRaw = (value || []).join("|");
+        else if (key === "minerPanes")
+            win.minerPanesRaw = (value || []).join("|");
+        else if (key === "netParts")
+            win.netPartsRaw = (value || []).join("|");
+        else if (key === "minerSolo")
+            win.minerSolo = value;
         else if (key === "explorerPanels")
             win.explorerPanelsRaw = (value || []).join("|");
         else if (key === "lang")
@@ -463,8 +497,13 @@ Window {
         "minerChart": win.minerChart,
         "minerDomains": win.minerDomains,
         "minerBoard": win.minerBoard,
+        "minerPane": win.minerPane,
+        "netSpan": win.netSpan,
         "explorerLive": win.explorerLive,
         "explorerParts": win.explorerParts,
+        "minerPanes": win.minerPanes,
+        "netParts": win.netParts,
+        "minerSolo": win.minerSolo,
         "explorerPanels": win.explorerPanels,
         "lang": win.lang,
         "langWahl": win.langWahl,

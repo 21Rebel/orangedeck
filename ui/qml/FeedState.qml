@@ -51,9 +51,10 @@ Item {
     // erreichbar, und `DirectMiner` fragt es dort selbst ab. Was fehlt, ist
     // nicht der Weg, sondern die Adresse: ohne Eintrag gibt es nichts zu
     // fragen, mit Eintrag schon.
+    //
+    // `canMiner` ist seit dem 11.09.2026 weg: der Miner-Reiter zeigt ohne
+    // Geraet das Netz und hat damit immer einen Inhalt.
     readonly property bool canWallet: !root.direkt
-    readonly property bool canMiner: !root.direkt
-                                     || (root.minerHosts || []).length > 0
 
     // Die Adressen aus den Einstellungen. Im Daemon-Betrieb bleiben sie
     // ungenutzt -- dort liest der Dienst `sources.json`.
@@ -191,6 +192,20 @@ Item {
             return;
         }
         root.getJson("/prices?span=" + span + "&cur=" + cur, done);
+    }
+
+    // Hashrate, Schwierigkeit und Pools fuer den Reiter "Netz". `span` ist
+    // einer von 30d, 90d, 1y, 3y, max. Aus demselben Grund wie der
+    // Kursverlauf nicht im Zustand: er kommt nur, wenn jemand hinsieht.
+    function network(span, done) {
+        if (root.direkt) {
+            if (direkt.item)
+                direkt.item.network(span, done);
+            else
+                done(null, "Direktbezug nicht bereit");
+            return;
+        }
+        root.getJson("/network?span=" + span, done);
     }
 
     // Einzelabfrage fuer den Explorer. Geht ueber den Daemon, nicht direkt

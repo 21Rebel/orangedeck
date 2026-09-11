@@ -107,10 +107,11 @@ Item {
     // stuende im nackten Widget oben ein leerer Streifen in Reiterhoehe.
     readonly property real tabSpace: root.tabsVisible ? tabs.height + root.gap : 0
 
-    // Drei Reiter fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit:
-    // der Miner steht im Heimnetz, die Wallet-Ableitung ist Rechenarbeit des
-    // Dienstes, und die Boersenstroeme werden dort zu Kerzen verdichtet. Ein
-    // Reiter, hinter dem nichts sein kann, ist schlimmer als keiner.
+    // Zwei Reiter fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit:
+    // die Wallet-Ableitung ist Rechenarbeit des Dienstes, und die
+    // Boersenstroeme werden dort zu Kerzen verdichtet. Ein Reiter, hinter dem
+    // nichts sein kann, ist schlimmer als keiner. (Der Miner stand hier auch;
+    // seit dem 11.09.2026 zeigt er ohne Geraet das Netz.)
     readonly property bool canMarket: root.feed && !root.feed.direkt
 
     // **Jeder Reiter laesst sich abschalten, und die Reihenfolge gehoert dem
@@ -126,8 +127,9 @@ Item {
     readonly property var tabViews: Views.reiter(
         root.o("tabOrder", []),
         function (id) {
-            if (id === 2)
-                return !!(root.feed && root.feed.canMiner);
+            // Der Miner-Reiter ist immer moeglich: ohne eigenes Geraet zeigt
+            // er das Netz (seit dem 11.09.2026, vorher blieb er im
+            // Direktbezug ohne Adresse weg).
             if (id === 4)
                 return root.walletEnabled && !!(root.feed && root.feed.canWallet);
             if (id === 6)
@@ -299,6 +301,19 @@ Item {
         showActions: root.minerActions
         feed: root.feed
         lang: root.lang
+        live: root.live
+        finger: root.finger
+        pane: root.o("minerPane", "")
+        netSpan: root.o("netSpan", "1y")
+        panes: root.o("minerPanes", [])
+        netParts: root.o("netParts", [])
+        showSolo: root.o("minerSolo", true)
+        onPaneRequested: function (p) {
+            root.optRequested("minerPane", p);
+        }
+        onNetSpanRequested: function (sp) {
+            root.optRequested("netSpan", sp);
+        }
         metricKeys: root.o("minerFields", [])
         showChart: root.o("minerChart", true)
         showDomains: root.o("minerDomains", true)
@@ -420,8 +435,6 @@ Item {
         // Bauteil den Feed kennt.
         nichtVerfuegbar: {
             var aus = [];
-            if (!(root.feed && root.feed.canMiner))
-                aus.push(2);
             if (!(root.walletEnabled && root.feed && root.feed.canWallet))
                 aus.push(4);
             if (!root.canMarket)

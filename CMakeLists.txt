@@ -73,6 +73,8 @@ set(SHARED_QML
     ui/qml/ClockView.qml
     ui/qml/MinerView.qml
     ui/qml/MinerChart.qml
+    ui/qml/NetworkView.qml
+    ui/qml/NetworkChart.qml
     ui/qml/PriceChart.qml
     ui/qml/MarketView.qml
     ui/qml/MarketLiq.qml

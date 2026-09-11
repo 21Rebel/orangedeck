@@ -65,8 +65,13 @@ ShellRoot {
         property bool minerChart: true
         property bool minerDomains: true
         property bool minerBoard: true
+        property string minerPane: ""
+        property string netSpan: "1y"
         property bool explorerLive: true
         property var explorerParts: []
+        property var minerPanes: []
+        property var netParts: []
+        property bool minerSolo: true
         property var explorerPanels: []
         property string lang: Tr.systemLang()
         property var bigFields: ["height"]
@@ -126,8 +131,13 @@ ShellRoot {
             "minerChart": minerChart,
             "minerDomains": minerDomains,
             "minerBoard": minerBoard,
+            "minerPane": minerPane,
+            "netSpan": netSpan,
             "explorerLive": explorerLive,
             "explorerParts": explorerParts,
+            "minerPanes": minerPanes,
+            "netParts": netParts,
+            "minerSolo": minerSolo,
             "explorerPanels": explorerPanels,
             "lang": lang,
             "bigFields": bigFields,
@@ -217,10 +227,20 @@ ShellRoot {
                 minerDomains = value;
             else if (key === "minerBoard")
                 minerBoard = value;
+            else if (key === "minerPane")
+                minerPane = value;
+            else if (key === "netSpan")
+                netSpan = value;
             else if (key === "explorerLive")
                 explorerLive = value;
             else if (key === "explorerParts")
                 explorerParts = value;
+            else if (key === "minerPanes")
+                minerPanes = value;
+            else if (key === "netParts")
+                netParts = value;
+            else if (key === "minerSolo")
+                minerSolo = value;
             else if (key === "explorerPanels")
                 explorerPanels = value;
             else if (key === "lang")
@@ -279,8 +299,13 @@ ShellRoot {
                 "minerChart": minerChart,
                 "minerDomains": minerDomains,
                 "minerBoard": minerBoard,
+                "minerPane": minerPane,
+                "netSpan": netSpan,
                 "explorerLive": explorerLive,
                 "explorerParts": explorerParts,
+                "minerPanes": minerPanes,
+                "netParts": netParts,
+                "minerSolo": minerSolo,
                 "explorerPanels": explorerPanels,
                 "lang": lang,
                 "bigFields": bigFields,
@@ -399,10 +424,20 @@ ShellRoot {
                         win.minerDomains = v.minerDomains;
                     if (typeof v.minerBoard === "boolean")
                         win.minerBoard = v.minerBoard;
+                    if (typeof v.minerPane === "string")
+                        win.minerPane = v.minerPane;
+                    if (typeof v.netSpan === "string")
+                        win.netSpan = v.netSpan;
                     if (typeof v.explorerLive === "boolean")
                         win.explorerLive = v.explorerLive;
                     if (Array.isArray(v.explorerParts))
                         win.explorerParts = v.explorerParts;
+                    if (Array.isArray(v.minerPanes))
+                        win.minerPanes = v.minerPanes;
+                    if (Array.isArray(v.netParts))
+                        win.netParts = v.netParts;
+                    if (typeof v.minerSolo === "boolean")
+                        win.minerSolo = v.minerSolo;
                     if (Array.isArray(v.explorerPanels))
                         win.explorerPanels = v.explorerPanels;
                     if (v.lang)

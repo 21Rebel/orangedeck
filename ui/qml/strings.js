@@ -72,7 +72,9 @@ var S = {
     // Das schlichte Wort fuer Uhr ist niemandes Marke, und "Blockhoehe" ist
     // die Bezeichnung, die Coinkite selbst zum Beschreiben benutzt.
     "tab.clock": ["Uhr", "Clock", "Reloj", "Horloge", "Orologio", "Relógio", "Klok", "Часы", "時計", "时钟", "Relógio", "Zegar", "Hodiny"],
-    "tab.miner": ["Miner", "Miner", "Minero", "Mineur", "Miner", "Minerador", "Miner", "Майнер", "マイナー", "矿机", "Minerador", "Koparka", "Těžař"],
+    // "Mining" statt "Miner" seit dem 11.09.2026: der Reiter zeigt auch das
+    // Netz, nicht nur das eigene Geraet.
+    "tab.miner": ["Mining", "Mining", "Minería", "Minage", "Mining", "Mineração", "Mining", "Майнинг", "マイニング", "挖矿", "Mineração", "Kopanie", "Těžba"],
     "tab.explorer": ["Explorer", "Explorer", "Explorador", "Explorateur", "Explorer", "Explorador", "Verkenner", "Обозреватель", "エクスプローラ", "浏览器", "Explorador", "Eksplorator", "Průzkumník"],
     "tab.wallet": ["Wallet", "Wallet", "Cartera", "Portefeuille", "Portafoglio", "Carteira", "Wallet", "Кошелёк", "ウォレット", "钱包", "Carteira", "Portfel", "Peněženka"],
     "tab.settings": ["Einstellungen", "Settings", "Ajustes", "Paramètres", "Impostazioni", "Definições", "Instellingen", "Настройки", "設定", "设置", "Configurações", "Ustawienia", "Nastavení"],
@@ -460,6 +462,97 @@ var S = {
         "芯片丢弃结果的比例。百分之几属正常；明显上升说明频率过高或电压过低。"
     , "Percentagem de resultados descartados pelo chip. Alguns por cento são normais; se subir claramente, a frequência está alta demais ou a tensão baixa demais.", "Udział wyników odrzuconych przez układ. Kilka procent to norma; wyraźny wzrost oznacza za wysokie taktowanie albo za niskie napięcie.", "Podíl výsledků, které čip zahodil. Několik procent je normální; výrazný nárůst znamená příliš vysoký takt nebo příliš nízké napětí."],
     "miner.oneInN": ["das ist 1 zu {0}", "that is 1 in {0}", "eso es 1 entre {0}", "c’est 1 sur {0}", "è 1 su {0}", "isso é 1 em {0}", "dat is 1 op {0}", "это 1 к {0}", "{0} 分の 1 です", "即 {0} 分之一", "isso é 1 em {0}", "to jest 1 na {0}", "to je 1 ku {0}"],
+    // Bis zum 11.09.2026 stand beides fest auf Deutsch in MinerView.qml --
+    // auch in der englischen Anwendung "674 M von 127 T" und "1 zu 189 k".
+    "miner.ofNet": ["{0} von {1}", "{0} of {1}", "{0} de {1}", "{0} sur {1}", "{0} su {1}", "{0} de {1}", "{0} van {1}", "{0} из {1}", "{1} 中 {0}", "{0} / {1}", "{0} de {1}", "{0} z {1}", "{0} z {1}"],
+    "miner.off": ["aus", "off", "apagado", "éteint", "spento", "desligado", "uit", "выкл.", "オフ", "关机", "desligado", "wył.", "vyp."],
+    "miner.oneTo": ["1 zu {0}", "1 in {0}", "1 entre {0}", "1 sur {0}", "1 su {0}", "1 em {0}", "1 op {0}", "1 к {0}", "{0} 分の 1", "{0} 分之一", "1 em {0}", "1 na {0}", "1 ku {0}"],
+    // Solo-Chance: eigene Hashrate gegen die des Netzes
+    "miner.solo": ["Chance auf einen Block", "Chance of finding a block", "Probabilidad de encontrar un bloque", "Chance de trouver un bloc", "Probabilità di trovare un blocco", "Probabilidade de encontrar um bloco", "Kans op een blok", "Шанс найти блок", "ブロック発見の確率", "出块概率", "Chance de encontrar um bloco", "Szansa na blok", "Šance na blok"],
+    "miner.soloDay": ["1 zu {0} pro Tag", "1 in {0} per day", "1 entre {0} al día", "1 sur {0} par jour", "1 su {0} al giorno", "1 em {0} por dia", "1 op {0} per dag", "1 к {0} в день", "1日あたり {0} 分の 1", "每天 {0} 分之一", "1 em {0} por dia", "1 na {0} dziennie", "1 ku {0} za den"],
+    "miner.soloEvery": ["im Mittel alle {0}", "on average every {0}", "de media cada {0}", "en moyenne tous les {0}", "in media ogni {0}", "em média a cada {0}", "gemiddeld elke {0}", "в среднем раз в {0}", "平均 {0} に 1 回", "平均每 {0} 一次", "em média a cada {0}", "średnio co {0}", "v průměru jednou za {0}"],
+    "miner.soloHelp": [
+        "Eigene Hashrate geteilt durch die des Netzes, mal 144 Blöcke am Tag. Es gibt kein Ansparen: jeder Block ist ein neuer Versuch mit derselben Chance, egal wie lange das Gerät schon läuft.",
+        "Your own hashrate divided by the network’s, times 144 blocks a day. Nothing accumulates: every block is a fresh attempt with the same chance, no matter how long the device has been running.",
+        "Tu hashrate dividida por la de la red, por 144 bloques al día. No se acumula nada: cada bloque es un intento nuevo con la misma probabilidad, lleve el equipo el tiempo que lleve funcionando.",
+        "Votre hashrate divisé par celui du réseau, multiplié par 144 blocs par jour. Rien ne s’accumule : chaque bloc est une nouvelle tentative avec la même chance, quelle que soit la durée de fonctionnement.",
+        "Il tuo hashrate diviso per quello della rete, per 144 blocchi al giorno. Non si accumula nulla: ogni blocco è un nuovo tentativo con la stessa probabilità, da quanto tempo che sia acceso il dispositivo.",
+        "A sua hashrate dividida pela da rede, vezes 144 blocos por dia. Nada se acumula: cada bloco é uma nova tentativa com a mesma probabilidade, independentemente de há quanto tempo o equipamento funciona.",
+        "Je eigen hashrate gedeeld door die van het netwerk, maal 144 blokken per dag. Er wordt niets gespaard: elk blok is een nieuwe poging met dezelfde kans, hoe lang het apparaat ook al draait.",
+        "Собственный хешрейт, делённый на хешрейт сети, умноженный на 144 блока в день. Ничего не накапливается: каждый блок — новая попытка с тем же шансом, сколько бы устройство ни работало.",
+        "自分のハッシュレートをネットワーク全体で割り、1日144ブロックを掛けた値です。貯まることはありません。稼働時間に関係なく、各ブロックは同じ確率の新しい試行です。",
+        "自己的算力除以全网算力，再乘以每天 144 个区块。概率不会累积：无论设备运行了多久，每个区块都是一次概率相同的新尝试。",
+        "Sua hashrate dividida pela da rede, vezes 144 blocos por dia. Nada se acumula: cada bloco é uma nova tentativa com a mesma chance, não importa há quanto tempo o equipamento está ligado.",
+        "Własny hashrate podzielony przez hashrate sieci, razy 144 bloki dziennie. Nic się nie kumuluje: każdy blok to nowa próba z tą samą szansą, niezależnie od tego, jak długo działa urządzenie.",
+        "Vlastní hashrate dělený hashratem sítě, krát 144 bloků denně. Nic se nesčítá: každý blok je nový pokus se stejnou šancí bez ohledu na to, jak dlouho zařízení běží."
+    ],
+    "duration.years": ["{0} Jahre", "{0} years", "{0} años", "{0} ans", "{0} anni", "{0} anos", "{0} jaar", "{0} лет", "{0} 年", "{0} 年", "{0} anos", "{0} lat", "{0} let"],
+    "duration.days": ["{0} Tage", "{0} days", "{0} días", "{0} jours", "{0} giorni", "{0} dias", "{0} dagen", "{0} дн.", "{0} 日", "{0} 天", "{0} dias", "{0} dni", "{0} dní"],
+
+    // -------------------------------------------------------------- Netz
+    // Der zweite Teil des Miner-Reiters: das ganze Netz statt des eigenen
+    // Geraets.
+    "miner.paneDevice": ["Gerät", "Device", "Equipo", "Appareil", "Dispositivo", "Equipamento", "Apparaat", "Устройство", "デバイス", "设备", "Equipamento", "Urządzenie", "Zařízení"],
+    "miner.paneNet": ["Netzwerk", "Network", "Red", "Réseau", "Rete", "Rede", "Netwerk", "Сеть", "ネットワーク", "全网", "Rede", "Sieć", "Síť"],
+    "net.nextAdj": ["Nächste Anpassung", "Next adjustment", "Próximo ajuste", "Prochain ajustement", "Prossimo aggiustamento", "Próximo ajuste", "Volgende aanpassing", "Следующая корректировка", "次回の調整", "下次调整", "Próximo ajuste", "Następna korekta", "Příští úprava"],
+    "net.blockTime": ["Ø Blockzeit", "Avg. block time", "Tiempo medio de bloque", "Temps moyen de bloc", "Tempo medio di blocco", "Tempo médio de bloco", "Gem. bloktijd", "Ср. время блока", "平均ブロック時間", "平均出块时间", "Tempo médio de bloco", "Śr. czas bloku", "Prům. doba bloku"],
+    "net.lastBlock": ["Letzter Block", "Last block", "Último bloque", "Dernier bloc", "Ultimo blocco", "Último bloco", "Laatste blok", "Последний блок", "直近のブロック", "最新区块", "Último bloco", "Ostatni blok", "Poslední blok"],
+    "net.ago": ["vor {0}", "{0} ago", "hace {0}", "il y a {0}", "{0} fa", "há {0}", "{0} geleden", "{0} назад", "{0}前", "{0}前", "há {0}", "{0} temu", "před {0}"],
+    "net.justNow": ["gerade eben", "just now", "ahora mismo", "à l’instant", "proprio ora", "agora mesmo", "zojuist", "только что", "たった今", "刚刚", "agora mesmo", "przed chwilą", "právě teď"],
+    "net.pools": ["Pools · letzte 7 Tage · {0} Blöcke", "Pools · last 7 days · {0} blocks", "Pools · últimos 7 días · {0} bloques", "Pools · 7 derniers jours · {0} blocs", "Pool · ultimi 7 giorni · {0} blocchi", "Pools · últimos 7 dias · {0} blocos", "Pools · laatste 7 dagen · {0} blokken", "Пулы · последние 7 дней · {0} блоков", "プール · 過去 7 日 · {0} ブロック", "矿池 · 近 7 天 · {0} 个区块", "Pools · últimos 7 dias · {0} blocos", "Pule · ostatnie 7 dni · {0} bloków", "Pooly · posledních 7 dní · {0} bloků"],
+    "net.poolsLabel": ["Pools", "Pools", "Pools", "Pools", "Pool", "Pools", "Pools", "Пулы", "プール", "矿池", "Pools", "Pule", "Pooly"],
+    "net.others": ["übrige", "others", "otros", "autres", "altri", "outros", "overige", "прочие", "その他", "其他", "outros", "pozostałe", "ostatní"],
+    "net.loading": ["Netzwerkdaten werden geholt …", "Loading network data …", "Cargando datos de la red …", "Chargement des données du réseau …", "Caricamento dati di rete …", "A carregar dados da rede …", "Netwerkgegevens laden …", "Загрузка данных сети …", "ネットワークデータを取得中 …", "正在加载全网数据 …", "Carregando dados da rede …", "Wczytywanie danych sieci …", "Načítání dat sítě …"],
+    "net.failed": ["Netzwerkdaten nicht verfügbar ({0})", "Network data unavailable ({0})", "Datos de la red no disponibles ({0})", "Données du réseau indisponibles ({0})", "Dati di rete non disponibili ({0})", "Dados da rede indisponíveis ({0})", "Netwerkgegevens niet beschikbaar ({0})", "Данные сети недоступны ({0})", "ネットワークデータを取得できません ({0})", "无法获取全网数据 ({0})", "Dados da rede indisponíveis ({0})", "Dane sieci niedostępne ({0})", "Data sítě nejsou dostupná ({0})"],
+    "net.3y": ["3 J", "3y", "3 a", "3 ans", "3 a", "3 a", "3 j", "3 г", "3年", "3年", "3 a", "3 l", "3 r"],
+    // Die Reiter kommen als {0} und {1} aus "tab.settings" und "tab.miner" --
+    // abgeschrieben lief der Name hier nicht mit, als der Reiter "Mining" wurde.
+    "net.addMiner": ["Eigenen Miner eintragen: {0} · {1}", "Add your own miner: {0} · {1}", "Añadir tu propio minero: {0} · {1}", "Ajouter votre mineur : {0} · {1}", "Aggiungi il tuo miner: {0} · {1}", "Adicionar o seu minerador: {0} · {1}", "Eigen miner toevoegen: {0} · {1}", "Добавить свой майнер: {0} · {1}", "自分のマイナーを追加: {0} · {1}", "添加自己的矿机：{0} · {1}", "Adicionar seu minerador: {0} · {1}", "Dodaj własną koparkę: {0} · {1}", "Přidat vlastního těžaře: {0} · {1}"],
+    "net.hashHelp": [
+        "Die geschätzte Rechenleistung aller Miner zusammen, als Tagesmittel. Niemand meldet sie: sie wird aus der Zahl der gefundenen Blöcke und der Schwierigkeit zurückgerechnet und springt deshalb von Tag zu Tag.",
+        "The estimated computing power of all miners combined, as a daily average. Nobody reports it: it is worked back from the number of blocks found and the difficulty, so it jumps from day to day.",
+        "La potencia estimada de todos los mineros juntos, como media diaria. Nadie la informa: se deduce del número de bloques encontrados y de la dificultad, por eso salta de un día a otro.",
+        "La puissance estimée de l’ensemble des mineurs, en moyenne journalière. Personne ne la déclare : elle est déduite du nombre de blocs trouvés et de la difficulté, d’où ses sauts d’un jour à l’autre.",
+        "La potenza stimata di tutti i miner insieme, come media giornaliera. Nessuno la comunica: è ricavata dal numero di blocchi trovati e dalla difficoltà, perciò salta da un giorno all’altro.",
+        "A potência estimada de todos os mineradores juntos, como média diária. Ninguém a comunica: é deduzida do número de blocos encontrados e da dificuldade, por isso salta de dia para dia.",
+        "De geschatte rekenkracht van alle miners samen, als daggemiddelde. Niemand meldt die: ze wordt teruggerekend uit het aantal gevonden blokken en de moeilijkheid, en springt daarom van dag tot dag.",
+        "Оценка суммарной мощности всех майнеров, среднее за день. Её никто не сообщает: она выводится из числа найденных блоков и сложности, поэтому скачет изо дня в день.",
+        "全マイナーを合わせた推定計算能力（日平均）です。誰かが報告する値ではなく、見つかったブロック数と難易度から逆算するため、日ごとに上下します。",
+        "所有矿工合计的估算算力，按日平均。没有人上报这个数：它由找到的区块数量和难度反推，因此每天都会跳动。",
+        "A potência estimada de todos os mineradores juntos, como média diária. Ninguém a informa: é deduzida do número de blocos encontrados e da dificuldade, por isso oscila de um dia para outro.",
+        "Szacowana moc wszystkich koparek razem, jako średnia dzienna. Nikt jej nie zgłasza: wylicza się ją z liczby znalezionych bloków i trudności, dlatego skacze z dnia na dzień.",
+        "Odhadovaný výkon všech těžařů dohromady, jako denní průměr. Nikdo ho nehlásí: dopočítává se z počtu nalezených bloků a obtížnosti, proto den ode dne skáče."
+    ],
+    "net.diffHelp": [
+        "Alle 2016 Blöcke passt das Netz die Schwierigkeit an, damit ein Block im Mittel zehn Minuten dauert. Die Treppe steht auf derselben Achse wie die Hashrate, umgerechnet in die Rechenleistung, die sie voraussetzt: liegt die Fläche darüber, kommen die Blöcke schneller als alle zehn Minuten.",
+        "Every 2016 blocks the network adjusts the difficulty so that a block takes ten minutes on average. The steps share the hashrate axis, converted into the computing power they assume: where the area lies above them, blocks come faster than every ten minutes.",
+        "Cada 2016 bloques la red ajusta la dificultad para que un bloque tarde de media diez minutos. Los escalones comparten el eje de la hashrate, convertidos en la potencia que presuponen: donde el área queda por encima, los bloques llegan más rápido que cada diez minutos.",
+        "Tous les 2016 blocs, le réseau ajuste la difficulté pour qu’un bloc prenne dix minutes en moyenne. Les marches partagent l’axe du hashrate, converties en la puissance qu’elles supposent : là où l’aire passe au-dessus, les blocs arrivent plus vite que toutes les dix minutes.",
+        "Ogni 2016 blocchi la rete regola la difficoltà in modo che un blocco richieda in media dieci minuti. I gradini condividono l’asse dell’hashrate, convertiti nella potenza che presuppongono: dove l’area sta sopra, i blocchi arrivano più spesso di ogni dieci minuti.",
+        "A cada 2016 blocos a rede ajusta a dificuldade para que um bloco demore em média dez minutos. Os degraus partilham o eixo da hashrate, convertidos na potência que pressupõem: onde a área fica acima, os blocos chegam mais depressa do que a cada dez minutos.",
+        "Elke 2016 blokken past het netwerk de moeilijkheid aan, zodat een blok gemiddeld tien minuten duurt. De trap staat op dezelfde as als de hashrate, omgerekend naar de rekenkracht die ze veronderstelt: ligt het vlak erboven, dan komen blokken sneller dan om de tien minuten.",
+        "Каждые 2016 блоков сеть подстраивает сложность, чтобы блок в среднем занимал десять минут. Ступени лежат на той же оси, что и хешрейт, в пересчёте на мощность, которую они предполагают: где площадь выше них, блоки приходят чаще, чем раз в десять минут.",
+        "ネットワークは 2016 ブロックごとに難易度を調整し、1 ブロックが平均 10 分になるようにします。階段はハッシュレートと同じ軸に、それが前提とする計算能力に換算して描いています。面が階段より上にあるとき、ブロックは 10 分より速く見つかります。",
+        "全网每 2016 个区块调整一次难度，使平均每个区块耗时十分钟。阶梯与算力共用同一坐标轴，换算为它所假定的算力：面积高于阶梯时，出块快于每十分钟一个。",
+        "A cada 2016 blocos a rede ajusta a dificuldade para que um bloco leve em média dez minutos. Os degraus compartilham o eixo da hashrate, convertidos na potência que pressupõem: onde a área fica acima, os blocos chegam mais rápido que a cada dez minutos.",
+        "Co 2016 bloków sieć dostosowuje trudność tak, by blok trwał średnio dziesięć minut. Schodki leżą na tej samej osi co hashrate, przeliczone na moc, którą zakładają: tam, gdzie pole jest nad nimi, bloki pojawiają się częściej niż co dziesięć minut.",
+        "Každých 2016 bloků síť upraví obtížnost, aby blok trval v průměru deset minut. Schody leží na stejné ose jako hashrate, přepočtené na výkon, který předpokládají: kde je plocha nad nimi, přicházejí bloky rychleji než každých deset minut."
+    ],
+    "net.poolsHelp": [
+        "Wer die Blöcke der letzten sieben Tage gefunden hat, erkannt an der Kennung, die jeder Pool in seine Blöcke schreibt. Ein Pool ist kein Miner: dahinter stehen viele Geräte, die sich die Belohnung teilen.",
+        "Who found the blocks of the last seven days, recognised by the tag every pool writes into its blocks. A pool is not a miner: behind it are many devices sharing the reward.",
+        "Quién encontró los bloques de los últimos siete días, reconocido por la marca que cada pool escribe en sus bloques. Un pool no es un minero: detrás hay muchos equipos que se reparten la recompensa.",
+        "Qui a trouvé les blocs des sept derniers jours, reconnu à la marque que chaque pool inscrit dans ses blocs. Un pool n’est pas un mineur : derrière, de nombreux appareils se partagent la récompense.",
+        "Chi ha trovato i blocchi degli ultimi sette giorni, riconosciuto dalla firma che ogni pool scrive nei suoi blocchi. Un pool non è un miner: dietro ci sono molti dispositivi che si dividono la ricompensa.",
+        "Quem encontrou os blocos dos últimos sete dias, reconhecido pela marca que cada pool escreve nos seus blocos. Um pool não é um minerador: por trás estão muitos equipamentos que dividem a recompensa.",
+        "Wie de blokken van de afgelopen zeven dagen vond, herkend aan de markering die elke pool in zijn blokken schrijft. Een pool is geen miner: erachter zitten veel apparaten die de beloning delen.",
+        "Кто нашёл блоки за последние семь дней — по метке, которую каждый пул пишет в свои блоки. Пул — это не майнер: за ним стоит множество устройств, делящих награду.",
+        "過去 7 日間のブロックを誰が見つけたか。各プールがブロックに書き込む識別子から判別しています。プールはマイナーではなく、報酬を分け合う多数の機器の集まりです。",
+        "近七天的区块由谁找到，依据每个矿池写入其区块的标识识别。矿池不是矿机：背后是许多共享奖励的设备。",
+        "Quem encontrou os blocos dos últimos sete dias, reconhecido pela marca que cada pool escreve em seus blocos. Um pool não é um minerador: por trás há muitos equipamentos que dividem a recompensa.",
+        "Kto znalazł bloki z ostatnich siedmiu dni, rozpoznany po znaczniku, który każda pula wpisuje do swoich bloków. Pula to nie koparka: stoi za nią wiele urządzeń dzielących się nagrodą.",
+        "Kdo našel bloky za posledních sedm dní, poznáno podle značky, kterou každý pool zapisuje do svých bloků. Pool není těžař: stojí za ním mnoho zařízení, která se dělí o odměnu."
+    ],
 
     // ---------------------------------------------------------- Explorer
     "search.placeholder": ["Blockhöhe, Blockhash, TxID oder Adresse …", "Block height, block hash, TxID or address …", "Altura, hash de bloque, TxID o dirección …", "Hauteur, hash de bloc, TxID ou adresse …", "Altezza, hash del blocco, TxID o indirizzo …", "Altura, hash do bloco, TxID ou endereço …", "Blokhoogte, blokhash, TxID of adres …", "Высота, хеш блока, TxID или адрес …", "ブロック高・ブロックハッシュ・TxID・アドレス …", "区块高度、区块哈希、TxID 或地址 …", "Altura, hash do bloco, TxID ou endereço …", "Wysokość, hash bloku, TxID lub adres …", "Výška, hash bloku, TxID nebo adresa …"],
@@ -589,13 +682,18 @@ var S = {
     "set.clockTime": ["Uhrzeit", "Time of day", "Hora", "Heure", "Ora", "Hora", "Tijd", "Время", "時刻", "时间", "Hora", "Godzina", "Čas"],
     "set.clockTimeHelp": ["Für ein Tablet an der Wand — dann ist es auch eine Uhr.", "For a tablet on the wall — then it is a clock too.", "Para una tablet en la pared: así también es un reloj.", "Pour une tablette murale — cela devient aussi une horloge.", "Per un tablet a parete — così è anche un orologio.", "Para um tablet na parede — assim também é um relógio.", "Voor een tablet aan de muur — dan is het ook een klok.", "Для планшета на стене — тогда это ещё и часы.", "壁掛けタブレット向け。時計としても使えます。", "适合挂墙平板——这样它同时也是一个时钟。", "Para um tablet na parede — assim também é um relógio.", "Do tabletu na ścianie — wtedy jest też zegarem.", "Pro tablet na zdi — pak jsou to i hodiny."],
     "set.minerHosts": ["Adresse des Miners", "Miner address", "Dirección del minero", "Adresse du mineur", "Indirizzo del miner", "Endereço do mineiro", "Adres van de miner", "Адрес майнера", "マイナーのアドレス", "矿机地址", "Endereço do minerador", "Adres kopraki", "Adresa mineru"],
-    "set.minerHostsHelp": ["Im eigenen Netz, z. B. http://192.168.1.42 — mehrere mit | getrennt. Ohne Eintrag bleibt der Reiter weg.", "On your own network, e.g. http://192.168.1.42 — separate several with |. Without an entry the tab stays hidden.", "En tu propia red, p. ej. http://192.168.1.42 — varias separadas por |. Sin entrada la pestaña no aparece.", "Sur votre réseau, p. ex. http://192.168.1.42 — plusieurs séparées par |. Sans entrée, l’onglet reste masqué.", "Nella tua rete, ad es. http://192.168.1.42 — più indirizzi separati da |. Senza voce la scheda resta nascosta.", "Na sua rede, p. ex. http://192.168.1.42 — vários separados por |. Sem entrada o separador fica oculto.", "In je eigen netwerk, bijv. http://192.168.1.42 — meerdere gescheiden door |. Zonder invoer blijft het tabblad weg.", "В вашей сети, например http://192.168.1.42 — несколько через |. Без записи вкладка не показывается.", "自宅ネットワーク内、例 http://192.168.1.42 — 複数は | で区切ります。未入力ならタブは表示されません。", "在本地网络中，例如 http://192.168.1.42 — 多个用 | 分隔。未填写时不显示该标签。", "Na sua rede, p. ex. http://192.168.1.42 — vários separados por |. Sem entrada a aba fica oculta.", "We własnej sieci, np. http://192.168.1.42 — kilka rozdziel znakiem |. Bez wpisu karta pozostaje ukryta.", "Ve vlastní síti, např. http://192.168.1.42 — více oddělte znakem |. Bez záznamu se karta nezobrazí."],
+    "set.minerHostsHelp": ["Im eigenen Netz, z. B. http://192.168.1.42 — mehrere mit | getrennt. Ohne Eintrag zeigt der Reiter nur das Netzwerk.", "On your own network, e.g. http://192.168.1.42 — separate several with |. Without an entry the tab shows only the network.", "En tu propia red, p. ej. http://192.168.1.42 — varias separadas por |. Sin entrada la pestaña solo muestra la red.", "Sur votre réseau, p. ex. http://192.168.1.42 — plusieurs séparées par |. Sans entrée, l’onglet n’affiche que le réseau.", "Nella tua rete, ad es. http://192.168.1.42 — più indirizzi separati da |. Senza voce la scheda mostra solo la rete.", "Na sua rede, p. ex. http://192.168.1.42 — vários separados por |. Sem entrada o separador mostra só a rede.", "In je eigen netwerk, bijv. http://192.168.1.42 — meerdere gescheiden door |. Zonder invoer toont het tabblad alleen het netwerk.", "В вашей сети, например http://192.168.1.42 — несколько через |. Без записи вкладка показывает только сеть.", "自宅ネットワーク内、例 http://192.168.1.42 — 複数は | で区切ります。未入力ならタブにはネットワークだけが表示されます。", "在本地网络中，例如 http://192.168.1.42 — 多个用 | 分隔。未填写时该标签只显示全网数据。", "Na sua rede, p. ex. http://192.168.1.42 — vários separados por |. Sem entrada a aba mostra só a rede.", "We własnej sieci, np. http://192.168.1.42 — kilka rozdziel znakiem |. Bez wpisu karta pokazuje tylko sieć.", "Ve vlastní síti, např. http://192.168.1.42 — více oddělte znakem |. Bez záznamu karta ukazuje jen síť."],
     "set.minerChart": ["Verlaufskurve", "History chart", "Gráfico de evolución", "Courbe d’évolution", "Grafico storico", "Gráfico de evolução", "Verloopgrafiek", "График хода", "推移グラフ", "历史曲线", "Gráfico de evolução", "Wykres przebiegu", "Graf průběhu"],
     "set.minerChartHelp": ["Hashrate und Temperatur der letzten Viertelstunde.", "Hashrate and temperature over the last quarter hour.", "Hashrate y temperatura del último cuarto de hora.", "Hashrate et température du dernier quart d’heure.", "Hashrate e temperatura dell’ultimo quarto d’ora.", "Hashrate e temperatura do último quarto de hora.", "Hashrate en temperatuur van het laatste kwartier.", "Хешрейт и температура за последние 15 минут.", "直近 15 分のハッシュレートと温度です。", "最近一刻钟的算力与温度。", "Hashrate e temperatura do último quarto de hora.", "Hashrate i temperatura z ostatniego kwadransa.", "Hashrate a teplota za poslední čtvrthodinu."],
     "set.minerDomains": ["Rechenwerke einzeln", "Compute domains", "Dominios de cálculo", "Domaines de calcul", "Domini di calcolo", "Domínios de cálculo", "Rekendomeinen", "Вычислительные домены", "演算ドメイン", "各运算域", "Domínios de cálculo", "Domeny obliczeniowe", "Výpočetní domény"],
     "set.minerDomainsHelp": ["Die Balken je ASIC-Kern — zeigt, ob einer schwächelt.", "The bars per ASIC core — shows whether one is weakening.", "Las barras por núcleo ASIC: muestran si alguno flaquea.", "Les barres par cœur ASIC — montrent si l’un faiblit.", "Le barre per core ASIC — mostrano se uno cede.", "As barras por núcleo ASIC — mostram se algum enfraquece.", "De balken per ASIC-kern — laat zien of er één verzwakt.", "Полосы по ядрам ASIC — видно, если одно слабеет.", "ASIC コアごとのバー。弱っているコアが分かります。", "每个 ASIC 核心的柱状图——可看出哪个变弱。", "As barras por núcleo ASIC — mostram se algum enfraquece.", "Słupki dla każdego rdzenia ASIC — pokazują, czy któryś słabnie.", "Sloupce pro jednotlivá jádra ASIC — ukážou, zda některé slábne."],
     "set.minerBoard": ["Bestenliste", "Best shares", "Mejores shares", "Meilleures parts", "Migliori share", "Melhores shares", "Beste shares", "Лучшие шары", "最高シェア", "最佳份额", "Melhores shares", "Najlepsze udziały", "Nejlepší sdílení"],
     "set.minerBoardHelp": ["Die höchsten erreichten Schwierigkeiten.", "The highest difficulties reached.", "Las dificultades más altas alcanzadas.", "Les difficultés les plus élevées atteintes.", "Le difficoltà più alte raggiunte.", "As dificuldades mais altas alcançadas.", "De hoogst bereikte moeilijkheden.", "Наибольшие достигнутые сложности.", "達成した最高難易度です。", "已达到的最高难度。", "As dificuldades mais altas alcançadas.", "Najwyższe osiągnięte trudności.", "Nejvyšší dosažené obtížnosti."],
+    "set.minerPanes": ["Seiten", "Pages", "Páginas", "Pages", "Pagine", "Páginas", "Pagina's", "Страницы", "ページ", "页面", "Páginas", "Strony", "Stránky"],
+    "set.minerPanesHelp": ["Ohne „Gerät“ zeigt der Reiter nur das Netzwerk, auch mit eingetragenem Miner.", "Without “Device” the tab shows only the network, even with a miner configured.", "Sin «Equipo» la pestaña solo muestra la red, aunque haya un minero configurado.", "Sans « Appareil », l’onglet n’affiche que le réseau, même avec un mineur configuré.", "Senza «Dispositivo» la scheda mostra solo la rete, anche con un miner configurato.", "Sem «Equipamento» o separador mostra só a rede, mesmo com um minerador configurado.", "Zonder ‘Apparaat’ toont het tabblad alleen het netwerk, ook met een ingestelde miner.", "Без «Устройство» вкладка показывает только сеть, даже если майнер настроен.", "「デバイス」を外すと、マイナーを設定していてもネットワークだけを表示します。", "取消「设备」后，即使已配置矿机，该标签也只显示全网数据。", "Sem «Equipamento» a aba mostra só a rede, mesmo com um minerador configurado.", "Bez „Urządzenie” karta pokazuje tylko sieć, nawet przy skonfigurowanej koparce.", "Bez „Zařízení“ ukazuje karta jen síť, i když je těžař nastaven."],
+    "set.minerSoloHelp": ["Wie oft das eigene Gerät im Mittel einen Block fände.", "How often your own device would find a block on average.", "Con qué frecuencia tu equipo encontraría un bloque de media.", "À quelle fréquence votre appareil trouverait un bloc en moyenne.", "Ogni quanto il tuo dispositivo troverebbe in media un blocco.", "Com que frequência o seu equipamento encontraria um bloco, em média.", "Hoe vaak je eigen apparaat gemiddeld een blok zou vinden.", "Как часто ваше устройство в среднем находило бы блок.", "自分の機器が平均してどれくらいの頻度でブロックを見つけるか。", "自己的设备平均多久能找到一个区块。", "Com que frequência seu equipamento encontraria um bloco, em média.", "Jak często własne urządzenie znajdowałoby średnio blok.", "Jak často by vlastní zařízení v průměru našlo blok."],
+    "set.netParts": ["Netzwerk-Seite", "Network page", "Página de red", "Page réseau", "Pagina rete", "Página da rede", "Netwerkpagina", "Страница сети", "ネットワークページ", "全网页面", "Página da rede", "Strona sieci", "Stránka sítě"],
+    "set.netPartsHelp": ["Kennzahlen oben, Verlauf von Hashrate und Schwierigkeit, Pools der letzten sieben Tage.", "Metrics at the top, history of hashrate and difficulty, pools of the last seven days.", "Indicadores arriba, evolución de hashrate y dificultad, pools de los últimos siete días.", "Indicateurs en haut, évolution du hashrate et de la difficulté, pools des sept derniers jours.", "Indicatori in alto, andamento di hashrate e difficoltà, pool degli ultimi sette giorni.", "Indicadores no topo, evolução da hashrate e da dificuldade, pools dos últimos sete dias.", "Kengetallen bovenaan, verloop van hashrate en moeilijkheid, pools van de afgelopen zeven dagen.", "Показатели вверху, ход хешрейта и сложности, пулы за последние семь дней.", "上部の指標、ハッシュレートと難易度の推移、過去 7 日のプール。", "顶部指标、算力与难度走势、近七天的矿池。", "Indicadores no topo, evolução da hashrate e da dificuldade, pools dos últimos sete dias.", "Wskaźniki u góry, przebieg hashrate i trudności, pule z ostatnich siedmiu dni.", "Ukazatele nahoře, vývoj hashrate a obtížnosti, pooly za posledních sedm dní."],
     "set.explorerColor": ["Farbe der Kachelgrafiken", "Tile graphic colour", "Color de los mosaicos", "Couleur des mosaïques", "Colore dei mosaici", "Cor dos mosaicos", "Kleur van de tegelbeelden", "Цвет плиточных схем", "タイル図の配色", "方块图配色", "Cor dos mosaicos", "Kolor mozaik", "Barva dlaždicových schémat"],
     "set.explorerColorHelp": ["Gilt für Blöcke und den geplanten Block im Explorer.", "Applies to blocks and the projected block in the explorer.", "Se aplica a los bloques y al bloque previsto en el explorador.", "S’applique aux blocs et au bloc prévu dans l’explorateur.", "Vale per i blocchi e per il blocco previsto nell’explorer.", "Aplica-se aos blocos e ao bloco previsto no explorador.", "Geldt voor blokken en het verwachte blok in de verkenner.", "Относится к блокам и ожидаемому блоку в обозревателе.", "エクスプローラのブロックと予測ブロックに適用されます。", "适用于浏览器中的区块和预计区块。", "Aplica-se aos blocos e ao bloco previsto no explorador.", "Dotyczy bloków i przewidywanego bloku w eksploratorze.", "Platí pro bloky a očekávaný blok v průzkumníku."],
     "set.homeParts": ["Abschnitte der Startseite", "Sections of the start page", "Secciones de la página inicial", "Sections de la page d’accueil", "Sezioni della pagina iniziale", "Secções da página inicial", "Onderdelen van de startpagina", "Разделы стартовой страницы", "トップページの区画", "首页板块", "Secções da página inicial", "Sekcje strony startowej", "Části úvodní stránky"],
@@ -777,6 +875,28 @@ function fixed(n, digits, lang) {
     var parts = n.toFixed(digits).split(".");
     var ganz = group(parseInt(parts[0], 10), lang);
     return parts.length > 1 ? ganz + decimal(lang) + parts[1] : ganz;
+}
+
+// Grosse Zahlen kurz, mit Vorsatz: 127450789715843 wird "127,45 T",
+// 9,26e20 H/s werden "926 EH/s". Dieselbe Staffel wie `big()` in
+// `MinerView.qml` und `kurz()` in `DeckWidget.java` -- Anwendung und Widget
+// schreiben dieselbe Zahl gleich. Ab hundert ohne Nachkommastellen, darunter
+// mit zwei.
+//
+// **Bei E ist Schluss.** Die Hashrate des Netzes pendelt um 1000 EH/s; mit
+// "Z" stand an der Achse "1,31 ZH/s" und darueber "928 EH/s" -- zwei
+// Einheiten fuer dieselbe Groesse. Man spricht von EH/s, auch ueber tausend.
+function big(n, lang, unit) {
+    if (!n || isNaN(n))
+        return "–";
+    var u = ["", "k", "M", "G", "T", "P", "E"], i = 0;
+    while (n >= 1000 && i < u.length - 1) {
+        n /= 1000;
+        i++;
+    }
+    var s = fixed(n, n >= 100 ? 0 : 2, lang);
+    var vorsatz = u[i] + (unit || "");
+    return vorsatz ? s + " " + vorsatz : s;
 }
 
 // **Zeichen, die nicht jede Schrift fuehrt.** `₿` (U+20BF) und `⟶` (U+27F6)

@@ -8,10 +8,15 @@
 // liefert beides normalisiert, Hashrate in H/s. Mehrere Geraete zugleich sind
 // vorgesehen.
 //
+// **Zwei Seiten seit dem 11.09.2026: "Geraet" und "Netz".** Die zweite zeigt
+// Hashrate, Schwierigkeit, Blockzeit und Pools des ganzen Netzes
+// (`NetworkView`). Damit hat der Reiter auch ohne eigenen Miner einen Inhalt
+// -- vorher blieb er auf dem Telefon ohne eingetragene Adresse ganz weg. Ist
+// kein Geraet eingetragen, gibt es nur das Netz und keinen Umschalter.
+//
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "strings.js" as Tr
-import "fonts.js" as Fonts
 
 pragma ComponentBehavior: Bound
 
@@ -25,14 +30,72 @@ Item {
     property color goodColor: "#57b894"
     property color badColor: "#d9534f"
     property real scaleUnit: Math.max(10, Math.min(width / 26, height / 16))
+    // Bedienung mit dem Finger: groessere Knoepfe am Netz-Graphen
+    property bool finger: false
+    // Sieht niemand hin, holt die Netz-Seite nichts
+    property bool live: true
+
+    // Welche Seite oben liegt: "device", "net", oder leer fuer "von selbst" --
+    // das Geraet, wenn eines eingetragen ist. Der Wirt haelt die Wahl.
+    property string pane: ""
+    property string netSpan: "1y"
+    signal paneRequested(string p)
+    signal netSpanRequested(string s)
+
+    // Welche Seiten es ueberhaupt gibt -- aus den Einstellungen, leer heisst
+    // beide. Ohne "Geraet" zeigt der Reiter nur das Netz, auch wenn ein
+    // Miner eingetragen ist; ohne eingetragenen Miner gibt es ohnehin nur das
+    // Netz. Ist das Netz abgewaehlt und kein Geraet da, bleibt es trotzdem:
+    // eine leere Seite hilft niemandem.
+    property var panes: []
+    function erlaubt(p) {
+        var v = root.panes;
+        if (!v || !v.length || typeof v.indexOf !== "function")
+            return true;
+        return v.indexOf(p) >= 0;
+    }
+    readonly property bool mitGeraet: root.configured && root.erlaubt("device")
+    readonly property bool mitNetz: root.erlaubt("net") || !root.mitGeraet
+    readonly property bool zweiSeiten: root.mitGeraet && root.mitNetz
+    readonly property string paneNow: !root.mitGeraet ? "net"
+                                    : !root.mitNetz ? "device"
+                                    : (root.pane === "net" ? "net" : "device")
+    // Die Solo-Chance beim Geraet, abschaltbar wie Kurve und Bestenliste
+    property bool showSolo: true
+    // Was die Netz-Seite zeigt: "stats", "chart", "pools", leer heisst alles
+    property var netParts: []
 
     readonly property var miners: feed ? feed.miners : []
     readonly property var total: feed ? feed.minerTotal : ({})
     readonly property bool configured: feed ? feed.minerConfigured : false
     readonly property bool anyOnline: feed ? feed.minerOnline : false
     readonly property real netDiff: (feed && feed.hashrate.difficulty) || 0
+    readonly property real netHash: (feed && feed.hashrate.current) || 0
     readonly property real bestShare: (netDiff > 0 && total.bestDiff)
         ? total.bestDiff / netDiff : 0
+
+    // **Die Solo-Chance.** Eigene Hashrate durch die des Netzes ist der Anteil
+    // an jedem Block; bei 144 Bloecken am Tag ergibt das die Chance pro Tag
+    // und ihren Kehrwert, die mittlere Wartezeit. Beides sind Erwartungswerte
+    // eines Zufalls ohne Gedaechtnis -- nach tausend Jahren ist die Chance
+    // fuer den naechsten Tag dieselbe.
+    readonly property real soloAnteil: (root.netHash > 0 && root.total.hashRate > 0)
+        ? root.total.hashRate / root.netHash : 0
+    readonly property real soloTag: root.soloAnteil * 144
+
+    // "16.600 Jahre", "64 Tage", "5 Std 20 Min"
+    function warte(tage) {
+        if (!(tage > 0) || !isFinite(tage))
+            return "–";
+        if (tage >= 730) {
+            var jahre = tage / 365.25;
+            return Tr.t("duration.years", root.lang,
+                        jahre >= 1e6 ? Tr.big(jahre, root.lang) : Tr.group(jahre, root.lang));
+        }
+        if (tage >= 2)
+            return Tr.t("duration.days", root.lang, Tr.group(tage, root.lang));
+        return root.span(tage * 86400);
+    }
     // Bei genau einem Geraet ist Platz fuer die Einzelheiten
     readonly property var one: (miners.length === 1 && miners[0].online) ? miners[0] : null
     readonly property var oneHist: (one && feed) ? (feed.minerHistory[one.id] || ({})) : ({})
@@ -54,6 +117,10 @@ Item {
             Qt.openUrlExternally(webUrl);
     }
     readonly property bool roomForChart: height > 200
+    // Ueber wie viele Minuten die Rechenwerke gemittelt sind: eine Messung je
+    // fuenf Sekunden, im Daemon wie in `DirectMiner`
+    readonly property real domainMin: root.one && root.one.domainSamples
+        ? root.one.domainSamples * 5 / 60 : 0
 
     // Welche Kennzahlen ueberhaupt gezeigt werden. Leere Liste heisst alle --
     // die Auswahl kommt aus den Einstellungen, hier steht nur der Filter.
@@ -139,7 +206,24 @@ Item {
         dimColor: root.dimColor
         lang: root.lang
         title: Tr.t("miner.whatIsThis", root.lang)
-        entries: [
+        // Die Erklaerungen der Seite, die gerade oben liegt
+        entries: root.paneNow === "net" ? [
+            {
+                "color": root.accentColor,
+                "k": Tr.t("hashrate", root.lang),
+                "v": Tr.t("net.hashHelp", root.lang)
+            },
+            {
+                "color": netz.diffColor,
+                "thin": true,
+                "k": Tr.t("difficulty", root.lang),
+                "v": Tr.t("net.diffHelp", root.lang)
+            },
+            {
+                "k": Tr.t("pool", root.lang),
+                "v": Tr.t("net.poolsHelp", root.lang)
+            }
+        ] : [
             {
                 "color": root.accentColor,
                 "thin": true,
@@ -161,6 +245,10 @@ Item {
                 "v": Tr.t("miner.oneToNHelp", root.lang)
             },
             {
+                "k": Tr.t("miner.solo", root.lang),
+                "v": Tr.t("miner.soloHelp", root.lang)
+            },
+            {
                 "k": Tr.t("miner.domains", root.lang),
                 "v": Tr.t("miner.domainsHelp", root.lang)
             },
@@ -178,7 +266,7 @@ Item {
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.rightMargin: info.buttonWidth + root.scaleUnit * 0.4
-        visible: root.showActions && root.webUrl !== ""
+        visible: root.showActions && root.webUrl !== "" && root.paneNow === "device"
         width: info.buttonWidth
         height: width
         radius: height / 2
@@ -204,45 +292,73 @@ Item {
         }
     }
 
-    // ---------------------------------------------------- kein Geraet bekannt
-    Column {
-        anchors.centerIn: parent
-        width: parent.width * 0.86
-        spacing: root.scaleUnit * 0.45
-        visible: !root.configured
+    // ------------------------------------------------------ Geraet | Netz
+    // Nur, wenn es zwei Seiten gibt. Er liegt fest oben, beide Seiten rollen
+    // darunter.
+    readonly property real kopfHoehe: root.zweiSeiten ? umschalter.height + root.scaleUnit * 0.5 : 0
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: Tr.t("miner.none", root.lang)
-            color: root.textColor
-            font.pixelSize: root.scaleUnit * 1.1
+    TileGoggles {
+        id: umschalter
+
+        visible: root.zweiSeiten
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: umschalter.schalterBreite
+        modes: [
+            { "k": "device", "l": Tr.t("miner.paneDevice", root.lang) },
+            { "k": "net", "l": Tr.t("miner.paneNet", root.lang) }
+        ]
+        mode: root.paneNow
+        labelKey: ""
+        counts: []
+        total: 0
+        lang: root.lang
+        textColor: root.textColor
+        dimColor: root.dimColor
+        accentColor: root.accentColor
+        uiFont: root.finger ? Math.max(15, root.scaleUnit * 0.62) : root.scaleUnit * 0.62
+        minTap: root.finger ? 40 : 0
+        z: 20
+        onPicked: function (m) {
+            root.paneRequested(m);
         }
+    }
 
-        Text {
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-            text: Tr.t("miner.discover", root.lang)
-            color: root.dimColor
-            font.pixelSize: root.scaleUnit * 0.62
-        }
+    // ------------------------------------------------------------- Netz
+    // Ohne eingetragenes Geraet steht darunter, wie eines dazukommt: auf dem
+    // Telefon in den Einstellungen, am Rechner ueber die Suche des Dienstes.
+    NetworkView {
+        id: netz
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: "orangedeck --discover-miners --write\nsystemctl --user restart orangedeck"
-            horizontalAlignment: Text.AlignHCenter
-            color: root.accentColor
-            font.pixelSize: root.scaleUnit * 0.62
-            font.family: Fonts.mono()
-        }
-
-        Text {
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-            text: Tr.t("miner.detects", root.lang)
-            color: root.dimColor
-            font.pixelSize: root.scaleUnit * 0.55
+        anchors.fill: parent
+        visible: root.paneNow === "net"
+        live: root.live && root.visible && root.paneNow === "net"
+        // Ohne Umschalter beginnt die Seite oben -- dort sitzt der i-Knopf
+        // und braucht seine Zeile.
+        topInset: root.zweiSeiten ? root.kopfHoehe
+                                  : (root.showActions ? info.buttonWidth + root.scaleUnit * 0.3 : 0)
+        feed: root.feed
+        lang: root.lang
+        span: root.netSpan
+        parts: root.netParts
+        finger: root.finger
+        // **Am Finger nicht unter 20.** `scaleUnit` folgt der Breite; hochkant
+        // am Telefon sind das rund 16 Punkte, und die Beschriftungen der
+        // Kennzahlen und Pools standen in knapp neun. Am Rechner bleibt es,
+        // wie es war.
+        scaleUnit: root.finger ? Math.max(20, root.scaleUnit) : root.scaleUnit
+        textColor: root.textColor
+        dimColor: root.dimColor
+        accentColor: root.accentColor
+        footer: root.configured ? ""
+              : (root.feed && root.feed.direkt)
+                ? Tr.t("net.addMiner", root.lang, Tr.t("tab.settings", root.lang),
+                       Tr.t("tab.miner", root.lang))
+                : Tr.t("miner.none", root.lang) + ". " + Tr.t("miner.discover", root.lang)
+        footerCommand: (!root.configured && !(root.feed && root.feed.direkt))
+            ? "orangedeck --discover-miners --write\nsystemctl --user restart orangedeck" : ""
+        onSpanRequested: function (sp) {
+            root.netSpanRequested(sp);
         }
     }
 
@@ -250,7 +366,7 @@ Item {
     Column {
         anchors.centerIn: parent
         spacing: root.scaleUnit * 0.35
-        visible: root.configured && !root.anyOnline
+        visible: root.configured && !root.anyOnline && root.paneNow === "device"
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -277,8 +393,9 @@ Item {
         id: flick
 
         anchors.fill: parent
+        anchors.topMargin: root.kopfHoehe
         clip: true
-        visible: root.anyOnline
+        visible: root.anyOnline && root.paneNow === "device"
         contentWidth: width
         contentHeight: body.implicitHeight + root.scaleUnit
         boundsBehavior: Flickable.StopAtBounds
@@ -302,8 +419,11 @@ Item {
 
                 width: flick.width * 0.9
                 x: (flick.width - width) / 2
-                // Mittig, solange Platz ist -- sonst oben anfangen
-                y: Math.max(0, (flick.height - implicitHeight) / 2)
+                // **Oben, nicht mittig** -- wie die Netzwerk-Seite. Seit oben
+                // der Umschalter sitzt, stand am Telefon hochkant ein Loch
+                // von einem Drittel des Bildschirms zwischen ihm und dem
+                // Namen des Geraets (11.09.2026).
+                y: root.scaleUnit * 0.3
                 spacing: root.scaleUnit * 0.45
 
             Text {
@@ -375,7 +495,8 @@ Item {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: root.total.bestDiff
-                        ? root.big(root.total.bestDiff) + " von " + root.big(root.netDiff)
+                        ? Tr.t("miner.ofNet", root.lang, root.big(root.total.bestDiff),
+                               root.big(root.netDiff))
                         : "–"
                     color: root.textColor
                     font.pixelSize: root.scaleUnit * 0.95
@@ -390,6 +511,39 @@ Item {
                         ? Tr.t("miner.enoughForBlock", root.lang)
                         : Tr.t("miner.oneInN", root.lang, root.big(1 / root.bestShare))
                     color: root.bestShare >= 1 ? root.goodColor : root.dimColor
+                    font.pixelSize: root.scaleUnit * 0.62
+                }
+            }
+
+            // Die Chance, dass einer der naechsten Bloecke der eigene ist.
+            // Unter einem Block am Tag als "1 zu N pro Tag" mit der mittleren
+            // Wartezeit darunter; darueber reicht die Wartezeit allein.
+            Column {
+                width: parent.width
+                spacing: root.scaleUnit * 0.15
+                visible: root.showSolo && root.soloTag > 0
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: Tr.t("miner.solo", root.lang)
+                    color: root.dimColor
+                    font.pixelSize: root.scaleUnit * 0.62
+                }
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: root.soloTag >= 1
+                        ? Tr.t("miner.soloEvery", root.lang, root.warte(1 / root.soloTag))
+                        : Tr.t("miner.soloDay", root.lang, root.big(1 / root.soloTag))
+                    color: root.textColor
+                    font.pixelSize: root.scaleUnit * 0.95
+                }
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: root.soloTag > 0 && root.soloTag < 1
+                    text: Tr.t("miner.soloEvery", root.lang, root.warte(1 / root.soloTag))
+                    color: root.dimColor
                     font.pixelSize: root.scaleUnit * 0.62
                 }
             }
@@ -509,9 +663,13 @@ Item {
                     // vier). Die Einzelmessungen rauschen um ueber zehn Prozent --
                     // gezeigt wird deshalb der geglaettete Wert, sonst sieht
                     // Rauschen wie ein Defekt aus.
+                    // Die Minuten in der Schreibweise der Sprache: bis zum
+                    // 11.09.2026 stand dort "0.3 Min" mit Punkt, weil die
+                    // Zahl roh eingesetzt wurde. Ab einer Minute ganz.
                     text: root.one && root.one.domainSamples
-                        ? Tr.t("miner.domainsAvg", root.lang,
-                               Math.round(root.one.domainSamples * 5 / 60 * 10) / 10)
+                        ? Tr.t("miner.domainsAvg", root.lang, root.domainMin >= 1
+                               ? Math.round(root.domainMin)
+                               : Tr.fixed(root.domainMin, 1, root.lang))
                         : Tr.t("miner.domains", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.scaleUnit * 0.55
@@ -600,7 +758,8 @@ Item {
 
                         Text {
                             text: root.netDiff > 0
-                                ? "1 zu " + root.big(root.netDiff / sbRow.modelData.diff)
+                                ? Tr.t("miner.oneTo", root.lang,
+                                       root.big(root.netDiff / sbRow.modelData.diff))
                                 : ""
                             color: root.dimColor
                             font.pixelSize: root.scaleUnit * 0.58
@@ -608,7 +767,7 @@ Item {
 
                         Text {
                             text: sbRow.modelData.time
-                                ? new Date(sbRow.modelData.time * 1000).toLocaleDateString(Qt.locale("de_DE"))
+                                ? Qt.formatDate(new Date(sbRow.modelData.time * 1000), "dd.MM.yyyy")
                                 : ""
                             color: root.dimColor
                             font.pixelSize: root.scaleUnit * 0.58
@@ -653,7 +812,7 @@ Item {
 
                         Text {
                             width: root.scaleUnit * 4
-                            text: line.modelData.online ? root.big(line.modelData.hashRate, "H/s") : "aus"
+                            text: line.modelData.online ? root.big(line.modelData.hashRate, "H/s") : Tr.t("miner.off", root.lang)
                             color: root.dimColor
                             font.pixelSize: root.scaleUnit * 0.62
                         }
