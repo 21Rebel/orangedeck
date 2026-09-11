@@ -38,6 +38,7 @@ Column {
     property color accentColor: "#f7931a"
     property real uiFont: 13
     property string lang: "de"
+    property string btcZeichen: "\u20BF"
 
     signal txPicked(string txid)
     signal colorModeRequested(string mode)
@@ -223,6 +224,7 @@ Column {
     BlockTiles {
         id: tileView
 
+        btcZeichen: root.btcZeichen
         width: parent.width
         height: root.tileHeight > 0 ? root.tileHeight : Math.min(parent.width, root.uiFont * 34)
         visible: root.tiles !== null

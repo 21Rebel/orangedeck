@@ -45,6 +45,8 @@ Item {
     property color dimColor: "#9a94a6"
     property real labelSize: 11
     property string lang: "de"
+    // `₿` nur, wo die Schrift es fuehrt (siehe FeedTabs.btcZeichen)
+    property string btcZeichen: "\u20BF"
 
     // Je Kachel: { sq: {x,y,r}, b: Gebuehrenklasse, k: Art, d: Tooltip-Angaben }
     property var squares: []
@@ -620,8 +622,9 @@ Item {
             Text {
                 visible: tipCol.d !== null && tipCol.d !== undefined
                 text: tipCol.d
-                    ? Tr.t("tile.tooltip", root.lang, tipCol.d[1], tipCol.d[4],Tr.fixed(
-                           (tipCol.d[3] / 1e8), 8, root.lang))
+                    ? Tr.ersetzen(Tr.t("tile.tooltip", root.lang, tipCol.d[1], tipCol.d[4],
+                                       Tr.fixed((tipCol.d[3] / 1e8), 8, root.lang)),
+                                  root.btcZeichen, "")
                     : ""
                 color: root.dimColor
                 font.pixelSize: root.labelSize * 0.92

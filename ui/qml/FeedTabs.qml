@@ -86,8 +86,20 @@ Item {
     // Funktion mit verstecktem Zustand wird in einer Bindung genau einmal
     // ausgewertet; was danach gemessen wird, kommt nie an. Als Eigenschaft
     // haengt die Anzeige daran und richtet sich mit.
+    //
+    // **Auf Android wird nicht mehr gemessen, dort gilt immer der Text.** Am
+    // 11.09.2026 im Emulator mit Android 11 ging die Messung schief: die
+    // Kaestchen fuer `₿` und fuer das Vergleichszeichen kamen aus
+    // verschiedenen Ersatzschriften und waren verschieden breit, die Messung
+    // sagte "vorhanden", und im Feed stand wieder das Kaestchen mit Kreuz.
+    // Qt nimmt auf Android Roboto, und Roboto fuehrt weder `₿` noch die
+    // Pfeile -- auf dem Galaxy A55 kam deshalb schon immer "BTC" und "->"
+    // heraus. Auf dem Schreibtisch bleibt die Messung: dort gibt es die
+    // Schriften meist, und sie hat bisher nie getaeuscht.
+    readonly property bool ohneSonderzeichen: Qt.platform.os === "android"
     readonly property string btcZeichen:
-        probeBtc.implicitWidth !== probeLeer.implicitWidth ? "\u20BF" : "BTC"
+        !root.ohneSonderzeichen && probeBtc.implicitWidth !== probeLeer.implicitWidth
+        ? "\u20BF" : "BTC"
 
     // Dieselbe Probe fuer die Pfeile. **Je Zeichen einmal gemessen, nicht von
     // einem auf das andere geschlossen:** auf dem Galaxy A55 fuehrt keine der
@@ -96,10 +108,12 @@ Item {
     // waere nichts Besonderes. Ein anderes Pfeilzeichen zu nehmen hilft dort
     // ohnehin nicht -- es braucht einen Textrueckfall.
     readonly property string pfeilLang:
-        probePfeilL.implicitWidth !== probeLeer.implicitWidth ? "\u27F6" : "->"
+        !root.ohneSonderzeichen && probePfeilL.implicitWidth !== probeLeer.implicitWidth
+        ? "\u27F6" : "->"
 
     readonly property string pfeilKurz:
-        probePfeilK.implicitWidth !== probeLeer.implicitWidth ? "\u2192" : "->"
+        !root.ohneSonderzeichen && probePfeilK.implicitWidth !== probeLeer.implicitWidth
+        ? "\u2192" : "->"
 
     readonly property string currency: root.o("currency", "usd")
     readonly property bool walletEnabled: root.o("walletEnabled", false)

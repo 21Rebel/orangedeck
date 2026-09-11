@@ -681,7 +681,20 @@ Window {
         }
     }
 
-    Text {
+    // **Mit eigenem Kasten, und er bricht um.** Bis zum 11.09.2026 stand
+    // der Hinweis als blosser Text auf der Fusszeile: fuer die Sekunden, die
+    // er zu sehen ist, lag "1–6 Ansicht · c Farbe ..." quer ueber "naechster
+    // Block ... median ...", und im schmalen Fenster (480 Punkte) ragte er
+    // links und rechts hinaus. Jetzt ein Kasten mit dem Grund des Fensters,
+    // hoechstens so breit wie das Fenster abzueglich Rand.
+    TextMetrics {
+        id: hintMass
+
+        font.pixelSize: 11
+        text: hintText.text
+    }
+
+    Rectangle {
         id: hint
 
         // **Nicht auf dem Telefon.** Er zaehlt Tastenkuerzel auf, und dort
@@ -695,11 +708,26 @@ Window {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         // Auch dieser sitzt sonst hinter der Navigationsleiste.
-        anchors.bottomMargin: 16 + flaeche.SafeArea.margins.bottom
-        color: "#9a94a6"
-        font.pixelSize: 11
-        text: "1–6 Ansicht   ·   c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft · F11 Vollbild"
+        anchors.bottomMargin: 10 + flaeche.SafeArea.margins.bottom
+        width: hintText.width + 20
+        height: hintText.height + 10
+        radius: 6
+        color: Qt.rgba(0.043, 0.043, 0.071, 0.94)
+        border.width: 1
+        border.color: Qt.rgba(1, 1, 1, 0.10)
         opacity: 0
+
+        Text {
+            id: hintText
+
+            anchors.centerIn: parent
+            width: Math.min(Math.ceil(hintMass.advanceWidth) + 1, win.width - 48)
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignHCenter
+            color: "#9a94a6"
+            font.pixelSize: 11
+            text: "1–6 Ansicht   ·   c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft · F11 Vollbild"
+        }
 
         function flash() {
             opacity = 1;

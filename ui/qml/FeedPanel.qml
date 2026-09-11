@@ -53,7 +53,17 @@ Item {
     // 420 war zu hoch gegriffen: der Dashboard-Tab ist 410 hoch und bekam
     // dadurch **nie** eine Legende -- und mit ihr auch nicht den Umschalter
     // darunter. Gemessen passt sie samt Umschalter ab 330 in die Flaeche.
+    // **Und nur, wenn sie neben den Block passt.** Die feste Grenze von 420
+    // Punkten reichte nicht: der Block waechst mit der Hoehe
+    // (`blockSide`), und in einem schmalen, hohen Fenster (480 x 900) lag die
+    // Legende halb ueber ihm (11.09.2026 im Xvfb). Gerechnet wird mit dem
+    // Rand neben dem ungezoomten Block; `legend.width` ist auch dann bekannt,
+    // wenn sie ausgeblendet ist, das gibt keine Schleife. Die 16 sind die
+    // acht Punkte, die ihr Kasten nach aussen traegt, und etwas Luft.
+    readonly property bool legendePasst:
+        (canvasView.width - canvasView.blockSide) / 2 >= legend.width + 16
     readonly property bool showLegend: legendVisible && width >= 420 && height >= 330
+                                       && legendePasst
 
     // **Der Umschalter haengt nicht am Platz fuer die Legende.** Bisher tat
     // er es, weil beide an `showLegend` hingen -- und das ist zweierlei: die

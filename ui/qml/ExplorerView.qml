@@ -808,6 +808,7 @@ Item {
             TxFlow {
                 width: flick.width
                 lang: root.lang
+                btcZeichen: root.btcZeichen
                 // Im Strang gehoeren beide Seiten zu derselben Transaktion --
                 // dort steht sie ueber den Angaben.
                 txid: String(root.result.txid || "")
@@ -1145,6 +1146,7 @@ Item {
 
             ProjectedBlock {
                 width: flick.width
+                btcZeichen: root.btcZeichen
                 tileHeight: Math.min(flick.width, root.scaleUnit * 34)
                 rank: root.projRank
                 live: root.visible && root.kind === "projected"
@@ -1349,6 +1351,7 @@ Item {
             BlockTiles {
                 id: blockTiles
 
+                btcZeichen: root.btcZeichen
                 width: flick.width
                 height: Math.min(flick.width, root.scaleUnit * 34)
                 visible: root.tiles !== null

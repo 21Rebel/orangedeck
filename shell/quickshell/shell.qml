@@ -571,16 +571,41 @@ ShellRoot {
             }
         }
 
-        Text {
+        // Mit eigenem Kasten und Umbruch, wie in app/qml/Main.qml: als
+        // blosser Text lag der Hinweis auf der Fusszeile des Feeds und ragte im
+        // schmalen Fenster hinaus (11.09.2026).
+        TextMetrics {
+            id: hintMass
+
+            font.pixelSize: 11
+            text: hintText.text
+        }
+
+        Rectangle {
             id: hint
 
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 16
-            color: "#9a94a6"
-            font.pixelSize: 11
-            text: "1–6 Ansicht · c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft"
+            anchors.bottomMargin: 10
+            width: hintText.width + 20
+            height: hintText.height + 10
+            radius: 6
+            color: Qt.rgba(0.043, 0.043, 0.071, 0.94)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.10)
             opacity: 0
+
+            Text {
+                id: hintText
+
+                anchors.centerIn: parent
+                width: Math.min(Math.ceil(hintMass.advanceWidth) + 1, parent.parent.width - 48)
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
+                color: "#9a94a6"
+                font.pixelSize: 11
+                text: "1–6 Ansicht · c Farbe · s Größe · i Blockangaben · l Legende · + − Deckkraft"
+            }
 
             function flash() {
                 opacity = 1;

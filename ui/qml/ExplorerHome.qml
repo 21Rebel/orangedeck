@@ -137,6 +137,7 @@ Column {
     // ------------------------- der naechste Block, laufend mitgefuehrt
     ProjectedBlock {
         width: parent.width
+        btcZeichen: root.btcZeichen
         visible: root.zeigt("next")
         feed: root.feed
         live: root.live && root.zeigt("next")

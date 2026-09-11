@@ -30,6 +30,8 @@ Item {
     id: root
 
     property string lang: "de"
+    // Wie ueberall: `₿` nur, wo die Schrift es fuehrt (siehe FeedTabs)
+    property string btcZeichen: "\u20BF"
 
     property var vin: []
     property var vout: []
@@ -649,7 +651,7 @@ Item {
             }
 
             Text {
-                text: "\u20BF " + Tr.fixed((root.hovered ? root.hovered.value : 0) / 1e8,
+                text: root.btcZeichen + " " + Tr.fixed((root.hovered ? root.hovered.value : 0) / 1e8,
                                            8, root.lang)
                 color: root.textColor
                 font.pixelSize: root.labelSize
