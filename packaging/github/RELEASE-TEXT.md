@@ -40,6 +40,12 @@ Until the Flathub listing is through, as a bundle:
 
 It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included, market and wallet too.
 
+## Tested on
+
+- **Android:** Samsung Galaxy A55 (Android 16). In the emulator Android 9, 11 and 14, phone and tablet size — there with an x86_64 build of the same source, the arm64 package itself only on the Galaxy.
+- **Linux (Flatpak):** Ubuntu 24.04 with GNOME and Fedora 44 with KDE Plasma, both fresh systems in a VM. CachyOS with niri, built from source.
+- **Not yet:** real tablets, other manufacturers' home screens, Windows and macOS. If something looks wrong on your device, please open an issue.
+
 ## Checksums (SHA-256)
 
     <PRUEFSUMME-APK>  orangedeck-0.2.6-arm64-v8a.apk
