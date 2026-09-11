@@ -149,26 +149,47 @@
        Vorschaubildern nur das App-Symbol. Veroeffentlicht war wieder
        nichts. Die erste Auslieferung heisst 0.2.5.
 
+       Am 11.09.2026 zum siebten Mal, und diesmal nicht wegen eines
+       Befunds: `v0.2.5` war fertig bis auf den Durchgang, und der Anwender
+       wollte das Paket vorher komplett haben: der Miner-Reiter heisst
+       seitdem "Mining" und zeigt auch das Netzwerk (Hashrate,
+       Schwierigkeit, Pools), dazu zwei Widgets. Neu gemacht wurde auch die
+       Reihenfolge: erst der Durchgang am Telefon, dann der Tag. Die erste
+       Auslieferung heisst 0.2.6.
+
        **Die Regel dahinter, viermal bestaetigt:** solange ein Stand bei
        keinem Anwender liegt, ist seine Nummer frei. Erst mit der ersten
        Installation bei einem Fremden wird eine Nummer zu einer Zusage. -->
   <releases>
-    <release version="0.2.5" date="2026-09-10">
+    <release version="0.2.6" date="2026-09-11">
       <description>
         <p>First release.</p>
         <p xml:lang="de">Erste Auslieferung.</p>
         <p>
-          The mempool as a tile mosaic, a block height clock, mining figures, a
-          block explorer and a watch-only view of your own addresses. Alongside
-          the market tab with candles, CVD, liquidations and a heatmap that is
-          marked as an estimate.
+          The mempool as a tile mosaic, a block height clock, a mining tab for
+          your own device and the whole network, a block explorer and a
+          watch-only view of your own addresses. Alongside the market tab with
+          candles, CVD, liquidations and a heatmap that is marked as an
+          estimate.
         </p>
         <p xml:lang="de">
-          Der Mempool als Kachelgrafik, eine Blockuhr, Kennzahlen zum
-          Schuerfen, ein Blockforscher und die Beobachtung eigener Adressen
-          ohne Schluessel. Dazu der Markt-Reiter mit Kerzen, CVD,
+          Der Mempool als Kachelgrafik, eine Blockuhr, ein Mining-Reiter fuer
+          das eigene Geraet und das ganze Netzwerk, ein Blockforscher und die
+          Beobachtung eigener Adressen ohne Schluessel. Dazu der Markt-Reiter mit Kerzen, CVD,
           Liquidationen und einer Heatmap, die als Schaetzung gekennzeichnet
           ist.
+        </p>
+        <p>
+          The network in the mining tab: hashrate and difficulty on one axis,
+          from thirty days back to 2009, the next adjustment, the average block
+          time and the pools of the last week. With your own miner, its chance
+          of finding a block.
+        </p>
+        <p xml:lang="de">
+          Das Netzwerk im Mining-Reiter: Hashrate und Schwierigkeit auf einer
+          Achse, von dreissig Tagen bis 2009 zurueck, die naechste Anpassung,
+          die mittlere Blockzeit und die Pools der letzten Woche. Mit eigenem
+          Miner dessen Chance auf einen Block.
         </p>
         <p>
           A new application icon: the block, packed from unequal squares, the

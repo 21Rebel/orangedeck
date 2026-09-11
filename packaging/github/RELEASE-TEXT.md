@@ -1,6 +1,6 @@
 <!-- Text fuer das GitHub-Release der ersten Auslieferung. Vorbereitet am
-     10.09.2026 fuer 0.2.5 und dort nicht mehr verwendet (siehe metainfo,
-     die Nummer wanderte ein weiteres Mal). Vor dem Veroeffentlichen:
+     10.09.2026 fuer 0.2.5, am 11.09.2026 auf 0.2.6 nachgezogen (Mining-Reiter
+     mit Netzwerk, zwei Widgets dazu). Vor dem Veroeffentlichen:
      Fassung ersetzen, die beiden Pruefsummen aus
      ~/.local/share/orangedeck/auslieferung/PRUEFSUMMEN.txt eintragen, und
      nachsehen, ob jede Aussage fuer den getaggten Stand noch stimmt.
@@ -8,16 +8,17 @@
 
 **First release.** · *Erste Auslieferung.*
 
-A Bitcoin dashboard: the mempool as a live tile mosaic, a block height clock, mining figures from your own Bitaxe, and a block explorer. MIT, no account.
+A Bitcoin dashboard: the mempool as a live tile mosaic, a block height clock, mining figures for the whole network and your own Bitaxe, and a block explorer. MIT, no account.
 
 ## Android — `orangedeck-0.2.6-arm64-v8a.apk`
 
 For phones and tablets with a 64-bit ARM processor (arm64-v8a), Android 9 or newer.
 
-- Feed, clock, miner and explorer; home screen shortcuts for feed, clock and explorer
+- Feed, clock, mining and explorer; home screen shortcuts for feed, clock and explorer
+- **The mining network:** hashrate and difficulty on one chart from 30 days back to 2009, the next adjustment, average block time and the pools of the last week — no miner needed
 - **Full-screen block clock:** one tap hides the system bars and tabs, and the screen stays on — an old phone or tablet becomes a block clock on the wall
-- **Your own Bitaxe, directly:** enter its address and the miner tab reads it over your Wi-Fi. If statistics are enabled in AxeOS, the chart shows up to twelve hours of history right away
-- Eight home screen widgets: block height, mempool, price and miner, each as a compact tile and as a larger one with a chart or the explorer's block cards
+- **Your own Bitaxe, directly:** enter its address and the mining tab reads it over your Wi-Fi, with its chance of finding a block. If statistics are enabled in AxeOS, the chart shows up to twelve hours of history right away
+- Ten home screen widgets: block height, mempool, price, miner and mining network, each as a compact tile and as a larger one with a chart or the explorer's block cards
 - Follows your system language (13 languages) until you pick one; the widgets follow along
 - **Not in the Android package:** the market tab and the watch-only wallet. Both need the OrangeDeck service that runs on Linux.
 
@@ -46,4 +47,4 @@ It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included, 
 
 ---
 
-**Deutsch:** Die Android-Fassung bringt Feed, Uhr, Miner und Explorer mit, Verknüpfungen für Feed, Uhr und Explorer, ein Vollbild als Blockuhr (der Bildschirm bleibt an) und acht Widgets für den Startbildschirm. Den eigenen Bitaxe liest sie direkt über das WLAN. Markt und Watch-only-Wallet sind **nicht** dabei, sie brauchen den OrangeDeck-Dienst unter Linux. Vor dem Installieren bitte die Signatur prüfen (Befehl und Fingerabdruck oben).
+**Deutsch:** Die Android-Fassung bringt Feed, Uhr, Mining und Explorer mit, Verknüpfungen für Feed, Uhr und Explorer, ein Vollbild als Blockuhr (der Bildschirm bleibt an) und zehn Widgets für den Startbildschirm. Der Mining-Reiter zeigt das ganze Netzwerk – Hashrate, Schwierigkeit, Pools – auch ohne eigenen Miner; den eigenen Bitaxe liest sie direkt über das WLAN. Markt und Watch-only-Wallet sind **nicht** dabei, sie brauchen den OrangeDeck-Dienst unter Linux. Vor dem Installieren bitte die Signatur prüfen (Befehl und Fingerabdruck oben).
