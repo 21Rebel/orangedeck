@@ -1,0 +1,205 @@
+# Stand und offene Punkte
+
+> Der Abschnitt gleich hier darunter ist der **gueltige Stand** und der
+> Einstieg fuer den naechsten Tag. Alles Aeltere liegt im Journal unter
+> `docs/journal/`, ein Tag je Datei, und erklaert nur noch, wie es dazu kam.
+
+<!-- **Warum die Datei geteilt ist.** Am 06., 07. und 08.09.2026 stand
+     dreimal derselbe offene Punkt darin: sie war 117 kB gross, dann 130,
+     dann 148 -- "als Einstieg noch brauchbar, als Datei laengst
+     unhandlich". Ein Journal, das man nicht mehr oeffnen mag, wird nicht
+     mehr gelesen, und dann ist die Sorgfalt beim Schreiben umsonst.
+
+     Geteilt am 09.09.2026, Zeile fuer Zeile unveraendert uebernommen: die
+     Zerlegung wurde gegen das Original zurueckgerechnet, bevor sie
+     geschrieben wurde. Hier bleibt nur der neueste Tagesabschluss stehen.
+     Wandert er morgen ins Journal, kommt der von morgen an seine Stelle;
+     die Datei bleibt damit so lang, wie ein Einstieg sein darf. -->
+## TAGESABSCHLUSS 11.09.2026 -- wo das Projekt steht
+
+> Einstieg fuer den naechsten Tag. Alles Aeltere liegt im Journal unter
+> `docs/journal/`, ein Tag je Datei.
+
+### Der Stand in einem Satz
+
+**Die erste Auslieferung heisst jetzt 0.2.8 und ist inhaltlich fertig; was
+fehlt, sind zwei VM-Laeufe und die Freigabe.** Der Tag steht noch aus:
+`v0.2.7` ist getaggt, gebaut, signiert und in der Ubuntu-VM gelaufen -- und
+danach fand der Bildschirmvergleich ueber alle Systeme vier Fehler, also
+wandert die Nummer weiter. Veroeffentlicht ist nach wie vor nichts.
+
+### Was morgen als Erstes drankommt
+
+**1. Die beiden VM-Laeufe fuer 0.2.8 nachholen.** Sie sind heute Abend nicht
+zustande gekommen, weil mempool.space dieser Maschine keine Antwort mehr gab
+(siehe "Die Erkenntnis des Tages"). Vorher pruefen:
+
+    curl -m 10 https://mempool.space/api/blocks/tip/height
+
+Antwortet das wieder, dann Ubuntu 24.04 (GNOME) und Fedora 44 (KDE) wie
+gehabt. Die Daten-ISO traegt bereits ein **Test**-Buendel aus dem
+Arbeitsstand (`7d04627…`), kein Auslieferungsbuendel -- fuer den Lauf vor der
+Freigabe gehoert das Buendel aus dem getaggten Stand darauf.
+
+**2. Auslieferung 0.2.8.** Der Ablauf steht unveraendert im Journal vom
+10.09.; die Nummer ist im Baum schon gesetzt (CMakeLists, AndroidManifest 11
+/ 0.2.8, metainfo, RELEASE-TEXT). Es fehlen: Tag, Pin, `tools/apk.sh v0.2.8`,
+`tools/pruefvm.sh bauen`, Signatur durch den Anwender, Geraetelauf, und das
+Release **nur mit ausdruecklichem OK**. Die Freigabevorlage traegt oben einen
+Merkzettel, dass die beiden VM-Laeufe vorher stattfinden muessen -- der
+Abschnitt "Tested on" nennt sie.
+
+**3. Die Testumgebungen auf dem Rechner.** KDE, GNOME und Xfce sind noch
+nicht installiert; der Anwender wollte sie einspielen. Hyprland liegt schon
+da, laesst sich aber **nicht** kopflos danebenstellen (vier Anlaeufe, siehe
+DOKUMENTATION) -- dafuer braucht es eine echte Anmeldung in einer
+Hyprland-Sitzung oder ein Fenster in der laufenden Sitzung des Anwenders.
+
+**4. Das Telefon.** Der Galaxy-Lauf gilt fuer 0.2.7; 0.2.8 ist dort noch
+nicht gewesen. Das Tablett des Anwenders ebenso wenig -- das prueft er selbst.
+
+### Was heute dazugekommen ist
+
+Zwoelf Commits am Vormittag und Mittag (Netzwerk im Mining-Reiter, zwei
+Widgets, Reiterwechsel, vier Telefon-Befunde, drei Befunde aus dem ersten
+Bildschirmdurchgang, zweimal die Nummer, zweimal der Pin), danach der
+Vergleich ueber alle Systeme:
+
+| Was | Anstoss |
+|---|---|
+| Der Mining-Reiter zeigt das Netzwerk (Hashrate, Schwierigkeit, Pools, Blockzeit), dazu zwei Widgets | Anwender |
+| Reiter im Wechsel fuer die Blockuhr an der Wand | Anwender |
+| Vier Befunde vom Telefon (Pfeil zu AxeOS, Zentrierung, Deckkraft, abgeschnittene Zahlen) | Anwender |
+| Kaestchen statt BTC unter Android 11, Legende ueber dem Block, Tastenhilfe ueber der Fusszeile | erster Durchgang |
+| Widgets verkleinern ihre Schrift, statt abzuschneiden | Emulator |
+| **Der Fluss zeichnete die Ausgaenge nicht**, wenn die Bindung noch den alten Stand hielt | Vergleich |
+| **Suchfeld, Tastenhilfe und Fehlergruende** sprechen die Sprache der Oberflaeche | Vergleich |
+| **Keine Einstellungsseiten** fuer Ansichten, die es auf diesem System nicht gibt | Vergleich |
+| Zwei Bindungen ohne Wert beim Seitenwechsel im Explorer | Protokoll |
+| `tools/ansichten.py`, `tools/ansichten-android.py` | neu |
+
+**Neu im Projekt:** die beiden Werkzeuge oben, `Tr.grund()` und die
+Schluessel `search.kind.*`, `search.moreChars`, `search.invalidHint`,
+`err.*`, `keys.help`, `keys.fullscreen` in `strings.js`.
+
+### Die Erkenntnis des Tages
+
+**Was ein Signalgeber liest, darf keine Bindung sein, die an derselben
+Eigenschaft haengt.** `TxFlow.rebuild()` lief aus `onVoutChanged` und las
+darin die abgeleitete Liste `voutWithFee`, die selbst von `vout` lebt. In
+welcher Reihenfolge eine Aenderung die Bindungen und die Signalgeber
+erreicht, ist nicht festgelegt: lief der Signalgeber zuerst, stand dort noch
+der alte, leere Stand -- und der Fluss endete in der Mitte, mal so, mal so.
+Beide betroffenen Ableitungen sind jetzt Funktionen. Eine Suche ueber alle
+QML-Dateien nach demselben Muster fand sonst nichts.
+
+Die zweite, und sie hat den Tag getragen: **vergleichen kann nur, wer
+ueberall dasselbe ablichtet.** Aus der Frage "sieht es ueberall gleich aus?"
+sind zwei Werkzeuge geworden, die auf jedem System denselben Satz Ansichten
+in derselben Reihenfolge aufnehmen und jede Seite bis zum Ende rollen. Sie
+finden die Unterreiter ueber ihre **Beschriftung** (tesseract), nicht ueber
+feste Punkte -- und melden am Ende, was sie nicht gefunden haben. Genau diese
+Meldung war der dritte Befund: "Unterreiter fehlt: Market" unter Android.
+
+Dazu, alle gemessen:
+
+- **Die Schrift ist nicht ueberall dieselbe, und das ist Absicht.** Unter
+  Linux nimmt die Anwendung die eingestellte Standardschrift; die
+  KDE-Laufzeit im Flatpak bringt eine breitere mit. Zeilen brechen dadurch
+  anders um, Knopfreihen stehen zwei- statt dreizeilig. Es passt ueberall,
+  Bildpunkt fuer Bildpunkt gleich ist es nicht.
+- **mempool.space drosselt**, wenn man es einen Tag lang mit Dutzenden
+  Starts befragt -- und dann steht auch das Dashboard des Anwenders leer, weil
+  der Daemon hinter derselben Adresse sitzt.
+- **Ein verschachtelter Compositor findet die Sitzung des Anwenders nicht
+  mehr**, wenn er ein eigenes `XDG_RUNTIME_DIR` bekommt (kurzer Pfad, der
+  Wayland-Socket darf nicht laenger als 108 Zeichen werden) und das
+  Startskript prueft, dass der Wirt-Socket wirklich darin liegt.
+- **aquamarine nennt den Compositor, an dem es haengt, nach
+  `XDG_CURRENT_DESKTOP`** -- "Connected to a wayland compositor: niri" sagt
+  also nichts darueber, wo das Fenster wirklich liegt. `niri msg windows`
+  sagt es.
+- **`tesseract` braucht die doppelte Groesse**, wenn die Schrift elf
+  Bildpunkte misst; darunter faellt es reihenweise aus.
+
+### Und was ich selbst falsch gemacht habe
+
+- **`pkill -f "..."` auf ein Muster, das in meiner eigenen Befehlszeile
+  steht** -- zweimal die eigene Shell erschlagen (Abbruch mit 144). Prozesse
+  ueber die PID beenden, nicht ueber ein Muster, das man gerade tippt.
+- **Einen verschachtelten Hyprland gestartet, der zunaechst so aussah, als
+  haenge er in der Sitzung des Anwenders.** Er tat es nicht (nachgesehen), ich
+  habe ihn trotzdem sofort beendet -- und danach erst die Trennung mit eigenem
+  `XDG_RUNTIME_DIR` gebaut, die von Anfang an haette dastehen muessen.
+- **mempool.space bis zur Drosselung befragt.** Jeder Durchgang startet die
+  Anwendung mehrfach, jeder Start holt Verlaeufe. Am Abend antwortete die
+  Seite dieser Maschine nicht mehr, und damit stand auch das Dashboard des
+  Anwenders leer. Pausen zwischen den Laeufen, und Bilder je Lauf sammeln
+  statt den Lauf zu wiederholen.
+- **Einen Befund gemeldet, der keiner war**: der halb gezeichnete Fluss sah
+  zuerst nach zu kurzer Wartezeit aus (neun Sekunden). Er war echt -- aber
+  erst die dritte Messung hat das gezeigt, und dazwischen stand eine falsche
+  Erklaerung.
+- **Neben das Suchfeld geklickt** (y=70 statt 58): die Ziffern gingen an die
+  Reitertasten, "5" oeffnete den Markt, und das Werkzeug meldete eine
+  ungueltige Eingabe statt eines Fehlers in der Anwendung.
+
+### Was sonst noch offen ist
+
+1. **0.2.8 ausliefern** (siehe oben) und das GitHub-Release -- nur nach OK.
+2. **Die beiden VM-Laeufe** und die Testumgebungen KDE, GNOME, Xfce.
+3. **Android 11 im Emulator** ist beim heutigen Vergleich nicht mehr
+   drangekommen (9 und 14 sind durch, Telefon und Tablett, hoch und quer).
+4. **Fehlermeldungen aus dem Datenweg sind technisch**: im Explorer stand in
+   der VM woertlich `<urlopen error _ssl.c:993: The handshake operation timed
+   out>`. `Tr.grund()` uebersetzt nur die bekannten Gruende; fuer den Rest
+   waere ein ruhiger Satz besser als der Python-Text.
+5. **Die Netzwerkseite bleibt bei "Loading network data ..." stehen**,
+   solange die Abfrage laeuft -- bei einer gedrosselten Gegenstelle sind das
+   Minuten ohne jeden Hinweis. Eine Frist waere freundlicher.
+6. **Der DMS-Anteil ist deutsch**: `shell/dms/OrangeDeckSettings.qml` und
+   zwei Zeilen in `OrangeDeckWidget.qml` (Beschreibung, Fenster-Knopf). Fuer
+   die Auslieferung ohne Belang, fuer die Vollstaendigkeit nicht.
+7. Unveraendert aus dem Journal vom 10.09.: Blockkarten in 4x3, der
+   Vollbild-Knopf im schmalen Fenster, der Miner-Verlauf im Daemon, das
+   Neupacken im Explorer, die Uhr im DMS-Dashboard, die Website
+   ("Verknuepfung je Ansicht"), GrapheneOS, der Markt-Reiter auf Android,
+   `auslieferung/` aufraeumen, und die Punkte vom 09.09.
+8. **Aufraeumen nach dem Vergleich:** `~/.cache/orangedeck-fp` traegt einen
+   eigenen Flatpak-Bestand samt Laufzeit (rund 2 GB) und das Test-Buendel.
+   Er ist vom Bestand des Anwenders getrennt (`FLATPAK_USER_DIR`) und kann
+   weg, sobald die Laeufe durch sind.
+
+### Fuer den naechsten Vergleich
+
+    python3 tools/ansichten.py AUSGABE PRAEFIX 1280 800      im Xvfb
+    python3 tools/ansichten-android.py AUSGABE PRAEFIX       ueber adb
+    adb shell wm size 1600x2560 / 2560x1600 / reset          Tablett, quer
+    curl -m 10 https://mempool.space/api/blocks/tip/height   antwortet es?
+    QT_FORCE_STDERR_LOGGING=1                                Qt-Protokoll
+
+Das Flatpak laesst sich aus dem Arbeitsstand pruefen, ohne den Bestand des
+Anwenders anzufassen: im Bauplan die Quelle auf `type: dir` stellen, mit
+`flatpak-builder` bauen (das SDK kommt aus dem normalen Bestand), ein Buendel
+daraus machen und es mit `FLATPAK_USER_DIR=<eigenes Verzeichnis>`
+installieren.
+
+---
+
+## Das Journal
+
+Ein Tag je Datei, das Neueste oben. Herausgeloest aus dieser Datei, unveraendert.
+
+| Tag | Worum es ging |
+|---|---|
+| [10.09.2026](journal/2026-09-10.md) | Dreimal getaggt, und jedes Mal kam am Telefon noch etwas. Widgets, Vollbild, Sprache des Systems. |
+| [09.09.2026](journal/2026-09-09.md) | Acht Widgets, und eine Verwechslung, die Stunden gekostet hat: gezaehlt am Block statt an der Halde. |
+| [08.09.2026](journal/2026-09-08.md) | Das Geraet fand dreizehn Befunde. Der Miner laeuft ohne Daemon, und `v0.2.2` zeigt auf einen Stand ohne jede Korrektur. |
+| [07.09.2026](journal/2026-09-07.md) | Die Sicherung traegt, der Signaturschluessel existiert. Offen blieb nur der Push. |
+| [06.09.2026](journal/2026-09-06.md) | orangedeck.dev ist live und zeigt den Mempool wirklich live; der Flathub-Antrag ging raus und war in einer Minute zu. |
+| [05.09.2026](journal/2026-09-05.md) | Eigene Identitaet: eigene Domain, eigenes Zeichen, eine Kennung fuer alle Systeme. Die Auslieferung geradegezogen. |
+| [04.09.2026](journal/2026-09-04.md) | Zum ersten Mal auf einem Rechner gelaufen, der nichts von diesem Projekt weiss. Die Pruef-VM entsteht. |
+| [03.09.2026](journal/2026-09-03.md) | Das Projekt heisst OrangeDeck und ist oeffentlich. 394 Vorkommen umbenannt, zwei neue Ansichten. |
+| [02.09.2026](journal/2026-09-02.md) | Blockuhr, Widgets, Flatpak, Layer-Shell, Android-APK, dreizehn Sprachen, Goggles, watch-only. |
+| [01.09.2026](journal/2026-09-01.md) | Die erste Uebergabe: was steht, was offen ist, wie man morgen anfaengt. |
+| [31.08.2026](journal/2026-08-31.md) | Die aeltesten Notizen. Woher `mondrian.js` und `colors.js` kommen, und ob Bitfeed sich selbst betreiben laesst. |

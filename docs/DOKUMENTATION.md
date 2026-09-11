@@ -3521,3 +3521,148 @@ Flatpak hindurch, und nicht nur auf dem Entwicklungsrechner.
 - Auf der Platte lag noch `store._21rebel.orangedeck 0.1.0` aus der Zeit vor
   der Umbenennung. Entfernt, bevor gemessen wurde -- sonst haette man am Ende
   nicht sagen koennen, welches Paket da lief.
+
+
+## Derselbe Satz Ansichten auf jedem System (11.09.2026)
+
+Die Frage des Anwenders war einfach: **sieht es ueberall gleich aus, und ist
+es ueberall fehlerfrei?** Beantworten laesst sie sich nur, wenn ueberall
+dasselbe abgelichtet wird -- dieselben Ansichten, dieselbe Reihenfolge,
+dieselbe Sprache. Daraus sind zwei Werkzeuge geworden:
+
+    tools/ansichten.py           Rechner und Flatpak, im Xvfb
+    tools/ansichten-android.py   Emulator, ueber adb
+
+Beide nehmen der Reihe nach Feed, Uhr, Mining (Geraet und Netzwerk),
+Explorer (Uebersicht, Block, Transaktion), Markt (Kurs, Liquidationen,
+Heatmap) und alle Einstellungsseiten auf, und **rollen jede Seite bis zum
+Ende** -- eine Seite, die laenger ist als das Fenster, ist sonst zur Haelfte
+ungeprueft. Am Ende steht ein Bogen je System, und der Vergleich ist eine
+Frage von Minuten statt von Klicks.
+
+### Gesucht wird der Text, nicht der Punkt
+
+Die Hauptreiter liegen auf den Tasten 1 bis 6. Die Unterreiter von Markt und
+Einstellungen nicht -- und feste Koordinaten waeren an Fenstergroesse und
+Schrift gebunden, also genau an das, was sich zwischen den Systemen
+unterscheidet. Beide Werkzeuge suchen deshalb mit `tesseract` das Wort im
+Bild und klicken in seine Mitte. Zwei Dinge gehoeren dazu:
+
+- **Doppelte Groesse vor der Erkennung.** Die Reiterschrift misst elf
+  Bildpunkte; darunter faellt tesseract reihenweise aus.
+- **Ein Streifen statt der ganzen Seite.** "Feed" steht im Reiterbalken
+  *und* in den Einstellungen. Gesucht wird nur in der Zeile, in der die
+  Unterreiter liegen -- und die findet sich ueber ein Wort, das es dort
+  sicher gibt (`General` bzw. `Price`).
+
+Der Nebeneffekt ist der wertvollste: **das Werkzeug meldet, was fehlt.**
+"Unterreiter fehlt: Market" war kein Fehler des Skripts, sondern der Befund.
+
+### Was der Durchgang gefunden hat
+
+**1. Der Fluss einer Transaktion blieb halb gezeichnet** -- die Eingaenge da,
+die Ausgaenge nicht, der Strang endete in der Mitte. Nicht immer; mal so, mal
+so. Die Ursache ist eine Falle, die in jedem QML stecken kann:
+
+    onVoutChanged: rebuild()
+    ...
+    readonly property var voutWithFee: { ... vout ... }   // abgeleitet
+    function rebuild() { ... build(voutWithFee, ...) ... }
+
+`rebuild()` haengt am Signalgeber von `vout` und liest darin eine **Bindung,
+die von demselben `vout` lebt**. In welcher Reihenfolge eine Aenderung die
+Bindungen und die Signalgeber erreicht, ist nicht festgelegt. Lief der
+Signalgeber zuerst, stand in `voutWithFee` noch der alte Stand -- eine leere
+Liste, und damit kein einziges Band auf der Ausgangsseite. Dasselbe galt fuer
+`totalIn`. Beide sind jetzt Funktionen (`voutMitGebuehr()`, `summeEin()`), die
+rechnen, wenn sie gerufen werden.
+
+**Die Regel daraus:** was ein Signalgeber liest, darf keine Bindung sein, die
+an derselben Eigenschaft haengt. Eine Suche ueber alle QML-Dateien nach dem
+Muster (Signalgeber ruft Funktion, Funktion liest abgeleitete Eigenschaft,
+die von der Quelle des Signalgebers lebt) fand sonst nichts.
+
+**2. Deutsche Texte in englischer Oberflaeche.** Drei Stellen, alle drei
+sichtbar im taeglichen Gebrauch:
+
+- der Typ-Hinweis rechts im Suchfeld des Explorers ("Blockhöhe",
+  "Transaktion", "Adresse (SegWit)", "keine gültige Eingabe", "noch N
+  Zeichen bis zu einer TxID") -- `search.js` trug die Woerter selbst,
+  jetzt Schluessel, und `hintFor(query, tr)` bekommt den Uebersetzer;
+- die Tastenhilfe im Fenster ("1–6 Ansicht · c Farbe ...") -- stand fest in
+  `Main.qml` und in `shell.qml`, jetzt `keys.help` und `keys.fullscreen`;
+- **die Gruende in Fehlermeldungen.** "Network data unavailable (nicht
+  erreichbar)" -- der Satz war uebersetzt, der Grund kam aus dem Datenweg.
+  `Tr.grund(text, lang)` uebersetzt die bekannten Gruende beim Anzeigen;
+  was nicht in der Tabelle steht (HTTP-Status, Meldungen aus Python),
+  bleibt, wie es kam.
+
+**3. Einstellungsseiten fuer Ansichten, die es nicht gibt.** Unter Android
+laufen Markt und Wallet nicht (beide brauchen den Dienst), die Seiten mit
+ihren Schaltern standen aber trotzdem in den Einstellungen -- sieben Reiter,
+zwei davon ohne Wirkung. `SettingsView` kennt jetzt `kannMarkt` und
+`kannWallet`; `FeedTabs` fuellt beides aus derselben Frage, aus der auch die
+Reiter kommen. **Nicht** aus `nichtVerfuegbar`: das sagt auch dann "nicht
+verfuegbar", wenn der Anwender die Wallet nur abgeschaltet hat -- und die
+Wallet-Seite ist die einzige Stelle, an der er sie wieder einschaltet.
+
+**4. Zwei Bindungen ohne Wert** beim Wechsel von der Block- auf die
+Transaktionsseite (`Unable to assign [undefined] to QString`). Ohne Folge im
+Bild, aber im Protokoll, und ein leeres Protokoll ist mehr wert als eines,
+in dem man Bekanntes ueberliest.
+
+### Was gleich aussieht, und was nicht
+
+Gleich: Aufbau, Abstaende, Farben, Umbrueche in jeder Ansicht, auf 1280x800
+am Rechner wie im Flatpak, auf 1080x2400 (Telefon), 1600x2560 (Tablett hoch)
+und 2560x1600 (Tablett quer) unter Android 14 und auf 1080x1920 unter
+Android 9. Ueberlappungen, abgeschnittene Zahlen oder verzerrte Flaechen: an
+keiner Stelle.
+
+Nicht gleich ist **die Schrift**, und das mit Absicht (siehe "Schriften an
+einer Stelle"): unter Linux nimmt die Anwendung die eingestellte
+Standardschrift. Die KDE-Laufzeit im Flatpak bringt eine breitere mit als das
+System hier, und dadurch bricht eine Beschreibungszeile eine Zeile spaeter um
+und die Sprachknoepfe stehen in zwei statt drei Reihen. Es sieht also nicht
+Bildpunkt fuer Bildpunkt gleich aus -- aber es **passt** ueberall, und das
+ist die Eigenschaft, die zaehlt.
+
+### Hyprland liess sich nicht kopflos danebenstellen
+
+Geplant war, KDE, GNOME, Xfce und Hyprland auf dem Rechner des Anwenders
+neben niri zu pruefen. Fuer Hyprland ohne eigenen Bildschirm gibt es nur den
+verschachtelten Weg: ein kopfloser wlroots-Compositor (hier `labwc` mit
+`WLR_BACKENDS=headless`) als Wirt, Hyprland als Fenster darin. Vier
+Anlaeufe, alle gescheitert:
+
+- Hyprland bekommt vom Wirt den Knoten der **NVIDIA**-Karte und scheitert
+  beim Anlegen des Puffers ("GBM: Failed to allocate a GBM buffer: bo null"),
+  auch mit `AQ_NO_MODIFIERS=1`;
+- zeigt man den Wirt auf die Intel-Karte (`WLR_RENDER_DRM_DEVICE=renderD128`),
+  haengt Hyprland nach den dmabuf-Formaten und legt gar keinen Bildschirm an.
+
+Was dabei auffiel und einmal Schrecken gemacht hat: aquamarine meldet
+"Connected to a wayland compositor: niri" auch dann, wenn es am labwc haengt
+-- der Name kommt aus `XDG_CURRENT_DESKTOP`, nicht von der Gegenstelle. Ein
+Blick mit `niri msg windows` zeigte, dass dort kein Fenster lag.
+
+**Die Vorsichtsmassnahme, die sich bewaehrt hat:** ein eigenes
+`XDG_RUNTIME_DIR` (kurz halten -- ein Wayland-Socket-Pfad darf nicht laenger
+als 108 Zeichen sein, das Kritzelverzeichnis reicht dafuer nicht) plus eine
+Sperre im Startskript, die nur startet, wenn der Wirt-Socket wirklich darin
+liegt. Damit kann ein verschachtelter Compositor die Sitzung des Anwenders
+gar nicht erst finden.
+
+### mempool.space drosselt, wenn man es den ganzen Tag befragt
+
+Am Abend brach jeder Lauf ab: TLS-Handschlag ohne Antwort, in der VM wie auf
+dem Rechner, waehrend andere Seiten (blockstream.info) normal antworteten.
+Jeder Start der Anwendung holt Verlaeufe -- Hashrate ueber ein Jahr, Kurse,
+Pools --, und an diesem Tag waren es Dutzende Starts in wenigen Stunden.
+Betroffen ist dann **auch das Dashboard des Anwenders**, denn der Daemon
+sitzt hinter derselben Adresse.
+
+Wer viele Durchgaenge plant: die Bilder je Lauf sammeln statt den Lauf zu
+wiederholen, zwischen den Systemen Pausen lassen, und bei leeren Ansichten
+zuerst `curl -m 10 https://mempool.space/api/blocks/tip/height` fragen, bevor
+in der Anwendung gesucht wird.
