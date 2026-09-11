@@ -16,7 +16,7 @@ For phones and tablets with a 64-bit ARM processor (arm64-v8a), Android 9 or new
 
 - Feed, clock, mining and explorer; home screen shortcuts for feed, clock and explorer
 - **The mining network:** hashrate and difficulty on one chart from 30 days back to 2009, the next adjustment, average block time and the pools of the last week — no miner needed
-- **Full-screen block clock:** one tap hides the system bars and tabs, and the screen stays on — an old phone or tablet becomes a block clock on the wall
+- **Full-screen block clock:** one tap hides the system bars and tabs, and the screen stays on — an old phone or tablet becomes a block clock on the wall. Tabs can switch on their own every 30 s to 10 min, and the clock can rotate the value it shows large
 - **Your own Bitaxe, directly:** enter its address and the mining tab reads it over your Wi-Fi, with its chance of finding a block. If statistics are enabled in AxeOS, the chart shows up to twelve hours of history right away
 - Ten home screen widgets: block height, mempool, price, miner and mining network, each as a compact tile and as a larger one with a chart or the explorer's block cards
 - Follows your system language (13 languages) until you pick one; the widgets follow along
@@ -47,4 +47,4 @@ It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included, 
 
 ---
 
-**Deutsch:** Die Android-Fassung bringt Feed, Uhr, Mining und Explorer mit, Verknüpfungen für Feed, Uhr und Explorer, ein Vollbild als Blockuhr (der Bildschirm bleibt an) und zehn Widgets für den Startbildschirm. Der Mining-Reiter zeigt das ganze Netzwerk – Hashrate, Schwierigkeit, Pools – auch ohne eigenen Miner; den eigenen Bitaxe liest sie direkt über das WLAN. Markt und Watch-only-Wallet sind **nicht** dabei, sie brauchen den OrangeDeck-Dienst unter Linux. Vor dem Installieren bitte die Signatur prüfen (Befehl und Fingerabdruck oben).
+**Deutsch:** Die Android-Fassung bringt Feed, Uhr, Mining und Explorer mit, Verknüpfungen für Feed, Uhr und Explorer, ein Vollbild als Blockuhr (der Bildschirm bleibt an, die Reiter wechseln auf Wunsch von selbst) und zehn Widgets für den Startbildschirm. Der Mining-Reiter zeigt das ganze Netzwerk – Hashrate, Schwierigkeit, Pools – auch ohne eigenen Miner; den eigenen Bitaxe liest sie direkt über das WLAN. Markt und Watch-only-Wallet sind **nicht** dabei, sie brauchen den OrangeDeck-Dienst unter Linux. Vor dem Installieren bitte die Signatur prüfen (Befehl und Fingerabdruck oben).
