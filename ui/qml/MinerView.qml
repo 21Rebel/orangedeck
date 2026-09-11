@@ -287,11 +287,33 @@ Item {
         border.color: Qt.rgba(1, 1, 1, 0.12)
         z: 20
 
-        Text {
+        // **Gezeichnet, nicht als Zeichen.** "↗" (U+2197) hat eine
+        // Emoji-Darstellung, und Samsung nimmt sie: am Galaxy A55 stand ein
+        // blaues Kaestchen mit weissem Pfeil neben dem schlichten "i"
+        // (11.09.2026). Strich in Farbe und Staerke des "i" daneben.
+        Canvas {
+            id: pfeil
+
             anchors.centerIn: parent
-            text: "↗"
-            color: root.textColor
-            font.pixelSize: root.scaleUnit * 0.8
+            width: parent.width * 0.42
+            height: width
+            onWidthChanged: requestPaint()
+            onPaint: {
+                var ctx = getContext("2d");
+                ctx.reset();
+                var w = width, s = Math.max(1.5, w * 0.16), r = s / 2;
+                ctx.strokeStyle = root.textColor;
+                ctx.lineWidth = s;
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+                ctx.beginPath();
+                ctx.moveTo(r, w - r);
+                ctx.lineTo(w - r, r);
+                ctx.moveTo(w * 0.38, r);
+                ctx.lineTo(w - r, r);
+                ctx.lineTo(w - r, w * 0.62);
+                ctx.stroke();
+            }
         }
 
         MouseArea {

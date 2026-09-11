@@ -569,9 +569,16 @@ Item {
         //
         // Die Klemme nach unten bleibt in beiden Faellen: was nicht passt,
         // endet am unteren Rand der Halde statt in der Fusszeile.
+        //
+        // **Unter der Kopfzeile dieselbe Fuge wie unter der Legende.** Hier
+        // stand `canvasView.y + 2`, also 6 Punkte unter der Kopfzeile -- aber
+        // beide Kaesten tragen 8 Punkte nach aussen, und sie ueberlappten
+        // sich um 10. Am 11.09.2026 auf dem Galaxy A55 gesehen: der Kasten
+        // mit "Farbe" lag ueber der Unterkante von Blockhoehe und sat/vB.
         y: Math.min(root.showLegend
                     ? legend.y + legend.height + 8 + 8 + 2
-                    : canvasView.y + 2,
+                    : (root.showHeader ? header.y + header.height + 8 + 8 + 2
+                                       : canvasView.y + 2),
                     canvasView.y + canvasView.height - goggles.height)
         // Genau so breit wie die Knopfreihe, damit der Untergrund dahinter
         // sie umschliesst und nicht daneben steht. `baseFont * 14` war
