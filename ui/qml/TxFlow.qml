@@ -182,8 +182,16 @@ Item {
 
     signal activated(string side, int index)
 
-    // Die Gebuehr zaehlt als Ausgang, damit beide Seiten gleich hoch sind
-    readonly property var voutWithFee: {
+    // Die Gebuehr zaehlt als Ausgang, damit beide Seiten gleich hoch sind.
+    //
+    // **Als Funktion, nicht als Bindung.** `rebuild()` haengt an
+    // `onVoutChanged`, und in welcher Reihenfolge eine Aenderung die
+    // Bindungen und die Signalgeber erreicht, ist nicht festgelegt: lief der
+    // Signalgeber zuerst, las er die Liste noch in ihrem alten Stand -- leer.
+    // Die Ausgangsseite blieb dann ungezeichnet, der Fluss endete in der
+    // Mitte. Am 11.09.2026 im Bildschirmvergleich an der Transaktion aus
+    // Block 170 gesehen, mal so, mal so.
+    function voutMitGebuehr() {
         var l = [];
         if (fee > 0)
             l.push({ "__fee": true, "value": fee });
@@ -193,7 +201,10 @@ Item {
         return l;
     }
 
-    readonly property real totalIn: {
+    // Ebenfalls eine Funktion, aus demselben Grund wie `voutMitGebuehr()`:
+    // `rebuild()` laeuft aus `onVinChanged` und darf nicht auf eine Bindung
+    // bauen, die vielleicht noch den alten Stand haelt.
+    function summeEin() {
         var s = 0, v = vin || [];
         for (var i = 0; i < v.length; i++)
             s += (v[i].prevout && v[i].prevout.value) || 0;
@@ -313,7 +324,8 @@ Item {
     }
 
     function rebuild() {
-        if (width <= 0 || height <= 0 || totalIn <= 0) {
+        var gesamt = root.summeEin();
+        if (width <= 0 || height <= 0 || gesamt <= 0) {
             bandsIn = [];
             bandsOut = [];
             canvas.requestPaint();
@@ -324,10 +336,10 @@ Item {
         // in der Mitte genau.
         bandsIn = build(vin || [], function (e) {
             return (e.prevout && e.prevout.value) || 0;
-        }, totalIn);
-        var bo = build(voutWithFee, function (e) {
+        }, gesamt);
+        var bo = build(root.voutMitGebuehr(), function (e) {
             return e.value || 0;
-        }, totalIn);
+        }, gesamt);
         if (fee > 0 && bo.length)
             bo[0].fee = true;
         bandsOut = bo;
@@ -560,7 +572,7 @@ Item {
             return (e && e.prevout && e.prevout.scriptpubkey_address) || "";
         }
         if (hv.side === "out") {
-            e = root.voutWithFee[hv.index];
+            e = root.voutMitGebuehr()[hv.index];
             return (e && e.scriptpubkey_address) || "";
         }
         return "";
