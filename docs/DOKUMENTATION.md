@@ -3754,3 +3754,98 @@ nachgesehen mit `niri msg windows`, wo es auftauchte. Richtig ist
 Und: `xdotool` gibt es auf diesem Rechner nicht. `tools/xtest.py` ist der
 Weg, und im Xvfb ohne Fenstermanager kommen **Tastendruecke nicht an** --
 mangels Fokus. Geklickt wird auf den Reiter.
+
+## Der erste Start unter Windows (12.09.2026)
+
+**Vier Wochen gruene Baulaeufe, und kein einziger Start.** Seit dem 04.09.
+baut die CI ein Windows-Paket; gestartet hatte es nie jemand. Am 12.09.2026
+zum ersten Mal: in der libvirt-VM `win11` (Windows 11 25H2, deutsch, frisch,
+ohne Aktivierung), das ZIP aus der CI unveraendert. Jeder Befund verdeckte
+den naechsten.
+
+### 1. MSVCP140.dll fehlt
+
+    orangedeck-app.exe - Systemfehler
+    Die Ausfuehrung des Codes kann nicht fortgesetzt werden, da
+    MSVCP140.dll nicht gefunden wurde.
+
+`windeployqt` legte keine Laufzeit-DLL ins Paket, sondern `vc_redist.x64.exe`
+-- ein Installationsprogramm, das niemand ausfuehrt, weil niemand weiss, dass
+er es muss. Im System lagen nur die .NET-Varianten
+(`vcruntime140_clr0400.dll`). Jetzt `--no-compiler-runtime` und die DLLs aus
+dem Redist-Ordner von Visual Studio app-lokal neben die EXE; der Lauf bricht
+ab, wenn eine fehlt. Das ZIP laeuft damit ohne Installation.
+
+### 2. Start ohne Fenster, ohne Meldung
+
+Die EXE lief, schrieb nichts, zeigte nichts. Eine GUI-EXE hat keine Konsole
+-- sichtbar wurde der Grund erst mit `QT_FORCE_STDERR_LOGGING=1` und
+umgeleitetem stderr:
+
+    qrc:/qt/qml/OrangeDeck/Main.qml:12:1: module "QtCore" is not installed
+
+`windeployqt` bekam nur `--qmldir ui\qml`. `Main.qml` liegt unter `app/qml`
+und importiert QtCore fuer die Settings. **Der Fehler war auch vor Befund 1
+schon da** -- die fehlende Laufzeit brach nur frueher ab. Jetzt beide
+Verzeichnisse, mit Abbruch, wenn `qml\QtCore` fehlt. macOS hatte dieselbe
+Zeile und bekommt dieselbe Korrektur (dort nur als Warnung, weil niemand den
+Pfad im `.app` auf einem Mac nachgesehen hat).
+
+### 3. Fenster, aber keine Daten -- und das ist kein Windows-Fehler
+
+Roter Punkt vor "Block --". Aus dem Gast gingen HTTP und HTTPS zu
+example.com (200), nur mempool.space nicht. Auf dem Wirt nachgemessen:
+
+    curl -4 https://mempool.space/...   Connection timed out
+    curl -6 https://mempool.space/...   HTTP 200
+    curl -4 https://blockstream.info/.. HTTP 200
+
+**mempool.space laesst die IPv4-Adresse dieses Anschlusses nicht mehr
+durch** -- die Drosselung vom 11.09., jetzt als harte Sperre. Der Wirt nimmt
+von sich aus IPv6 und merkt nichts; die VM haengt am NAT von libvirt und hat
+nur IPv4.
+
+### 4. Bewiesen ueber den Dienst im Netz
+
+Also Weg B aus dem Kapitel davor: ein Testdienst, gebunden **nur an die
+VM-Bruecke** (`ORANGEDECK_ADDR=192.168.122.1`), mit eigenem Laufzeit-, Cache-
+und Konfigurationsverzeichnis. Der Gast erreichte ihn zuerst nicht --
+`ufw` verwarf es, belegt im Kernel-Protokoll:
+
+    UFW BLOCK IN=virbr0 SRC=192.168.122.45 DST=192.168.122.1 PROTO=TCP DPT=21022
+
+Mit einer zeitweisen Regel des Anwenders: **Feed und Markt vollstaendig**
+(Kerzen, Volumen, Trade-Band, Binance und Bybit online), die Tastenkuerzel
+greifen, und die Einstellungen kommen aus der Registry -- QSettings liegt
+unter Windows in `HKCU\Software\orangedeck\orangedeck-<id>`, nicht in einer
+ini.
+
+### Was dabei Zeit gekostet hat
+
+- **virtiofs auf btrfs unterscheidet Gross- und Kleinschreibung.** Die EXE
+  fragt nach `MSVCP140.dll`, die Datei heisst `msvcp140.dll`: aus dem
+  geteilten Ordner gestartet meldet Windows sie als fehlend, obwohl sie
+  danebenliegt. Auf NTFS, wo ein Nutzer das ZIP entpackt, stellt sich die
+  Frage nicht -- **geprueft wird von C:\ aus**.
+- **CD-Wechsel in der laufenden VM** scheiterte an einem Widerspruch zwischen
+  libvirt und QEMU ("Tray of device is not open" beim Auswerfen, "not
+  inserted" laut QEMU). Der geteilte Ordner ist der verlaessliche Weg.
+- **Ergebnisse in den geteilten Ordner schreiben, nicht vom Bildschirm
+  lesen.** Der Ausfuehren-Dialog nimmt 259 Zeichen; ein `.cmd` im geteilten
+  Ordner hat keine Grenze, und seine Ausgabe liest der Wirt direkt.
+- **`virsh send-key` schickt physische Tasten.** Windows legt das deutsche
+  Layout darueber: y und z tauschen, `\` kommt ueber AltGr. Eine eigene
+  Zeichentabelle ist Pflicht.
+- **`curl.exe` im Gast gab bei gesperrtem Ziel gar nichts aus** -- weder Code
+  noch Fehlermeldung. `Test-NetConnection -Port 443` sagt eindeutig `False`.
+
+### Was ungeprueft bleibt
+
+- **Der Direktbezug mit Daten.** Unter Windows lief nur der Weg ueber den
+  Dienst; der Direktbezug scheiterte an der IPv4-Sperre, nicht an Windows --
+  aber gesehen hat ihn niemand Daten zeigen. Schannel als TLS-Backend ist
+  damit fuer WebSockets unbewiesen.
+- Liquidationen und Heatmap unter Windows, SmartScreen beim Entpacken aus
+  dem Netz, ein Rechner mit anderer Skalierung als 100 %.
+- **Ausgeliefert wird Windows fruehestens mit 0.2.9.** `v0.2.8` steht fest
+  und enthaelt beide Pack-Korrekturen nicht.
