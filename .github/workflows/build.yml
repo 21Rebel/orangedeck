@@ -67,6 +67,20 @@ jobs:
           grep -q "QtWebSockets vorhanden" cmake.log || {
             echo "::error::QtWebSockets fehlt -- ohne Direktbezug"; exit 1; }
 
+      - name: Terminal-Werkzeug und geteilte Konstanten
+        run: |
+          # Dienst und Terminal-Werkzeug muessen sich uebersetzen lassen, und
+          # die Gebuehrenklassen muessen an allen drei Stellen gleich sein --
+          # sonst hat dieselbe Gebuehr im Terminal eine andere Farbe als in
+          # der App.
+          python3 -m py_compile daemon/orangedeck cli/orangedeck-cli
+          python3 cli/orangedeck-cli --help > /dev/null
+          d=$(grep -h '^FEE_BUCKETS' daemon/orangedeck | sed 's/.*= *//')
+          c=$(grep -h '^FEE_BUCKETS' cli/orangedeck-cli | sed 's/.*= *//')
+          q=$(grep -h '^var FEE_EDGES' ui/qml/colors.js | sed 's/.*= *//; s/;$//')
+          echo "Dienst:   $d"; echo "Terminal: $c"; echo "App:      $q"
+          [ "$d" = "$c" ] && [ "$d" = "$q" ] || { echo "::error::FEE_BUCKETS weichen voneinander ab"; exit 1; }
+
       - uses: actions/upload-artifact@v4
         with:
           name: orangedeck-linux-x86_64

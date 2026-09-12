@@ -134,8 +134,33 @@ Zeichner in eine kompilierte Sprache; die Befehle bleiben.
 | 3 | `blockinfo`/`tx` mit Kachelbild, volle Blockfund-Animation, kitty-Grafikprotokoll | 3-4 Tage |
 | 4 | `market`, `miner`, Shell-Vervollstaendigung (fish zuerst), AUR-Paket | 3-5 Tage |
 
+## Stand
+
+**Stufe 1 steht (12.09.2026)**: `cli/orangedeck-cli` mit `blockheight`,
+`fees`, `mempool`, `price`, `difficulty`, `hashrate`, `halving`, `nextblock`,
+`btcfetch` und `install-aliases`/`remove-aliases`. Gemessen, nicht angenommen:
+
+- alle neun gegen den laufenden Dienst, deutsch und englisch, mit `--raw` und
+  `--json`;
+- **die Farben gleich denen der App** -- die zehn Gebuehrenklassen und Orange
+  aus Python gegen `colors.js` unter node gehalten, Ton fuer Ton;
+- `install-aliases` in einem Testordner: legt an, erkennt die eigenen
+  Verknuepfungen wieder, laesst eine fremde Datei gleichen Namens stehen,
+  meldet `block` als `fish: builtin`; `remove-aliases` nimmt nur die eigenen;
+- der Direktbezug mit eigenem Zwischenspeicher; die Untergrenze fuer `--watch`
+  ("5 s ... es werden 30 s"); ein fehlender Dienst mit klarer Meldung.
+
+**Ein Unterschied zwischen den Quellen, und er liegt bei mempool.space:**
+ueber den Dienst kommen die Gebuehren aus dem WebSocket mit Nachkommastellen
+(1,51 / 0,94), direkt aus `/v1/fees/recommended` gerundet (2 / 1).
+
+Die CI uebersetzt Dienst und Terminal-Werkzeug und haelt `FEE_BUCKETS` an
+allen drei Stellen gegeneinander.
+
 ## Offen
 
 - `kitten panel --edge=background` unter niri einmal wirklich starten -- das
   legt etwas auf den Desktop des Anwenders, also nur mit seinem OK.
 - Ob `bitfeed` im kitty-Grafikprotokoll fluessig genug zeichnet.
+- Die Kurzbefehle wirklich in `~/.local/bin` anlegen -- bisher nur im
+  Testordner, das richtige Verzeichnis gehoert dem Anwender.

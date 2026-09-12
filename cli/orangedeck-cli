@@ -1,0 +1,1012 @@
+#!/usr/bin/env python3
+"""OrangeDeck im Terminal -- die Kennzahlen der App als Kurzbefehle.
+
+    blockheight   fees   mempool   price   difficulty   hashrate
+    halving       nextblock        btcfetch
+
+Ein Programm, das am Aufrufnamen erkennt, was gemeint ist (busybox-Stil). Die
+Kurzbefehle sind Verknuepfungen darauf:
+
+    orangedeck-cli install-aliases     legt sie in ~/.local/bin an
+    orangedeck-cli remove-aliases      nimmt nur die eigenen wieder weg
+    orangedeck-cli <befehl> [...]      geht auch ohne Verknuepfung
+
+Konzept und Entscheidungen des Anwenders: cli/KONZEPT.md. Das hier ist
+Stufe 1 -- die Zahlen. `bitfeed` kommt in Stufe 2.
+
+**Nur Standardbibliothek**, wie der Dienst. Das Dienst-Skript wird bewusst
+nicht importiert: es hat beim Laden Seiteneffekte (sources.json, Host) und
+braucht rund 160 ms bis zur ersten Zeile. Was beide brauchen, steht hier noch
+einmal und muss gleich bleiben -- `FEE_BUCKETS` vor allem.
+
+**Woher die Daten kommen.** Zuerst der eigene Dienst auf 127.0.0.1:21021
+(`ORANGEDECK_ADDR`/`ORANGEDECK_PORT`). Antwortet dort niemand, direkt
+mempool.space -- mit Zwischenspeicher, Untergrenzen und wachsenden Pausen.
+Das ist keine Kuer: am 11./12.09.2026 hat mempool.space die IPv4-Adresse des
+Anwenders nach vielen Testlaeufen gesperrt. **Antwortet der Dienst, meldet
+aber selbst keine Verbindung, wird nicht direkt gefragt** -- hinter derselben
+Adresse waere der Direktbezug ebenso gesperrt.
+
+**Die Texte, die man liest, haben echte Umlaute** -- die Kommentare hier
+nicht. Am 12.09.2026 zum zweiten Mal an einem Tag verwechselt: erst in den
+Einstellungen der App, dann in der ersten Fassung dieser Datei.
+"""
+import argparse
+import fcntl
+import http.client
+import json
+import math
+import os
+import select
+import shutil
+import subprocess
+import sys
+import time
+
+# --------------------------------------------------------------------------
+# Was mit Dienst und App gleich bleiben muss
+# --------------------------------------------------------------------------
+
+# Gebuehrenklassen. **Muss mit FEE_BUCKETS in daemon/orangedeck und FEE_EDGES
+# in ui/qml/colors.js uebereinstimmen** -- sonst hat dieselbe Gebuehr im
+# Terminal eine andere Farbe als in der App.
+FEE_BUCKETS = [0.5, 1, 2, 3, 5, 8, 15, 30, 80]
+CURRENCIES = ("USD", "EUR", "GBP", "CAD", "CHF", "AUD", "JPY")
+HALVING_INTERVAL = 210000
+UA = "orangedeck-cli/0.1 (+https://mempool.space)"
+
+# Die Befehle dieser Stufe. Nur sie legt install-aliases an -- ein Name ohne
+# Befehl dahinter waere eine Verknuepfung ins Leere.
+NAMES = ("blockheight", "fees", "mempool", "price", "difficulty",
+         "hashrate", "halving", "nextblock", "btcfetch")
+
+# Wie lange eine direkt geholte Antwort gilt, in Sekunden (KONZEPT.md).
+TTL = {"tip": 30, "fees": 30, "mempool": 15, "projected": 15, "price": 60,
+       "difficulty": 300, "hashrate": 300}
+# Untergrenzen fuer --watch. Ueber den Dienst ist Nachfragen billig, direkt
+# nicht -- und Schwierigkeit und Hashrate aendern sich ohnehin nur langsam.
+WATCH_MIN_DIENST = 1
+WATCH_MIN_DIREKT = 30
+WATCH_MIN_LANGSAM = 300
+PAUSE_MAX = 15 * 60
+
+
+# --------------------------------------------------------------------------
+# Sprache
+# --------------------------------------------------------------------------
+
+def sprache():
+    """Deutsch, wenn die Umgebung Deutsch sagt, sonst Englisch -- dieselbe
+    Reihenfolge wie gettext: LC_ALL vor LC_MESSAGES vor LANG."""
+    for var in ("LC_ALL", "LC_MESSAGES", "LANG"):
+        wert = os.environ.get(var)
+        if wert:
+            return "de" if wert.lower().startswith("de") else "en"
+    return "en"
+
+
+LANG = sprache()
+
+TEXTE = {
+    "block": ("Block", "Block"),
+    "vor": ("vor {}", "{} ago"),
+    "schnell": ("nächster Block", "next block"),
+    "halbe": ("30 Minuten", "30 minutes"),
+    "stunde": ("1 Stunde", "1 hour"),
+    "sparsam": ("sparsam", "economy"),
+    "minimal": ("minimal", "minimum"),
+    "mempool": ("Mempool", "Mempool"),
+    "unbestaetigt": ("{} unbestätigt", "{} unconfirmed"),
+    "groesse": ("Größe", "Size"),
+    "bloecke_etwa": ("etwa {} Blöcke", "about {} blocks"),
+    "gebuehren": ("Gebühren", "Fees"),
+    "zufluss": ("Zufluss", "Inflow"),
+    "geplant": ("geplant", "projected"),
+    "kurs": ("Kurs", "Price"),
+    "anpassung": ("Anpassung", "Adjustment"),
+    "in_bloecken": ("in {} Blöcken", "in {} blocks"),
+    "erwartet": ("erwartet {}", "expected {}"),
+    "zuletzt": ("zuletzt {}", "last {}"),
+    "schwierigkeit": ("Schwierigkeit", "Difficulty"),
+    "hashrate": ("Hashrate", "Hashrate"),
+    "tage30": ("30 Tage", "30 days"),
+    "halving": ("Halving", "Halving"),
+    "bei": ("bei {}", "at {}"),
+    "noch": ("noch {} Blöcke", "{} blocks to go"),
+    "etwa": ("etwa {}", "about {}"),
+    "belohnung": ("Belohnung", "Subsidy"),
+    "quelle": ("Quelle", "Source"),
+    "dienst": ("eigener Dienst", "own service"),
+    "direkt": ("direkt ({})", "direct ({})"),
+    "veraltet": ("Stand von vor {} – mempool.space wird gerade geschont",
+                 "data from {} ago – mempool.space is being spared right now"),
+    "dienst_offline": ("Der OrangeDeck-Dienst läuft, hat aber selbst keine "
+                       "Verbindung zu mempool.space. Direkt wird deshalb nicht "
+                       "gefragt – hinter derselben Adresse ginge es ebenso wenig.",
+                       "The OrangeDeck service is running but has no connection "
+                       "to mempool.space itself. Not asking directly – it would "
+                       "fail the same way from the same address."),
+    "dienst_fehlt": ("Kein OrangeDeck-Dienst auf {}. Starten mit: "
+                     "systemctl --user start orangedeck",
+                     "No OrangeDeck service at {}. Start it with: "
+                     "systemctl --user start orangedeck"),
+    "pause": ("mempool.space hat nicht geantwortet ({}). Nächster Versuch "
+              "in {}; bis dahin gibt es nichts Zwischengespeichertes.",
+              "mempool.space did not answer ({}). Next try in {}; nothing "
+              "cached until then."),
+    "netz": ("mempool.space hat nicht geantwortet: {}",
+             "mempool.space did not answer: {}"),
+    "untergrenze": ("--watch {} s ist zu kurz für diese Quelle – es werden {} s.",
+                    "--watch {} s is too short for this source – using {} s."),
+    "alias_da": ("vorhanden      {}", "present        {}"),
+    "alias_neu": ("angelegt       {}", "created        {}"),
+    "alias_wuerde": ("würde anlegen  {}", "would create   {}"),
+    "alias_belegt": ("übersprungen   {} – {}", "skipped        {} – {}"),
+    "alias_weg": ("entfernt       {}", "removed        {}"),
+    "alias_wuerde_weg": ("würde entfernen {}", "would remove   {}"),
+    "alias_pfad": ("{} steht nicht im PATH – die Kurzbefehle sind erst "
+                   "erreichbar, wenn es dort steht.",
+                   "{} is not in PATH – the short commands only work once it is."),
+    "trocken": ("(nur geprüft, nichts verändert)", "(checked only, nothing changed)"),
+}
+
+MONATE = {
+    "de": ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
+           "August", "September", "Oktober", "November", "Dezember"),
+    "en": ("January", "February", "March", "April", "May", "June", "July",
+           "August", "September", "October", "November", "December"),
+}
+
+
+def t(schluessel, *werte):
+    text = TEXTE[schluessel][0 if LANG == "de" else 1]
+    return text.format(*werte) if werte else text
+
+
+# --------------------------------------------------------------------------
+# Zahlen, Zeiten, Einheiten
+# --------------------------------------------------------------------------
+
+def zahl(n, stellen=0):
+    """Tausendertrennung in der Schreibweise der Sprache. "1.234" heisst auf
+    Deutsch tausendzweihundertvierunddreissig, auf Englisch eins Komma zwei --
+    dieselbe Regel wie `Tr.group` in der App."""
+    if n is None:
+        return "–"
+    s = "{:,.{}f}".format(float(n), stellen)
+    if LANG == "de":
+        s = s.replace(",", "\0").replace(".", ",").replace("\0", ".")
+    return s
+
+
+def gebuehr(v):
+    """sat/vB: unter 10 mit zwei Stellen, darueber mit einer -- 0,41 und 12,3."""
+    if v is None:
+        return "–"
+    return zahl(v, 2 if v < 10 else 1)
+
+
+def prozent(v, vorzeichen=False):
+    if v is None:
+        return "–"
+    s = zahl(v, 2)
+    if vorzeichen and v > 0:
+        s = "+" + s
+    return s + " %"
+
+
+def dauer(sekunden):
+    if sekunden is None:
+        return "–"
+    s = max(0, int(sekunden))
+    tage, rest = divmod(s, 86400)
+    std, rest = divmod(rest, 3600)
+    minuten = rest // 60
+    if LANG == "de":
+        if tage:
+            return "%d T %d Std" % (tage, std)
+        if std:
+            return "%d Std %d min" % (std, minuten)
+        return "%d min" % minuten if minuten else "%d s" % s
+    if tage:
+        return "%dd %dh" % (tage, std)
+    if std:
+        return "%dh %dm" % (std, minuten)
+    return "%d min" % minuten if minuten else "%ds" % s
+
+
+def einheit(wert, basis, einheiten):
+    """945234754764331400000 H/s -> (945,23, "EH/s")."""
+    if not wert:
+        return None, einheiten[0]
+    i = 0
+    while wert >= basis and i < len(einheiten) - 1:
+        wert /= basis
+        i += 1
+    return wert, einheiten[i]
+
+
+def hashrate_text(hs):
+    v, e = einheit(hs, 1000, ("H/s", "kH/s", "MH/s", "GH/s", "TH/s", "PH/s", "EH/s", "ZH/s"))
+    return "–" if v is None else "%s %s" % (zahl(v, 1 if v < 100 else 0), e)
+
+
+def schwierigkeit_text(d):
+    v, e = einheit(d, 1000, ("", "k", "M", "G", "T", "P"))
+    return "–" if v is None else "%s %s" % (zahl(v, 2), e)
+
+
+def monat_jahr(ts):
+    lt = time.localtime(ts)
+    return "%s %d" % (MONATE[LANG][lt.tm_mon - 1], lt.tm_year)
+
+
+def tag_monat(ts):
+    lt = time.localtime(ts)
+    if LANG == "de":
+        return "%d.%d." % (lt.tm_mday, lt.tm_mon)
+    return "%s %d" % (MONATE["en"][lt.tm_mon - 1][:3], lt.tm_mday)
+
+
+# --------------------------------------------------------------------------
+# Farben -- dieselbe HCL-Rechnung wie ui/qml/colors.js
+# --------------------------------------------------------------------------
+
+ORANGE = (0.181, 0.472)
+TEAL = (0.475, 0.55)
+PURPLE = (0.95, 0.35)
+CHROMA = 78.225
+XN, YN, ZN = 0.96422, 1, 0.82521
+T0, T1 = 4 / 29, 6 / 29
+T2 = 3 * T1 * T1
+
+
+def hcl_rgb(h01, l01):
+    """Nachbau von hclToCss() in colors.js, also von d3-color. Gerundet wird
+    wie Math.round (halb nach oben), nicht wie Pythons round(). Am 12.09.2026
+    fuer alle zehn Gebuehrenklassen und Orange gegen colors.js unter node
+    gehalten: gleich."""
+    h = math.radians(h01 * 360)
+    lum = l01 * 150
+    a = math.cos(h) * CHROMA
+    b = math.sin(h) * CHROMA
+    y = (lum + 16) / 116
+    x = y + a / 500
+    z = y - b / 200
+
+    def lab2xyz(v):
+        return v * v * v if v > T1 else T2 * (v - T0)
+
+    x, y, z = XN * lab2xyz(x), YN * lab2xyz(y), ZN * lab2xyz(z)
+
+    def kanal(v):
+        v = 12.92 * v if v <= 0.0031308 else 1.055 * math.pow(v, 1 / 2.4) - 0.055
+        return max(0, min(255, math.floor(255 * v + 0.5)))
+
+    return (kanal(3.1338561 * x - 1.6168667 * y - 0.4906146 * z),
+            kanal(-0.9787684 * x + 1.9161415 * y + 0.0334540 * z),
+            kanal(0.0719453 * x - 0.2289914 * y + 1.4052427 * z))
+
+
+def gebuehr_farbe(rate):
+    """feeColorForRate(): teal -> purple ueber log2(sat/vB) von 1 bis 7;
+    keine Gebuehr ist orange."""
+    if not rate or rate <= 0:
+        return hcl_rgb(*ORANGE)
+    lo, hi = 1, math.log2(128)
+    dx = max(0.0, min(1.0, (math.log2(rate) - lo) / (hi - lo)))
+    return hcl_rgb(TEAL[0] + dx * (PURPLE[0] - TEAL[0]),
+                   TEAL[1] + dx * (PURPLE[1] - TEAL[1]))
+
+
+GRAU = (140, 140, 150)
+GRUEN = (90, 200, 130)
+ROT = (230, 95, 95)
+
+
+class Farbe:
+    """Farbe nur, wenn sie ankommt: nicht ohne Terminal, nicht bei NO_COLOR
+    (no-color.org), nicht bei --color never. Truecolor, wenn das Terminal es
+    sagt, sonst der naechste Ton im 256er-Wuerfel."""
+
+    def __init__(self, modus):
+        if modus == "always":
+            self.an = True
+        elif modus == "never":
+            self.an = False
+        else:
+            self.an = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+        self.voll = os.environ.get("COLORTERM", "").lower() in ("truecolor", "24bit")
+
+    def __call__(self, text, rgb, fett=False):
+        if not self.an:
+            return text
+        if self.voll:
+            code = "38;2;%d;%d;%d" % rgb
+        else:
+            stufen = (0, 95, 135, 175, 215, 255)
+
+            def naechste(v):
+                return min(range(6), key=lambda i: abs(stufen[i] - v))
+
+            r, g, b = (naechste(v) for v in rgb)
+            code = "38;5;%d" % (16 + 36 * r + 6 * g + b)
+        if fett:
+            code = "1;" + code
+        return "\x1b[%sm%s\x1b[0m" % (code, text)
+
+
+# --------------------------------------------------------------------------
+# Quellen
+# --------------------------------------------------------------------------
+
+class Fehler(Exception):
+    def __init__(self, text, code=1):
+        super().__init__(text)
+        self.code = code
+
+
+class DienstFehlt(Exception):
+    pass
+
+
+def dienst_adresse():
+    addr = os.environ.get("ORANGEDECK_ADDR", "127.0.0.1")
+    # Lauscht der Dienst auf allen Schnittstellen, erreicht man ihn lokal
+    # trotzdem ueber die Loopback-Adresse.
+    if addr in ("", "0.0.0.0", "::"):
+        addr = "127.0.0.1"
+    return addr, int(os.environ.get("ORANGEDECK_PORT", "21021"))
+
+
+def dienst_json(pfad, frist):
+    addr, port = dienst_adresse()
+    verb = http.client.HTTPConnection(addr, port, timeout=frist)
+    try:
+        verb.request("GET", pfad)
+        antwort = verb.getresponse()
+        if antwort.status != 200:
+            raise DienstFehlt("HTTP %d" % antwort.status)
+        return json.loads(antwort.read().decode())
+    except (OSError, http.client.HTTPException, ValueError) as e:
+        raise DienstFehlt(str(e))
+    finally:
+        verb.close()
+
+
+def dienst_zustand():
+    # 300 ms fuer /health: ein abgelehnter Anschluss kommt ohnehin sofort,
+    # und wer den Dienst nicht hat, soll auf den Rueckfall nicht warten.
+    if not dienst_json("/health", 0.3).get("ok"):
+        raise DienstFehlt("health")
+    return dienst_json("/state", 2)
+
+
+def einstellungen():
+    """host/scheme aus sources.json, wie beim Dienst -- eine eigene
+    mempool-Instanz gilt dann auch hier."""
+    pfad = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"),
+                        "orangedeck", "sources.json")
+    try:
+        with open(pfad) as f:
+            cfg = json.load(f) or {}
+    except (OSError, ValueError):
+        cfg = {}
+    host = cfg.get("host") or os.environ.get("ORANGEDECK_HOST") or "mempool.space"
+    schema = cfg.get("scheme") or os.environ.get("ORANGEDECK_SCHEME") or "https"
+    return host, schema
+
+
+class Speicher:
+    """Zwischenspeicher mit Dateisperre und Pause.
+
+    **Die Sperre** sorgt dafuer, dass drei Leistenmodule, die im selben Moment
+    starten, nur **eine** Anfrage ausloesen: der zweite wartet und findet die
+    frische Antwort des ersten vor.
+
+    **Die Pause** steht in einer Datei, nicht im Speicher. Scheitert eine
+    Anfrage, warten auch alle folgenden Aufrufe -- 30 s, dann doppelt so lange,
+    hoechstens 15 min. Ein Befehl, der jede Minute neu startet, wuerde sonst
+    jede Minute wieder anklopfen."""
+
+    def __init__(self):
+        basis = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
+        self.ordner = os.path.join(basis, "orangedeck-cli")
+        os.makedirs(self.ordner, exist_ok=True)
+        self.host, self.schema = einstellungen()
+
+    def _datei(self, name):
+        return os.path.join(self.ordner, name + ".json")
+
+    def _lesen(self, name):
+        try:
+            with open(self._datei(name)) as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            return None
+
+    def _schreiben(self, name, inhalt):
+        tmp = self._datei(name) + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(inhalt, f)
+        os.replace(tmp, self._datei(name))
+
+    def _holen(self, pfad):
+        import urllib.error
+        import urllib.request
+        url = "%s://%s/api%s" % (self.schema, self.host, pfad)
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                return json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            # 404 ist ein Fehler hier im Programm, keine Ueberlastung dort.
+            if e.code == 404:
+                raise Fehler(t("netz", "HTTP 404 " + pfad))
+            raise
+        # Alles andere -- 429, 5xx, Zeitueberschreitung, TLS -- faengt feld().
+
+    def feld(self, name, pfad, umformen):
+        """(Daten, Alter in s oder None bei frisch geholt)."""
+        with open(os.path.join(self.ordner, ".sperre"), "w") as sperre:
+            fcntl.flock(sperre, fcntl.LOCK_EX)
+            jetzt = time.time()
+            vorrat = self._lesen(name)
+            if vorrat and jetzt - vorrat["t"] < TTL[name]:
+                return vorrat["daten"], None
+
+            pause = self._lesen("_pause") or {}
+            if jetzt < pause.get("bis", 0):
+                if vorrat:
+                    return vorrat["daten"], jetzt - vorrat["t"]
+                raise Fehler(t("pause", pause.get("grund", "?"), dauer(pause["bis"] - jetzt)), 4)
+
+            try:
+                daten = umformen(self._holen(pfad))
+            except Fehler:
+                raise
+            except Exception as e:
+                stufe = pause.get("stufe", 0) + 1
+                warten = min(PAUSE_MAX, 30 * 2 ** (stufe - 1))
+                grund = str(e) or e.__class__.__name__
+                self._schreiben("_pause", {"bis": jetzt + warten, "stufe": stufe, "grund": grund})
+                if vorrat:
+                    return vorrat["daten"], jetzt - vorrat["t"]
+                raise Fehler(t("netz", grund), 4)
+
+            if pause:
+                try:
+                    os.remove(self._datei("_pause"))
+                except OSError:
+                    pass
+            self._schreiben(name, {"t": jetzt, "daten": daten})
+            return daten, None
+
+
+# Wie der Dienst die Antworten von mempool.space auf seine Felder abbildet --
+# poll_rest(), poll_slow() und Feed.set_tip() in daemon/orangedeck. Hier
+# dieselben Namen, damit ein Befehl nicht merkt, woher die Zahlen kommen.
+#
+# **Ein Unterschied bleibt, und er liegt bei mempool.space:** der Dienst
+# bekommt die Gebuehren ueber den WebSocket mit Nachkommastellen (1,51 / 0,94),
+# `/v1/fees/recommended` liefert sie gerundet (2 / 1). Am 12.09.2026 beide
+# nebeneinander gesehen.
+
+def _tip(bloecke):
+    b = (bloecke or [{}])[0]
+    ex = b.get("extras") or {}
+    return {
+        "height": int(b.get("height") or 0),
+        "time": int(b.get("timestamp") or 0),
+        "nTx": int(b.get("tx_count") or 0),
+        "size": int(b.get("size") or 0),
+        "medianFee": round(float(ex.get("medianFee") or 0), 2),
+        "totalFees": int(ex.get("totalFees") or 0),
+        "reward": int(ex.get("reward") or 0),
+        "pool": (ex.get("pool") or {}).get("name") or "",
+    }
+
+
+def _fees(f):
+    return {k: round(float(f.get(q) or 0), 2) for k, q in (
+        ("fastest", "fastestFee"), ("halfHour", "halfHourFee"), ("hour", "hourFee"),
+        ("economy", "economyFee"), ("minimum", "minimumFee"))}
+
+
+def _mempool(m):
+    return {"count": m.get("count"), "vsize": m.get("vsize"), "totalFee": m.get("total_fee")}
+
+
+def _projected(liste):
+    return [{k: b.get(k) for k in ("nTx", "blockSize", "blockVSize", "medianFee",
+                                   "totalFees", "feeRange")} for b in (liste or [])][:8]
+
+
+def _price(p):
+    return {k.lower(): p.get(k) for k in CURRENCIES if p.get(k)}
+
+
+def _difficulty(d):
+    return {"progress": d.get("progressPercent"), "change": d.get("difficultyChange"),
+            "remainingBlocks": d.get("remainingBlocks"), "remainingTime": d.get("remainingTime"),
+            "nextHeight": d.get("nextRetargetHeight"), "previousChange": d.get("previousRetarget"),
+            "timeAvg": d.get("timeAvg"), "retargetDate": d.get("estimatedRetargetDate")}
+
+
+def _hashrate(h):
+    return {"current": h.get("currentHashrate"), "difficulty": h.get("currentDifficulty"),
+            "series": [p.get("avgHashrate") for p in (h.get("hashrates") or [])][-40:]}
+
+
+DIREKT = {
+    "tip": ("/v1/blocks", _tip),
+    "fees": ("/v1/fees/recommended", _fees),
+    "mempool": ("/mempool", _mempool),
+    "projected": ("/v1/fees/mempool-blocks", _projected),
+    "price": ("/v1/prices", _price),
+    "difficulty": ("/v1/difficulty-adjustment", _difficulty),
+    "hashrate": ("/v1/mining/hashrate/1m", _hashrate),
+}
+
+
+class Lage:
+    """Was ein Befehl bekommt: die Felder, woher sie kamen, wie alt."""
+
+    def __init__(self, felder, quelle, alter=None):
+        self.felder = felder
+        self.quelle = quelle
+        self.alter = alter
+
+    def __getitem__(self, name):
+        return self.felder.get(name) or {}
+
+
+def hole(felder, wahl):
+    if wahl in ("auto", "daemon"):
+        try:
+            zustand = dienst_zustand()
+        except DienstFehlt:
+            if wahl == "daemon":
+                raise Fehler(t("dienst_fehlt", "%s:%d" % dienst_adresse()), 3)
+        else:
+            frisch = time.time() - (zustand.get("ts") or 0) <= 30
+            if frisch and zustand.get("source") != "offline":
+                return Lage({f: zustand.get(f) for f in felder + ["vbps"]}, "daemon")
+            raise Fehler(t("dienst_offline"), 3)
+
+    speicher = Speicher()
+    werte, aeltestes = {}, None
+    for f in felder:
+        pfad, umformen = DIREKT[f]
+        werte[f], alter = speicher.feld(f, pfad, umformen)
+        if alter is not None:
+            aeltestes = max(aeltestes or 0, alter)
+    if aeltestes:
+        sys.stderr.write(t("veraltet", dauer(aeltestes)) + "\n")
+    return Lage(werte, "direct:" + speicher.host, aeltestes)
+
+
+# --------------------------------------------------------------------------
+# Bausteine der Ausgabe
+# --------------------------------------------------------------------------
+
+def balken(anteil, breite, c, farbe):
+    voll = int(round(max(0.0, min(1.0, anteil)) * breite))
+    return c("█" * voll, farbe) + c("░" * (breite - voll), GRAU)
+
+
+def kurve(werte, c, farbe):
+    """Verlauf in einer Zeile. Skaliert auf den eigenen Bereich, nicht auf
+    null -- sonst ist eine Hashrate zwischen 880 und 1020 EH/s ein Strich."""
+    werte = [w for w in (werte or []) if w]
+    if len(werte) < 2:
+        return ""
+    lo, hi = min(werte), max(werte)
+    zeichen = "▁▂▃▄▅▆▇█"
+    spanne = (hi - lo) or 1
+    return c("".join(zeichen[min(7, int((w - lo) / spanne * 8))] for w in werte), farbe)
+
+
+def zeile(c, beschriftung, wert, breite=16):
+    return c(beschriftung.ljust(breite), GRAU) + wert
+
+
+def seit(ts):
+    return t("vor", dauer(time.time() - ts)) if ts else "–"
+
+
+# --------------------------------------------------------------------------
+# Befehle. Jeder nennt, welche Felder er braucht, und gibt fuer die drei
+# Ausgabearten zurueck: (Mensch, --raw, --json).
+# --------------------------------------------------------------------------
+
+def cmd_blockheight(lage, args, c):
+    tip = lage["tip"]
+    h = tip.get("height")
+    teile = [c("₿ " + zahl(h), hcl_rgb(*ORANGE), fett=True), seit(tip.get("time"))]
+    if tip.get("pool"):
+        teile.append(tip["pool"])
+    mensch = c("  ·  ", GRAU).join(teile)
+    return mensch, h, {"height": h, "time": tip.get("time"), "pool": tip.get("pool"),
+                       "nTx": tip.get("nTx"), "medianFee": tip.get("medianFee")}
+
+
+FEE_ZEILEN = (("fastest", "schnell"), ("halfHour", "halbe"), ("hour", "stunde"),
+              ("economy", "sparsam"), ("minimum", "minimal"))
+
+
+def cmd_fees(lage, args, c):
+    f = lage["fees"]
+    zeilen = []
+    for schluessel, text in FEE_ZEILEN:
+        v = f.get(schluessel)
+        farbe = gebuehr_farbe(v)
+        zeilen.append(zeile(c, t(text), c("■ ", farbe) + c(gebuehr(v), farbe, fett=True) + " sat/vB"))
+    wahl = args.fee or "fastest"
+    return "\n".join(zeilen), f.get(wahl), f
+
+
+def cmd_mempool(lage, args, c):
+    m, proj, vbps = lage["mempool"], lage.felder.get("projected") or [], lage.felder.get("vbps")
+    vsize = m.get("vsize")
+    zeilen = [zeile(c, t("mempool"), c(t("unbestaetigt", zahl(m.get("count"))), hcl_rgb(*ORANGE), fett=True))]
+    if vsize:
+        zeilen.append(zeile(c, t("groesse"), "%s MvB  %s" % (
+            zahl(vsize / 1e6, 1), c("(" + t("bloecke_etwa", zahl(math.ceil(vsize / 1e6))) + ")", GRAU))))
+    if m.get("totalFee") is not None:
+        zeilen.append(zeile(c, t("gebuehren"), "%s BTC" % zahl(m["totalFee"] / 1e8, 4)))
+    if vbps:
+        zeilen.append(zeile(c, t("zufluss"), "%s vB/s" % zahl(vbps)))
+    if proj:
+        kacheln = "".join(c("■", gebuehr_farbe(b.get("medianFee"))) for b in proj)
+        zeilen.append(zeile(c, t("geplant"), "%s  %s … %s sat/vB" % (
+            kacheln, gebuehr(proj[0].get("medianFee")), gebuehr(proj[-1].get("medianFee")))))
+    daten = dict(m, vbps=vbps, projectedBlocks=len(proj))
+    return "\n".join(zeilen), m.get("count"), daten
+
+
+def cmd_price(lage, args, c):
+    p = lage["price"]
+    cur = (args.cur or "usd").lower()
+    wert = p.get(cur)
+    mensch = "%s  %s %s" % (c("₿ 1 =", GRAU), c(zahl(wert), hcl_rgb(*ORANGE), fett=True), cur.upper())
+    return mensch, wert, {"cur": cur, "price": wert, "all": p}
+
+
+def cmd_difficulty(lage, args, c):
+    d, hr = lage["difficulty"], lage["hashrate"]
+    anteil = (d.get("progress") or 0) / 100
+    change = d.get("change")
+    farbe = GRUEN if (change or 0) >= 0 else ROT
+    zeilen = [zeile(c, t("anpassung"), "%s %s" % (balken(anteil, 24, c, hcl_rgb(*ORANGE)),
+                                                  prozent(d.get("progress"))))]
+    rest = d.get("remainingTime")
+    wann = ""
+    if d.get("retargetDate"):
+        wann = " (%s)" % tag_monat(d["retargetDate"] / 1000)
+    zeilen.append(zeile(c, "", "%s · %s%s" % (t("in_bloecken", zahl(d.get("remainingBlocks"))),
+                                               dauer(rest / 1000 if rest else None), wann)))
+    zeilen.append(zeile(c, "", "%s  %s" % (c(t("erwartet", prozent(change, True)), farbe, fett=True),
+                                            c(t("zuletzt", prozent(d.get("previousChange"), True)), GRAU))))
+    if hr.get("difficulty"):
+        zeilen.append(zeile(c, t("schwierigkeit"), schwierigkeit_text(hr["difficulty"])))
+    roh = round(change, 2) if change is not None else None
+    return "\n".join(zeilen), roh, dict(d, difficulty=hr.get("difficulty"))
+
+
+def cmd_hashrate(lage, args, c):
+    hr = lage["hashrate"]
+    aktuell = hr.get("current")
+    zeilen = [zeile(c, t("hashrate"), c(hashrate_text(aktuell), hcl_rgb(*ORANGE), fett=True))]
+    k = kurve(hr.get("series"), c, hcl_rgb(*ORANGE))
+    if k:
+        zeilen.append(zeile(c, t("tage30"), k))
+    return "\n".join(zeilen), int(aktuell) if aktuell else None, {
+        "current": aktuell, "series": hr.get("series")}
+
+
+def cmd_halving(lage, args, c):
+    h = lage["tip"].get("height") or 0
+    ziel = (h // HALVING_INTERVAL + 1) * HALVING_INTERVAL if h else None
+    rest = ziel - h if ziel else None
+    # Mittlere Blockzeit aus der laufenden Periode, sonst die Sollzeit.
+    schnitt = (lage["difficulty"].get("timeAvg") or 600000) / 1000
+    jetzt_btc = 50 / 2 ** (h // HALVING_INTERVAL) if h else None
+    zeilen = [zeile(c, t("halving"), "%s  %s" % (
+        c(t("noch", zahl(rest)), hcl_rgb(*ORANGE), fett=True), c(t("bei", zahl(ziel)), GRAU)))]
+    if rest:
+        zeilen.append(zeile(c, "", "%s (%s)" % (
+            dauer(rest * schnitt), t("etwa", monat_jahr(time.time() + rest * schnitt)))))
+    if jetzt_btc:
+        zeilen.append(zeile(c, t("belohnung"), "%s → %s BTC" % (
+            zahl(jetzt_btc, 3), zahl(jetzt_btc / 2, 4))))
+    return "\n".join(zeilen), rest, {"height": h, "halvingHeight": ziel, "blocksLeft": rest,
+                                      "subsidy": jetzt_btc, "avgBlockSeconds": schnitt}
+
+
+def cmd_nextblock(lage, args, c):
+    proj = lage.felder.get("projected") or []
+    zeilen = []
+    for i, b in enumerate(proj, 1):
+        spanne = b.get("feeRange") or []
+        farbe = gebuehr_farbe(b.get("medianFee"))
+        zeilen.append("%s %s  %s  %s  %s" % (
+            c("#%d" % i, GRAU), c("■", farbe),
+            c(gebuehr(b.get("medianFee")) + " sat/vB", farbe, fett=True).ljust(16),
+            ("%s tx" % zahl(b.get("nTx"))).rjust(9),
+            c("%s … %s" % (gebuehr(spanne[0]), gebuehr(spanne[-1])) if spanne else "", GRAU)))
+    median = proj[0].get("medianFee") if proj else None
+    return "\n".join(zeilen) or "–", median, proj
+
+
+LOGO = (
+    "     ██  ██    ",
+    "  ██████████   ",
+    "     ██    ███ ",
+    "     ██    ██  ",
+    "     ████████  ",
+    "     ██    ███ ",
+    "     ██     ██ ",
+    "  ██████████   ",
+    "     ██  ██    ",
+)
+
+
+def cmd_btcfetch(lage, args, c):
+    tip, f, m, p = lage["tip"], lage["fees"], lage["mempool"], lage["price"]
+    d, hr = lage["difficulty"], lage["hashrate"]
+    cur = (args.cur or "usd").lower()
+    h = tip.get("height") or 0
+    rest = ((h // HALVING_INTERVAL + 1) * HALVING_INTERVAL - h) if h else None
+    orange = hcl_rgb(*ORANGE)
+
+    def z(name, wert):
+        return c(name + ":", orange, fett=True) + " " + wert
+
+    quelle = t("dienst") if lage.quelle == "daemon" else t("direkt", lage.quelle.split(":", 1)[1])
+    rechts = [
+        c("orangedeck", orange, fett=True) + c("@", GRAU) + c("bitcoin", orange, fett=True),
+        c("─" * 22, GRAU),
+        z(t("block"), "%s (%s%s)" % (zahl(h), seit(tip.get("time")),
+                                     ", " + tip["pool"] if tip.get("pool") else "")),
+        z(t("gebuehren"), "%s / %s / %s sat/vB" % (gebuehr(f.get("fastest")), gebuehr(f.get("halfHour")),
+                                                  gebuehr(f.get("hour")))),
+        z(t("mempool"), "%s tx · %s MvB" % (zahl(m.get("count")),
+                                            zahl((m.get("vsize") or 0) / 1e6, 1))),
+        z(t("kurs"), "%s %s" % (zahl(p.get(cur)), cur.upper())),
+        z(t("hashrate"), hashrate_text(hr.get("current"))),
+        z(t("anpassung"), "%s · %s" % (prozent(d.get("progress")), t("erwartet", prozent(d.get("change"), True)))),
+        z(t("halving"), t("noch", zahl(rest))),
+        z(t("quelle"), quelle),
+        "",
+        "".join(c("███", gebuehr_farbe(r)) for r in (0, 0.7, 1.5, 2.5, 4, 6.5, 11, 22, 55, 150)),
+    ]
+    zeilen = []
+    for i in range(max(len(LOGO), len(rechts))):
+        links = c(LOGO[i], orange, fett=True) if i < len(LOGO) else " " * len(LOGO[0])
+        zeilen.append("%s  %s" % (links, rechts[i] if i < len(rechts) else ""))
+    daten = {"tip": tip, "fees": f, "mempool": m, "price": p, "difficulty": d,
+             "hashrate": {"current": hr.get("current")}, "halvingBlocksLeft": rest,
+             "source": lage.quelle}
+    # --raw ist hier eine Zeile fuer die Leiste -- und die liest ein Mensch,
+    # also bewusst in seiner Schreibweise, anders als die Zahlen der anderen.
+    einzeilig = "₿ %s · %s sat/vB · %s %s" % (zahl(h), gebuehr(f.get("fastest")), zahl(p.get(cur)), cur.upper())
+    return "\n".join(zeilen), einzeilig, daten
+
+
+BEFEHLE = {
+    "blockheight": (cmd_blockheight, ["tip"]),
+    "fees": (cmd_fees, ["fees"]),
+    "mempool": (cmd_mempool, ["mempool", "projected"]),
+    "price": (cmd_price, ["price"]),
+    "difficulty": (cmd_difficulty, ["difficulty", "hashrate"]),
+    "hashrate": (cmd_hashrate, ["hashrate"]),
+    "halving": (cmd_halving, ["tip", "difficulty"]),
+    "nextblock": (cmd_nextblock, ["projected"]),
+    "btcfetch": (cmd_btcfetch, ["tip", "fees", "mempool", "price", "difficulty", "hashrate"]),
+}
+LANGSAM = {"difficulty", "hashrate"}
+
+
+# --------------------------------------------------------------------------
+# Ausfuehren, auch mit --watch
+# --------------------------------------------------------------------------
+
+def ausgabe(name, args, c):
+    funktion, felder = BEFEHLE[name]
+    lage = hole(felder, args.source)
+    mensch, roh, daten = funktion(lage, args, c)
+    if args.json:
+        if isinstance(daten, dict):
+            daten = dict(daten, source=lage.quelle)
+        eingerueckt = 2 if (sys.stdout.isatty() and args.watch is None) else None
+        text = json.dumps(daten, ensure_ascii=False, indent=eingerueckt)
+    elif args.raw:
+        # Fuer Leisten und Skripte: ohne Tausendertrennung, mit Punkt.
+        text = "" if roh is None else str(roh)
+    else:
+        text = mensch
+    return text, lage
+
+
+def leitung_zu():
+    """Liest noch jemand? Mit --watch schreibt ein Befehl nur bei einer
+    Aenderung -- `blockheight --watch --raw | head -1` hing deshalb bis zum
+    naechsten Block, weil erst das naechste Schreiben den Bruch bemerkt haette
+    (am 12.09.2026 im eigenen Test haengen geblieben). poll() meldet das
+    geschlossene Leseende sofort."""
+    try:
+        p = select.poll()
+        p.register(sys.stdout.fileno(), select.POLLERR | select.POLLHUP)
+        return any(ev & (select.POLLERR | select.POLLHUP) for _, ev in p.poll(0))
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def ausfuehren(name, args):
+    c = Farbe("never" if (args.json or args.raw) else args.color)
+    if args.watch is None:
+        text, _ = ausgabe(name, args, c)
+        print(text)
+        return 0
+
+    zuletzt = None
+    gewarnt = False
+    while True:
+        try:
+            text, lage = ausgabe(name, args, c)
+            fehler = None
+        except Fehler as e:
+            text, lage, fehler = None, None, e
+        if fehler:
+            sys.stderr.write(str(fehler) + "\n")
+        elif text != zuletzt:
+            if not (args.json or args.raw) and sys.stdout.isatty():
+                sys.stdout.write("\x1b[H\x1b[2J")
+            print(text, flush=True)
+            zuletzt = text
+
+        direkt = lage is None or lage.quelle != "daemon"
+        untergrenze = WATCH_MIN_DIENST
+        if direkt:
+            untergrenze = WATCH_MIN_LANGSAM if name in LANGSAM else WATCH_MIN_DIREKT
+        wunsch = args.watch or untergrenze
+        if wunsch < untergrenze and not gewarnt:
+            sys.stderr.write(t("untergrenze", zahl(wunsch), zahl(untergrenze)) + "\n")
+            gewarnt = True
+        # In Sekundenschritten warten, damit ein geschlossenes Leseende nicht
+        # erst nach einer halben Stunde auffaellt.
+        ende = time.time() + max(wunsch, untergrenze)
+        while time.time() < ende:
+            if leitung_zu():
+                return 0
+            time.sleep(min(1.0, max(0.0, ende - time.time())))
+
+
+# --------------------------------------------------------------------------
+# Kurzbefehle einrichten
+# --------------------------------------------------------------------------
+
+def belegt(name, ziel, selbst):
+    """Warum ein Name nicht frei ist, oder None. Geprueft wird, was beim
+    Tippen gewinnen wuerde: ein anderes Programm im PATH, ein Builtin oder eine
+    Funktion der Shell. `block` ist in fish eingebaut -- deshalb heisst der
+    Explorer-Befehl `blockinfo`."""
+    gefunden = shutil.which(name)
+    if gefunden and os.path.realpath(gefunden) != selbst:
+        return gefunden
+    for shell in ("fish", "bash", "zsh"):
+        if not shutil.which(shell):
+            continue
+        try:
+            art = subprocess.run([shell, "-c", "type -t %s" % name if shell != "zsh"
+                                  else "whence -w %s" % name],
+                                 capture_output=True, text=True, timeout=5).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            continue
+        art = art.split(":")[-1].strip()
+        if art in ("builtin", "function", "keyword", "alias", "reserved"):
+            return "%s: %s" % (shell, art)
+    if os.path.lexists(ziel) and os.path.realpath(ziel) != selbst:
+        return ziel
+    return None
+
+
+def aliases(args, entfernen=False):
+    selbst = os.path.realpath(__file__)
+    prefix = os.path.expanduser(args.prefix)
+    if not entfernen and not args.dry_run:
+        os.makedirs(prefix, exist_ok=True)
+    for name in NAMES:
+        ziel = os.path.join(prefix, name)
+        unser = os.path.islink(ziel) and os.path.realpath(ziel) == selbst
+        if entfernen:
+            if unser:
+                if not args.dry_run:
+                    os.remove(ziel)
+                print(t("alias_wuerde_weg" if args.dry_run else "alias_weg", ziel))
+            continue
+        if unser:
+            print(t("alias_da", ziel))
+            continue
+        grund = belegt(name, ziel, selbst)
+        if grund:
+            print(t("alias_belegt", name, grund))
+            continue
+        if not args.dry_run:
+            os.symlink(selbst, ziel)
+        print(t("alias_wuerde" if args.dry_run else "alias_neu", ziel))
+    if args.dry_run:
+        print(t("trocken"))
+    pfade = [os.path.realpath(p) for p in os.environ.get("PATH", "").split(os.pathsep) if p]
+    if not entfernen and os.path.realpath(prefix) not in pfade:
+        print(t("alias_pfad", prefix))
+    return 0
+
+
+# --------------------------------------------------------------------------
+
+def parser_fuer(name):
+    p = argparse.ArgumentParser(prog=name)
+    p.add_argument("--json", action="store_true", help="JSON statt Text")
+    p.add_argument("--raw", action="store_true", help="nur der Wert, fuer Leisten")
+    p.add_argument("--watch", nargs="?", const=0, type=float, metavar="SEK",
+                   help="wiederholen und bei Aenderung neu ausgeben")
+    p.add_argument("--source", choices=("auto", "daemon", "direct"), default="auto")
+    p.add_argument("--color", choices=("auto", "always", "never"), default="auto")
+    if name in ("price", "btcfetch"):
+        p.add_argument("--cur", choices=[k.lower() for k in CURRENCIES])
+    if name == "fees":
+        p.add_argument("--fee", choices=[k for k, _ in FEE_ZEILEN],
+                       help="welcher Wert bei --raw")
+    return p
+
+
+def hilfe():
+    print(__doc__.split("\n\n")[0])
+    print()
+    print("  " + "  ".join(NAMES))
+    print()
+    print("  orangedeck-cli install-aliases [--prefix DIR] [--dry-run]")
+    print("  orangedeck-cli remove-aliases  [--prefix DIR] [--dry-run]")
+    print("  <befehl> [--json | --raw] [--watch [SEK]] [--source auto|daemon|direct]")
+
+
+def main(argv):
+    aufruf = os.path.basename(argv[0])
+    rest = argv[1:]
+    if aufruf in BEFEHLE:
+        name = aufruf
+    elif rest and not rest[0].startswith("-"):
+        name, rest = rest[0], rest[1:]
+    else:
+        hilfe()
+        return 0 if (not rest or rest[0] in ("-h", "--help")) else 2
+
+    if name in ("install-aliases", "remove-aliases"):
+        p = argparse.ArgumentParser(prog="orangedeck-cli " + name)
+        p.add_argument("--prefix", default="~/.local/bin")
+        p.add_argument("--dry-run", action="store_true")
+        return aliases(p.parse_args(rest), entfernen=(name == "remove-aliases"))
+
+    if name not in BEFEHLE:
+        sys.stderr.write("orangedeck-cli: %s?\n" % name)
+        hilfe()
+        return 2
+
+    args = parser_fuer(name).parse_args(rest)
+    try:
+        return ausfuehren(name, args)
+    except Fehler as e:
+        sys.stderr.write(str(e) + "\n")
+        return e.code
+    except KeyboardInterrupt:
+        return 130
+    except BrokenPipeError:
+        # `blockheight --raw | true` -- das Ende der Leitung ist kein Fehler.
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
