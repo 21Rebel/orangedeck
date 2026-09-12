@@ -2,7 +2,7 @@
 """OrangeDeck im Terminal -- die Kennzahlen der App als Kurzbefehle.
 
     blockheight   fees   mempool   price   difficulty   hashrate
-    halving       nextblock        btcfetch
+    halving       nextblock        btcfetch             bitfeed
 
 Ein Programm, das am Aufrufnamen erkennt, was gemeint ist (busybox-Stil). Die
 Kurzbefehle sind Verknuepfungen darauf:
@@ -11,8 +11,8 @@ Kurzbefehle sind Verknuepfungen darauf:
     orangedeck-cli remove-aliases      nimmt nur die eigenen wieder weg
     orangedeck-cli <befehl> [...]      geht auch ohne Verknuepfung
 
-Konzept und Entscheidungen des Anwenders: cli/KONZEPT.md. Das hier ist
-Stufe 1 -- die Zahlen. `bitfeed` kommt in Stufe 2.
+Konzept und Entscheidungen des Anwenders: cli/KONZEPT.md. Stufe 1 sind die
+Zahlen, Stufe 2 `bitfeed` -- die fallenden Transaktionen.
 
 **Nur Standardbibliothek**, wie der Dienst. Das Dienst-Skript wird bewusst
 nicht importiert: es hat beim Laden Seiteneffekte (sources.json, Host) und
@@ -32,16 +32,25 @@ nicht. Am 12.09.2026 zum zweiten Mal an einem Tag verwechselt: erst in den
 Einstellungen der App, dann in der ersten Fassung dieser Datei.
 """
 import argparse
+import base64
 import fcntl
+import hashlib
 import http.client
 import json
 import math
 import os
+import random
 import select
 import shutil
+import signal
+import socket
+import ssl
+import struct
 import subprocess
 import sys
+import threading
 import time
+from urllib.parse import urlparse
 
 # --------------------------------------------------------------------------
 # Was mit Dienst und App gleich bleiben muss
@@ -51,14 +60,17 @@ import time
 # in ui/qml/colors.js uebereinstimmen** -- sonst hat dieselbe Gebuehr im
 # Terminal eine andere Farbe als in der App.
 FEE_BUCKETS = [0.5, 1, 2, 3, 5, 8, 15, 30, 80]
+# Stellvertretender Satz je Klasse fuer die Farbe -- BUCKET_RATES in colors.js.
+BUCKET_RATES = [0.3, 0.7, 1.5, 2.5, 4, 6.5, 11, 22, 55, 150]
 CURRENCIES = ("USD", "EUR", "GBP", "CAD", "CHF", "AUD", "JPY")
 HALVING_INTERVAL = 210000
-UA = "orangedeck-cli/0.1 (+https://mempool.space)"
+MAX_TILES = 8000
+UA = "orangedeck-cli/0.2 (+https://mempool.space)"
 
-# Die Befehle dieser Stufe. Nur sie legt install-aliases an -- ein Name ohne
-# Befehl dahinter waere eine Verknuepfung ins Leere.
+# Die Befehle. Nur sie legt install-aliases an -- ein Name ohne Befehl
+# dahinter waere eine Verknuepfung ins Leere.
 NAMES = ("blockheight", "fees", "mempool", "price", "difficulty",
-         "hashrate", "halving", "nextblock", "btcfetch")
+         "hashrate", "halving", "nextblock", "btcfetch", "bitfeed")
 
 # Wie lange eine direkt geholte Antwort gilt, in Sekunden (KONZEPT.md).
 TTL = {"tip": 30, "fees": 30, "mempool": 15, "projected": 15, "price": 60,
@@ -97,6 +109,7 @@ TEXTE = {
     "minimal": ("minimal", "minimum"),
     "mempool": ("Mempool", "Mempool"),
     "unbestaetigt": ("{} unbestätigt", "{} unconfirmed"),
+    "im_mempool": ("{} im Mempool", "{} in mempool"),
     "groesse": ("Größe", "Size"),
     "bloecke_etwa": ("etwa {} Blöcke", "about {} blocks"),
     "gebuehren": ("Gebühren", "Fees"),
@@ -148,6 +161,17 @@ TEXTE = {
                    "erreichbar, wenn es dort steht.",
                    "{} is not in PATH – the short commands only work once it is."),
     "trocken": ("(nur geprüft, nichts verändert)", "(checked only, nothing changed)"),
+    "farbe_alter": ("Farbe: Alter", "color: age"),
+    "farbe_gebuehr": ("Farbe: Gebühr", "color: fee"),
+    "tasten": ("[c] Farbe  [b] Block  [p] Pause  [q] Ende",
+               "[c] color  [b] block  [p] pause  [q] quit"),
+    "pausiert": ("angehalten", "paused"),
+    "verbinde": ("verbinde …", "connecting …"),
+    "kein_terminal": ("bitfeed braucht ein Terminal – die Ausgabe geht gerade "
+                      "in eine Datei oder Leitung.",
+                      "bitfeed needs a terminal – output is going to a file or pipe."),
+    "zu_klein": ("Das Terminal ist zu klein (mindestens 30 × 10).",
+                 "The terminal is too small (at least 30 × 10)."),
 }
 
 MONATE = {
@@ -253,6 +277,7 @@ def tag_monat(ts):
 # --------------------------------------------------------------------------
 
 ORANGE = (0.181, 0.472)
+BLUE = (0.5, 0.55)
 TEAL = (0.475, 0.55)
 PURPLE = (0.95, 0.35)
 CHROMA = 78.225
@@ -304,6 +329,23 @@ GRUEN = (90, 200, 130)
 ROT = (230, 95, 95)
 
 
+def ansi_code(rgb, voll, hinten=False):
+    """SGR-Teil fuer eine Farbe: Truecolor, sonst der naechste Ton im
+    256er-Wuerfel."""
+    if voll:
+        # Die Klammer um das ganze Tupel ist Pflicht: `%` bindet staerker als
+        # `+`. Ohne sie brach am 12.09.2026 jede Truecolor-Ausgabe ab -- die
+        # ersten Tests liefen ohne Farbe und sahen es nicht.
+        return "%d;2;%d;%d;%d" % (((48 if hinten else 38),) + tuple(rgb))
+    stufen = (0, 95, 135, 175, 215, 255)
+
+    def naechste(v):
+        return min(range(6), key=lambda i: abs(stufen[i] - v))
+
+    r, g, b = (naechste(v) for v in rgb)
+    return "%d;5;%d" % ((48 if hinten else 38), 16 + 36 * r + 6 * g + b)
+
+
 class Farbe:
     """Farbe nur, wenn sie ankommt: nicht ohne Terminal, nicht bei NO_COLOR
     (no-color.org), nicht bei --color never. Truecolor, wenn das Terminal es
@@ -321,16 +363,7 @@ class Farbe:
     def __call__(self, text, rgb, fett=False):
         if not self.an:
             return text
-        if self.voll:
-            code = "38;2;%d;%d;%d" % rgb
-        else:
-            stufen = (0, 95, 135, 175, 215, 255)
-
-            def naechste(v):
-                return min(range(6), key=lambda i: abs(stufen[i] - v))
-
-            r, g, b = (naechste(v) for v in rgb)
-            code = "38;5;%d" % (16 + 36 * r + 6 * g + b)
+        code = ansi_code(rgb, self.voll)
         if fett:
             code = "1;" + code
         return "\x1b[%sm%s\x1b[0m" % (code, text)
@@ -407,7 +440,8 @@ class Speicher:
     **Die Pause** steht in einer Datei, nicht im Speicher. Scheitert eine
     Anfrage, warten auch alle folgenden Aufrufe -- 30 s, dann doppelt so lange,
     hoechstens 15 min. Ein Befehl, der jede Minute neu startet, wuerde sonst
-    jede Minute wieder anklopfen."""
+    jede Minute wieder anklopfen. `bitfeed` im Direktbezug schreibt in dieselbe
+    Datei."""
 
     def __init__(self):
         basis = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
@@ -431,13 +465,13 @@ class Speicher:
             json.dump(inhalt, f)
         os.replace(tmp, self._datei(name))
 
-    def _holen(self, pfad):
+    def _holen(self, pfad, frist=10):
         import urllib.error
         import urllib.request
         url = "%s://%s/api%s" % (self.schema, self.host, pfad)
         req = urllib.request.Request(url, headers={"User-Agent": UA})
         try:
-            with urllib.request.urlopen(req, timeout=10) as r:
+            with urllib.request.urlopen(req, timeout=frist) as r:
                 return json.loads(r.read().decode())
         except urllib.error.HTTPError as e:
             # 404 ist ein Fehler hier im Programm, keine Ueberlastung dort.
@@ -445,6 +479,22 @@ class Speicher:
                 raise Fehler(t("netz", "HTTP 404 " + pfad))
             raise
         # Alles andere -- 429, 5xx, Zeitueberschreitung, TLS -- faengt feld().
+
+    def pausiert_bis(self):
+        return (self._lesen("_pause") or {}).get("bis", 0)
+
+    def fehlschlag(self, grund):
+        pause = self._lesen("_pause") or {}
+        stufe = pause.get("stufe", 0) + 1
+        warten = min(PAUSE_MAX, 30 * 2 ** (stufe - 1))
+        self._schreiben("_pause", {"bis": time.time() + warten, "stufe": stufe, "grund": grund})
+        return warten
+
+    def erfolg(self):
+        try:
+            os.remove(self._datei("_pause"))
+        except OSError:
+            pass
 
     def feld(self, name, pfad, umformen):
         """(Daten, Alter in s oder None bei frisch geholt)."""
@@ -466,21 +516,38 @@ class Speicher:
             except Fehler:
                 raise
             except Exception as e:
-                stufe = pause.get("stufe", 0) + 1
-                warten = min(PAUSE_MAX, 30 * 2 ** (stufe - 1))
                 grund = str(e) or e.__class__.__name__
-                self._schreiben("_pause", {"bis": jetzt + warten, "stufe": stufe, "grund": grund})
+                self.fehlschlag(grund)
                 if vorrat:
                     return vorrat["daten"], jetzt - vorrat["t"]
                 raise Fehler(t("netz", grund), 4)
 
             if pause:
-                try:
-                    os.remove(self._datei("_pause"))
-                except OSError:
-                    pass
+                self.erfolg()
             self._schreiben(name, {"t": jetzt, "daten": daten})
             return daten, None
+
+    def blockkacheln(self, block_id):
+        """Die Kacheln eines Blocks, einmal geholt und behalten -- ein
+        bestaetigter Block aendert sich nicht, und die Zusammenfassung sind
+        rund 700 kB. Ein Neustart von bitfeed im selben Block fragt nicht
+        noch einmal."""
+        name = "block-" + block_id[-16:]
+        vorrat = self._lesen(name)
+        if vorrat:
+            return vorrat
+        txs = self._holen("/v1/block/%s/summary" % block_id, frist=40)
+        daten = kacheln_aus_summary(txs)
+        self._schreiben(name, daten)
+        # Nur die letzten paar Bloecke aufheben.
+        alte = sorted((f for f in os.listdir(self.ordner) if f.startswith("block-")),
+                      key=lambda f: os.path.getmtime(os.path.join(self.ordner, f)))
+        for f in alte[:-4]:
+            try:
+                os.remove(os.path.join(self.ordner, f))
+            except OSError:
+                pass
+        return daten
 
 
 # Wie der Dienst die Antworten von mempool.space auf seine Felder abbildet --
@@ -497,6 +564,7 @@ def _tip(bloecke):
     ex = b.get("extras") or {}
     return {
         "height": int(b.get("height") or 0),
+        "id": b.get("id") or "",
         "time": int(b.get("timestamp") or 0),
         "nTx": int(b.get("tx_count") or 0),
         "size": int(b.get("size") or 0),
@@ -547,6 +615,31 @@ DIREKT = {
     "difficulty": ("/v1/difficulty-adjustment", _difficulty),
     "hashrate": ("/v1/mining/hashrate/1m", _hashrate),
 }
+
+
+def fee_bucket(rate):
+    r = rate or 0
+    for i, kante in enumerate(FEE_BUCKETS):
+        if r < kante:
+            return i
+    return len(FEE_BUCKETS)
+
+
+def tile_size(value_sats):
+    """Kantenlaenge in Rastereinheiten -- identisch zu logTxSize() in bitfeed
+    und tile_size() im Dienst."""
+    v = max(1, int(value_sats or 1))
+    return min(5, max(1, math.ceil(math.log10(v)) - 5))
+
+
+def kacheln_aus_summary(txs):
+    """Wie summarize_block() im Dienst: je Transaktion Kantenlaenge und
+    Gebuehrenklasse, hoechstens MAX_TILES, in der Reihenfolge des Blocks."""
+    if not isinstance(txs, list) or not txs:
+        return {"tiles": ""}
+    step = max(1, len(txs) // MAX_TILES + (1 if len(txs) % MAX_TILES else 0))
+    return {"tiles": "".join("%d%d" % (tile_size(txs[i].get("value")), fee_bucket(txs[i].get("rate")))
+                             for i in range(0, len(txs), step))}
 
 
 class Lage:
@@ -779,7 +872,7 @@ def cmd_btcfetch(lage, args, c):
         z(t("halving"), t("noch", zahl(rest))),
         z(t("quelle"), quelle),
         "",
-        "".join(c("███", gebuehr_farbe(r)) for r in (0, 0.7, 1.5, 2.5, 4, 6.5, 11, 22, 55, 150)),
+        "".join(c("███", gebuehr_farbe(r)) for r in [0] + BUCKET_RATES[1:]),
     ]
     zeilen = []
     for i in range(max(len(LOGO), len(rechts))):
@@ -883,6 +976,850 @@ def ausfuehren(name, args):
             time.sleep(min(1.0, max(0.0, ende - time.time())))
 
 
+# ==========================================================================
+# bitfeed -- die fallenden Transaktionen
+# ==========================================================================
+#
+# Uebernommen aus der App, nicht neu erfunden (DOKUMENTATION.md, "Die
+# Mechanik, so wie im Original", und ui/qml/FeedCanvas.qml):
+#
+#   Kachelgroesse   ceil(log10(sat)) - 5, begrenzt auf 1..5
+#   Packung         erste freie Stelle von unten links (mondrian.js)
+#   Foerderband     die unterste Zeile faellt heraus, nie aus der Mitte
+#   Flaeche         Halde mindestens 1/4, hoechstens 1/3 der Hoehe;
+#                   Block min(Breite * 0,72, Hoehe / 2,5)
+#   Fallen          g = Hoehe * 1,1; ein Paket ueber 0,85 s verteilt,
+#                   hoechstens 240 in der Warteschlange
+#   Farben          nach Alter orange -> blau in 60 s, nach Gebuehr teal ->
+#                   purple; der Blockfund weiss, dann orange
+#
+# **Gezeichnet wird in Halbbloecken.** Jede Zeichenzelle traegt zwei
+# uebereinanderliegende Pixel (▀ mit Vorder- und Hintergrundfarbe) -- bei
+# Zellen von etwa 1:2 sind die Pixel damit nahezu quadratisch. Leere Pixel
+# bleiben im Standardhintergrund: ein transparentes kitty bleibt transparent.
+
+AGE_S = 60.0
+AGE_STEPS = 48
+QUEUE_MAX = 240
+FPS_AKTIV = 20
+HALDE_HZ = 5
+ALTER_TAKT = 1.2
+WEISS = (255, 255, 255)
+LINIE = (70, 70, 80)
+
+
+class Mondrian:
+    """Uebertragung von MondrianLayout aus ui/qml/mondrian.js: eine exakte
+    Belegungskarte statt einer Liste freier Plaetze -- das Original verliert
+    beim Umschichten Dichte, diese Karte nicht. Alle y sind absolut; was unten
+    herausgefallen ist, zaehlt `offset` mit."""
+
+    def __init__(self, breite):
+        self.breite = max(1, breite)
+        self.zeilen = []
+        self.frei = []
+        self.tiefste = 0
+        self.offset = 0
+
+    def _i(self, y):
+        return y - self.offset
+
+    def _sicher(self, bis):
+        while len(self.zeilen) <= self._i(bis):
+            self.zeilen.append(bytearray(self.breite))
+            self.frei.append(self.breite)
+
+    def passt(self, x, y, r):
+        if x + r > self.breite:
+            return False
+        for yy in range(self._i(y), self._i(y) + r):
+            if yy < 0:
+                return False
+            if yy >= len(self.zeilen):
+                continue
+            if any(self.zeilen[yy][x:x + r]):
+                return False
+        return True
+
+    def markiere(self, x, y, r, wert):
+        self._sicher(y + r)
+        for yy in range(self._i(y), self._i(y) + r):
+            if not 0 <= yy < len(self.zeilen):
+                continue
+            zeile_ = self.zeilen[yy]
+            for xx in range(x, x + r):
+                if zeile_[xx] != wert:
+                    zeile_[xx] = wert
+                    self.frei[yy] += -1 if wert else 1
+
+    def setze(self, r):
+        r = max(1, min(r, self.breite))
+        y = max(self.tiefste, self.offset)
+        while True:
+            self._sicher(y + r)
+            i = self._i(y)
+            if self.frei[i] >= r:
+                zeile_ = self.zeilen[i]
+                for x in range(0, self.breite - r + 1):
+                    if zeile_[x]:
+                        continue
+                    if self.passt(x, y, r):
+                        self.markiere(x, y, r, 1)
+                        while (self._i(self.tiefste) < len(self.zeilen)
+                               and self.frei[self._i(self.tiefste)] == 0):
+                            self.tiefste += 1
+                        return (x, y, r)
+            y += 1
+
+    def hoehe(self):
+        for y in range(len(self.zeilen) - 1, -1, -1):
+            if self.frei[y] < self.breite:
+                return y + 1
+        return 0
+
+    def unterste_raus(self):
+        if not self.zeilen:
+            return
+        self.zeilen.pop(0)
+        self.frei.pop(0)
+        self.offset += 1
+        if self.tiefste < self.offset:
+            self.tiefste = self.offset
+
+
+def stabil_neu(breite, eintraege):
+    """repackStable() aus mondrian.js: dieselbe Reihenfolge (von vorn nach
+    hinten, Zeile fuer Zeile) in eine frische Packung. Gebraucht nach einer
+    Groessenaenderung des Terminals -- die Halde bleibt, statt zu verschwinden."""
+    lay = Mondrian(breite)
+    for e in sorted(eintraege, key=lambda e: (e["sq"][1], e["sq"][0])):
+        e["sq"] = lay.setze(e["sq"][2])
+    return lay
+
+
+class Flaeche:
+    """Die Aufteilung aus FeedCanvas.qml, in Pixeln (zwei je Zeichenzeile)."""
+
+    def __init__(self, spalten, zeilen, kopf):
+        self.spalten = spalten
+        self.kopf = 1 if kopf else 0
+        self.zeilen = zeilen - self.kopf
+        self.W = spalten
+        self.H = self.zeilen * 2
+        # Ab 120 Spalten mit Fuge zwischen den Kacheln -- das kommt dem Bild
+        # der App (4 px Kachel, 1 px Abstand) am naechsten. Darunter dicht.
+        self.u = 2 if spalten >= 120 else 1
+        self.fuge = 1 if self.u >= 2 else 0
+        self.raster = max(1, self.W // self.u)
+        self.x0 = (self.W - self.raster * self.u) // 2
+        wunsch = min(self.W * 0.72, self.H / 2.5)
+        grenze = self.H / (4.5 if spalten <= 100 else 4)
+        halde = max(grenze, min(self.H - wunsch / 0.86, self.H / 3))
+        self.halde_oben = int(max(0, self.H - halde))
+        self.halde_zeilen = max(1, int(halde // self.u))
+        seite = int(min(wunsch, self.halde_oben * 0.86))
+        self.block_seite = max(0, seite)
+        self.block_x = (self.W - seite) // 2
+        self.block_y = max(0, (self.halde_oben - seite) // 2)
+
+
+def alter_palette():
+    """ageColors() aus colors.js: 48 Stufen orange -> blau."""
+    return [hcl_rgb(ORANGE[0] + (i / (AGE_STEPS - 1)) * (BLUE[0] - ORANGE[0]),
+                    ORANGE[1] + (i / (AGE_STEPS - 1)) * (BLUE[1] - ORANGE[1]))
+            for i in range(AGE_STEPS)]
+
+
+class Strom(threading.Thread):
+    """Liefert Ereignisse an die Zeichenschleife: ("txs", liste),
+    ("block", {id, height, tiles, neu}), ("info", {...}), ("fehler", text).
+    Eine Transaktion ist {"a": Wert in sat, "r": sat/vB, "v": vB}."""
+
+    def __init__(self):
+        super().__init__(daemon=True)
+        self.ereignisse = []
+        self.schloss = threading.Lock()
+        self.halt = threading.Event()
+
+    def senden(self, art, inhalt):
+        with self.schloss:
+            self.ereignisse.append((art, inhalt))
+
+    def abholen(self):
+        with self.schloss:
+            e, self.ereignisse = self.ereignisse, []
+        return e
+
+
+class DienstStrom(Strom):
+    """Der eigene Dienst: /state?since=<seq> im Sekundentakt liefert nur die
+    neuen Transaktionen, /block die Kacheln des letzten Blocks."""
+
+    quelle = "daemon"
+
+    def run(self):
+        seq, rev, block_id = 0, -1, None
+        while not self.halt.is_set():
+            try:
+                pfad = "/state?since=%d&slow=%d" % (seq, rev) if seq else "/state"
+                st = dienst_json(pfad, 2)
+                rev = st.get("slowRev", rev)
+                neu = [x for x in (st.get("recent") or []) if x.get("n", 0) > seq]
+                self.senden("txs", {"liste": neu, "anfang": seq == 0})
+                seq = st.get("seq", seq)
+                tip = st.get("tip") or {}
+                self.senden("info", {"height": tip.get("height"), "count": (st.get("mempool") or {}).get("count"),
+                                     "fastest": (st.get("fees") or {}).get("fastest"),
+                                     "offline": st.get("source") == "offline"})
+                if tip.get("id") and tip["id"] != block_id:
+                    try:
+                        b = dienst_json("/block", 5)
+                        if b.get("id") == tip["id"]:
+                            self.senden("block", {"id": b["id"], "height": b.get("height"),
+                                                  "tiles": b.get("tiles") or "", "neu": block_id is not None,
+                                                  "nTx": tip.get("nTx")})
+                            block_id = tip["id"]
+                    except DienstFehlt:
+                        pass
+            except DienstFehlt as e:
+                self.senden("fehler", str(e))
+                self.halt.wait(2)
+                continue
+            self.halt.wait(1)
+
+
+class WebSocket:
+    """Der kleine WebSocket-Client aus daemon/orangedeck (RFC 6455, nur was
+    gebraucht wird) -- uebernommen, nicht importiert."""
+
+    def __init__(self, url, origin=None, timeout=45):
+        u = urlparse(url)
+        sicher = u.scheme in ("wss", "https")
+        port = u.port or (443 if sicher else 80)
+        pfad = (u.path or "/") + (("?" + u.query) if u.query else "")
+        self._puffer = b""
+        roh = socket.create_connection((u.hostname, port), timeout=20)
+        roh.settimeout(timeout)
+        self.sock = (ssl.create_default_context().wrap_socket(roh, server_hostname=u.hostname)
+                     if sicher else roh)
+        schluessel = base64.b64encode(os.urandom(16)).decode()
+        anfrage = ("GET %s HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                   "Sec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\nUser-Agent: %s\r\n"
+                   % (pfad, u.hostname, schluessel, UA)
+                   + ("Origin: %s\r\n" % origin if origin else "") + "\r\n")
+        self.sock.sendall(anfrage.encode())
+        kopf = b""
+        while b"\r\n\r\n" not in kopf:
+            stueck = self.sock.recv(4096)
+            if not stueck:
+                raise OSError("Verbindung beim Handshake geschlossen")
+            kopf += stueck
+            if len(kopf) > 65536:
+                raise OSError("Handshake-Antwort zu gross")
+        header, _, rest = kopf.partition(b"\r\n\r\n")
+        if b"101" not in header.split(b"\r\n", 1)[0]:
+            raise OSError("Handshake fehlgeschlagen")
+        erwartet = base64.b64encode(hashlib.sha1(
+            (schluessel + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest())
+        if erwartet not in header:
+            raise OSError("Sec-WebSocket-Accept passt nicht")
+        self._puffer = rest
+
+    def _lies(self, n):
+        while len(self._puffer) < n:
+            stueck = self.sock.recv(65536)
+            if not stueck:
+                raise OSError("Verbindung geschlossen")
+            self._puffer += stueck
+        aus, self._puffer = self._puffer[:n], self._puffer[n:]
+        return aus
+
+    def _rahmen(self, opcode, nutzlast=b""):
+        n = len(nutzlast)
+        kopf = bytes([0x80 | opcode])
+        if n < 126:
+            kopf += bytes([0x80 | n])
+        elif n < 65536:
+            kopf += bytes([0x80 | 126]) + struct.pack(">H", n)
+        else:
+            kopf += bytes([0x80 | 127]) + struct.pack(">Q", n)
+        maske = os.urandom(4)
+        self.sock.sendall(kopf + maske + bytes(b ^ maske[i % 4] for i, b in enumerate(nutzlast)))
+
+    def senden(self, text):
+        self._rahmen(0x1, text.encode())
+
+    def empfangen(self):
+        teile, art = [], None
+        while True:
+            b0, b1 = self._lies(2)
+            fin, opcode, n = b0 & 0x80, b0 & 0x0F, b1 & 0x7F
+            if n == 126:
+                n = struct.unpack(">H", self._lies(2))[0]
+            elif n == 127:
+                n = struct.unpack(">Q", self._lies(8))[0]
+            if b1 & 0x80:
+                maske = self._lies(4)
+                daten = bytes(b ^ maske[i % 4] for i, b in enumerate(self._lies(n)))
+            else:
+                daten = self._lies(n)
+            if opcode == 0x8:
+                raise OSError("Server hat die Verbindung geschlossen")
+            if opcode == 0x9:
+                self._rahmen(0xA, daten)
+                continue
+            if opcode == 0xA:
+                continue
+            if opcode == 0x0:
+                teile.append(daten)
+            else:
+                teile, art = [daten], opcode
+            if fin:
+                return b"".join(teile).decode("utf-8", "replace") if art == 0x1 else None
+
+    def schliessen(self):
+        try:
+            self.sock.close()
+        except OSError:
+            pass
+
+
+class DirektStrom(Strom):
+    """mempool.space ohne Dienst -- **mit denselben Grenzen wie der Dienst**:
+    nur blocks, stats und mempool-blocks (rund 4 kB/s), nie track-mempool
+    (250 kB/s). Scheitert die Verbindung, gilt die Pause aus der gemeinsamen
+    Datei, und die Blockzusammenfassung wird je Block nur einmal geholt."""
+
+    def __init__(self):
+        super().__init__()
+        self.speicher = Speicher()
+        self.quelle = "direct:" + self.speicher.host
+        self.ws = None
+
+    def _block(self, b, neu):
+        bid = b.get("id")
+        if not bid:
+            return
+        try:
+            kacheln = self.speicher.blockkacheln(bid)
+        except Exception as e:
+            self.senden("fehler", str(e) or e.__class__.__name__)
+            return
+        self.senden("block", {"id": bid, "height": b.get("height"), "tiles": kacheln.get("tiles", ""),
+                              "neu": neu, "nTx": b.get("tx_count")})
+
+    def run(self):
+        ws_url = "%s://%s/api/v1/ws" % ("wss" if self.speicher.schema == "https" else "ws",
+                                        self.speicher.host)
+        anfang = True
+        while not self.halt.is_set():
+            bis = self.speicher.pausiert_bis()
+            if time.time() < bis:
+                self.senden("fehler", t("pause", "-", dauer(bis - time.time())))
+                self.halt.wait(min(5, bis - time.time()))
+                continue
+            try:
+                self.ws = WebSocket(ws_url, origin="%s://%s" % (self.speicher.schema, self.speicher.host))
+                self.ws.senden(json.dumps({"action": "init"}))
+                self.ws.senden(json.dumps({"action": "want", "data": ["blocks", "stats", "mempool-blocks"]}))
+                self.speicher.erfolg()
+                zahl_, schnell = None, None
+                while not self.halt.is_set():
+                    roh = self.ws.empfangen()
+                    if roh is None:
+                        continue
+                    try:
+                        msg = json.loads(roh)
+                    except ValueError:
+                        continue
+                    if msg.get("transactions"):
+                        liste = []
+                        for x in msg["transactions"]:
+                            v = float(x.get("vsize") or 0) or 1.0
+                            r = x.get("rate")
+                            liste.append({"a": int(x.get("value") or 0), "v": v,
+                                          "r": float(r) if r is not None else float(x.get("fee") or 0) / v})
+                        self.senden("txs", {"liste": liste, "anfang": False})
+                    if msg.get("mempoolInfo"):
+                        zahl_ = msg["mempoolInfo"].get("size")
+                    if msg.get("fees"):
+                        schnell = msg["fees"].get("fastestFee")
+                    if msg.get("blocks"):
+                        self._block(msg["blocks"][-1], neu=False)
+                        self.senden("info", {"height": msg["blocks"][-1].get("height")})
+                    if msg.get("block"):
+                        self._block(msg["block"], neu=not anfang)
+                        self.senden("info", {"height": msg["block"].get("height")})
+                    anfang = False
+                    if zahl_ is not None or schnell is not None:
+                        self.senden("info", {"count": zahl_, "fastest": schnell})
+            except Exception as e:
+                grund = str(e) or e.__class__.__name__
+                if not self.halt.is_set():
+                    warten = self.speicher.fehlschlag(grund)
+                    self.senden("fehler", t("pause", grund, dauer(warten)))
+            finally:
+                if self.ws:
+                    self.ws.schliessen()
+                    self.ws = None
+
+
+def starte_strom(wahl):
+    if wahl in ("auto", "daemon"):
+        try:
+            st = dienst_zustand()
+            if st.get("source") != "offline" or wahl == "daemon":
+                s = DienstStrom()
+                s.start()
+                return s
+            raise Fehler(t("dienst_offline"), 3)
+        except DienstFehlt:
+            if wahl == "daemon":
+                raise Fehler(t("dienst_fehlt", "%s:%d" % dienst_adresse()), 3)
+    s = DirektStrom()
+    s.start()
+    return s
+
+
+class Bitfeed:
+    def __init__(self, args, strom):
+        self.args = args
+        self.strom = strom
+        self.hg = args.bg
+        self.dim = args.dim if args.bg else 1.0
+        self.voll = os.environ.get("COLORTERM", "").lower() in ("truecolor", "24bit")
+        self.farbmodus = "age"
+        self.pause = False
+        self.kopf = not args.bg
+        self.info = {}
+        self.fehler = ""
+        self.warteschlange = []
+        self.ansammlung = 0.0
+        self.halde = []
+        self.fliegend = []
+        self.block = None
+        self.block_einheiten = None
+        self.anim = None
+        self.alter_farben = alter_palette()
+        self.gebuehr_cache = {}
+        self.klassen_farben = [gebuehr_farbe(r) for r in BUCKET_RATES]
+        self.orange = hcl_rgb(*ORANGE)
+        self.groesse_geaendert = True
+        self.flaeche = None
+        self.lay = None
+        self.basis = None
+        self.basis_schmutzig = True
+        self.basis_zeit = 0.0
+        self.vorher = None
+        self.bilder = 0
+
+    # -- Farben ------------------------------------------------------------
+    def _dimmen(self, rgb):
+        if rgb is None or self.dim >= 1:
+            return rgb
+        return (int(rgb[0] * self.dim), int(rgb[1] * self.dim), int(rgb[2] * self.dim))
+
+    def farbe_tx(self, e, jetzt):
+        if self.farbmodus == "age":
+            i = int(min(AGE_STEPS - 1, max(0, (jetzt - e["t0"]) / AGE_S * (AGE_STEPS - 1))))
+            return self.alter_farben[i]
+        schluessel = round(e["r"], 2)
+        f = self.gebuehr_cache.get(schluessel)
+        if f is None:
+            f = self.gebuehr_cache[schluessel] = gebuehr_farbe(e["r"])
+        return f
+
+    # -- Geometrie -----------------------------------------------------------
+    def neu_messen(self):
+        sp, ze = shutil.get_terminal_size((80, 24))
+        self.flaeche = Flaeche(sp, ze, self.kopf)
+        if self.lay is None:
+            self.lay = Mondrian(self.flaeche.raster)
+        else:
+            self.lay = stabil_neu(self.flaeche.raster, self.halde)
+            self._foerderband()
+        self.fliegend = []
+        self.block_einheiten = None
+        self.vorher = None
+        self.basis_schmutzig = True
+        sys.stdout.write("\x1b[2J")
+
+    def _foerderband(self):
+        f = self.flaeche
+        while self.lay.hoehe() > f.halde_zeilen:
+            self.lay.unterste_raus()
+            self.basis_schmutzig = True
+        grenze = self.lay.offset
+        if any(e["sq"][1] + e["sq"][2] <= grenze for e in self.halde):
+            self.halde = [e for e in self.halde if e["sq"][1] + e["sq"][2] > grenze]
+
+    # -- Ereignisse ----------------------------------------------------------
+    def tx_hinzu(self, x, fallend, jetzt):
+        r = tile_size(x.get("a"))
+        e = {"sq": self.lay.setze(r), "r": float(x.get("r") or 0), "t0": jetzt}
+        self._foerderband()
+        if fallend:
+            e["y"] = -float(e["sq"][2] * self.flaeche.u)
+            e["vy"] = 0.0
+            self.fliegend.append(e)
+        else:
+            self.halde.append(e)
+            self.basis_schmutzig = True
+
+    def ereignisse(self, jetzt):
+        for art, inhalt in self.strom.abholen():
+            if art == "txs":
+                if inhalt["anfang"]:
+                    # Der Bestand aus dem Dienst liegt schon, er faellt nicht.
+                    for x in inhalt["liste"]:
+                        self.tx_hinzu(x, False, jetzt - AGE_S)
+                elif not self.pause:
+                    self.warteschlange.extend(inhalt["liste"])
+                    if len(self.warteschlange) > QUEUE_MAX:
+                        del self.warteschlange[:len(self.warteschlange) - QUEUE_MAX]
+                self.fehler = ""
+            elif art == "info":
+                self.info.update({k: v for k, v in inhalt.items() if v is not None})
+                self.fehler = "" if not inhalt.get("offline") else t("dienst_offline")
+            elif art == "block":
+                vorher = self.block
+                self.block = inhalt
+                self.block_einheiten = None
+                if inhalt.get("neu") and vorher:
+                    self.blockfund(jetzt)
+                self.basis_schmutzig = True
+            elif art == "fehler":
+                self.fehler = inhalt
+
+    def blockfund(self, jetzt):
+        """Vereinfacht nach DOKUMENTATION.md, "Blockfund": ein Teil der Halde
+        leuchtet weiss und verschwindet, dann setzt sich der Block von unten
+        in Weiss zusammen und wird orange."""
+        anteil = 0.35
+        if self.info.get("count") and self.block and self.block.get("nTx"):
+            anteil = max(0.1, min(0.6, self.block["nTx"] / max(1, self.info["count"])))
+        weg = set(id(e) for e in random.sample(self.halde, int(len(self.halde) * anteil))) if self.halde else set()
+        for e in self.halde:
+            if id(e) in weg:
+                e["weiss"] = True
+        self.anim = {"start": jetzt, "weg": weg, "entfernt": False}
+        self.basis_schmutzig = True
+
+    # -- Bewegung --------------------------------------------------------------
+    def schritt(self, dt, jetzt):
+        f = self.flaeche
+        if self.warteschlange and not self.pause:
+            self.ansammlung += (len(self.warteschlange) / 0.85) * dt
+            while self.ansammlung >= 1 and self.warteschlange:
+                self.ansammlung -= 1
+                self.tx_hinzu(self.warteschlange.pop(0), True, jetzt)
+        else:
+            self.ansammlung = 0.0
+
+        g = f.H * 1.1
+        gelandet = []
+        for e in self.fliegend:
+            e["vy"] += g * dt
+            e["y"] += e["vy"] * dt
+            if e["y"] >= self.ziel_y(e):
+                gelandet.append(e)
+        if gelandet:
+            for e in gelandet:
+                self.fliegend.remove(e)
+                if e["sq"][1] + e["sq"][2] > self.lay.offset:
+                    self.halde.append(e)
+            self.basis_schmutzig = True
+
+        if self.anim:
+            zeit = jetzt - self.anim["start"]
+            if zeit >= 1.2 and not self.anim["entfernt"]:
+                self.halde = [e for e in self.halde if id(e) not in self.anim["weg"]]
+                self.lay = stabil_neu(f.raster, self.halde)
+                self.anim["entfernt"] = True
+            if zeit >= 3.5:
+                self.anim = None
+            self.basis_schmutzig = True
+
+    def ziel_y(self, e):
+        f = self.flaeche
+        x, y, r = e["sq"]
+        return f.H - (y - self.lay.offset + r) * f.u
+
+    # -- Zeichnen ------------------------------------------------------------
+    def _rechteck(self, lein, px, py, b, h, farbe):
+        f = self.flaeche
+        y0, y1 = max(0, py), min(f.H, py + h)
+        x0, x1 = max(0, px), min(f.W, px + b)
+        if y0 >= y1 or x0 >= x1:
+            return
+        for yy in range(y0, y1):
+            zeile_ = lein[yy]
+            for xx in range(x0, x1):
+                zeile_[xx] = farbe
+
+    def _kachel(self, lein, e, py, farbe):
+        f = self.flaeche
+        x, _, r = e["sq"]
+        seite = r * f.u - f.fuge
+        self._rechteck(lein, f.x0 + x * f.u, int(py) + f.fuge, seite, seite, farbe)
+
+    def _block_einheiten(self):
+        """Die Kacheln des Blocks gepackt wie in der App -- einmal je Block."""
+        paare = self.block.get("tiles") or ""
+        groessen = [(int(paare[i]), int(paare[i + 1])) for i in range(0, len(paare) - 1, 2)]
+        if not groessen:
+            return None
+        breite = max(5, math.ceil(math.sqrt(sum(r * r for r, _ in groessen)) * 1.02))
+        lay = Mondrian(breite)
+        einheiten = [lay.setze(r) + (k,) for r, k in groessen]
+        return {"breite": breite, "hoehe": lay.hoehe(), "kacheln": einheiten}
+
+    def _block_zeichnen(self, lein, jetzt):
+        f = self.flaeche
+        if not self.block or f.block_seite < 4:
+            return
+        if self.block_einheiten is None:
+            self.block_einheiten = self._block_einheiten()
+        be = self.block_einheiten
+        if not be:
+            return
+        zeige, weiss = 1.0, 0.0
+        if self.anim:
+            zeit = jetzt - self.anim["start"]
+            if zeit < 1.2:
+                return
+            zeige = min(1.0, (zeit - 1.2) / 1.3)
+            weiss = 1.0 - max(0.0, min(1.0, (zeit - 2.5) / 1.0))
+        spann = max(be["breite"], be["hoehe"])
+        mass = f.block_seite / spann
+        sichtbar = be["hoehe"] * zeige
+
+        def endfarbe(k):
+            ziel = self.orange if self.farbmodus == "age" else self.klassen_farben[min(k, 9)]
+            if weiss <= 0:
+                return ziel
+            return tuple(int(255 + (c - 255) * (1 - weiss)) for c in ziel)
+
+        if mass >= 1:
+            fuge = 1 if mass >= 3 else 0
+            for x, y, r, k in be["kacheln"]:
+                if y >= sichtbar:
+                    continue
+                seite = max(1, int(r * mass) - fuge)
+                px = f.block_x + int(x * mass)
+                py = f.block_y + f.block_seite - int((y + r) * mass)
+                self._rechteck(lein, px, py, seite, seite, endfarbe(k))
+            return
+        # Kleiner als eine Einheit je Pixel: das Flaechenmittel statt harter
+        # Punkte -- dieselbe Idee wie die Textur in der App (DOKUMENTATION.md,
+        # "Die Untergrenze der Blockdarstellung").
+        n = f.block_seite
+        summen = [[0, 0, 0, 0] for _ in range(n * n)]
+        for x, y, r, k in be["kacheln"]:
+            if y >= sichtbar:
+                continue
+            fa = endfarbe(k)
+            for uy in range(y, y + r):
+                py = n - 1 - int(uy * mass)
+                if not 0 <= py < n:
+                    continue
+                for ux in range(x, x + r):
+                    px = int(ux * mass)
+                    if 0 <= px < n:
+                        s = summen[py * n + px]
+                        s[0] += fa[0]
+                        s[1] += fa[1]
+                        s[2] += fa[2]
+                        s[3] += 1
+        je_pixel = 1 / (mass * mass)
+        for py in range(n):
+            zeile_ = lein[f.block_y + py] if 0 <= f.block_y + py < f.H else None
+            if zeile_ is None:
+                continue
+            for px in range(n):
+                s = summen[py * n + px]
+                if s[3] >= 0.35 * je_pixel:
+                    zeile_[f.block_x + px] = (s[0] // s[3], s[1] // s[3], s[2] // s[3])
+
+    def basis_bauen(self, jetzt):
+        f = self.flaeche
+        lein = [[None] * f.W for _ in range(f.H)]
+        self._block_zeichnen(lein, jetzt)
+        # Gestrichelte Oberkante der Halde, wie die Linie in der App.
+        if not self.hg and 0 <= f.halde_oben < f.H:
+            for xx in range(0, f.W, 4):
+                for d in (0, 1):
+                    if xx + d < f.W:
+                        lein[f.halde_oben][xx + d] = LINIE
+        for e in self.halde:
+            farbe = WEISS if e.get("weiss") else self.farbe_tx(e, jetzt)
+            self._kachel(lein, e, self.ziel_y(e), farbe)
+        self.basis = lein
+        self.basis_schmutzig = False
+        self.basis_zeit = jetzt
+
+    def zeichnen(self, jetzt):
+        f = self.flaeche
+        lein = [z[:] for z in self.basis]
+        for e in self.fliegend:
+            self._kachel(lein, e, e["y"], self.farbe_tx(e, jetzt))
+        zellen = []
+        for zi in range(f.zeilen):
+            oben, unten = lein[2 * zi], lein[2 * zi + 1]
+            zellen.append([(self._dimmen(oben[x]), self._dimmen(unten[x])) for x in range(f.W)])
+        aus = ["\x1b[?2026h"]
+        if self.kopf:
+            aus.append("\x1b[1;1H\x1b[0m\x1b[2K" + self.kopfzeile())
+        zuvor = self.vorher
+        for zi, reihe in enumerate(zellen):
+            alt = zuvor[zi] if zuvor and zi < len(zuvor) else None
+            x = 0
+            while x < f.W:
+                if alt is not None and alt[x] == reihe[x]:
+                    x += 1
+                    continue
+                aus.append("\x1b[%d;%dH" % (zi + 1 + f.kopf, x + 1))
+                letzte = None
+                while x < f.W and (alt is None or alt[x] != reihe[x]):
+                    zeichen, sgr = self.zelle(*reihe[x])
+                    if sgr != letzte:
+                        aus.append(sgr)
+                        letzte = sgr
+                    aus.append(zeichen)
+                    x += 1
+        aus.append("\x1b[0m\x1b[?2026l")
+        sys.stdout.write("".join(aus))
+        sys.stdout.flush()
+        self.vorher = zellen
+        self.bilder += 1
+
+    def zelle(self, oben, unten):
+        v = self.voll
+        if oben is None and unten is None:
+            return " ", "\x1b[0m"
+        if oben == unten:
+            return "█", "\x1b[0;%sm" % ansi_code(oben, v)
+        if unten is None:
+            return "▀", "\x1b[0;%sm" % ansi_code(oben, v)
+        if oben is None:
+            return "▄", "\x1b[0;%sm" % ansi_code(unten, v)
+        return "▀", "\x1b[0;%s;%sm" % (ansi_code(oben, v), ansi_code(unten, v, hinten=True))
+
+    def kopfzeile(self):
+        teile = []
+        if self.info.get("height"):
+            teile.append("\x1b[1;%sm₿ %s\x1b[0m" % (ansi_code(self.orange, self.voll), zahl(self.info["height"])))
+        if self.info.get("count"):
+            teile.append(t("im_mempool", zahl(self.info["count"])))
+        if self.info.get("fastest") is not None:
+            teile.append("%s sat/vB" % gebuehr(self.info["fastest"]))
+        teile.append(t("farbe_alter") if self.farbmodus == "age" else t("farbe_gebuehr"))
+        if self.pause:
+            teile.append(t("pausiert"))
+        if self.fehler:
+            teile.append("\x1b[%sm%s\x1b[0m" % (ansi_code(ROT, self.voll), self.fehler[:60]))
+        elif not self.info:
+            teile.append(t("verbinde"))
+        links = "  ·  ".join(teile)
+        rechts = "\x1b[%sm%s\x1b[0m" % (ansi_code(GRAU, self.voll), t("tasten"))
+        return " " + links + "   " + rechts
+
+    # -- Schleife ------------------------------------------------------------
+    def taste(self, zeichen, jetzt):
+        if zeichen in ("q", "Q", "\x03"):
+            return False
+        if zeichen == "c":
+            self.farbmodus = "fee" if self.farbmodus == "age" else "age"
+            self.basis_schmutzig = True
+        elif zeichen == "p":
+            self.pause = not self.pause
+        elif zeichen == "b" and self.block:
+            self.blockfund(jetzt)
+        return True
+
+    def laufen(self):
+        eingabe = sys.stdin.fileno() if sys.stdin.isatty() else None
+        zuletzt = time.monotonic()
+        test_block = self.args.test_block
+        while True:
+            jetzt_m = time.monotonic()
+            jetzt = time.time()
+            dt = min(0.25, jetzt_m - zuletzt)
+            zuletzt = jetzt_m
+            if self.groesse_geaendert:
+                self.groesse_geaendert = False
+                self.neu_messen()
+                if self.flaeche.W < 30 or self.flaeche.zeilen < 9:
+                    raise Fehler(t("zu_klein"))
+            self.ereignisse(jetzt)
+            if test_block and self.block and (self.halde or self.bilder > 20):
+                test_block = False
+                self.blockfund(jetzt)
+            if not self.pause:
+                self.schritt(dt, jetzt)
+            alt_genug = self.farbmodus == "age" and jetzt - self.basis_zeit >= ALTER_TAKT
+            if self.basis_schmutzig and (jetzt - self.basis_zeit >= 1 / HALDE_HZ or self.anim or self.basis is None):
+                self.basis_bauen(jetzt)
+            elif alt_genug:
+                self.basis_bauen(jetzt)
+            self.zeichnen(jetzt)
+            if self.args.frames and self.bilder >= self.args.frames:
+                return 0
+            aktiv = self.fliegend or self.warteschlange or self.anim
+            warte = 1.0 / (self.args.fps if aktiv else 2)
+            if eingabe is not None:
+                bereit, _, _ = select.select([eingabe], [], [], warte)
+                if bereit:
+                    for z in os.read(eingabe, 16).decode(errors="ignore"):
+                        if not self.taste(z, time.time()):
+                            return 0
+            else:
+                time.sleep(warte)
+
+
+def cmd_bitfeed(argv_rest):
+    p = argparse.ArgumentParser(prog="bitfeed")
+    p.add_argument("--source", choices=("auto", "daemon", "direct"), default="auto")
+    p.add_argument("--bg", action="store_true",
+                   help="als Hintergrund: ohne Kopfzeile, gedimmt (z. B. in kitten panel --edge=background)")
+    p.add_argument("--dim", type=float, default=0.6, help="Helligkeit im Hintergrund-Modus")
+    p.add_argument("--fps", type=int, default=FPS_AKTIV)
+    p.add_argument("--frames", type=int, default=0, help=argparse.SUPPRESS)
+    p.add_argument("--test-block", action="store_true", help=argparse.SUPPRESS)
+    args = p.parse_args(argv_rest)
+    if not sys.stdout.isatty():
+        raise Fehler(t("kein_terminal"))
+    args.fps = max(2, min(60, args.fps))
+
+    strom = starte_strom(args.source)
+    feed = Bitfeed(args, strom)
+    import termios
+    import tty
+    eingabe = sys.stdin.fileno() if sys.stdin.isatty() else None
+    alt = termios.tcgetattr(eingabe) if eingabe is not None else None
+
+    def groesse(*_):
+        feed.groesse_geaendert = True
+
+    def ende(*_):
+        raise SystemExit(0)
+
+    signal.signal(signal.SIGWINCH, groesse)
+    signal.signal(signal.SIGTERM, ende)
+    try:
+        if eingabe is not None:
+            tty.setcbreak(eingabe)
+        sys.stdout.write("\x1b[?1049h\x1b[?25l\x1b[2J")
+        sys.stdout.flush()
+        return feed.laufen()
+    finally:
+        strom.halt.set()
+        sys.stdout.write("\x1b[0m\x1b[?25h\x1b[?1049l")
+        sys.stdout.flush()
+        if alt is not None:
+            termios.tcsetattr(eingabe, termios.TCSADRAIN, alt)
+
+
 # --------------------------------------------------------------------------
 # Kurzbefehle einrichten
 # --------------------------------------------------------------------------
@@ -970,12 +1907,13 @@ def hilfe():
     print("  orangedeck-cli install-aliases [--prefix DIR] [--dry-run]")
     print("  orangedeck-cli remove-aliases  [--prefix DIR] [--dry-run]")
     print("  <befehl> [--json | --raw] [--watch [SEK]] [--source auto|daemon|direct]")
+    print("  bitfeed [--bg] [--dim 0.6] [--source auto|daemon|direct]")
 
 
 def main(argv):
     aufruf = os.path.basename(argv[0])
     rest = argv[1:]
-    if aufruf in BEFEHLE:
+    if aufruf in BEFEHLE or aufruf == "bitfeed":
         name = aufruf
     elif rest and not rest[0].startswith("-"):
         name, rest = rest[0], rest[1:]
@@ -988,6 +1926,15 @@ def main(argv):
         p.add_argument("--prefix", default="~/.local/bin")
         p.add_argument("--dry-run", action="store_true")
         return aliases(p.parse_args(rest), entfernen=(name == "remove-aliases"))
+
+    if name == "bitfeed":
+        try:
+            return cmd_bitfeed(rest)
+        except Fehler as e:
+            sys.stderr.write(str(e) + "\n")
+            return e.code
+        except KeyboardInterrupt:
+            return 130
 
     if name not in BEFEHLE:
         sys.stderr.write("orangedeck-cli: %s?\n" % name)

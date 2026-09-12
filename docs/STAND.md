@@ -15,174 +15,165 @@
      geschrieben wurde. Hier bleibt nur der neueste Tagesabschluss stehen.
      Wandert er morgen ins Journal, kommt der von morgen an seine Stelle;
      die Datei bleibt damit so lang, wie ein Einstieg sein darf. -->
-## TAGESABSCHLUSS 11.09.2026 -- wo das Projekt steht
+## TAGESABSCHLUSS 12.09.2026 -- wo das Projekt steht
 
 > Einstieg fuer den naechsten Tag. Alles Aeltere liegt im Journal unter
 > `docs/journal/`, ein Tag je Datei.
 
 ### Der Stand in einem Satz
 
-**Die erste Auslieferung heisst jetzt 0.2.8 und ist inhaltlich fertig; was
-fehlt, sind zwei VM-Laeufe und die Freigabe.** Der Tag steht noch aus:
-`v0.2.7` ist getaggt, gebaut, signiert und in der Ubuntu-VM gelaufen -- und
-danach fand der Bildschirmvergleich ueber alle Systeme vier Fehler, also
-wandert die Nummer weiter. Veroeffentlicht ist nach wie vor nichts.
+**0.2.8 ist veroeffentlicht -- das erste Release**
+(https://github.com/21Rebel/orangedeck/releases/tag/v0.2.8). Seitdem laeuft
+Windows samt Desktop-Widgets, Markt und Wallet gehen ueber einen Dienst im
+eigenen Netz auf jedem Geraet, **0.2.9 ist vorbereitet und wartet auf drei
+Messungen**, und das Terminal-Werkzeug hat Stufe 1 fertig und `bitfeed` als
+lauffaehigen, aber noch nie angesehenen Entwurf. Alle Commits gepusht.
 
 ### Was morgen als Erstes drankommt
 
-**1. Die beiden VM-Laeufe fuer 0.2.8 nachholen.** Sie sind heute Abend nicht
-zustande gekommen, weil mempool.space dieser Maschine keine Antwort mehr gab
-(siehe "Die Erkenntnis des Tages"). Vorher pruefen:
+**1. Die IPv4-Sperre pruefen.** Davon haengt alles Weitere an 0.2.9 ab:
 
-    curl -m 10 https://mempool.space/api/blocks/tip/height
+    curl -4 -m 10 https://mempool.space/api/blocks/tip/height
+    curl -6 -m 10 https://mempool.space/api/blocks/tip/height
 
-Antwortet das wieder, dann Ubuntu 24.04 (GNOME) und Fedora 44 (KDE) wie
-gehabt. Die Daten-ISO traegt bereits ein **Test**-Buendel aus dem
-Arbeitsstand (`7d04627…`), kein Auslieferungsbuendel -- fuer den Lauf vor der
-Freigabe gehoert das Buendel aus dem getaggten Stand darauf.
+Antwortet IPv4 wieder: in der Windows-VM **den Direktbezug mit Daten sehen**
+(bisher lief Windows nur ueber den Dienst) und **ein Widget mit Q
+schliessen** -- beides in einem Lauf. Speicher der VM vorher nach Rueckfrage
+auf 4 GB, danach auf 10240000 KiB zurueck; die PIN nennt der Anwender.
 
-**2. Auslieferung 0.2.8.** Der Ablauf steht unveraendert im Journal vom
-10.09.; die Nummer ist im Baum schon gesetzt (CMakeLists, AndroidManifest 11
-/ 0.2.8, metainfo, RELEASE-TEXT). Es fehlen: Tag, Pin, `tools/apk.sh v0.2.8`,
-`tools/pruefvm.sh bauen`, Signatur durch den Anwender, Geraetelauf, und das
-Release **nur mit ausdruecklichem OK**. Die Freigabevorlage traegt oben einen
-Merkzettel, dass die beiden VM-Laeufe vorher stattfinden muessen -- der
-Abschnitt "Tested on" nennt sie.
+**2. Geraetelauf fuer 0.2.9 am Galaxy**: "Dienst auf einem anderen Geraet"
+mit dem Rechner im WLAN -- Markt und Wallet muessen dort erscheinen. Dafuer
+den Dienst voruebergehend oeffnen (`systemctl --user edit orangedeck.service`,
+`Environment=ORANGEDECK_ADDR=0.0.0.0`) und danach mit
+`systemctl --user revert orangedeck.service` wieder schliessen.
 
-**3. Die Testumgebungen auf dem Rechner.** KDE, GNOME und Xfce sind noch
-nicht installiert; der Anwender wollte sie einspielen. Hyprland liegt schon
-da, laesst sich aber **nicht** kopflos danebenstellen (vier Anlaeufe, siehe
-DOKUMENTATION) -- dafuer braucht es eine echte Anmeldung in einer
-Hyprland-Sitzung oder ein Fenster in der laufenden Sitzung des Anwenders.
+**3. Auslieferung 0.2.9** -- die Nummer steht an allen drei Stellen, die
+Vorlage `packaging/github/RELEASE-TEXT.md` nennt oben, was vorher gemessen
+sein muss. Ablauf wie bei 0.2.8: Tag, Pin, `tools/apk.sh v0.2.9`,
+`tools/pruefvm.sh bauen`, Windows-ZIP aus dem getaggten Stand als
+`orangedeck-0.2.9-windows-x86_64.zip`, drei Pruefsummen, Signatur durch den
+Anwender, **Release nur mit ausdruecklichem OK**. Das Datum im
+metainfo-Eintrag ist vorlaeufig. Der Flatpak-Job der CI ist bis dahin rot
+("der Pin hinkt hinterher") -- richtig so.
 
-**4. Das Telefon.** Der Galaxy-Lauf gilt fuer 0.2.7; 0.2.8 ist dort noch
-nicht gewesen. Das Tablett des Anwenders ebenso wenig -- das prueft er selbst.
+**4. `bitfeed` ansehen.** Bisher nur in einem Pseudo-Terminal gelaufen:
+120 Bilder in 8 s, keine Ausnahme, Kopfzeile mit Blockhoehe, Terminal danach
+zurueckgesetzt. Wie es aussieht, hat niemand gesehen. Erst in kitty starten
+(`python3 cli/orangedeck-cli bitfeed`), dann -- mit OK des Anwenders, weil es
+etwas auf seinen Desktop legt -- `kitten panel --edge=background` unter niri.
+Die Verknuepfung `bitfeed` in `~/.local/bin` ist bewusst noch nicht angelegt.
 
 ### Was heute dazugekommen ist
 
-Zwoelf Commits am Vormittag und Mittag (Netzwerk im Mining-Reiter, zwei
-Widgets, Reiterwechsel, vier Telefon-Befunde, drei Befunde aus dem ersten
-Bildschirmdurchgang, zweimal die Nummer, zweimal der Pin), danach der
-Vergleich ueber alle Systeme:
+18 Commits. Nach Anlass:
 
-| Was | Anstoss |
-|---|---|
-| Der Mining-Reiter zeigt das Netzwerk (Hashrate, Schwierigkeit, Pools, Blockzeit), dazu zwei Widgets | Anwender |
-| Reiter im Wechsel fuer die Blockuhr an der Wand | Anwender |
-| Vier Befunde vom Telefon (Pfeil zu AxeOS, Zentrierung, Deckkraft, abgeschnittene Zahlen) | Anwender |
-| Kaestchen statt BTC unter Android 11, Legende ueber dem Block, Tastenhilfe ueber der Fusszeile | erster Durchgang |
-| Widgets verkleinern ihre Schrift, statt abzuschneiden | Emulator |
-| **Der Fluss zeichnete die Ausgaenge nicht**, wenn die Bindung noch den alten Stand hielt | Vergleich |
-| **Suchfeld, Tastenhilfe und Fehlergruende** sprechen die Sprache der Oberflaeche | Vergleich |
-| **Keine Einstellungsseiten** fuer Ansichten, die es auf diesem System nicht gibt | Vergleich |
-| Zwei Bindungen ohne Wert beim Seitenwechsel im Explorer | Protokoll |
-| `tools/ansichten.py`, `tools/ansichten-android.py` | neu |
+| Was | Commits | Anstoss |
+|---|---|---|
+| Auslieferung 0.2.8: Pin, VM-Laeufe Ubuntu 24.04 GNOME und Fedora 44 KDE, Signatur, Geraetelauf ohne Befund, Tag, Release | `ae9bed6` `196693e` `8423fff` `bd2159e` `d984207` `aa802e8` | Plan von gestern |
+| Markt und Wallet ueberall: Feld "Dienst auf einem anderen Geraet" (13 Sprachen), Anleitung in der Unit | `b79180a` | Anwender |
+| Windows: C++-Laufzeit im Paket, QML-Modul QtCore, erster Start dokumentiert | `ed0993b` `57a98dd` `b619eb1` | erster echter Start |
+| Windows-Widgets: `--layer` ueber Fensterflags, Desktop-Besitzer gegen Win+D, gemessen | `768b749` `42c72ed` `f764598` `f2b0115` | Anwender |
+| `--bare` ohne Kopf- und Fusszeile, README-Plattformtabelle | `aa802e8` | am Windows-Widget gesehen |
+| 0.2.9 vorbereitet (Nummer, metainfo, Freigabevorlage) | `6c867b6` | Anwender |
+| Terminal-Werkzeug: Konzept, Stufe 1 (neun Kurzbefehle), `bitfeed` als Entwurf | `98ef0ec` `f08f669` + Abschluss | Anwender |
 
-**Neu im Projekt:** die beiden Werkzeuge oben, `Tr.grund()` und die
-Schluessel `search.kind.*`, `search.moreChars`, `search.invalidHint`,
-`err.*`, `keys.help`, `keys.fullscreen` in `strings.js`.
+**Neu im Projekt:** `cli/orangedeck-cli`, `cli/KONZEPT.md`; in
+`tools/pruefvm.sh gast` der Fedora-Weg; in der CI die Pruefung von Dienst und
+Terminal-Werkzeug samt `FEE_BUCKETS` an drei Stellen; in der Dokumentation
+"Markt und Wallet auf einem Geraet ohne Dienst" und "Der erste Start unter
+Windows". **Beim Anwender eingerichtet:** neun Kurzbefehle in `~/.local/bin`
+(`btcfetch`, `blockheight`, `fees`, `mempool`, `price`, `difficulty`,
+`hashrate`, `halving`, `nextblock`) -- `orangedeck-cli remove-aliases` nimmt
+sie wieder weg.
 
 ### Die Erkenntnis des Tages
 
-**Was ein Signalgeber liest, darf keine Bindung sein, die an derselben
-Eigenschaft haengt.** `TxFlow.rebuild()` lief aus `onVoutChanged` und las
-darin die abgeleitete Liste `voutWithFee`, die selbst von `vout` lebt. In
-welcher Reihenfolge eine Aenderung die Bindungen und die Signalgeber
-erreicht, ist nicht festgelegt: lief der Signalgeber zuerst, stand dort noch
-der alte, leere Stand -- und der Fluss endete in der Mitte, mal so, mal so.
-Beide betroffenen Ableitungen sind jetzt Funktionen. Eine Suche ueber alle
-QML-Dateien nach demselben Muster fand sonst nichts.
+**Ein gruener Bau ist kein Start.** Seit dem 04.09. baute die CI ein
+Windows-Paket, gestartet hatte es niemand. So, wie es gebaut war, **haette es
+bei niemandem gestartet**: erst fehlte die C++-Laufzeit (MSVCP140.dll), und
+dahinter -- verdeckt, weil der Start vorher abbrach -- das QML-Modul QtCore.
+Der zweite Fehler war lautlos: eine GUI-EXE hat keine Konsole; erst
+`QT_FORCE_STDERR_LOGGING` mit umgeleitetem stderr zeigte ihn.
 
-Die zweite, und sie hat den Tag getragen: **vergleichen kann nur, wer
-ueberall dasselbe ablichtet.** Aus der Frage "sieht es ueberall gleich aus?"
-sind zwei Werkzeuge geworden, die auf jedem System denselben Satz Ansichten
-in derselben Reihenfolge aufnehmen und jede Seite bis zum Ende rollen. Sie
-finden die Unterreiter ueber ihre **Beschriftung** (tesseract), nicht ueber
-feste Punkte -- und melden am Ende, was sie nicht gefunden haben. Genau diese
-Meldung war der dritte Befund: "Unterreiter fehlt: Market" unter Android.
+Die zweite: **eine Sperre sieht aus wie ein Programmfehler.** mempool.space
+laesst die IPv4-Adresse dieses Anschlusses nicht mehr durch (IPv4 Timeout,
+IPv6 sofort 200, blockstream.info ueber IPv4 200). Der Rechner nimmt von sich
+aus IPv6 und merkt nichts; jede VM hinter libvirt-NAT spricht nur IPv4 und
+zeigt leere Ansichten mit rotem Punkt. Erst `curl -4` gegen `curl -6` trennt
+das. Verursacht durch die Testlaeufe vom 11. und 12.09.
+
+Die dritte: **Messwerkzeuge luegen genauso wie Programme.** Heute dreimal:
+PowerShell uebergibt `$null` an Win32 als leeren Text (`FindWindow("Progman",
+$null)` fand nichts -- ein falscher Befund "Progman gibt es nicht");
+`Process.MainWindowHandle` ueberspringt Fenster mit Besitzer und liefert ein
+Qt-Hilfsfenster; und ein grep auf das CI-Protokoll traf die **Befehlszeile**
+einer Warnung, nicht ihre Ausgabe -- dieselbe Falle wie am 10.09. in der VM.
 
 Dazu, alle gemessen:
 
-- **Die Schrift ist nicht ueberall dieselbe, und das ist Absicht.** Unter
-  Linux nimmt die Anwendung die eingestellte Standardschrift; die
-  KDE-Laufzeit im Flatpak bringt eine breitere mit. Zeilen brechen dadurch
-  anders um, Knopfreihen stehen zwei- statt dreizeilig. Es passt ueberall,
-  Bildpunkt fuer Bildpunkt gleich ist es nicht.
-- **mempool.space drosselt**, wenn man es einen Tag lang mit Dutzenden
-  Starts befragt -- und dann steht auch das Dashboard des Anwenders leer, weil
-  der Daemon hinter derselben Adresse sitzt.
-- **Ein verschachtelter Compositor findet die Sitzung des Anwenders nicht
-  mehr**, wenn er ein eigenes `XDG_RUNTIME_DIR` bekommt (kurzer Pfad, der
-  Wayland-Socket darf nicht laenger als 108 Zeichen werden) und das
-  Startskript prueft, dass der Wirt-Socket wirklich darin liegt.
-- **aquamarine nennt den Compositor, an dem es haengt, nach
-  `XDG_CURRENT_DESKTOP`** -- "Connected to a wayland compositor: niri" sagt
-  also nichts darueber, wo das Fenster wirklich liegt. `niri msg windows`
-  sagt es.
-- **`tesseract` braucht die doppelte Groesse**, wenn die Schrift elf
-  Bildpunkte misst; darunter faellt es reihenweise aus.
+- **Win+D unter Windows 11** holt die Desktop-Ebene nach vorn. Ein Widget auf
+  `bottom` war danach nicht minimiert, nur verdeckt. `Progman` als Besitzer
+  haelt es stehen -- aber nur, wenn er **nach** dem Zeigen gesetzt wird;
+  vorher gesetzt stand er danach leer.
+- **virtiofs auf btrfs unterscheidet Gross- und Kleinschreibung**: die EXE
+  fragt nach `MSVCP140.dll`, die Datei heisst `msvcp140.dll`, Windows meldet
+  sie als fehlend. Von `C:\` aus starten.
+- **Qt nimmt Wayland auch bei gesetztem DISPLAY**: ein Testfenster landete in
+  der Sitzung des Anwenders. Richtig ist
+  `env -u WAYLAND_DISPLAY DISPLAY=:N QT_QPA_PLATFORM=xcb`.
+- **ufw verwirft alles von virbr0** -- ein Dienst auf dem Wirt ist fuer die VM
+  erst mit einer Regel erreichbar, die der Anwender setzt und wieder loescht.
+- **`--` in einem XML-Kommentar** macht die metainfo ungueltig;
+  `appstreamcli validate` hat es vor dem Commit gefunden.
+- **`cancelled` in der CI ist kein Fehler**: `cancel-in-progress` bricht den
+  aelteren Lauf ab, sobald ein neuer Push kommt.
+- **`--watch | head -1` hing** bis zum naechsten Block, weil erst ein
+  Schreiben den Bruch bemerkt. `poll()` auf stdout meldet das geschlossene
+  Leseende sofort.
 
 ### Und was ich selbst falsch gemacht habe
 
-- **`pkill -f "..."` auf ein Muster, das in meiner eigenen Befehlszeile
-  steht** -- zweimal die eigene Shell erschlagen (Abbruch mit 144). Prozesse
-  ueber die PID beenden, nicht ueber ein Muster, das man gerade tippt.
-- **Einen verschachtelten Hyprland gestartet, der zunaechst so aussah, als
-  haenge er in der Sitzung des Anwenders.** Er tat es nicht (nachgesehen), ich
-  habe ihn trotzdem sofort beendet -- und danach erst die Trennung mit eigenem
-  `XDG_RUNTIME_DIR` gebaut, die von Anfang an haette dastehen muessen.
-- **mempool.space bis zur Drosselung befragt.** Jeder Durchgang startet die
-  Anwendung mehrfach, jeder Start holt Verlaeufe. Am Abend antwortete die
-  Seite dieser Maschine nicht mehr, und damit stand auch das Dashboard des
-  Anwenders leer. Pausen zwischen den Laeufen, und Bilder je Lauf sammeln
-  statt den Lauf zu wiederholen.
-- **Einen Befund gemeldet, der keiner war**: der halb gezeichnete Fluss sah
-  zuerst nach zu kurzer Wartezeit aus (neun Sekunden). Er war echt -- aber
-  erst die dritte Messung hat das gezeigt, und dazwischen stand eine falsche
-  Erklaerung.
-- **Neben das Suchfeld geklickt** (y=70 statt 58): die Ziffern gingen an die
-  Reitertasten, "5" oeffnete den Markt, und das Werkzeug meldete eine
-  ungueltige Eingabe statt eines Fehlers in der Anwendung.
+- **Umlaut-Ersatz in Texten, die man liest -- zweimal an einem Tag**:
+  "Dienst auf einem anderen Geraet" in den Einstellungen, "naechster Block"
+  im Terminal. Beide Male erst am Bild gesehen, nicht im Code.
+- **Ein Testfenster in der Sitzung des Anwenders** (WAYLAND_DISPLAY), per PID
+  wieder entfernt.
+- **Einen Befund gemeldet, der ein Skriptfehler war** ("Progman=0").
+- **Eine Vermutung als Tatsache in einen Kommentar geschrieben** ("Qt setzt
+  den Besitzer beim Zeigen neu"), vor dem Commit auf das Gemessene
+  zurueckgestutzt.
+- **Zwei Fehler selbst hineingeschrieben und vor dem Commit gefunden**: `--`
+  in der metainfo; ein Klammerfehler in `ansi_code()` (`%` vor `+`), der jede
+  Truecolor-Ausgabe abbrechen liess -- die ersten Tests liefen ohne Farbe.
+- **Den Journal-Ausschnitt zuerst mit dem Trenner geschnitten**; die
+  Gegenrechnung hat es gefunden.
+- **Die IPv4-Sperre selbst verursacht**, durch das Testvolumen zweier Tage.
 
 ### Was sonst noch offen ist
 
-1. **0.2.8 ausliefern** (siehe oben) und das GitHub-Release -- nur nach OK.
-2. **Die beiden VM-Laeufe** und die Testumgebungen KDE, GNOME, Xfce.
-3. **Android 11 im Emulator** ist beim heutigen Vergleich nicht mehr
-   drangekommen (9 und 14 sind durch, Telefon und Tablett, hoch und quer).
-4. **Fehlermeldungen aus dem Datenweg sind technisch**: im Explorer stand in
-   der VM woertlich `<urlopen error _ssl.c:993: The handshake operation timed
-   out>`. `Tr.grund()` uebersetzt nur die bekannten Gruende; fuer den Rest
-   waere ein ruhiger Satz besser als der Python-Text.
-5. **Die Netzwerkseite bleibt bei "Loading network data ..." stehen**,
-   solange die Abfrage laeuft -- bei einer gedrosselten Gegenstelle sind das
-   Minuten ohne jeden Hinweis. Eine Frist waere freundlicher.
-6. **Der DMS-Anteil ist deutsch**: `shell/dms/OrangeDeckSettings.qml` und
-   zwei Zeilen in `OrangeDeckWidget.qml` (Beschreibung, Fenster-Knopf). Fuer
-   die Auslieferung ohne Belang, fuer die Vollstaendigkeit nicht.
-7. Unveraendert aus dem Journal vom 10.09.: Blockkarten in 4x3, der
-   Vollbild-Knopf im schmalen Fenster, der Miner-Verlauf im Daemon, das
-   Neupacken im Explorer, die Uhr im DMS-Dashboard, die Website
-   ("Verknuepfung je Ansicht"), GrapheneOS, der Markt-Reiter auf Android,
-   `auslieferung/` aufraeumen, und die Punkte vom 09.09.
-8. **Aufraeumen nach dem Vergleich:** `~/.cache/orangedeck-fp` traegt einen
-   eigenen Flatpak-Bestand samt Laufzeit (rund 2 GB) und das Test-Buendel.
-   Er ist vom Bestand des Anwenders getrennt (`FLATPAK_USER_DIR`) und kann
-   weg, sobald die Laeufe durch sind.
+1. **0.2.9** und die drei Messungen davor (siehe oben).
+2. **`bitfeed`**: ansehen, kitty-Hintergrund, CPU messen; danach Stufe 3
+   (`blockinfo`, `tx`, volle Blockfund-Animation) und Stufe 4 (`market`,
+   `miner`, Vervollstaendigung, AUR). Konzept in `cli/KONZEPT.md`.
+3. **Die Ansichten rollen nicht mit der Tastatur** (pgdn, end) -- in der
+   Ubuntu-VM gesehen, betrifft jede Tastaturbedienung.
+4. **Windows ungeprueft**: Skalierung ueber 100 %, SmartScreen beim Entpacken
+   aus dem Netz, Liquidationen und Heatmap. **macOS** ungeprueft, kein Geraet.
+5. Unveraendert vom 11.09.: technische Fehlermeldungen aus dem Datenweg, keine
+   Frist auf der Netzwerkseite, der DMS-Anteil ist deutsch, Android 11 im
+   Emulator, die Punkte aus dem Journal vom 10.09.
+6. **Aufraeumen**: `~/.cache/orangedeck-fp` (rund 2 GB vom Vergleich am
+   11.09.) und die alten Fassungen in `~/.local/share/orangedeck/auslieferung/`.
 
-### Fuer den naechsten Vergleich
+### Fuer den naechsten Lauf
 
-    python3 tools/ansichten.py AUSGABE PRAEFIX 1280 800      im Xvfb
-    python3 tools/ansichten-android.py AUSGABE PRAEFIX       ueber adb
-    adb shell wm size 1600x2560 / 2560x1600 / reset          Tablett, quer
-    curl -m 10 https://mempool.space/api/blocks/tip/height   antwortet es?
-    QT_FORCE_STDERR_LOGGING=1                                Qt-Protokoll
-
-Das Flatpak laesst sich aus dem Arbeitsstand pruefen, ohne den Bestand des
-Anwenders anzufassen: im Bauplan die Quelle auf `type: dir` stellen, mit
-`flatpak-builder` bauen (das SDK kommt aus dem normalen Bestand), ein Buendel
-daraus machen und es mit `FLATPAK_USER_DIR=<eigenes Verzeichnis>`
-installieren.
+    curl -4 / -6 -m 10 https://mempool.space/api/blocks/tip/height
+    virsh -c qemu:///system setmem win11 4G --config      (und setmaxmem)
+    gh run download <lauf> -n orangedeck-windows-x86_64-UNSIGNIERT -D build/win-test
+    Fensterdaten im Gast: user32 ueber EnumWindows, nicht MainWindowHandle
+    bitfeed im Pseudo-Terminal:  --frames N --test-block   (versteckte Schalter)
+    orangedeck-cli install-aliases / remove-aliases [--dry-run]
+    appstreamcli validate --no-net packaging/flatpak/*.metainfo.xml
 
 ---
 
@@ -192,6 +183,7 @@ Ein Tag je Datei, das Neueste oben. Herausgeloest aus dieser Datei, unveraendert
 
 | Tag | Worum es ging |
 |---|---|
+| [11.09.2026](journal/2026-09-11.md) | Derselbe Satz Ansichten auf jedem System: vier Befunde, die Nummer wanderte auf 0.2.8, und mempool.space drosselte diese Maschine. |
 | [10.09.2026](journal/2026-09-10.md) | Dreimal getaggt, und jedes Mal kam am Telefon noch etwas. Widgets, Vollbild, Sprache des Systems. |
 | [09.09.2026](journal/2026-09-09.md) | Acht Widgets, und eine Verwechslung, die Stunden gekostet hat: gezaehlt am Block statt an der Halde. |
 | [08.09.2026](journal/2026-09-08.md) | Das Geraet fand dreizehn Befunde. Der Miner laeuft ohne Daemon, und `v0.2.2` zeigt auf einen Stand ohne jede Korrektur. |

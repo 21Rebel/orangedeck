@@ -157,6 +157,26 @@ ueber den Dienst kommen die Gebuehren aus dem WebSocket mit Nachkommastellen
 Die CI uebersetzt Dienst und Terminal-Werkzeug und haelt `FEE_BUCKETS` an
 allen drei Stellen gegeneinander.
 
+**Stufe 2, `bitfeed`: lauffaehiger Entwurf, noch nicht angesehen
+(12.09.2026).** Drin: die Packung aus `mondrian.js` (Belegungskarte,
+Foerderband, stabiles Neupacken bei Groessenaenderung), die Flaechenaufteilung
+und Fallphysik aus `FeedCanvas.qml`, Halbblock-Zeichner mit Differenzpuffer
+und synchronisierter Ausgabe, Farben nach Alter oder Gebuehr, der Block als
+Flaechenmittel, ein vereinfachter Blockfund, `--bg`/`--dim`. Quelle der Dienst
+(`/state?since=`, `/block`) oder direkt der WebSocket mit Pausen-Datei und
+einmal je Block zwischengespeicherter Zusammenfassung.
+
+Gemessen ist nur, dass es **laeuft**: in einem Pseudo-Terminal 160 x 45
+120 Bilder in 8 s, mit Testblock, keine Ausnahme, Kopfzeile mit Blockhoehe,
+Terminal danach zurueckgesetzt. **Wie es aussieht, hat noch niemand gesehen**
+-- deshalb ist die Verknuepfung `bitfeed` beim Anwender noch nicht angelegt.
+Der erste Lauf fand einen Klammerfehler in `ansi_code()`, der auch jede
+Truecolor-Ausgabe der Zahlen-Befehle abbrechen liess; die Tests von Stufe 1
+liefen ohne Farbe und hatten ihn nicht gesehen.
+
+Versteckte Schalter fuer Tests: `--frames N` (nach N Bildern enden),
+`--test-block` (Blockfund ausloesen, sobald ein Block da ist).
+
 ## Offen
 
 - `kitten panel --edge=background` unter niri einmal wirklich starten -- das
