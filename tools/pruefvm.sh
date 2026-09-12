@@ -169,6 +169,10 @@ tools/vm.py; der Monitor kennt eigene Tastennamen (comma, spc, shift-4).
  1  Assistent schliessen und ein Terminal oeffnen
         alt-f4          Ubuntu startet mit dem Installationsassistenten
         ctrl-alt-t      Terminal
+        alt-f10         Terminal maximieren -- NICHT super-up
+    **super-up maximiert hier nicht**, es oeffnet die Uebersicht, und der
+    naechste getippte Befehl landet vollstaendig im Suchfeld statt in der
+    Shell. Zweimal esc bringt den Fokus zurueck. (12.09.2026)
 
  2  flatpak nachinstallieren -- BRAUCHT NETZ
         sudo apt-get install -y flatpak
@@ -221,8 +225,34 @@ tools/vm.py; der Monitor kennt eigene Tastennamen (comma, spc, shift-4).
 
     **Herkunft der Schritte 5 und 6:** aus 'bauen' oben und den
     Fehlermeldungen der Laeufe vom 04. und 06.09. abgeleitet, nicht aus
-    einem Protokoll abgeschrieben. Wer den naechsten Lauf macht, moege
-    korrigieren, was nicht stimmt -- die Schritte 1 bis 4 sind gemessen.
+    einem Protokoll abgeschrieben. Am 12.09.2026 sind sie beim Lauf fuer
+    0.2.8 zum ersten Mal Zeile fuer Zeile gegangen und stimmen -- damit
+    sind alle sechs Schritte gemessen.
+
+== Fedora 44 KDE Live: was anders ist ==
+
+Dasselbe Geruest, vier Abweichungen (gemessen am 12.09.2026):
+
+  * ORANGEDECK_VM_ISO auf die Fedora-ISO setzen, sonst bootet Ubuntu:
+        setsid env ORANGEDECK_VM_ISO=$HOME/VMs/fedora-kde-44.iso \
+            tools/pruefvm.sh starten
+
+  * Schritt 2 und 3 entfallen. Fedora bringt flatpak mit (1.17.6), und
+    SELinux statt AppArmor stellt sich dem Sandkasten nicht in den Weg.
+
+  * **ctrl-alt-t ist nicht belegt.** Die Konsole kommt ueber KRunner:
+        alt-f2, dann 'konsole', dann ret
+    Kommt sie spaeter doch noch -- ctrl-alt-t wirkt hier verzoegert --,
+    stehen zwei Fenster da, und ein Befehl, der WAEHREND des Tippens den
+    Fokus wechselt, wird zwischen beiden zerschnitten. Dann einfach im
+    vorderen Fenster neu tippen.
+
+  * Das Konto heisst liveuser, nicht ubuntu -- das chown in Schritt 4
+    entsprechend. mkfs braucht -F, weil die Platte vom vorigen Lauf noch
+    ein Dateisystem traegt.
+
+  Der Rest ist gleich, bis auf die Geraete: /dev/vda und /dev/sr1 wie
+  gehabt, /dev/sr0 ist die Fedora-ISO.
 
 == Zwei Fallen, die Zeit gekostet haben ==
 
@@ -239,6 +269,13 @@ tools/vm.py; der Monitor kennt eigene Tastennamen (comma, spc, shift-4).
 Zeigerverhalten. mouse_move bewegt im Gast nichts (sieben Konfigurationen,
 siehe Kommentar bei 'starten'). Geprueft werden Darstellung und Geometrie
 auf einem fremden System -- was am Finger haengt, prueft nur ein Geraet.
+
+**Und damit auch: den unteren Teil langer Seiten.** `tools/ansichten.py`
+rollt mit dem Rad (`xtest.rad`); hier gibt es keines. Ueber die Tastatur
+geht es nicht, denn die Ansichten rollen weder auf pgdn noch auf end --
+nachgemessen am 12.09.2026 im Mining-Reiter, dessen Seite laenger ist als
+das Fenster. Was unterhalb der Fensterkante liegt, prueft in dieser VM
+also niemand; dafuer ist der Durchgang im Xvfb da.
 ENDE
 }
 
