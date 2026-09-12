@@ -13,8 +13,10 @@
      echte Drehungen (mRotation nachgesehen, PID durchgehend dieselbe),
      alle fuenf Reiter, zehn Widgets registriert.
 
-     Damit ist alles geprueft, was diese Datei behauptet. Sie kann
-     veroeffentlicht werden, sobald der Anwender es sagt.
+     Damit ist alles geprueft, was diese Datei behauptet.
+     **Veroeffentlicht am 12.09.2026** mit ausdruecklichem OK des Anwenders:
+     https://github.com/21Rebel/orangedeck/releases/tag/v0.2.8 -- beide
+     Dateien danach von GitHub zurueckgeladen, Pruefsummen gleich.
 
      Fassung ersetzen, die beiden Pruefsummen aus
      ~/.local/share/orangedeck/auslieferung/PRUEFSUMMEN.txt eintragen, und

@@ -517,8 +517,14 @@ Window {
         "clockBars": win.clockBars,
         "clockFields": win.clockFields,
         "minerFields": win.minerFields,
-        "showHeader": win.showHeader,
-        "showFooter": win.showFooter,
+        // **`--bare` heisst auch ohne Kopf- und Fusszeile** -- so steht es seit
+        // dem 05.09.2026 in `packaging/widgets/README.md`, getan hat es das
+        // nie: die beiden hingen allein an den Einstellungen. Am 12.09.2026
+        // an einem Windows-Widget gesehen (Feed mit "Block --" oben und
+        // "naechster Block" unten), gilt aber ueberall. Nicht gespeichert:
+        // das grosse Fenster behaelt seine Wahl.
+        "showHeader": win.showHeader && !win.bare,
+        "showFooter": win.showFooter && !win.bare,
         "showBlock": win.showBlock,
         "clockSpark": win.clockSpark,
         "clockTime": win.clockTime,
