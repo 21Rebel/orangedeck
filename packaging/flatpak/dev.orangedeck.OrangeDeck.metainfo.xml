@@ -175,8 +175,31 @@
 
        **Die Regel dahinter, viermal bestaetigt:** solange ein Stand bei
        keinem Anwender liegt, ist seine Nummer frei. Erst mit der ersten
-       Installation bei einem Fremden wird eine Nummer zu einer Zusage. -->
+       Installation bei einem Fremden wird eine Nummer zu einer Zusage.
+
+       **0.2.8 ist am 12.09.2026 veroeffentlicht worden.** Ab hier gilt die
+       Regel andersherum: jede Nummer ist eine Zusage, und ein Befund nach
+       dem Tag wird eine neue Nummer, keine verschobene. 0.2.9 bringt Windows
+       und Markt und Wallet ueber einen Dienst im eigenen Netz. **Das Datum
+       unten ist vorlaeufig** und wird beim Tag auf den Tag der
+       Veroeffentlichung gesetzt. -->
   <releases>
+    <release version="0.2.9" date="2026-09-12">
+      <description>
+        <p>
+          A first Windows build, desktop widgets on Windows, and the market and
+          watch-only wallet on every device without its own service: phones,
+          tablets and Windows can use the OrangeDeck service on another
+          computer in the same network.
+        </p>
+        <p xml:lang="de">
+          Die erste Windows-Fassung, Desktop-Widgets unter Windows, und Markt
+          und Watch-only-Wallet auf jedem Geraet ohne eigenen Dienst: Telefon,
+          Tablet und Windows koennen den OrangeDeck-Dienst auf einem anderen
+          Rechner im selben Netz nutzen.
+        </p>
+      </description>
+    </release>
     <release version="0.2.8" date="2026-09-11">
       <description>
         <p>First release.</p>
