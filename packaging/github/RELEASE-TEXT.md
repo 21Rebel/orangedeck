@@ -3,10 +3,12 @@
      mit Netzwerk, zwei Widgets dazu) und nach dem Bildschirmdurchgang auf
      0.2.7, nach dem Bildschirmvergleich ueber alle Systeme auf 0.2.8. Vor
      dem Veroeffentlichen:
-     **Fuer 0.2.8 stehen die beiden VM-Laeufe noch aus** (Ubuntu GNOME,
-     Fedora KDE) -- der Abschnitt "Tested on" nennt sie, also erst laufen
-     lassen, dann veroeffentlichen.
-
+     **Die beiden VM-Laeufe fuer 0.2.8 sind am 12.09.2026 gelaufen** --
+     Ubuntu 24.04 GNOME und Fedora 44 KDE, beide aus dem Buendel des
+     getaggten Standes, alle sechs Ansichten geprueft. Was der Abschnitt
+     "Tested on" ueber Linux sagt, stimmt damit.
+     **Offen bleibt der Geraetelauf:** der Galaxy A55 kennt bisher nur
+     0.2.7.
 
      Fassung ersetzen, die beiden Pruefsummen aus
      ~/.local/share/orangedeck/auslieferung/PRUEFSUMMEN.txt eintragen, und
@@ -56,7 +58,7 @@ It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included, 
 ## Checksums (SHA-256)
 
     <PRUEFSUMME-APK>  orangedeck-0.2.8-arm64-v8a.apk
-    <PRUEFSUMME-FLATPAK>  orangedeck-0.2.8.flatpak
+    46904a31e3a09fedbda5b022200498d150faa5f86d03c20def5521ef8f71c63f  orangedeck-0.2.8.flatpak
 
 ---
 
