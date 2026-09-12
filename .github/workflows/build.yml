@@ -101,7 +101,20 @@ jobs:
           rem `--qmldir` zeigt auf die Quellen: die QML-Dateien stecken zwar
           rem als Ressource im Programm, windeployqt liest die Importe aber
           rem aus dem Quelltext, um die noetigen Qt-Module zu finden.
-          windeployqt --qmldir ui\qml --release --no-translations dist\orangedeck-app.exe
+          rem
+          rem **Die C++-Laufzeit gehoert neben die EXE, nicht als Installer
+          rem daneben.** Ohne `--no-compiler-runtime` legt windeployqt nur
+          rem vc_redist.x64.exe ins Paket (18 MB) und installiert nichts. Am
+          rem 12.09.2026 auf einem frischen Windows 11 25H2 gestartet: "Die
+          rem Ausfuehrung des Codes kann nicht fortgesetzt werden, da
+          rem MSVCP140.dll nicht gefunden wurde". Im System lagen nur die
+          rem .NET-Varianten (vcruntime140_clr0400.dll). Microsoft erlaubt
+          rem die Laufzeit-DLLs ausdruecklich app-lokal; dann laeuft das ZIP
+          rem ohne jede Installation.
+          windeployqt --qmldir ui\qml --release --no-translations --no-compiler-runtime dist\orangedeck-app.exe
+          for /d %%D in ("%VCToolsRedistDir%x64\Microsoft.VC*.CRT") do copy /y "%%D\*.dll" dist\
+          rem Lieber ein lauter Abbruch als ein Paket, das bei niemandem startet.
+          for %%F in (msvcp140.dll vcruntime140.dll vcruntime140_1.dll) do if not exist dist\%%F (echo ::error::%%F fehlt im Paket & exit /b 1)
 
       - uses: actions/upload-artifact@v4
         with:
