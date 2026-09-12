@@ -461,10 +461,20 @@ int main(int argc, char *argv[])
         // gehoeren. Also bekommt das Widget `Progman` als Besitzer (nicht als
         // Eltern: dann waere es ein Kindfenster und zeichnete sich nicht mehr
         // selbst). Fuer `top` nicht -- das soll gerade ueber allem bleiben.
+        //
+        // **Erst nach dem Zeigen.** Gemessen in der VM (user32
+        // `GetWindow(GW_OWNER)`): hier, vor `setVisible`, gesetzt, stand der
+        // Besitzer danach leer, und Win+D raeumte die Uhr weiter weg. Von
+        // aussen auf das schon sichtbare Fenster gesetzt, hielt er -- und die
+        // Uhr blieb bei Win+D stehen. Vermutlich setzt Qt `GWLP_HWNDPARENT`
+        // beim Zeigen neu; nachgesehen ist das nicht. Der Nulltimer laeuft
+        // beim Start der Ereignisschleife, also nach `setVisible`.
         if (!(f & Qt::WindowStaysOnTopHint)) {
-            if (HWND schreibtisch = FindWindowW(L"Progman", nullptr))
-                SetWindowLongPtrW(reinterpret_cast<HWND>(fenster->winId()), GWLP_HWNDPARENT,
-                                  reinterpret_cast<LONG_PTR>(schreibtisch));
+            QTimer::singleShot(0, fenster, [fenster]() {
+                if (HWND schreibtisch = FindWindowW(L"Progman", nullptr))
+                    SetWindowLongPtrW(reinterpret_cast<HWND>(fenster->winId()), GWLP_HWNDPARENT,
+                                      reinterpret_cast<LONG_PTR>(schreibtisch));
+            });
         }
 
         if (p.value(oPlatz).toInt() != 0)
