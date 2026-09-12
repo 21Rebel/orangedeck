@@ -22,10 +22,30 @@ RestartSec=3
 # Der Dienst haelt seinen Zustand im tmpfs und ueberlebt einen Neustart nicht --
 # das ist Absicht, er baut ihn in Sekunden wieder auf.
 
+# --- Fuer ein Tablett oder Telefon im eigenen Netz ---------------------------
+# **Standard ist 127.0.0.1: der Dienst ist von aussen nicht erreichbar.** Wer
+# ihm die Ansichten Markt und Wallet auf einem Geraet ohne Dienst geben will
+# -- Android, Windows, macOS --, traegt in der Anwendung unter Datenquelle die
+# Adresse dieses Rechners ein und oeffnet den Dienst hier:
+#
+#     systemctl --user edit orangedeck.service
+#
+#     [Service]
+#     Environment=ORANGEDECK_ADDR=0.0.0.0
+#
+# **Und weiss dann, was er tut.** Der Dienst kennt keine Anmeldung und fragt
+# niemanden, wer da klopft: ab da liefert er jedem, der die Adresse erreicht,
+# alles, was er weiss -- einschliesslich der watch-only-Adressen aus
+# `sources.json`, also der Frage, wem welche Guthaben gehoeren. In einem
+# Heimnetz mit Gast-WLAN, Fernsehern und fremden Telefonen ist das eine
+# Entscheidung und kein Handgriff. Rueckgaengig macht sie
+# `systemctl --user revert orangedeck.service`.
+
 # --- Absicherung ------------------------------------------------------------
-# Der Dienst liest nur oeffentliche Daten und bietet sie auf 127.0.0.1 an. Er
-# braucht vom System praktisch nichts, also bekommt er auch nichts. Passt zum
-# Grundsatz in ZIELBILD.md: keine Angriffsflaeche.
+# Der Dienst liest nur oeffentliche Daten und bietet sie auf 127.0.0.1 an --
+# solange ORANGEDECK_ADDR nichts anderes sagt, siehe oben. Er braucht vom
+# System praktisch nichts, also bekommt er auch nichts. Passt zum Grundsatz in
+# ZIELBILD.md: keine Angriffsflaeche.
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict

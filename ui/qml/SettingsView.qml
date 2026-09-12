@@ -593,6 +593,27 @@ Item {
                     }
                 }
 
+                // **Der Weg zum Dienst auf einem anderen Geraet.** Leer ist
+                // der Dienst auf demselben Rechner; eingetragen ist es der
+                // im eigenen Netz -- und damit haben Tablett und Telefon
+                // Markt und Wallet, die sonst ausserhalb von Linux fehlen.
+                //
+                // Nur im Dienst-Betrieb sichtbar: im Direktbezug fragt
+                // niemand nach, und ein Feld ohne Wirkung ist eine Falle.
+                Zeile {
+                    label: Tr.t("set.daemonHost", root.lang)
+                    help: Tr.t("set.daemonHostHelp", root.lang)
+                    visible: root.val("dataSource", "daemon") === "daemon"
+
+                    Textzeile {
+                        wert: root.val("daemonHost", "")
+                        platzhalter: "192.168.1.42"
+                        onUebernommen: function (neu) {
+                            root.changed("daemonHost", neu);
+                        }
+                    }
+                }
+
                 Zeile {
                     label: Tr.t("set.currency", root.lang)
                     help: Tr.t("set.currencyHelp", root.lang)

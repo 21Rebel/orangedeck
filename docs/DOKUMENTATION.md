@@ -3666,3 +3666,91 @@ Wer viele Durchgaenge plant: die Bilder je Lauf sammeln statt den Lauf zu
 wiederholen, zwischen den Systemen Pausen lassen, und bei leeren Ansichten
 zuerst `curl -m 10 https://mempool.space/api/blocks/tip/height` fragen, bevor
 in der Anwendung gesucht wird.
+
+## Markt und Wallet auf einem Geraet ohne Dienst (12.09.2026)
+
+**Die Ausgangslage.** Zwei Ansichten fehlen ueberall dort, wo kein Dienst
+laeuft: Markt und Wallet. Das trifft Android -- und seit es Baulaeufe dafuer
+gibt, ebenso Windows und macOS. Ausgeblendet werden sie nicht nach dem
+Geraet, sondern nach der Quelle (`FeedTabs.qml`):
+
+    readonly property bool canMarket: root.feed && !root.feed.direkt
+
+Dahinter steht `FeedState.getJson()`, das im Direktbezug jede Anfrage mit
+"im Direktbezug nicht verfuegbar" beantwortet. Der Markt braucht genau drei
+Wege des Dienstes: `/market`, `/market/overview`, `/market/heatmap`.
+
+### Zwei Wege dorthin, und warum erst der zweite
+
+**Weg A, der Nachbau.** Ein `DirectMarket.qml` neben `DirectFeed.qml` und
+`DirectMiner.qml`. Der Marktteil des Dienstes misst 919 Zeilen, dazu 195 in
+den drei Routen. Die Ansichten selbst waeren fertig -- `MarketView.qml`,
+`MarketLiq.qml` und `MarketHeat.qml` tragen alle drei den Vermerk "nur
+`import QtQuick`, laeuft damit auch unter Android".
+
+**Weg B, die Adresse.** Der Dienst spricht HTTP, und `FeedState.endpoint`
+sowie `ORANGEDECK_ADDR` tragen **beide seit dem 01.09.2026** denselben Satz:
+"fuer ein Tablet im eigenen Netz eine bewusste Entscheidung, kein
+Standardverhalten". Vorgesehen war der Weg also von Anfang an -- es fuehrte
+nur keine Einstellung dorthin. `endpoint` stand fest auf `127.0.0.1:21021`.
+
+Weg B zuerst, aus einem Grund, der nichts mit Aufwand zu tun hat: **er
+beantwortet eine Frage, die Weg A voraussetzt.** Ob der Markt-Reiter an einem
+Finger ueberhaupt taugt, weiss vorher niemand -- und 1100 Zeilen sind eine
+teure Art, es herauszufinden.
+
+### Was dazugekommen ist
+
+    Main.qml          daemonHost (QSettings) und effEndpoint
+    SettingsView.qml  Textzeile unter der Datenquelle, nur im Dienst-Betrieb
+    strings.js        set.daemonHost, set.daemonHostHelp (13 Sprachen)
+
+`effEndpoint` ergaenzt, was fehlt: ohne Schema wird `http://` davorgesetzt,
+ohne Port `:21021` angehaengt. Der Doppelpunkt wird dabei **nur im Teil nach
+dem Schema** gesucht -- sonst findet der von `http://` sich selbst, und an
+`http://tablett` haengte nie ein Port.
+
+### Gemessen, nicht angenommen
+
+Gegen einen zweiten Dienst auf `0.0.0.0:21022` mit eigenem
+`XDG_RUNTIME_DIR`, `XDG_CACHE_HOME` und `XDG_CONFIG_HOME` -- getrennt, damit
+weder die Sperrdatei kollidiert noch die unwiederbringliche
+`liquidations.json` angefasst wird, und damit der Testdienst keine
+watch-only-Adressen kennt. Die Anwendung lief mit `--id pruefmarkt`, also
+mit eigener Einstellungsdatei.
+
+| Unterreiter | ueber das Netz |
+|---|---|
+| Kurs | vollstaendig: Kerzen, Volumen, Trade-Band, Binance und Bybit online |
+| Liquidationen | Long/Short sofort; das Histogramm sagt "Zugehoert seit 12:02" |
+| Heatmap | "Noch nichts zu rechnen" |
+
+Die beiden letzten Zeilen sind **kein Mangel des Weges**, sondern das Alter
+des Dienstes: Liquidationen gibt es nirgends rueckwirkend, und die Heatmap
+braucht erst das offene Interesse. An einem Dienst, der seit Tagen laeuft,
+stehen dort zwei Tage.
+
+**Der erste Aufruf von `/market` kam leer zurueck.** Die Boersenstroeme
+laufen nur, solange jemand hinsieht (`gefragt()`/`erwuenscht()`,
+`MARKET_LINGER`); der erste Ruf startet sie, der zweite bekommt Daten. Die
+Ansicht fragt im Sekundentakt und merkt davon nichts -- wer mit `curl` prueft,
+schon.
+
+### Die Entscheidung, die der Anwender dabei trifft
+
+Der Dienst kennt keine Anmeldung. Lauscht er im Netz, liefert er jedem, der
+ihn erreicht, alles -- **auch die watch-only-Adressen**, also die Frage, wem
+welche Guthaben gehoeren. Deshalb steht das im Hilfetext der Einstellung und
+nicht im Kleingedruckten, und deshalb steht die Anleitung
+(`systemctl --user edit`) in der Unit neben der Zusicherung, die sie aufhebt.
+
+### Nebenbefund: Qt nimmt Wayland auch bei gesetztem DISPLAY
+
+Ein `DISPLAY=:77` allein schickt nichts in den Xvfb. Steht `WAYLAND_DISPLAY`
+in der Umgebung, landet das Fenster in der Sitzung des Anwenders -- hier
+nachgesehen mit `niri msg windows`, wo es auftauchte. Richtig ist
+`env -u WAYLAND_DISPLAY DISPLAY=:77 QT_QPA_PLATFORM=xcb`.
+
+Und: `xdotool` gibt es auf diesem Rechner nicht. `tools/xtest.py` ist der
+Weg, und im Xvfb ohne Fenstermanager kommen **Tastendruecke nicht an** --
+mangels Fokus. Geklickt wird auf den Reiter.

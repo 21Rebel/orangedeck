@@ -114,6 +114,39 @@ Window {
         }
         return out;
     }
+
+    // **Wo der Dienst lauscht.** Leer heisst 127.0.0.1:21021 -- derselbe
+    // Rechner, und das bleibt die Vorgabe.
+    //
+    // Eingetragen wird hier der Rechner im eigenen Netz. Damit bekommt ein
+    // Tablett oder ein Telefon die beiden Ansichten, die am Dienst haengen
+    // und ausserhalb von Linux sonst fehlen: Markt und Wallet. Der Weg war
+    // von Anfang an vorgesehen -- `FeedState.endpoint` und `ORANGEDECK_ADDR`
+    // tragen beide seit dem 01.09.2026 den Satz "fuer ein Tablet im eigenen
+    // Netz eine bewusste Entscheidung" --, nur fuehrte keine Einstellung
+    // dorthin.
+    //
+    // **Es ist eine Entscheidung mit Folgen**, und deshalb steht sie im
+    // Hilfetext und nicht im Kleingedruckten: der Dienst muss dafuer im Netz
+    // lauschen, und dann liefert er jedem, der ihn fragt, alles, was er
+    // weiss -- auch die watch-only-Adressen aus der Wallet. Ein Heimnetz ist
+    // kein Personenkreis.
+    property string daemonHost: ""
+    readonly property string effEndpoint: {
+        var h = win.daemonHost.trim();
+        if (!h.length)
+            return "http://127.0.0.1:21021";
+        if (h.indexOf("://") < 0)
+            h = "http://" + h;
+        // Den Port nur im Teil **nach** dem Schema suchen: sonst findet der
+        // Doppelpunkt von "http://" sich selbst, und an "http://tablett"
+        // haengte nie ein Port.
+        var ohneSchema = h.substring(h.indexOf("://") + 3);
+        if (ohneSchema.indexOf(":") < 0)
+            h += ":21021";
+        return h;
+    }
+
     // Die Wallet-Ansicht ist **abgeschaltet, bis sie ausdruecklich
     // eingeschaltet wird**. Nicht wegen der Guthaben -- die sind watch-only
     // vollstaendig geschuetzt --, sondern wegen der Verkettung: es ist der
@@ -257,6 +290,7 @@ Window {
         property alias clockFieldsRaw: win.clockFieldsRaw
         property alias minerFieldsRaw: win.minerFieldsRaw
         property alias minerHostsRaw: win.minerHostsRaw
+        property alias daemonHost: win.daemonHost
         property alias showHeader: win.showHeader
         property alias showFooter: win.showFooter
         property alias showBlock: win.showBlock
@@ -471,6 +505,7 @@ Window {
         "density": win.density,
         "startView": win.startView,
         "dataSource": win.dataSource,
+        "daemonHost": win.daemonHost,
         "colorMode": win.colorMode,
         "sizeMode": win.sizeMode,
         "showInfo": win.showInfo,
@@ -529,6 +564,9 @@ Window {
         id: feedState
 
         mode: win.effSource
+        // Leer bleibt 127.0.0.1; eingetragen zeigt es auf den Rechner im
+        // eigenen Netz. Im Direktbezug ungenutzt -- dort wird niemand gefragt.
+        endpoint: win.effEndpoint
         // Die Adressen der Miner. Im Daemon-Betrieb ungenutzt -- dort liest
         // der Dienst `sources.json`.
         minerHosts: win.minerHosts
