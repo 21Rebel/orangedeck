@@ -93,6 +93,32 @@ Benutzerdienst ein, danach genuegt
 
     systemctl --user enable --now orangedeck.service
 
+## Unter Windows
+
+Dieselbe Befehlszeile, ohne Layer-Shell. `--layer` macht das Fenster dort
+**randlos, nimmt es aus der Taskleiste** und haelt es je nach Ebene unter
+(`background`, `bottom`) oder ueber (`top`, `overlay`) allen anderen Fenstern.
+`--anchor`, `--margin`, `--width` und `--height` legen es in den Arbeitsbereich
+des Bildschirms, also neben die Taskleiste, nicht darunter.
+
+    orangedeck-app.exe --layer bottom --anchor top,right --width 300 --height 220 --margin 24 --view 1 --bare --id uhr
+
+Unterschiede zu Wayland:
+
+| | Wayland (Layer-Shell) | Windows |
+|---|---|---|
+| `--exclusive` | haelt Platz frei | wirkt nicht (Warnung) |
+| `--keyboard` | Tasten nur auf Wunsch | Tasten immer -- **anklicken, dann Q schliesst** |
+| `--id` | `~/.config/orangedeck/orangedeck-<name>.conf` | Registry: `HKCU\Software\orangedeck\orangedeck-<name>` |
+| Daten | vom Dienst | Direktbezug -- oder Dienst auf einem anderen Geraet (Einstellungen, Datenquelle) |
+
+**Beim Anmelden mitstarten:** `Win+R`, `shell:startup`, dort eine Verknuepfung
+auf `orangedeck-app.exe` anlegen und die Schalter hinten an das Ziel haengen.
+
+**Stand 12.09.2026: gebaut, in der Pruef-VM noch nicht gesehen.** Offen ist
+vor allem, ob `WindowStaysOnBottomHint` das Fenster auch nach einem Klick
+unten haelt und ob `Win+D` es verschwinden laesst.
+
 ## Leisten statt Widgets
 
 Wer nur eine Zahl in der vorhandenen Leiste will, braucht das alles nicht:

@@ -16,6 +16,10 @@
 #include <QTimer>
 #include <QMargins>
 
+#ifdef Q_OS_WIN
+#include <QScreen>
+#endif
+
 #ifdef ORANGEDECK_LAYERSHELL
 #include <LayerShellQt/Window>
 #endif
@@ -371,6 +375,84 @@ int main(int argc, char *argv[])
             ls->setDesiredSize(QSize(b, h));
             fenster->resize(b, h);
         }
+    }
+#elif defined(Q_OS_WIN)
+    // **Unter Windows gibt es keine Layer-Shell -- aber das meiste, was sie
+    // hier leisten soll, geben die Fensterflags her.** Dieselbe Befehlszeile
+    // wie unter niri, damit eine Startzeile auf beiden Systemen dasselbe
+    // meint:
+    //
+    //   ohne Rahmen, nicht in der Taskleiste   FramelessWindowHint | Tool
+    //   background, bottom                     WindowStaysOnBottomHint
+    //   top, overlay                           WindowStaysOnTopHint
+    //   --anchor, --margin, --width, --height  Lage von Hand, im Arbeitsbereich
+    //                                          des Bildschirms (ohne Taskleiste)
+    //
+    // Was fehlt: `--exclusive` (dafuer braeuchte es eine AppBar ueber
+    // SHAppBarMessage) und `--keyboard` -- das Fenster nimmt Tasten immer an,
+    // denn ohne Rahmen und Taskleisten-Eintrag ist **Q** der einzige Weg,
+    // es wieder zu schliessen. Anklicken, dann Q.
+    //
+    // Gewuenscht vom Anwender am 12.09.2026, als klar war, dass es unter
+    // Windows weder Layer-Shell noch ein Dashboard gibt.
+    if (p.isSet(oLayer)) {
+        const QString ebene = p.value(oLayer);
+        Qt::WindowFlags f = Qt::FramelessWindowHint | Qt::Tool;
+        if (ebene == QLatin1String("top") || ebene == QLatin1String("overlay"))
+            f |= Qt::WindowStaysOnTopHint;
+        else
+            f |= Qt::WindowStaysOnBottomHint;
+        fenster->setFlags(fenster->flags() | f);
+
+        QMargins rand;
+        if (p.isSet(oRand)) {
+            const auto t = p.value(oRand).split(QLatin1Char(','), Qt::SkipEmptyParts);
+            if (t.size() == 4)
+                rand = {t[3].toInt(), t[0].toInt(), t[1].toInt(), t[2].toInt()};
+            else if (t.size() == 1)
+                rand = QMargins(t[0].toInt(), t[0].toInt(), t[0].toInt(), t[0].toInt());
+        }
+
+        // Dieselben Kantennamen wie `kantenAus()` oben, nur ohne Layer-Shell,
+        // die sie entgegennimmt.
+        bool oben = false, unten = false, links = false, rechts = false;
+        for (const QString &t : p.value(oKante).split(QLatin1Char(','), Qt::SkipEmptyParts)) {
+            const QString k = t.trimmed().toLower();
+            oben |= k == QLatin1String("top");
+            unten |= k == QLatin1String("bottom");
+            links |= k == QLatin1String("left");
+            rechts |= k == QLatin1String("right");
+        }
+
+        // Je Achse wie bei der Layer-Shell: eine Kante heftet an, zwei
+        // gegenueberliegende dehnen, keine setzt in die Mitte.
+        const auto lage = [](bool anfang, bool ende, int start, int laenge,
+                             int randA, int randE, int soll, int &pos, int &groesse) {
+            groesse = soll;
+            if (anfang && ende) {
+                pos = start + randA;
+                groesse = laenge - randA - randE;
+            } else if (anfang) {
+                pos = start + randA;
+            } else if (ende) {
+                pos = start + laenge - soll - randE;
+            } else {
+                pos = start + (laenge - soll) / 2;
+            }
+        };
+
+        QScreen *schirm = fenster->screen() ? fenster->screen()
+                                            : QGuiApplication::primaryScreen();
+        const QRect flaeche = schirm->availableGeometry();
+        const int b = p.isSet(oBreite) ? p.value(oBreite).toInt() : fenster->width();
+        const int h = p.isSet(oHoehe) ? p.value(oHoehe).toInt() : fenster->height();
+        int x = 0, y = 0, breite = b, hoehe = h;
+        lage(links, rechts, flaeche.x(), flaeche.width(), rand.left(), rand.right(), b, x, breite);
+        lage(oben, unten, flaeche.y(), flaeche.height(), rand.top(), rand.bottom(), h, y, hoehe);
+        fenster->setGeometry(x, y, breite, hoehe);
+
+        if (p.value(oPlatz).toInt() != 0)
+            qWarning("--exclusive wirkt unter Windows nicht -- das Fenster haelt keinen Platz frei.");
     }
 #else
     if (p.isSet(oLayer)) {
