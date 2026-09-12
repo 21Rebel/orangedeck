@@ -18,6 +18,9 @@
 
 #ifdef Q_OS_WIN
 #include <QScreen>
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #endif
 
 #ifdef ORANGEDECK_LAYERSHELL
@@ -450,6 +453,19 @@ int main(int argc, char *argv[])
         lage(links, rechts, flaeche.x(), flaeche.width(), rand.left(), rand.right(), b, x, breite);
         lage(oben, unten, flaeche.y(), flaeche.height(), rand.top(), rand.bottom(), h, y, hoehe);
         fenster->setGeometry(x, y, breite, hoehe);
+
+        // **Win+D raeumte die Uhr weg.** Am 12.09.2026 in der Pruef-VM
+        // gemessen: ein Widget auf `bottom` verschwand bei "Desktop anzeigen"
+        // -- also genau dann, wenn man es sehen will --, der Prozess lief
+        // weiter. Windows laesst dabei nur Fenster stehen, die dem Desktop
+        // gehoeren. Also bekommt das Widget `Progman` als Besitzer (nicht als
+        // Eltern: dann waere es ein Kindfenster und zeichnete sich nicht mehr
+        // selbst). Fuer `top` nicht -- das soll gerade ueber allem bleiben.
+        if (!(f & Qt::WindowStaysOnTopHint)) {
+            if (HWND schreibtisch = FindWindowW(L"Progman", nullptr))
+                SetWindowLongPtrW(reinterpret_cast<HWND>(fenster->winId()), GWLP_HWNDPARENT,
+                                  reinterpret_cast<LONG_PTR>(schreibtisch));
+        }
 
         if (p.value(oPlatz).toInt() != 0)
             qWarning("--exclusive wirkt unter Windows nicht -- das Fenster haelt keinen Platz frei.");
