@@ -115,9 +115,25 @@ Unterschiede zu Wayland:
 **Beim Anmelden mitstarten:** `Win+R`, `shell:startup`, dort eine Verknuepfung
 auf `orangedeck-app.exe` anlegen und die Schalter hinten an das Ziel haengen.
 
-**Stand 12.09.2026: gebaut, in der Pruef-VM noch nicht gesehen.** Offen ist
-vor allem, ob `WindowStaysOnBottomHint` das Fenster auch nach einem Klick
-unten haelt und ob `Win+D` es verschwinden laesst.
+**Gemessen am 12.09.2026** in einer frischen Windows-11-VM (25H2), mit
+einem Widget auf `bottom` rechts oben und einem auf `top` links unten.
+Fensterdaten ueber user32, nicht vom Bild geraten:
+
+| Pruefung | Ergebnis |
+|---|---|
+| ohne Rahmen, an der gewuenschten Ecke, 24 px Rand | ja |
+| nicht in der Taskleiste (`WS_EX_TOOLWINDOW`) | ja, bei beiden |
+| maximiertes Fenster darueber | `bottom` verschwindet dahinter, `top` bleibt davor |
+| `Win+D` | **beide bleiben stehen** |
+
+**`Win+D` brauchte zwei Anlaeufe.** Windows 11 holt beim "Desktop anzeigen"
+die Desktop-Ebene nach vorn; ein Widget auf `bottom` lag dahinter -- nicht
+minimiert, nur verdeckt. Deshalb bekommt es `Progman` als Besitzer, und das
+erst **nach** dem Zeigen: vorher gesetzt, stand der Besitzer danach wieder
+leer.
+
+Nicht geprueft: das Schliessen mit **Q** (der Zeiger laesst sich in der VM
+nicht verlaesslich setzen) und Bildschirme mit mehr als 100 % Skalierung.
 
 ## Leisten statt Widgets
 
