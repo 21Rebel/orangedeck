@@ -111,7 +111,16 @@ jobs:
           rem .NET-Varianten (vcruntime140_clr0400.dll). Microsoft erlaubt
           rem die Laufzeit-DLLs ausdruecklich app-lokal; dann laeuft das ZIP
           rem ohne jede Installation.
-          windeployqt --qmldir ui\qml --release --no-translations --no-compiler-runtime dist\orangedeck-app.exe
+          rem
+          rem **Beide QML-Verzeichnisse, nicht nur ui\qml.** Main.qml liegt
+          rem unter app\qml und importiert QtCore (fuer Settings). Mit nur
+          rem `--qmldir ui\qml` sah windeployqt diesen Import nie, QtCore fehlte
+          rem im Paket, und die EXE startete ohne ein einziges Fenster --
+          rem lautlos, denn eine GUI-EXE hat keine Konsole. Am 12.09.2026 erst
+          rem mit QT_FORCE_STDERR_LOGGING sichtbar geworden:
+          rem   Main.qml:12:1: module "QtCore" is not installed
+          windeployqt --qmldir ui\qml --qmldir app\qml --release --no-translations --no-compiler-runtime dist\orangedeck-app.exe
+          if not exist dist\qml\QtCore (echo ::error::QML-Modul QtCore fehlt im Paket & exit /b 1)
           for /d %%D in ("%VCToolsRedistDir%x64\Microsoft.VC*.CRT") do copy /y "%%D\*.dll" dist\
           rem Lieber ein lauter Abbruch als ein Paket, das bei niemandem startet.
           for %%F in (msvcp140.dll vcruntime140.dll vcruntime140_1.dll) do if not exist dist\%%F (echo ::error::%%F fehlt im Paket & exit /b 1)
@@ -149,7 +158,13 @@ jobs:
           # wird die eingepackt, damit der Lauf nicht ohne Ergebnis endet.
           mkdir -p dist
           if [ -d build/orangedeck-app.app ]; then
-            macdeployqt build/orangedeck-app.app -qmldir=ui/qml
+            # Beide QML-Verzeichnisse: Main.qml (app/qml) importiert QtCore,
+            # das mit nur ui/qml fehlte -- unter Windows am 12.09.2026 gesehen,
+            # hier dieselbe Zeile. Geprueft wird nur mit Warnung, weil der
+            # Pfad im Buendel nicht auf einem Mac nachgesehen ist.
+            macdeployqt build/orangedeck-app.app -qmldir=ui/qml -qmldir=app/qml
+            find build/orangedeck-app.app -type d -name QtCore -path "*qml*" | grep -q . \
+              || echo "::warning::QML-Modul QtCore nicht im .app gefunden"
             cp -R build/orangedeck-app.app dist/
           else
             echo "::warning::kein .app-Buendel -- MACOSX_BUNDLE ist nicht gesetzt"
