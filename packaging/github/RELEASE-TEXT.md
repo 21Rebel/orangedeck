@@ -57,7 +57,7 @@ It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included, 
 
 ## Checksums (SHA-256)
 
-    <PRUEFSUMME-APK>  orangedeck-0.2.8-arm64-v8a.apk
+    9f854d42e71e8d71baae4e56b05e2049e23019dbde9ca638bb6c5898f5769dd0  orangedeck-0.2.8-arm64-v8a.apk
     46904a31e3a09fedbda5b022200498d150faa5f86d03c20def5521ef8f71c63f  orangedeck-0.2.8.flatpak
 
 ---
