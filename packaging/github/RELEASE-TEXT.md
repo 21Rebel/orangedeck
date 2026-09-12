@@ -7,8 +7,14 @@
      Ubuntu 24.04 GNOME und Fedora 44 KDE, beide aus dem Buendel des
      getaggten Standes, alle sechs Ansichten geprueft. Was der Abschnitt
      "Tested on" ueber Linux sagt, stimmt damit.
-     **Offen bleibt der Geraetelauf:** der Galaxy A55 kennt bisher nur
-     0.2.7.
+     **Der Geraetelauf ist am 12.09.2026 gelaufen** und blieb ohne Befund:
+     Galaxy A55 unter Android 16, als Update ueber 0.2.7 installiert, der
+     Hash der installierten Datei gegen die Summe unten gehalten, vier
+     echte Drehungen (mRotation nachgesehen, PID durchgehend dieselbe),
+     alle fuenf Reiter, zehn Widgets registriert.
+
+     Damit ist alles geprueft, was diese Datei behauptet. Sie kann
+     veroeffentlicht werden, sobald der Anwender es sagt.
 
      Fassung ersetzen, die beiden Pruefsummen aus
      ~/.local/share/orangedeck/auslieferung/PRUEFSUMMEN.txt eintragen, und
