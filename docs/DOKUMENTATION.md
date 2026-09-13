@@ -3839,12 +3839,38 @@ ini.
 - **`curl.exe` im Gast gab bei gesperrtem Ziel gar nichts aus** -- weder Code
   noch Fehlermeldung. `Test-NetConnection -Port 443` sagt eindeutig `False`.
 
+### Nachgemessen am 13.09.2026: Direktbezug und Q
+
+Die IPv4-Sperre war gefallen (Wirt und Gast `curl -4` 200). Dasselbe
+CI-Paket (`80aee84`, EXE-Pruefsumme `7e4d8a29...`) in der VM, ohne Dienst und
+ohne gespeicherte Einstellungen -- unter Windows ist `direct` die Vorgabe:
+
+- **Feed mit Daten**: Block 966.823, 76.950 im Mempool, fallende Kacheln,
+  gruener Punkt, Preis in der Fusszeile. Damit laufen **WebSockets ueber
+  Schannel**. **Mining** ebenso (944 EH/s, 127 T, Verlauf 1 J).
+- **Q schliesst das Hauptfenster**, `tasklist` danach leer.
+- **Q schliesst ein Widget** (`--layer bottom --anchor top,right --view 1
+  --bare --id uhr`, also mit `Progman` als Besitzer): angeklickt ueber das
+  USB-Tablet der VM (QMP `input-send-event`, absolute Achsen), Q, weg --
+  `tasklist` leer, keine neue Defender-Erkennung. Das Widget zeigte vorher
+  alle Zahlen im Direktbezug.
+
+**Defender beendet, was nach ClickFix aussieht.** Der erste Widget-Start
+verschwand nach Sekunden, ohne Ausgabe und ohne Eintrag im
+Anwendungsprotokoll. `Get-MpThreatDetection` nannte den Grund:
+`Behavior:Win32/SuspClickFix.F` auf `orangedeck-app.exe`, Aktion "Entfernen"
+-- der **Prozess** wurde beendet, die Datei blieb (Pruefsumme unveraendert).
+Ausgeloest hat es die **Testfernbedienung**: eine lange Befehlszeile, per
+Tastendruck in den Ausfuehren-Dialog getippt, ist genau das Muster, mit dem
+ClickFix-Schadsoftware arbeitet. Am 12.09. traf es aus demselben Grund
+viermal `curl.exe` (`SuspClickFix.G2`), unbemerkt. Dieselben Schalter aus
+einem `.cmd`, in Win+R nur dessen Pfad: keine Erkennung. Fuer Anwender, die
+eine Verknuepfung oder ein Skript starten, stellt sich die Frage nicht --
+**wer die Startzeile aus der README in Win+R einfuegt, koennte sie treffen**;
+nachgesehen ist das nicht.
+
 ### Was ungeprueft bleibt
 
-- **Der Direktbezug mit Daten.** Unter Windows lief nur der Weg ueber den
-  Dienst; der Direktbezug scheiterte an der IPv4-Sperre, nicht an Windows --
-  aber gesehen hat ihn niemand Daten zeigen. Schannel als TLS-Backend ist
-  damit fuer WebSockets unbewiesen.
 - Liquidationen und Heatmap unter Windows, SmartScreen beim Entpacken aus
   dem Netz, ein Rechner mit anderer Skalierung als 100 %.
 - **Ausgeliefert wird Windows fruehestens mit 0.2.9.** `v0.2.8` steht fest

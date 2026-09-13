@@ -4,10 +4,11 @@
 
      **Vor dem Veroeffentlichen, und erst dann:**
 
-     1. Die IPv4-Sperre von mempool.space muss weg sein
-        (`curl -4 https://mempool.space/api/blocks/tip/height`). Dann in der
-        Windows-VM den Direktbezug **mit Daten** sehen -- bisher lief Windows
-        nur ueber den Dienst. Im selben Lauf: ein Widget mit Q schliessen.
+     1. ERLEDIGT 13.09.2026 (Stand 80aee84): IPv4-Sperre gefallen; in der
+        Windows-VM Feed und Mining im Direktbezug mit Daten, Q schliesst
+        Hauptfenster und Widget (`tasklist` leer). Siehe DOKUMENTATION.md,
+        "Nachgemessen am 13.09.2026". Fuer den getaggten Stand gilt es erst,
+        wenn sich app/ und ui/ bis zum Tag nicht aendern.
      2. Geraetelauf auf dem Galaxy: das neue Feld "Dienst auf einem anderen
         Geraet" mit dem Rechner im WLAN -- Markt und Wallet muessen dort
         erscheinen. Gesehen ist das bisher nur unter Linux und Windows.
@@ -65,7 +66,7 @@ It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included. 
 
 ## Tested on
 
-- **Windows:** <GEMESSEN-WINDOWS> — bisher: Windows 11 25H2 in a VM, feed and market through a service, widgets including Win+D.
+- **Windows:** <GEMESSEN-WINDOWS> — bisher: Windows 11 25H2 in a VM, feed and market through a service, feed and mining directly from mempool.space without a service, widgets including Win+D, closing window and widget with Q.
 - **Android:** <GEMESSEN-ANDROID>
 - **Linux:** <GEMESSEN-LINUX>
 - **Not yet:** macOS, real tablets, displays above 100 % scaling on Windows. If something looks wrong, please open an issue.
