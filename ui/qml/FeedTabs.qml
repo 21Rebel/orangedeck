@@ -39,6 +39,12 @@ Item {
     // trotzdem dieses Bauteil, damit die Ansichten nur an einer Stelle
     // verdrahtet sind.
     property bool tabsVisible: true
+    // Die Einstellungen als Reiter. Die eigenstaendige Anwendung stellt das ab
+    // und zeigt ein Zahnrad; Dashboard, Popout und Quickshell haben keins und
+    // behalten den Reiter. Ohne Reiter bleibt Ansicht 5 trotzdem gueltig.
+    property bool settingsTab: true
+    // Platz rechts neben den Reitern, den der Wirt fuer eigene Knoepfe braucht
+    property real tabsRechts: 0
     // Bedienung mit dem Finger (Telefon, Tablet): groessere Tippflaechen.
     // Setzt der Wirt, der weiss, wo er laeuft.
     property bool finger: false
@@ -153,7 +159,8 @@ Item {
         },
         function (schluessel) {
             return root.o(schluessel, true);
-        })
+        },
+        root.settingsTab)
 
     // Die Beschriftungen in derselben Reihenfolge, aus derselben Tabelle.
     // Hier stand vorher eine zweite, von Hand gepflegte Liste daneben, und
@@ -185,6 +192,11 @@ Item {
     // die Zuweisung.
     function reiterPruefen() {
         if (!root.tabsVisible || root.tabViews.length === 0)
+            return;
+        // Ohne Reiter kommt man ueber das Zahnrad in die Einstellungen --
+        // zurueckgeworfen zu werden, sobald dort ein Schalter die Reiter
+        // aendert, waere genau das Falsche.
+        if (root.view === 5 && !root.settingsTab)
             return;
         if (root.tabViews.indexOf(root.view) < 0)
             root.viewRequested(root.tabViews[0]);
@@ -307,21 +319,37 @@ Item {
         }
     }
 
-    ViewTabs {
-        id: tabs
+    // **Wischbar, wenn die Reiter nicht passen.** Die Zeile hat keine
+    // Breitengrenze; am Galaxy (384 Punkte) lief sie mit dem Markt bis unter
+    // den Vollbildknopf. `tabsRechts` haelt dem Wirt seine Knoepfe frei.
+    Flickable {
+        id: reiterFlaeche
 
         anchors.left: parent.left
         anchors.top: parent.top
+        width: Math.max(0, parent.width - root.tabsRechts)
+        height: tabs.height
+        contentWidth: tabs.width
+        contentHeight: tabs.height
+        interactive: contentWidth > width
+        flickableDirection: Flickable.HorizontalFlick
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
         visible: root.tabsVisible
-        labels: root.tabLabels
-        current: root.tabViews.indexOf(root.view)
-        fontSize: root.tabFont
-        textColor: root.textColor
-        dimColor: root.dimColor
-        accentColor: root.accentColor
         z: 30
-        onPicked: function (i) {
-            root.viewRequested(root.tabViews[i]);
+
+        ViewTabs {
+            id: tabs
+
+            labels: root.tabLabels
+            current: root.tabViews.indexOf(root.view)
+            fontSize: root.tabFont
+            textColor: root.textColor
+            dimColor: root.dimColor
+            accentColor: root.accentColor
+            onPicked: function (i) {
+                root.viewRequested(root.tabViews[i]);
+            }
         }
     }
 
@@ -530,6 +558,7 @@ Item {
         // Einstellungen (siehe dort).
         kannMarkt: root.canMarket
         kannWallet: !!(root.feed && root.feed.canWallet)
+        einstellungenAlsReiter: root.settingsTab
         nichtVerfuegbar: {
             var aus = [];
             if (!(root.walletEnabled && root.feed && root.feed.canWallet))

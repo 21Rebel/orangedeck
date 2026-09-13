@@ -109,11 +109,18 @@ function ordnung(gespeichert) {
 //                keiner.
 //   an(schluessel) hat der Anwender ihn angelassen? Der Schalter kommt oben
 //                drauf und kann nichts erzwingen.
-function reiter(gespeichert, moeglich, an) {
+//   mitEinstellungen  ob die Einstellungen ein Reiter sind (Vorgabe ja).
+//                Die eigenstaendige Anwendung hat seit dem 13.09.2026 dafuer
+//                ein Zahnrad -- am Telefon lag der Vollbildknopf auf dem
+//                letzten Reiter.
+function reiter(gespeichert, moeglich, an, mitEinstellungen) {
+    var einst = mitEinstellungen !== false;
     var ord = ordnung(gespeichert);
     var out = [];
     for (var i = 0; i < ord.length; i++) {
         var e = eintrag(ord[i]);
+        if (e.id === EINSTELLUNGEN && !einst)
+            continue;
         if (!moeglich(e.id))
             continue;
         if (e.schalter.length && !an(e.schalter))
@@ -121,8 +128,9 @@ function reiter(gespeichert, moeglich, an) {
         out.push(e.id);
     }
     // Der Deckel ueber allem: die Einstellungen bleiben erreichbar, was auch
-    // immer `moeglich` und `an` melden.
-    if (out.indexOf(EINSTELLUNGEN) < 0)
+    // immer `moeglich` und `an` melden -- als Reiter oder, wenn der Wirt es
+    // so will, ueber sein Zahnrad.
+    if (einst && out.indexOf(EINSTELLUNGEN) < 0)
         out.push(EINSTELLUNGEN);
     return out;
 }

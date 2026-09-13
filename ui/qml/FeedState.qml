@@ -55,9 +55,14 @@ Item {
     // `canMiner` ist seit dem 11.09.2026 weg: der Miner-Reiter zeigt ohne
     // Geraet das Netz und hat damit immer einen Inhalt.
     readonly property bool canWallet: !root.direkt
-    // Der Markt geht seit dem 13.09.2026 auch direkt (`DirectMarket.qml`) --
-    // solange dessen Loader steht. Fehlt QtWebSockets, bleibt der Reiter weg.
-    readonly property bool canMarket: !root.direkt || markt.status === Loader.Ready
+    // Der Markt geht seit dem 13.09.2026 auch direkt (`DirectMarket.qml`).
+    // Fehlt QtWebSockets, scheitert dessen Loader, und der Reiter bleibt weg.
+    //
+    // **Nicht auf `Loader.Ready` warten.** So stand es zuerst, und in dem
+    // Augenblick, bevor der Loader fertig war, gab es keinen Markt-Reiter:
+    // `FeedTabs.reiterPruefen` warf eine gemerkte Ansicht Markt auf den Feed
+    // zurueck, bei jedem Start. Gesehen im Pruefstand am 13.09.2026.
+    readonly property bool canMarket: !root.direkt || markt.status !== Loader.Error
 
     // Die Adressen aus den Einstellungen. Im Daemon-Betrieb bleiben sie
     // ungenutzt -- dort liest der Dienst `sources.json`.

@@ -63,14 +63,26 @@ Item {
     // Die Reihenfolge der Reiter, wie sie der Anwender festgelegt hat --
     // aufgefuellt und von Unbekanntem befreit durch `views.js`. Dieselbe
     // Rechnung wie in `FeedTabs`, aus derselben Tabelle.
-    readonly property var reihenfolge: Views.ordnung(root.val("tabOrder", []))
+    readonly property var reihenfolge: root.ohneEinstellungen(Views.ordnung(root.val("tabOrder", [])))
+
+    // Ist "Einstellungen" kein Reiter (die Anwendung hat ein Zahnrad), steht es
+    // weder in der Reihenfolge noch als Startansicht zur Wahl.
+    property bool einstellungenAlsReiter: true
+
+    function ohneEinstellungen(liste) {
+        if (root.einstellungenAlsReiter)
+            return liste;
+        return liste.filter(function (id) {
+            return id !== Views.EINSTELLUNGEN;
+        });
+    }
 
     // Die Auswahl in jedem Feld steht in der **Grundreihenfolge**, nicht in
     // der des Anwenders: eine Liste, die sich beim Auswaehlen selbst
     // umsortiert, springt einem unter dem Finger weg.
     readonly property var ansichtsListe: {
         var out = [];
-        var a = Views.alle();
+        var a = root.ohneEinstellungen(Views.alle());
         for (var i = 0; i < a.length; i++) {
             out.push({ "k": String(a[i]),
                        "l": Tr.t(Views.name(a[i]), root.lang) });
@@ -85,13 +97,17 @@ Item {
     // dagegen alle dazwischenliegenden Reiter mit, und zwei Zuege hintereinander
     // ergeben eine Reihenfolge, die niemand vorhergesehen hat.
     function reiterTauschen(pos, id) {
-        var ord = Views.ordnung(root.val("tabOrder", []));
+        // Dieselbe Liste wie in der Anzeige -- sonst zaehlte `pos` in einer
+        // anderen Reihenfolge, sobald die Einstellungen herausgefiltert sind
+        var ord = root.ohneEinstellungen(Views.ordnung(root.val("tabOrder", [])));
         var j = ord.indexOf(id);
         if (j < 0 || j === pos)
             return;
         var merk = ord[pos];
         ord[pos] = id;
         ord[j] = merk;
+        if (!root.einstellungenAlsReiter)
+            ord.push(Views.EINSTELLUNGEN);
         root.changed("tabOrder", ord);
     }
 

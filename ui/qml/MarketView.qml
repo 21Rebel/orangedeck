@@ -242,28 +242,50 @@ Item {
         return aus.length >= 3 ? aus : root.kerzen;
     }
 
-    readonly property var sicht: {
+    // **Seit dem 13.09.2026 immer ein Ausschnitt** der geholten Kerzen, das
+    // Fenster (Ende - Spanne, Ende]. `holen()` bestellt einen Vorrat daneben
+    // mit: beim Ziehen ruecken daraus echte Kerzen nach, statt dass eine leere
+    // Flaeche entsteht, und nach dem Loslassen steht das neue Fenster sofort
+    // da, statt bis zur Antwort auf den alten Stand zurueckzuspringen. Am Galaxy
+    // "hakte" genau das. `ab` ist der Beginn des Fensters in `kerzen`, -1 heisst
+    // ohne Vorrat.
+    readonly property var sichtInfo: {
         // Am Schieber gezogen: aus der Uebersicht, ohne eine einzige Abfrage.
         if (root.vorschau)
-            return root.vorschauKerzen;
-        if (root.zoomSekunden <= 0 || !root.kerzen.length)
-            return root.kerzen;
-        var bis = root.kerzen[root.kerzen.length - 1][0];
-        var ab = bis - root.zoomSekunden;
+            return { "ab": -1, "liste": root.vorschauKerzen };
+        var k = root.kerzen;
+        if (!k.length)
+            return { "ab": -1, "liste": k };
+        // Ein getipptes Von-Bis ist genau das, was geholt wurde
+        if (root.vonZeit && root.bisZeit && root.zoomSekunden <= 0)
+            return { "ab": 0, "liste": k };
+        var letzte = k[k.length - 1][0];
+        var bis = root.fensterEnde > 0 ? Math.min(letzte, root.fensterEnde) : letzte;
+        var von = bis - root.sichtSekunden;
+        var ab = -1;
         var aus = [];
-        for (var i = 0; i < root.kerzen.length; i++) {
-            if (root.kerzen[i][0] >= ab)
-                aus.push(root.kerzen[i]);
+        for (var i = 0; i < k.length; i++) {
+            if (k[i][0] > von && k[i][0] <= bis) {
+                if (ab < 0)
+                    ab = i;
+                aus.push(k[i]);
+            }
         }
-        // Unter drei Kerzen ist nichts mehr zu sehen -- dann lieber warten,
-        // bis das feinere Raster da ist.
-        return aus.length >= 3 ? aus : root.kerzen;
+        // Unter drei Kerzen ist nichts mehr zu sehen -- dann lieber alles,
+        // bis das passende Raster da ist.
+        return aus.length >= 3 ? { "ab": ab, "liste": aus } : { "ab": 0, "liste": k };
     }
+    readonly property var sicht: root.sichtInfo.liste
+    readonly property int sichtAb: root.sichtInfo.ab
 
     function zoomen(faktor) {
-        var jetzt = root.sichtSekunden;
-        root.zoomSekunden = Math.round(Math.max(300, Math.min(400000000,
-                                                              jetzt * faktor)));
+        root.zoomAuf(root.sichtSekunden * faktor);
+    }
+
+    // Die Spanne absolut -- zwei Finger rechnen vom Stand beim Aufsetzen aus,
+    // nicht Schritt fuer Schritt, sonst liefe jede Rundung mit.
+    function zoomAuf(sekunden) {
+        root.zoomSekunden = Math.round(Math.max(300, Math.min(400000000, sekunden)));
         root.zoomAusstehend = true;
         nachfassen.restart();
         leinwand.requestPaint();
@@ -386,12 +408,16 @@ Item {
     // "77.1" -- der `clip` unten hat das Uebereinander verhindert, aber nicht
     // das Abschneiden. Passen Reiter, Preis und Wahl nicht nebeneinander,
     // rutscht die Preiszeile unter die Reiter.
-    readonly property bool kopfUmbruch: unterreiter.width + root.baseFont * 2.0
+    // Ohne Platz fuer die Umschalter bricht der Kurs immer um: rechts neben
+    // dem Preis stehen dann die beiden Kurzknoepfe (`kurzwahl`).
+    readonly property bool kopfUmbruch: (root.sub === "price" && !root.platzUmschalter)
+                                        || unterreiter.width + root.baseFont * 2.0
                                         + preisText.implicitWidth + wahl.width > root.width
     // Wo der Inhalt unter der Kopfzeile beginnt -- an einer Stelle gerechnet,
     // weil vier Flaechen darauf stehen.
     readonly property real kopfHoehe: root.kopfUmbruch
-                                      ? Math.max(unterreiter.height, wahl.height) + kopf.height
+                                      ? Math.max(unterreiter.height, wahl.height)
+                                        + Math.max(kopf.height, kurzwahl.visible ? kurzwahl.height : 0)
                                       : Math.max(kopf.height, wahl.height)
     readonly property bool platzUmschalter: root.width > root.baseFont * 44
     readonly property real schieberHoehe: root.schieberDa ? root.baseFont * 1.7 : 0
@@ -454,14 +480,35 @@ Item {
         });
     }
 
+    // **Mit Vorrat.** Live ein halbes Fenster links dazu, in der Vergangenheit
+    // auch rechts bis zu einem halben. Als `range=custom&secs=`, **ohne**
+    // laufendes `to=jetzt`: die Abfrage geht jede Sekunde raus, und ein Wert,
+    // der sich jede Sekunde aendert, waere jede Sekunde ein neuer Abruf bei
+    // der Boerse. Das 1,5-Fache liegt fuer 1h bis 30d im selben Raster wie das
+    // Fenster selbst. Ohne Vorrat bleiben "all", alles ab 200 Tagen (dort
+    // wuerde das Raster groeber) und ein getipptes Von-Bis.
     function holen() {
         if (!root.feed || !root.live)
             return;
-        var pfad = "/market?range=" + root.range
-                 + (root.range === "custom" ? "&secs=" + root.customSecs : "")
-                 + (root.vonZeit && root.bisZeit
-                    ? "&from=" + root.vonZeit + "&to=" + root.bisZeit
-                    : (root.fensterEnde ? "&to=" + root.fensterEnde : ""))
+        var s = root.sichtSekunden;
+        var fenster;
+        if (root.vonZeit && root.bisZeit) {
+            fenster = "range=" + root.range
+                    + (root.range === "custom" ? "&secs=" + root.customSecs : "")
+                    + "&from=" + root.vonZeit + "&to=" + root.bisZeit;
+        } else if (root.range === "all" || s >= 200 * 86400) {
+            fenster = "range=" + root.range
+                    + (root.range === "custom" ? "&secs=" + root.customSecs : "")
+                    + (root.fensterEnde ? "&to=" + root.fensterEnde : "");
+        } else if (root.fensterEnde) {
+            var rechts = Math.min(Math.round(s * 0.5),
+                                  Math.max(0, Math.round(Date.now() / 1000) - root.fensterEnde));
+            fenster = "range=custom&secs=" + Math.round(s * 1.5 + rechts)
+                    + "&to=" + (root.fensterEnde + rechts);
+        } else {
+            fenster = "range=custom&secs=" + Math.round(s * 1.5);
+        }
+        var pfad = "/market?" + fenster
                  + "&tape=" + root.bandNr
                  + "&cur=" + root.currency;
         root.feed.getJson(pfad, function (d, err) {
@@ -567,8 +614,8 @@ Item {
         // aller Stufen nicht passt, wird abgeschnitten statt uebereinander
         // gezeichnet. Ein halber Text ist unschoen, zwei uebereinander sind
         // unlesbar.
-        anchors.right: root.kopfUmbruch ? parent.right : wahl.left
-        anchors.rightMargin: root.kopfUmbruch ? 0 : root.baseFont * 0.6
+        anchors.right: root.kopfUmbruch ? (kurzwahl.visible ? kurzwahl.left : parent.right) : wahl.left
+        anchors.rightMargin: root.kopfUmbruch && !kurzwahl.visible ? 0 : root.baseFont * 0.6
         anchors.top: parent.top
         anchors.topMargin: root.kopfUmbruch ? Math.max(unterreiter.height, wahl.height) : 0
         clip: true
@@ -864,6 +911,78 @@ Item {
         return Tr.fixed(wert, 1, root.lang);
     }
 
+    // **Am Telefon ein Knopf je Umschalter.** Die beiden Reihen oben brauchen
+    // `platzUmschalter`; darunter fehlten sie bis zum 13.09.2026 ganz, und am
+    // Galaxy liessen sich weder Kerze/Kurve noch Volumen/CVD waehlen. Jeder
+    // Knopf zeigt die aktuelle Wahl und schaltet beim Antippen weiter.
+    Row {
+        id: kurzwahl
+
+        visible: root.sub === "price" && !root.platzUmschalter
+        anchors.right: parent.right
+        anchors.verticalCenter: kopf.verticalCenter
+        spacing: root.baseFont * 0.5
+        z: 50
+
+        Repeater {
+            model: [
+                { "modes": root.darstellungen, "wert": root.kind, "art": "kind" },
+                { "modes": root.unterarten, "wert": root.lower, "art": "lower" }
+            ]
+
+            Item {
+                id: kurzknopf
+
+                required property var modelData
+
+                readonly property int stelle: {
+                    var m = kurzknopf.modelData.modes;
+                    for (var i = 0; i < m.length; i++) {
+                        if (m[i].k === kurzknopf.modelData.wert)
+                            return i;
+                    }
+                    return 0;
+                }
+
+                width: kurzText.implicitWidth + root.baseFont * 1.2
+                height: kurzText.implicitHeight + root.baseFont * 0.5
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: height / 2
+                    color: Qt.rgba(1, 1, 1, 0.12)
+                    border.width: 1
+                    border.color: root.accentColor
+                }
+
+                Text {
+                    id: kurzText
+
+                    anchors.centerIn: parent
+                    text: kurzknopf.modelData.modes[kurzknopf.stelle].l
+                    color: root.textColor
+                    font.pixelSize: root.baseFont * 0.8
+                }
+
+                // Die Tippflaeche nach oben und unten auf Fingergroesse
+                MouseArea {
+                    anchors.fill: parent
+                    anchors.topMargin: -Math.max(0, (40 - kurzknopf.height) / 2)
+                    anchors.bottomMargin: -Math.max(0, (40 - kurzknopf.height) / 2)
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        var m = kurzknopf.modelData.modes;
+                        var naechste = m[(kurzknopf.stelle + 1) % m.length].k;
+                        if (kurzknopf.modelData.art === "kind")
+                            root.kindRequested(naechste);
+                        else
+                            root.lowerRequested(naechste);
+                    }
+                }
+            }
+        }
+    }
+
     // --------------------------------------------------------------- Kerzen
     Canvas {
         id: leinwand
@@ -887,11 +1006,6 @@ Item {
             var n = root.sicht.length;
             if (n < 1)
                 return;
-            // Waehrend des Ziehens wandert das ganze Bild mit; was rechts oder
-            // links fehlt, ist noch nicht geholt und bleibt leer, statt
-            // erfunden zu werden.
-            if (root.ziehVersatz !== 0)
-                ctx.translate(root.ziehVersatz, 0);
 
             var breiteGesamt = root.feldBreite;
             var kerzeBreite = Math.max(1, root.kerzeBreite);
@@ -923,6 +1037,21 @@ Item {
 
             var i, k, x, farbe, steigt;
 
+            // Waehrend des Ziehens wandern **nur die Daten** mit; daneben
+            // ruecken Kerzen aus dem Vorrat nach (siehe `sichtInfo`). Was auch
+            // dort fehlt, ist noch nicht geholt und bleibt leer, statt
+            // erfunden zu werden. Bis zum 13.09.2026 stand das `translate`
+            // vor dem Gitter: Preisskala, Linien und Zeitachse rutschten mit,
+            // und am Telefon sah jedes Wischen aus wie ein Bildwechsel, der
+            // nicht stattfindet. Beschnitten wird an der Skala, damit die
+            // Kerzen nicht ueber ihre Beschriftung laufen.
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, 0, breiteGesamt, height - padB);
+            ctx.clip();
+            if (root.ziehVersatz !== 0)
+                ctx.translate(root.ziehVersatz, 0);
+
             // ---- Kurve statt Kerzen ---------------------------------------
             // Bei neun Jahren in einem Bild ist eine Kerze ein Strich; dann
             // sagt die Linie mehr. Bei einer Stunde ist es umgekehrt.
@@ -946,6 +1075,18 @@ Item {
             var alsLinie = root.kind === "line" || kerzeBreite < 2.5;
             if (root.vorschau)
                 ctx.globalAlpha = 0.55;
+
+            // Beim Ziehen ruecken Nachbarn aus dem Vorrat ins Bild, gezaehlt
+            // vom Beginn des Fensters in `kerzen`. Ohne Versatz ist es genau
+            // das Fenster, wie vorher.
+            var quelle = root.sichtAb >= 0 ? root.kerzen : root.sicht;
+            var basis0 = root.sichtAb >= 0 ? root.sichtAb : 0;
+            var extraL = root.ziehVersatz > 0 ? Math.ceil(root.ziehVersatz / kerzeBreite) + 1 : 0;
+            var extraR = root.ziehVersatz < 0 ? Math.ceil(-root.ziehVersatz / kerzeBreite) + 1 : 0;
+            var jVon = Math.max(0, basis0 - extraL);
+            var jBis = Math.min(quelle.length - 1, basis0 + n - 1 + extraR);
+            var j;
+
             if (alsLinie) {
                 var g = ctx.createLinearGradient(0, root.padT, 0, root.padT + preisHoehe);
                 g.addColorStop(0, Qt.rgba(root.accentColor.r, root.accentColor.g,
@@ -954,10 +1095,10 @@ Item {
                                           root.accentColor.b, 0));
                 ctx.fillStyle = g;
                 ctx.beginPath();
-                ctx.moveTo(kerzeBreite / 2, root.padT + preisHoehe);
-                for (i = 0; i < n; i++)
-                    ctx.lineTo(i * kerzeBreite + kerzeBreite / 2, yPreis(root.sicht[i][4]));
-                ctx.lineTo((n - 1) * kerzeBreite + kerzeBreite / 2,
+                ctx.moveTo((jVon - basis0) * kerzeBreite + kerzeBreite / 2, root.padT + preisHoehe);
+                for (j = jVon; j <= jBis; j++)
+                    ctx.lineTo((j - basis0) * kerzeBreite + kerzeBreite / 2, yPreis(quelle[j][4]));
+                ctx.lineTo((jBis - basis0) * kerzeBreite + kerzeBreite / 2,
                            root.padT + preisHoehe);
                 ctx.closePath();
                 ctx.fill();
@@ -966,19 +1107,20 @@ Item {
                 ctx.lineWidth = 1.6;
                 ctx.lineJoin = "round";
                 ctx.beginPath();
-                for (i = 0; i < n; i++) {
-                    var xl = i * kerzeBreite + kerzeBreite / 2;
-                    if (i === 0)
-                        ctx.moveTo(xl, yPreis(root.sicht[i][4]));
+                for (j = jVon; j <= jBis; j++) {
+                    var xl = (j - basis0) * kerzeBreite + kerzeBreite / 2;
+                    if (j === jVon)
+                        ctx.moveTo(xl, yPreis(quelle[j][4]));
                     else
-                        ctx.lineTo(xl, yPreis(root.sicht[i][4]));
+                        ctx.lineTo(xl, yPreis(quelle[j][4]));
                 }
                 ctx.stroke();
             }
 
             // ---- Kerzen ----------------------------------------------------
-            for (i = 0; i < n; i++) {
-                k = root.sicht[i];
+            for (j = jVon; j <= jBis; j++) {
+                k = quelle[j];
+                i = j - basis0;
                 x = i * kerzeBreite + (kerzeBreite - koerper) / 2;
                 steigt = k[4] >= k[1];
                 farbe = steigt ? root.upColor : root.downColor;
@@ -1007,15 +1149,17 @@ Item {
                     var basis = height - padB;
                     if (k.length > 6) {
                         // Live-Faecher: Kauf und Verkauf gestapelt
-                        var hKauf = volHoehe * (k[5] / root.maxVol);
-                        var hVerk = volHoehe * (k[6] / root.maxVol);
+                        // Begrenzt: die Skala gilt fuer das Fenster, eine
+                        // Nachbarkerze aus dem Vorrat kann groesser sein
+                        var hKauf = Math.min(volHoehe, volHoehe * (k[5] / root.maxVol));
+                        var hVerk = Math.min(volHoehe - hKauf, volHoehe * (k[6] / root.maxVol));
                         ctx.fillStyle = root.upColor;
                         ctx.fillRect(x, basis - hKauf, koerper, hKauf);
                         ctx.fillStyle = root.downColor;
                         ctx.fillRect(x, basis - hKauf - hVerk, koerper, hVerk);
                     } else {
                         // Boersenkerze: ein Volumen, eingefaerbt nach Richtung
-                        var hVol = volHoehe * (root.volumen(k) / root.maxVol);
+                        var hVol = Math.min(volHoehe, volHoehe * (root.volumen(k) / root.maxVol));
                         ctx.fillStyle = farbe;
                         ctx.fillRect(x, basis - hVol, koerper, hVol);
                     }
@@ -1071,6 +1215,9 @@ Item {
                 }
                 ctx.stroke();
             }
+
+            // Verschiebung, Beschnitt und die Daempfung der Vorschau enden hier
+            ctx.restore();
 
             // Zeitachse: Anfang und Ende
             ctx.fillStyle = root.dimColor;
@@ -1217,6 +1364,34 @@ Item {
                 if (!schritte)
                     return;
                 root.zoomen(Math.pow(1 / 1.35, schritte));
+            }
+        }
+
+        // **Zwei Finger** tun dasselbe wie das Rad. Bis zum 13.09.2026 gab es
+        // hier nur den WheelHandler, und der nimmt keinen Touchscreen -- am
+        // Galaxy tat Kneifen nichts. Der Rand rechts bleibt stehen, wie beim
+        // Rad; `sicht` schneidet von dort aus zu.
+        PinchHandler {
+            id: kneifen
+
+            target: null
+
+            property int startSekunden: 0
+
+            onActiveChanged: {
+                if (!kneifen.active)
+                    return;
+                kneifen.startSekunden = root.sichtSekunden;
+                // Der erste Finger hat schon als Ziehen angefangen. Ohne das
+                // verschoebe das Loslassen das Fenster zusaetzlich.
+                zeigerFeld.druck = false;
+                root.ziehVersatz = 0;
+                root.zeiger = -1;
+                leinwand.requestPaint();
+            }
+            onActiveScaleChanged: {
+                if (kneifen.active && kneifen.activeScale > 0)
+                    root.zoomAuf(kneifen.startSekunden / kneifen.activeScale);
             }
         }
     }

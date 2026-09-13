@@ -11,9 +11,9 @@
         wenn sich app/ und ui/ bis zum Tag nicht aendern.
      2. Geraetelauf auf dem Galaxy mit dem **Markt ohne Dienst**
         (`DirectMarket.qml`): am 13.09.2026 gesehen, Daten und Umbrueche in
-        Ordnung. **Offen davor:** Umschalter Kerze/Kurve und Volumen/CVD am
-        Telefon, Zoomen mit zwei Fingern, Vollbildknopf ueber dem Reiter
-        "Einstellungen" (Plan: Zahnrad statt Reiter). Der Weg "Dienst auf einem anderen Geraet" kam am
+        Ordnung. Danach gebaut, am Telefon **noch nicht gesehen**:
+        Kurzknoepfe Kerze/Volumen, Zoomen mit zwei Fingern, Zahnrad statt
+        Reiter "Einstellungen". Der Weg "Dienst auf einem anderen Geraet" kam am
         13.09. auf dem Galaxy **nicht** an (App erreichte den Dienst nie,
         die Shell schon, Ursache offen) -- er bleibt fuer die Wallet, wird
         aber nicht als geprueft genannt.
@@ -34,7 +34,8 @@ A Bitcoin dashboard: the mempool as a live tile mosaic, a block height clock, mi
 - **Desktop widgets on Windows.** The same command line as on Linux turns any view into a frameless widget without a taskbar entry, above or below all other windows — and it stays on the desktop when you press Win+D.
 - **The market without a service.** Phones, tablets, Windows and macOS now fetch candles, the trade tape, long/short account ratios and the liquidation heatmap themselves, from the public APIs of Binance, Bybit and OKX. Liquidations come in live while the view is open, plus the last day from OKX; the Linux service keeps listening around the clock and holds two days.
 - **Watch-only wallet on phones, tablets and Windows.** New setting *Data source → Service on another device*: enter the address of the Linux computer running the OrangeDeck service, and the wallet appears. **The service then answers anyone on your network**, including with the wallet addresses; the settings page says so, and the service stays local until you open it yourself.
-- On narrow screens the market header and the legends of liquidations and heatmap wrap instead of being cut off.
+- On narrow screens the market header and the legends of liquidations and heatmap wrap instead of being cut off, candles/line and volume/CVD get compact buttons, and the chart zooms with two fingers.
+- Settings open from a gear button next to the fullscreen button instead of a tab; on a phone the last tab used to sit under that button. Back on Android closes them.
 - `--bare` widgets now really hide the header and footer, as documented.
 
 ## Windows — `orangedeck-0.2.9-windows-x86_64.zip`

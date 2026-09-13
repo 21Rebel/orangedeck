@@ -3982,6 +3982,81 @@ entstanden:
 - Mit dem Markt-Reiter ist die Reiterleiste voll: der Vollbildknopf liegt
   auf "Einstellungen".
 
+### Die drei Punkte, noch am selben Tag
+
+**Kurzknoepfe.** Die beiden `TileGoggles` brauchen `platzUmschalter`
+(44 Zeichenbreiten, bei 14 Punkten Schrift 616 Punkte); darunter gab es
+keine Moeglichkeit, Kerze oder Kurve zu waehlen, auch nicht in den
+Einstellungen. Jetzt steht rechts neben dem Preis je ein Knopf, der die
+aktuelle Wahl zeigt und beim Antippen weiterschaltet (`kurzwahl`). Unter
+der Schwelle bricht der Kurs dafuer immer um. Die Tippflaeche ist 40 Punkte
+hoch.
+
+**Zwei Finger.** Im Graphen gab es nur einen `WheelHandler`, und der nimmt
+keinen Touchscreen. Ein `PinchHandler` setzt die sichtbare Spanne jetzt
+absolut aus dem Stand beim Aufsetzen (`zoomAuf`) und laeuft danach durch
+denselben Nachfass-Timer wie das Rad. Er beendet ein begonnenes Ziehen,
+sonst verschoebe das Loslassen des ersten Fingers das Fenster zusaetzlich.
+Der rechte Rand bleibt stehen wie beim Rad -- die Mitte zwischen den
+Fingern zaehlt nicht.
+
+**Zahnrad statt Reiter.** Nur in der eigenstaendigen Anwendung
+(`FeedTabs.settingsTab: false`); Dashboard, Popout und Quickshell haben
+keinen Vollbildknopf und behalten den Reiter. Drei Stellen hielten
+"Einstellungen ist ein Reiter" fuer gegeben und haetten das Zahnrad sofort
+wieder zurueckgeworfen: `views.reiter()` haengte die 5 immer an,
+`FeedTabs.reiterPruefen()` setzt jede Ansicht ohne Reiter zurueck, und
+`Main.qml` tut dasselbe beim Start. Alle drei lassen die 5 jetzt ohne
+Reiter gelten. `SettingsView` nimmt sie aus Reihenfolge und Startansicht und
+tauscht auf derselben gefilterten Liste. Zurueck unter Android schliesst die
+Einstellungen, bevor es die Anwendung verlaesst. Die Reiterzeile ist wischbar
+und laesst dem Wirt `tabsRechts` frei.
+
+**Und ein vierter, beim Probieren am Galaxy:** Ziehen mit einem Finger
+verschob nicht nur die Kerzen, sondern Preisskala, Gitter und Zeitachse
+gleich mit -- das `ctx.translate` stand am Anfang von `onPaint`, vor allem
+anderen. Mit der Maus fiel es kaum auf, am Telefon sah jedes Wischen aus wie
+ein Bildwechsel, der nicht stattfindet. Jetzt wandern nur Kurve, Kerzen,
+Volumen und CVD, beschnitten an der Skala (`save`/`clip`/`restore`). Im
+Pruefstand mit 90 Punkten Versatz neben dem unverschobenen Bild verglichen:
+Skala und Uhrzeiten stehen an derselben Stelle. Beim ersten Vergleich zeigten
+beide Bilder dasselbe -- der Versatz war gesetzt, aber nichts hatte neu
+gezeichnet; erst eine Groessenaenderung loest den Canvas aus.
+
+**Danach hakte es noch.** Die Skala stand, aber neben den gezogenen Kerzen
+blieb es leer, und beim Loslassen sprang das Bild auf den alten Stand
+zurueck, bis die Antwort kam. Zwei Aenderungen:
+
+- `holen()` bestellt einen **Vorrat** mit: live das 1,5-Fache des Fensters
+  (links), in der Vergangenheit dazu bis zu einem halben Fenster rechts.
+  Als `range=custom&secs=`, nicht als `from`/`to` mit der laufenden Zeit --
+  die Abfrage geht jede Sekunde raus, und ein `to=jetzt` waere jede Sekunde
+  ein neuer Abruf bei der Boerse. Das 1,5-Fache bleibt fuer 1h bis 30d im
+  selben Raster (`raster_fuer`: hoechstens 400 Kerzen). Ohne Vorrat: "all",
+  ab 200 Tagen, getipptes Von-Bis.
+- `sicht` ist **immer** der Ausschnitt (Ende - Spanne, Ende] der geholten
+  Kerzen, `sichtAb` sein Beginn darin. Beim Ziehen zeichnet die Leinwand die
+  Nachbarn aus `kerzen` mit, und nach dem Loslassen steht das neue Fenster
+  aus dem Vorrat sofort da; die Antwort tauscht nur noch aus.
+
+Im Pruefstand mit 90 Punkten Versatz: links Kerzen und Volumen statt leerer
+Flaeche, weiter 96 Kerzen im Fenster. Nachbarn ausserhalb der Preisskala
+werden am Rand beschnitten, bis die Skala nach dem Loslassen neu rechnet;
+ihr Volumen ist auf die Hoehe der Flaeche begrenzt.
+
+**Und die Knoepfe oben** sassen mit 44 Punkten ab Fensteroberkante tiefer
+als die Reiterbeschriftung und reichten am Galaxy in den Kasten darunter.
+Ausserhalb des Vollbilds sind Zahnrad und Vollbildknopf jetzt so hoch wie die
+Reiterzeile (`tabSpace - gap`) und 8 Punkte vom Rand wie sie.
+
+**Selbst eingebaut und im Pruefstand gefunden:** `canMarket` hing zuerst an
+`Loader.Ready`. In dem Augenblick, bevor der Loader fertig war, gab es keinen
+Markt-Reiter, und `reiterPruefen` warf die gemerkte Ansicht Markt auf den
+Feed -- bei jedem Start. Jetzt fehlt der Reiter nur bei `Loader.Error`.
+
+Auf dem Rechner in 384 Punkten Breite als PNG nachgesehen; am Galaxy steht
+es noch aus, das Kneifen laesst sich ohne Touchscreen nicht ausloesen.
+
 ### Was ungeprueft bleibt
 
 - Der Markt ohne Dienst unter Windows und macOS.

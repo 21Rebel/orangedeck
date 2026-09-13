@@ -368,7 +368,9 @@ Window {
         // Signalen, und beim Start aendert sich nichts, worauf sie warten
         // koennten -- der Wert ist von Anfang an falsch. Diese Zeile laeuft
         // genau einmal, gleich nachdem er gesetzt wurde.
-        if (tabs.tabViews.length > 0 && tabs.tabViews.indexOf(win.view) < 0)
+        // Die Einstellungen haben hier keinen Reiter, sondern das Zahnrad --
+        // gueltig sind sie trotzdem.
+        if (tabs.tabViews.length > 0 && tabs.tabViews.indexOf(win.view) < 0 && win.view !== 5)
             win.view = tabs.tabViews[0];
     }
 
@@ -620,6 +622,11 @@ Window {
             // Im nackten Widget bleibt die Reiterzeile weg -- und mit ihr der
             // Platz, den sie braucht.
             tabsVisible: !win.bare && !win.vollbild
+            // Zahnrad statt Reiter, und rechts Platz fuer Zahnrad und
+            // Vollbildknopf (je 44, der aeussere 6 vom Rand, abzueglich der
+            // 14, die `FeedTabs` ohnehin einrueckt).
+            settingsTab: false
+            tabsRechts: win.bare ? 0 : 80
             // Der Reiterwechsel laeuft auch im Vollbild -- gerade dort, an
             // der Wand. Nur das nackte Widget zeigt immer dieselbe Ansicht.
             rotationAllowed: !win.bare
@@ -710,7 +717,13 @@ Window {
             case Qt.Key_Back:
                 // Die Zurueck-Geste verlaesst zuerst das Vollbild und erst
                 // beim zweiten Mal die Anwendung. Nicht angenommen, geht sie
-                // an Android weiter.
+                // an Android weiter. **Offene Einstellungen schliesst sie
+                // vorher** -- seit sie ueber das Zahnrad kommen, ist das der
+                // Weg zurueck, den man am Telefon erwartet.
+                if (win.view === 5 && !win.vollbild) {
+                    einstKnopf.schliessen();
+                    break;
+                }
                 if (!win.vollbild)
                     return;
                 win.vollbild = false;
@@ -819,13 +832,20 @@ Window {
             ausblenden.restart();
         }
 
+        // **Neben den Reitern so hoch wie ihre Zeile und auf deren Mitte.**
+        // Mit 44 Punkten ab Oberkante sass er tiefer als die Beschriftungen und
+        // reichte am Galaxy in den Kasten darunter -- im Feed auf dessen
+        // Rahmen, im Markt auf die Zeitraum-Auswahl (13.09.2026). Im Vollbild
+        // gibt es keine Reiter, dort bleibt er gross.
+        readonly property real zeile: Math.max(28, tabs.tabSpace - tabs.gap)
+
         visible: !win.bare
         z: 50
         width: 44
-        height: 44
+        height: win.vollbild ? 44 : vollKnopf.zeile
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.topMargin: (win.vollbild ? 6 : 0) + flaeche.SafeArea.margins.top
+        anchors.topMargin: (win.vollbild ? 6 : 8) + flaeche.SafeArea.margins.top
         anchors.rightMargin: 6 + flaeche.SafeArea.margins.right
         opacity: win.vollbild ? (gezeigt ? 0.85 : 0) : 1
         enabled: opacity > 0
@@ -892,6 +912,76 @@ Window {
         MouseArea {
             anchors.fill: parent
             onClicked: win.vollbild = !win.vollbild
+        }
+    }
+
+    // **Ein Zahnrad statt des Reiters "Einstellungen".** Am 13.09.2026 am
+    // Galaxy: mit dem Markt reichte die Reiterzeile bis zum Rand, und der
+    // Vollbildknopf lag auf "Einstellungen". Ein zweites Mal antippen fuehrt
+    // zurueck, wohin man vorher sah. Im Vollbild weg, wie die Reiter.
+    Item {
+        id: einstKnopf
+
+        property int vorher: 0
+        readonly property bool offen: win.view === 5
+
+        function oeffnen() {
+            if (win.view === 5)
+                return;
+            einstKnopf.vorher = win.view;
+            win.view = 5;
+        }
+
+        function schliessen() {
+            var ziel = einstKnopf.vorher;
+            if (tabs.tabViews.indexOf(ziel) < 0)
+                ziel = tabs.tabViews.length ? tabs.tabViews[0] : 0;
+            win.view = ziel;
+        }
+
+        visible: !win.bare && !win.vollbild
+        z: 50
+        width: 44
+        height: vollKnopf.height
+        anchors.top: vollKnopf.top
+        anchors.right: vollKnopf.left
+
+        onOffenChanged: zahnrad.requestPaint()
+
+        // Gezeichnet, aus demselben Grund wie die Ecken daneben: eine
+        // Symbolschrift mit Zahnrad gibt es nicht auf jedem Geraet.
+        Canvas {
+            id: zahnrad
+
+            anchors.centerIn: parent
+            width: 20
+            height: 20
+
+            onPaint: {
+                var ctx = getContext("2d");
+                ctx.reset();
+                var mx = width / 2, my = height / 2;
+                ctx.strokeStyle = einstKnopf.offen ? "#f7931a" : "#9a94a6";
+                ctx.lineCap = "round";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(mx, my, 5, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.lineWidth = 2.6;
+                for (var i = 0; i < 8; i++) {
+                    var w = i * Math.PI / 4;
+                    ctx.beginPath();
+                    ctx.moveTo(mx + Math.cos(w) * 6.2, my + Math.sin(w) * 6.2);
+                    ctx.lineTo(mx + Math.cos(w) * 8.6, my + Math.sin(w) * 8.6);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: einstKnopf.offen ? einstKnopf.schliessen() : einstKnopf.oeffnen()
         }
     }
 }
