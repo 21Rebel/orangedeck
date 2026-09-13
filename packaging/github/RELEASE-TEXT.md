@@ -11,9 +11,12 @@
         wenn sich app/ und ui/ bis zum Tag nicht aendern.
      2. Geraetelauf auf dem Galaxy mit dem **Markt ohne Dienst**
         (`DirectMarket.qml`): am 13.09.2026 gesehen, Daten und Umbrueche in
-        Ordnung. Danach gebaut, am Telefon **noch nicht gesehen**:
-        Kurzknoepfe Kerze/Volumen, Zoomen mit zwei Fingern, Zahnrad statt
-        Reiter "Einstellungen". Der Weg "Dienst auf einem anderen Geraet" kam am
+        Ordnung. Danach am selben Tag gebaut und am Galaxy gesehen
+        ("sieht jetzt gut aus"): Kurzknoepfe Kerze/Volumen, Zoomen mit zwei
+        Fingern, fluessiges Ziehen mit Vorrat, Zahnrad statt Reiter
+        "Einstellungen", eigener Zeitraum ohne Ueberlappung, Kerzen bleiben
+        Kerzen. **Vor dem Tag noch einmal**, weil app/ und ui/ sich danach
+        geaendert haben: der Direktbezug unter Windows (Punkt 1 galt 80aee84). Der Weg "Dienst auf einem anderen Geraet" kam am
         13.09. auf dem Galaxy **nicht** an (App erreichte den Dienst nie,
         die Shell schon, Ursache offen) -- er bleibt fuer die Wallet, wird
         aber nicht als geprueft genannt.
