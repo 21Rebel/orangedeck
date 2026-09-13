@@ -15,165 +15,190 @@
      geschrieben wurde. Hier bleibt nur der neueste Tagesabschluss stehen.
      Wandert er morgen ins Journal, kommt der von morgen an seine Stelle;
      die Datei bleibt damit so lang, wie ein Einstieg sein darf. -->
-## TAGESABSCHLUSS 12.09.2026 -- wo das Projekt steht
+## TAGESABSCHLUSS 13.09.2026 -- wo das Projekt steht
 
 > Einstieg fuer den naechsten Tag. Alles Aeltere liegt im Journal unter
 > `docs/journal/`, ein Tag je Datei.
 
 ### Der Stand in einem Satz
 
-**0.2.8 ist veroeffentlicht -- das erste Release**
-(https://github.com/21Rebel/orangedeck/releases/tag/v0.2.8). Seitdem laeuft
-Windows samt Desktop-Widgets, Markt und Wallet gehen ueber einen Dienst im
-eigenen Netz auf jedem Geraet, **0.2.9 ist vorbereitet und wartet auf drei
-Messungen**, und das Terminal-Werkzeug hat Stufe 1 fertig und `bitfeed` als
-lauffaehigen, aber noch nie angesehenen Entwurf. Alle Commits gepusht.
+**0.2.9 ist fertig getestet und wartet nur noch auf die Auslieferung.** Der
+Markt laeuft seit heute **ohne Dienst** direkt in der Anwendung
+(`DirectMarket.qml`), am Galaxy und unter Windows angesehen; am Telefon ist
+er bedienbar geworden (Zahnrad statt Reiter, Kurzknoepfe, zwei Finger,
+fluessiges Ziehen, Kerzen bleiben Kerzen). Alle Commits gepusht, letzter
+`4cae9c3`.
 
 ### Was morgen als Erstes drankommt
 
-**1. Die IPv4-Sperre pruefen.** Davon haengt alles Weitere an 0.2.9 ab:
+**1. Auslieferung 0.2.9.** Vorlage `packaging/github/RELEASE-TEXT.md`, ihre
+Pruefliste oben ist bis auf Punkt 3 und 4 abgehakt. Ablauf wie bei 0.2.8:
 
-    curl -4 -m 10 https://mempool.space/api/blocks/tip/height
-    curl -6 -m 10 https://mempool.space/api/blocks/tip/height
+1. Im Auslieferungsordner (`~/.local/share/orangedeck/auslieferung/`) die
+   Test-APKs von heute wegraeumen: `...-geraetetest-dienst.apk` und
+   `...-geraetetest-markt1..7.apk`, dazu `orangedeck-0.2.9-arm64-v8a.apk`
+   (signiertes Test-APK, 17:16), die `.idsig` und die Test-Zeilen in
+   `PRUEFSUMMEN.txt`. Sonst verweigert `apk-signieren.sh` mit "Liegt bereits".
+2. Tag `v0.2.9` auf den getesteten Stand, Flatpak-Pin nachziehen (der
+   Flatpak-Job der CI ist bis dahin rot -- richtig so).
+3. `tools/apk.sh v0.2.9`, signieren durch den Anwender, `tools/pruefvm.sh
+   bauen`, Windows-ZIP aus dem CI-Lauf des Tags als
+   `orangedeck-0.2.9-windows-x86_64.zip`.
+4. Drei Pruefsummen und "Tested on" eintragen, Release als Entwurf,
+   **veroeffentlichen nur mit ausdruecklichem OK**.
 
-Antwortet IPv4 wieder: in der Windows-VM **den Direktbezug mit Daten sehen**
-(bisher lief Windows nur ueber den Dienst) und **ein Widget mit Q
-schliessen** -- beides in einem Lauf. Speicher der VM vorher nach Rueckfrage
-auf 4 GB, danach auf 10240000 KiB zurueck; die PIN nennt der Anwender.
+Getestet ist `053f502`; `4cae9c3` aendert nur Texte. Aendert sich an `app/`
+oder `ui/` noch etwas, gelten die Messungen nicht mehr fuer den Tag.
 
-**2. Geraetelauf fuer 0.2.9 am Galaxy**: "Dienst auf einem anderen Geraet"
-mit dem Rechner im WLAN -- Markt und Wallet muessen dort erscheinen. Dafuer
-den Dienst voruebergehend oeffnen (`systemctl --user edit orangedeck.service`,
-`Environment=ORANGEDECK_ADDR=0.0.0.0`) und danach mit
-`systemctl --user revert orangedeck.service` wieder schliessen.
-
-**3. Auslieferung 0.2.9** -- die Nummer steht an allen drei Stellen, die
-Vorlage `packaging/github/RELEASE-TEXT.md` nennt oben, was vorher gemessen
-sein muss. Ablauf wie bei 0.2.8: Tag, Pin, `tools/apk.sh v0.2.9`,
-`tools/pruefvm.sh bauen`, Windows-ZIP aus dem getaggten Stand als
-`orangedeck-0.2.9-windows-x86_64.zip`, drei Pruefsummen, Signatur durch den
-Anwender, **Release nur mit ausdruecklichem OK**. Das Datum im
-metainfo-Eintrag ist vorlaeufig. Der Flatpak-Job der CI ist bis dahin rot
-("der Pin hinkt hinterher") -- richtig so.
-
-**4. `bitfeed` ansehen.** Bisher nur in einem Pseudo-Terminal gelaufen:
-120 Bilder in 8 s, keine Ausnahme, Kopfzeile mit Blockhoehe, Terminal danach
-zurueckgesetzt. Wie es aussieht, hat niemand gesehen. Erst in kitty starten
-(`python3 cli/orangedeck-cli bitfeed`), dann -- mit OK des Anwenders, weil es
-etwas auf seinen Desktop legt -- `kitten panel --edge=background` unter niri.
-Die Verknuepfung `bitfeed` in `~/.local/bin` ist bewusst noch nicht angelegt.
+**2. Die DMS-Verknuepfungen fuer `DirectMarket.qml`.** `tools/install-links.sh
+--check` meldet die neue Datei in vier Shell-Ordnern als fehlend. Beheben mit
+`tools/install-links.sh && python3 daemon/orangedeck-dashtab`, danach
+`systemctl --user restart dms`. **Nicht heute gemacht**, weil an
+`daemon/orangedeck-dashtab` eine andere Sitzung arbeitet (siehe unten).
 
 ### Was heute dazugekommen ist
 
-18 Commits. Nach Anlass:
+7 Commits.
 
-| Was | Commits | Anstoss |
+| Was | Commit | Anstoss |
 |---|---|---|
-| Auslieferung 0.2.8: Pin, VM-Laeufe Ubuntu 24.04 GNOME und Fedora 44 KDE, Signatur, Geraetelauf ohne Befund, Tag, Release | `ae9bed6` `196693e` `8423fff` `bd2159e` `d984207` `aa802e8` | Plan von gestern |
-| Markt und Wallet ueberall: Feld "Dienst auf einem anderen Geraet" (13 Sprachen), Anleitung in der Unit | `b79180a` | Anwender |
-| Windows: C++-Laufzeit im Paket, QML-Modul QtCore, erster Start dokumentiert | `ed0993b` `57a98dd` `b619eb1` | erster echter Start |
-| Windows-Widgets: `--layer` ueber Fensterflags, Desktop-Besitzer gegen Win+D, gemessen | `768b749` `42c72ed` `f764598` `f2b0115` | Anwender |
-| `--bare` ohne Kopf- und Fusszeile, README-Plattformtabelle | `aa802e8` | am Windows-Widget gesehen |
-| 0.2.9 vorbereitet (Nummer, metainfo, Freigabevorlage) | `6c867b6` | Anwender |
-| Terminal-Werkzeug: Konzept, Stufe 1 (neun Kurzbefehle), `bitfeed` als Entwurf | `98ef0ec` `f08f669` + Abschluss | Anwender |
+| Dashboard-Tab nach dem Update auf DMS 1.6.1: eigene Kopie der Oberflaeche, Weiche im Drop-in | `69e3ac9` | DMS startete nach dem Update nicht mehr |
+| Windows: Direktbezug mit Daten und Q (Hauptfenster, Widget) gemessen, Defender/ClickFix-Befund | `2fc25bd` | Plan von gestern |
+| Der Markt ohne Dienst (`DirectMarket.qml`), Umbrueche am Telefon | `c509924` | Galaxy erreichte den Dienst im WLAN nicht; Anwender: "bauen wir das in der App" |
+| Zahnrad statt Reiter, Kurzknoepfe, zwei Finger, feste Skala, Vorrat | `b2e415b` | Geraetelauf |
+| Knopfhoehe, neues Zahnrad, eigener Zeitraum ohne Ueberlappung, Kerzenbuendelung | `0017a80` | Geraetelauf |
+| Freigabevorlage: Galaxy nachgetragen | `053f502` | |
+| Windows auf `053f502` nachgemessen, mit Markt | `4cae9c3` | Anwender |
 
-**Neu im Projekt:** `cli/orangedeck-cli`, `cli/KONZEPT.md`; in
-`tools/pruefvm.sh gast` der Fedora-Weg; in der CI die Pruefung von Dienst und
-Terminal-Werkzeug samt `FEE_BUCKETS` an drei Stellen; in der Dokumentation
-"Markt und Wallet auf einem Geraet ohne Dienst" und "Der erste Start unter
-Windows". **Beim Anwender eingerichtet:** neun Kurzbefehle in `~/.local/bin`
-(`btcfetch`, `blockheight`, `fees`, `mempool`, `price`, `difficulty`,
-`hashrate`, `halving`, `nextblock`) -- `orangedeck-cli remove-aliases` nimmt
-sie wieder weg.
+**Neu im Projekt:** `ui/qml/DirectMarket.qml` (dritter Loader in `FeedState`,
+Antworten Feld fuer Feld wie `/market`, `/market/overview`,
+`/market/heatmap`); `FeedTabs.settingsTab`/`tabsRechts`; `views.reiter()` mit
+viertem Parameter; `DropDown.anzeige`; in `MarketView` `kurzwahl`,
+`EigenFeld`, `PinchHandler`, `sichtInfo`/`gebuendelt`/`buendeln`. In
+`docs/DOKUMENTATION.md` die Kapitel "Nachgemessen am 13.09.2026: Direktbezug
+und Q" und "Der Markt ohne Dienst (13.09.2026)".
+
+**Beim Anwender eingerichtet:** Galaxy mit 0.2.9 (Stand von 17:16, entspricht
+`0017a80`), Drehung freigegeben. Windows-VM wieder auf 10240000 KiB und aus.
+Der Dienst lauscht wieder nur lokal, die `ufw`-Regel fuer das Telefon ist
+geloescht (vom Anwender).
 
 ### Die Erkenntnis des Tages
 
-**Ein gruener Bau ist kein Start.** Seit dem 04.09. baute die CI ein
-Windows-Paket, gestartet hatte es niemand. So, wie es gebaut war, **haette es
-bei niemandem gestartet**: erst fehlte die C++-Laufzeit (MSVCP140.dll), und
-dahinter -- verdeckt, weil der Start vorher abbrach -- das QML-Modul QtCore.
-Der zweite Fehler war lautlos: eine GUI-EXE hat keine Konsole; erst
-`QT_FORCE_STDERR_LOGGING` mit umgeleitetem stderr zeigte ihn.
+**Ein Weg, der auf dem Papier geht, geht am Geraet noch lange nicht.** Der
+Dienst im WLAN war offen, die Firewall frei, und die Shell des Telefons bekam
+`/market` mit HTTP 200 -- die App nicht. Die Zaehler in `/health` belegten:
+kein einziger `/market`-Aufruf von ihr. Ausgeschlossen wurden Firewall,
+Klartext-HTTP, Androids Sperre des lokalen Netzes und ein VPN mit Sperre; die
+Ursache ist offen. Statt weiterzusuchen hat der Anwender entschieden, den
+Markt in die App zu holen -- und das war der bessere Weg, weil er unterwegs
+genauso geht.
 
-Die zweite: **eine Sperre sieht aus wie ein Programmfehler.** mempool.space
-laesst die IPv4-Adresse dieses Anschlusses nicht mehr durch (IPv4 Timeout,
-IPv6 sofort 200, blockstream.info ueber IPv4 200). Der Rechner nimmt von sich
-aus IPv6 und merkt nichts; jede VM hinter libvirt-NAT spricht nur IPv4 und
-zeigt leere Ansichten mit rotem Punkt. Erst `curl -4` gegen `curl -6` trennt
-das. Verursacht durch die Testlaeufe vom 11. und 12.09.
+Die zweite: **Das Pruefwerkzeug kann den Befund erzeugen.** Defender beendete
+unter Windows einen Prozess lautlos als `Behavior:Win32/SuspClickFix.F`,
+ausgeloest von der Testfernbedienung, die eine lange Befehlszeile in Win+R
+tippt -- genau das Muster der Masche. Am Vortag traf es viermal `curl.exe`,
+unbemerkt. Es sah aus wie ein Absturz.
 
-Die dritte: **Messwerkzeuge luegen genauso wie Programme.** Heute dreimal:
-PowerShell uebergibt `$null` an Win32 als leeren Text (`FindWindow("Progman",
-$null)` fand nichts -- ein falscher Befund "Progman gibt es nicht");
-`Process.MainWindowHandle` ueberspringt Fenster mit Besitzer und liefert ein
-Qt-Hilfsfenster; und ein grep auf das CI-Protokoll traf die **Befehlszeile**
-einer Warnung, nicht ihre Ausgabe -- dieselbe Falle wie am 10.09. in der VM.
+Die dritte: **Bilder aus dem Pruefstand finden, was Lesen nicht findet.**
+`grabToImage` ohne Fenster in 384 Punkten Breite hat heute die abgeschnittenen
+Legenden, den Ruecksprung aus dem Markt beim Start und die mitrutschende Skala
+gezeigt, bevor jemand signieren musste. Zweimal hat es aber auch getaeuscht:
+ein gesetzter Versatz zeichnet ohne Groessenaenderung nicht neu, und ein Fall
+"mit Wallet" pruefte nichts, weil es die Wallet im Direktbezug nicht gibt.
 
 Dazu, alle gemessen:
 
-- **Win+D unter Windows 11** holt die Desktop-Ebene nach vorn. Ein Widget auf
-  `bottom` war danach nicht minimiert, nur verdeckt. `Progman` als Besitzer
-  haelt es stehen -- aber nur, wenn er **nach** dem Zeigen gesetzt wird;
-  vorher gesetzt stand er danach leer.
-- **virtiofs auf btrfs unterscheidet Gross- und Kleinschreibung**: die EXE
-  fragt nach `MSVCP140.dll`, die Datei heisst `msvcp140.dll`, Windows meldet
-  sie als fehlend. Von `C:\` aus starten.
-- **Qt nimmt Wayland auch bei gesetztem DISPLAY**: ein Testfenster landete in
-  der Sitzung des Anwenders. Richtig ist
-  `env -u WAYLAND_DISPLAY DISPLAY=:N QT_QPA_PLATFORM=xcb`.
-- **ufw verwirft alles von virbr0** -- ein Dienst auf dem Wirt ist fuer die VM
-  erst mit einer Regel erreichbar, die der Anwender setzt und wieder loescht.
-- **`--` in einem XML-Kommentar** macht die metainfo ungueltig;
-  `appstreamcli validate` hat es vor dem Commit gefunden.
-- **`cancelled` in der CI ist kein Fehler**: `cancel-in-progress` bricht den
-  aelteren Lauf ab, sobald ein neuer Push kommt.
-- **`--watch | head -1` hing** bis zum naechsten Block, weil erst ein
-  Schreiben den Bruch bemerkt. `poll()` auf stdout meldet das geschlossene
-  Leseende sofort.
+- **OKX liefert Liquidationen rueckwirkend**, per REST
+  (`/api/v5/public/liquidation-orders`, `after` zum Blaettern): 402 Eintraege
+  ueber rund 23 Stunden. Der Dienst haelt das seit dem 04.09. fuer unmoeglich.
+  Binance `allForceOrders` gibt 404. Pythons `urllib` bekommt beim Blaettern
+  403, `curl` und Qt nicht.
+- **Die Heatmap braucht nichts Gesammeltes** -- Kerzen und
+  `openInterestHist` (30 Tage) kommen beide per REST.
+- **`ufw` protokolliert nur BLOCK.** Ein leeres Kernel-Protokoll beweist
+  nicht, dass nichts ankam.
+- **`qml` schreibt nichts nach stderr**, wenn stderr kein Terminal ist -- die
+  Meldungen gehen ins Journal. `QT_FORCE_STDERR_LOGGING=1`.
+- **PIN-Eingabe per `virsh send-key`** braucht `--holdtime` und Abstand
+  zwischen den Tasten, sonst gehen Ziffern verloren. Klicks gehen ueber das
+  USB-Tablet der VM (QMP `input-send-event`, absolute Achsen).
+- **qmlcachegen uebersetzt Namen weg.** Lokale Variablen und selbst Eigenschaften
+  wie `tabFont` stehen nicht als Text im APK; ob eine Aenderung drin ist, zeigen
+  die Zeitstempel (QML-Datei, `.rcc/qmlcache/*.cpp`, APK).
+- **Die Rechtepruefung von Claude Code** laesst es nicht zu, den Dienst ins WLAN
+  zu oeffnen; das fuehrt der Anwender aus.
 
 ### Und was ich selbst falsch gemacht habe
 
-- **Umlaut-Ersatz in Texten, die man liest -- zweimal an einem Tag**:
-  "Dienst auf einem anderen Geraet" in den Einstellungen, "naechster Block"
-  im Terminal. Beide Male erst am Bild gesehen, nicht im Code.
-- **Ein Testfenster in der Sitzung des Anwenders** (WAYLAND_DISPLAY), per PID
-  wieder entfernt.
-- **Einen Befund gemeldet, der ein Skriptfehler war** ("Progman=0").
-- **Eine Vermutung als Tatsache in einen Kommentar geschrieben** ("Qt setzt
-  den Besitzer beim Zeigen neu"), vor dem Commit auf das Gemessene
-  zurueckgestutzt.
-- **Zwei Fehler selbst hineingeschrieben und vor dem Commit gefunden**: `--`
-  in der metainfo; ein Klammerfehler in `ansi_code()` (`%` vor `+`), der jede
-  Truecolor-Ausgabe abbrechen liess -- die ersten Tests liefen ohne Farbe.
-- **Den Journal-Ausschnitt zuerst mit dem Trenner geschnitten**; die
-  Gegenrechnung hat es gefunden.
-- **Die IPv4-Sperre selbst verursacht**, durch das Testvolumen zweier Tage.
+- **`canMarket` an `Loader.Ready` gehaengt** -- warf bei jedem Start die
+  gemerkte Ansicht Markt auf den Feed. Im Pruefstand gefunden.
+- **Den Vorrat eingebaut, ohne die Folge fuer das Raster zu bedenken** --
+  dadurch wechselte das Bild beim Verschieben zwischen Kerzen und Kurve. Am
+  Galaxy gefunden, nicht vorher.
+- **Im ersten Entwurf der Buendelung eine Bindungsschleife** ueber `padR`,
+  vor dem Bauen entfernt.
+- **"Kein einziges Paket vom Telefon" behauptet**, obwohl `ufw` erlaubte
+  Pakete nicht protokolliert; zurueckgenommen. Danach NordVPN und `IIF_MATCH`
+  als Hauptverdacht formuliert und wieder verworfen.
+- **Messbefehle, die selbst falsch waren:** `set -- $r` in zsh, `ls` (bei
+  diesem Anwender mit Symbolen) fuer einen Pfad, `strings` ohne `-el`, ein
+  Pruefbild ohne Neuzeichnen. Jedes Mal zuerst ein falscher Befund.
+- **Der erste Widget-Test am Abend startete das Widget gar nicht** (das
+  Hauptfenster hielt den Fokus); die Zaehlung hatte trotzdem eine Zahl.
+- **Neun Signierrunden fuer den Anwender.** Mehrere Aenderungen haetten sich
+  in weniger Runden buendeln lassen.
+- **Die Drehung am Telefon erst beim Abschluss freigegeben**, nicht nach dem
+  ersten Test.
 
 ### Was sonst noch offen ist
 
-1. **0.2.9** und die drei Messungen davor (siehe oben).
-2. **`bitfeed`**: ansehen, kitty-Hintergrund, CPU messen; danach Stufe 3
-   (`blockinfo`, `tx`, volle Blockfund-Animation) und Stufe 4 (`market`,
-   `miner`, Vervollstaendigung, AUR). Konzept in `cli/KONZEPT.md`.
-3. **Die Ansichten rollen nicht mit der Tastatur** (pgdn, end) -- in der
-   Ubuntu-VM gesehen, betrifft jede Tastaturbedienung.
-4. **Windows ungeprueft**: Skalierung ueber 100 %, SmartScreen beim Entpacken
-   aus dem Netz, Liquidationen und Heatmap. **macOS** ungeprueft, kein Geraet.
-5. Unveraendert vom 11.09.: technische Fehlermeldungen aus dem Datenweg, keine
-   Frist auf der Netzwerkseite, der DMS-Anteil ist deutsch, Android 11 im
-   Emulator, die Punkte aus dem Journal vom 10.09.
-6. **Aufraeumen**: `~/.cache/orangedeck-fp` (rund 2 GB vom Vergleich am
-   11.09.) und die alten Fassungen in `~/.local/share/orangedeck/auslieferung/`.
+1. **0.2.9 ausliefern** (siehe oben) und die DMS-Verknuepfungen.
+2. **Warum die App den Dienst im WLAN nicht erreicht.** Galaxy A55, Android 16,
+   NordVPN aktiv (nimmt 192.168.0.0/16 aber aus). Betrifft nur noch die Wallet
+   auf Telefon und Tablet; im Freigabetext als ungeprueft genannt.
+3. **`daemon/orangedeck-dashtab` ist geaendert und nicht committet** --
+   Nachbearbeitungen aus `~/.config/orangedeck/dashtab-hooks.d` (dort
+   `dms-leiste-patch`). Stammt aus einer anderen Sitzung des Anwenders; nicht
+   angefasst.
+4. **Markt ohne Dienst, Feinheiten:** `liqSince` ist fuer Bybit zu
+   grosszuegig (Beginn des OKX-Rueckgriffs); die erste Antwort kommt ohne
+   Long/Short; die Heatmap kommt gelegentlich mit `kein_oi`, wenn Binance
+   Futures nicht rechtzeitig antwortet; Zoom mit zwei Fingern haelt den
+   rechten Rand fest, nicht die Mitte zwischen den Fingern.
+5. **Der Dienst koennte den OKX-Rueckgriff auch nutzen**, und
+   `Market.kerzen()` darin wird nirgends aufgerufen.
+6. **Unter Windows rund 600 MB Arbeitsspeicher im Markt** -- notiert, nicht
+   mit dem Feed verglichen.
+7. **qmllint in `MarketView.qml`: 55 Warnungen**, alle "Unqualified access"
+   (Repeater-Delegates, `EigenFeld`). `pragma ComponentBehavior: Bound` wuerde
+   sie loesen.
+8. **Veraltet durch das Zahnrad:** `tools/ansichten.py` (Einstellungen ueber
+   Ziffer 6) und `tools/ansichten-android.py` (sucht "Settings" in der
+   Reiterzeile); in `docs/DOKUMENTATION.md` die Tabelle der Ansichten mit
+   "5 | tab.settings" als Reiter.
+9. **Windows, ungeprueft:** ob die README-Startzeile in Win+R eingefuegt
+   ebenfalls als ClickFix gilt; Skalierung ueber 100 %; SmartScreen beim
+   Entpacken aus dem Netz. **macOS** ungeprueft, kein Geraet.
+10. Vom 12.09. unveraendert: `bitfeed` ansehen (kitty, Hintergrund, CPU), dann
+    Stufe 3 und 4; die Ansichten rollen nicht mit der Tastatur; technische
+    Fehlermeldungen aus dem Datenweg; der DMS-Anteil ist deutsch; Android 11 im
+    Emulator; Aufraeumen von `~/.cache/orangedeck-fp` (rund 2 GB) und alten
+    Fassungen im Auslieferungsordner.
 
 ### Fuer den naechsten Lauf
 
     curl -4 / -6 -m 10 https://mempool.space/api/blocks/tip/height
-    virsh -c qemu:///system setmem win11 4G --config      (und setmaxmem)
+    tools/apk.sh [<tag>]  ->  bash tools/apk-signieren.sh 0.2.9  ->  adb install -r ...
+    virsh -c qemu:///system setmem win11 4G --config      (und setmaxmem; danach 10240000)
     gh run download <lauf> -n orangedeck-windows-x86_64-UNSIGNIERT -D build/win-test
-    Fensterdaten im Gast: user32 ueber EnumWindows, nicht MainWindowHandle
-    bitfeed im Pseudo-Terminal:  --frames N --test-block   (versteckte Schalter)
-    orangedeck-cli install-aliases / remove-aliases [--dry-run]
-    appstreamcli validate --no-net packaging/flatpak/*.metainfo.xml
+    im Gast nur Skripte starten: build/od-vorbereiten.cmd, od-markt.cmd, od-widget.cmd,
+      od-prozess.cmd, od-defender.cmd -- keine Schalter in Win+R (ClickFix)
+    Pruefstand ohne Fenster:
+      env -u WAYLAND_DISPLAY -u DISPLAY QT_QPA_PLATFORM=offscreen QT_FORCE_STDERR_LOGGING=1 \
+          /usr/lib/qt6/bin/qml <datei>.qml      (grabToImage, 384 Punkte = Galaxy)
+    qmllint: /usr/lib/qt6/bin/qmllint -I ui/qml [-I app/qml] <datei>
+    tools/install-links.sh --check
 
 ---
 
@@ -183,6 +208,7 @@ Ein Tag je Datei, das Neueste oben. Herausgeloest aus dieser Datei, unveraendert
 
 | Tag | Worum es ging |
 |---|---|
+| [12.09.2026](journal/2026-09-12.md) | Das erste Release 0.2.8, Windows startet zum ersten Mal, Markt und Wallet ueber einen Dienst im Netz, `bitfeed` als Entwurf. |
 | [11.09.2026](journal/2026-09-11.md) | Derselbe Satz Ansichten auf jedem System: vier Befunde, die Nummer wanderte auf 0.2.8, und mempool.space drosselte diese Maschine. |
 | [10.09.2026](journal/2026-09-10.md) | Dreimal getaggt, und jedes Mal kam am Telefon noch etwas. Widgets, Vollbild, Sprache des Systems. |
 | [09.09.2026](journal/2026-09-09.md) | Acht Widgets, und eine Verwechslung, die Stunden gekostet hat: gezaehlt am Block statt an der Halde. |
