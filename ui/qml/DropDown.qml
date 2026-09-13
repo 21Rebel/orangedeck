@@ -15,6 +15,10 @@ Item {
     // [{ "k": <schluessel>, "l": <beschriftung> }, ...]
     property var model: []
     property string current: ""
+    // Was im geschlossenen Feld steht, wenn es nicht die Beschriftung aus
+    // dem Modell sein soll -- etwa kuerzer, wo der Platz fehlt. Die Liste
+    // behaelt ihre Beschriftungen.
+    property string anzeige: ""
     property bool offen: false
     // Wie viele Zeilen die aufgeklappte Liste hoechstens zeigt
     property int maxZeilen: 9
@@ -93,7 +97,7 @@ Item {
             anchors.left: parent.left
             anchors.leftMargin: root.uiFont * 0.8
             anchors.verticalCenter: parent.verticalCenter
-            text: root.beschriftung(root.current)
+            text: root.anzeige.length ? root.anzeige : root.beschriftung(root.current)
             color: root.textColor
             font.pixelSize: root.uiFont
         }

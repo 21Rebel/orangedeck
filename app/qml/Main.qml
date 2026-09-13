@@ -837,7 +837,13 @@ Window {
         // reichte am Galaxy in den Kasten darunter -- im Feed auf dessen
         // Rahmen, im Markt auf die Zeitraum-Auswahl (13.09.2026). Im Vollbild
         // gibt es keine Reiter, dort bleibt er gross.
-        readonly property real zeile: Math.max(28, tabs.tabSpace - tabs.gap)
+        //
+        // **Auf die Schrift, nicht auf die Zeile.** Jeder Reiter haelt unter
+        // der Beschriftung Platz fuer den Unterstrich frei (`fontSize * 0.55`,
+        // ViewTabs). Auf die ganze Zeile zentriert, sass das Symbol um diesen
+        // halben Streifen zu tief und beruehrte am Galaxy noch den Rahmen des
+        // Kastens darunter.
+        readonly property real zeile: Math.max(20, tabs.tabSpace - tabs.gap - tabs.tabFont * 0.55)
 
         visible: !win.bare
         z: 50
@@ -950,31 +956,47 @@ Window {
 
         // Gezeichnet, aus demselben Grund wie die Ecken daneben: eine
         // Symbolschrift mit Zahnrad gibt es nicht auf jedem Geraet.
+        //
+        // **Eine Kontur mit Zaehnen, nicht Ring und Striche.** Die erste
+        // Fassung -- ein Kreis mit acht einzelnen Strichen -- las sich am
+        // Galaxy eher als Sonne. Jetzt eine geschlossene Linie: acht Zaehne,
+        // aussen schmaler als am Fuss, dazwischen Bogen, innen ein Loch.
+        // Linienstaerke und Farbe wie die Ecken des Vollbildknopfs.
         Canvas {
             id: zahnrad
 
             anchors.centerIn: parent
-            width: 20
-            height: 20
+            width: 18
+            height: 18
 
             onPaint: {
                 var ctx = getContext("2d");
                 ctx.reset();
                 var mx = width / 2, my = height / 2;
+                var aussen = 8, fuss = 6, loch = 2.4;
+                var zahn = 0.2, sockel = 0.32;    // halbe Breite im Bogenmass
+                var schritt = Math.PI / 4;
                 ctx.strokeStyle = einstKnopf.offen ? "#f7931a" : "#9a94a6";
-                ctx.lineCap = "round";
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 1.8;
+                ctx.lineJoin = "round";
                 ctx.beginPath();
-                ctx.arc(mx, my, 5, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.lineWidth = 2.6;
                 for (var i = 0; i < 8; i++) {
-                    var w = i * Math.PI / 4;
-                    ctx.beginPath();
-                    ctx.moveTo(mx + Math.cos(w) * 6.2, my + Math.sin(w) * 6.2);
-                    ctx.lineTo(mx + Math.cos(w) * 8.6, my + Math.sin(w) * 8.6);
-                    ctx.stroke();
+                    var w = i * schritt - Math.PI / 2;
+                    var p1 = w - sockel, p2 = w - zahn, p3 = w + zahn, p4 = w + sockel;
+                    if (i === 0)
+                        ctx.moveTo(mx + Math.cos(p1) * fuss, my + Math.sin(p1) * fuss);
+                    else
+                        ctx.lineTo(mx + Math.cos(p1) * fuss, my + Math.sin(p1) * fuss);
+                    ctx.lineTo(mx + Math.cos(p2) * aussen, my + Math.sin(p2) * aussen);
+                    ctx.lineTo(mx + Math.cos(p3) * aussen, my + Math.sin(p3) * aussen);
+                    ctx.lineTo(mx + Math.cos(p4) * fuss, my + Math.sin(p4) * fuss);
+                    ctx.arc(mx, my, fuss, p4, w + schritt - sockel, false);
                 }
+                ctx.closePath();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(mx, my, loch, 0, Math.PI * 2);
+                ctx.stroke();
             }
         }
 

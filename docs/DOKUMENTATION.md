@@ -4049,6 +4049,59 @@ als die Reiterbeschriftung und reichten am Galaxy in den Kasten darunter.
 Ausserhalb des Vollbilds sind Zahnrad und Vollbildknopf jetzt so hoch wie die
 Reiterzeile (`tabSpace - gap`) und 8 Punkte vom Rand wie sie.
 
+**Das reichte noch nicht.** Am Galaxy sassen die Symbole weiter tiefer als
+die Beschriftung und beruehrten fast den Rahmen: jeder Reiter haelt unter der
+Schrift Platz fuer den Unterstrich frei (`fontSize * 0.55`), die Zeile ist
+also hoeher als die Schrift, und ihre Mitte liegt darunter. Die Knoepfe sind
+jetzt so hoch wie die **Schrift** (`tabSpace - gap - tabFont * 0.55`). Im
+Pruefstand: Knoepfe bis 28 Punkte, Kasten ab 39.
+
+**Und das Zahnrad** war ein Ring mit acht einzelnen Strichen und las sich als
+Sonne; dem Anwender gefiel es nicht. Jetzt eine geschlossene Kontur mit acht
+Zaehnen, aussen schmaler als am Fuss, und einem Loch, in Linienstaerke und
+Farbe der Vollbild-Ecken.
+
+**Eigener Zeitraum am Telefon.** Nach dem Zoomen steht der Zeitraum auf
+"Eigener Zeitraum", und die Kopfzeile lag wieder auf "Heatmap" -- in allen
+drei Unterreitern. Im Pruefstand zeigte sich: nicht nur das Eingabefeld
+daneben (70 Punkte, getipptes Von-Bis 210) war zu breit, sondern die
+Auswahl selbst, durch ihren langen Text. Jetzt:
+
+- `DropDown.anzeige` setzt den Text im geschlossenen Feld getrennt von der
+  Liste. Am Telefon zeigt die Auswahl beim eigenen Zeitraum den Wert
+  ("3d", "09.09.–12.09."), die aufgeklappte Liste bleibt beschriftet.
+- Das Feld ist ein Bauteil (`EigenFeld`): oben nur mit `platzUmschalter`,
+  sonst im Kurs in der zweiten Zeile, hoechstens ein Drittel breit -- und
+  **nicht in der Vergangenheit**, denn dort steht "Jetzt" neben dem Preis,
+  und von dem Knopf blieb sonst ein halber Rand.
+
+qmllint zaehlt dadurch 24 "Unqualified access" mehr (`root.` im Inline-
+Component); zur Laufzeit keine Meldung, der Wert steht im Feld. Im Pruefstand
+fuenf Faelle in 384 Punkten, dazu Desktopbreite unveraendert.
+
+**Kerzen eingestellt, Kurve gezeigt -- eine Nebenwirkung des Vorrats.** Am
+Galaxy stand der Graph beim Start auf der Kurve, wechselte beim Verschieben
+auf Kerzen und in der Gegenwart zurueck. Unter 2,5 Punkten je Kerze wird
+seit jeher die Kurve gezeichnet, und die Breite haengt am Raster, das der
+Dienst nach der Laenge der Abfrage waehlt. Nachgerechnet mit derselben
+Leiter: 5 Tage sind in der Gegenwart (1,5-fach angefragt) 30-Minuten-Kerzen
+zu 1,3 Punkten, zurueckgezogen (bis 2-fach) Stundenkerzen zu 2,6. Und ohne
+Vorrat lag fast jeder Zeitraum ausser 1h und 24h auf 310 Punkten unter der
+Schwelle -- "Kerzen" war am Telefon meist wirkungslos.
+
+Jetzt werden zu schmale Kerzen **zusammengefasst** (`gebuendelt`,
+`buendeln`): je `g` zu einer, Eroeffnung der ersten, Schluss der letzten,
+Hoch und Tief ueber alle, Volumen summiert, bis jede mindestens drei Punkte
+breit ist. Die Gruppen enden am rechten Fensterrand, der Vorrat wird mit
+denselben Grenzen gebuendelt (`sichtQuelle`). Die Kurve bleibt ungebuendelt.
+Im Pruefstand: Gegenwart 80 Kerzen zu 3,9 Punkten, zurueck 60 zu 5,2, beide
+als Kerzen.
+
+**Beinahe eine Bindungsschleife:** die Buendelung rechnete zuerst mit
+`feldBreite`. Die zieht `padR` ab, und das misst den hoechsten Preis der
+gezeigten Kerzen -- ein Kreis ueber `sicht`. Jetzt die Leinwandbreite ohne
+Achsenrand; im Protokoll keine Meldung.
+
 **Selbst eingebaut und im Pruefstand gefunden:** `canMarket` hing zuerst an
 `Loader.Ready`. In dem Augenblick, bevor der Loader fertig war, gab es keinen
 Markt-Reiter, und `reiterPruefen` warf die gemerkte Ansicht Markt auf den

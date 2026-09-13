@@ -252,13 +252,13 @@ Item {
     readonly property var sichtInfo: {
         // Am Schieber gezogen: aus der Uebersicht, ohne eine einzige Abfrage.
         if (root.vorschau)
-            return { "ab": -1, "liste": root.vorschauKerzen };
+            return root.gebuendelt(-1, root.vorschauKerzen);
         var k = root.kerzen;
         if (!k.length)
-            return { "ab": -1, "liste": k };
+            return root.gebuendelt(-1, k);
         // Ein getipptes Von-Bis ist genau das, was geholt wurde
         if (root.vonZeit && root.bisZeit && root.zoomSekunden <= 0)
-            return { "ab": 0, "liste": k };
+            return root.gebuendelt(0, k);
         var letzte = k[k.length - 1][0];
         var bis = root.fensterEnde > 0 ? Math.min(letzte, root.fensterEnde) : letzte;
         var von = bis - root.sichtSekunden;
@@ -273,10 +273,78 @@ Item {
         }
         // Unter drei Kerzen ist nichts mehr zu sehen -- dann lieber alles,
         // bis das passende Raster da ist.
-        return aus.length >= 3 ? { "ab": ab, "liste": aus } : { "ab": 0, "liste": k };
+        return aus.length >= 3 ? root.gebuendelt(ab, aus) : root.gebuendelt(0, k);
     }
     readonly property var sicht: root.sichtInfo.liste
     readonly property int sichtAb: root.sichtInfo.ab
+    // Woraus beim Ziehen die Nachbarn kommen -- dieselbe Buendelung wie `sicht`
+    readonly property var sichtQuelle: root.sichtInfo.quelle
+
+    // **Zu schmale Kerzen werden zusammengefasst, nicht zur Kurve.** Bis zum
+    // 13.09.2026 wurde unter 2,5 Punkten je Kerze die Kurve gezeichnet, auch
+    // wenn Kerzen eingestellt waren. Das Raster waehlt aber der Dienst, nach
+    // der Laenge der Abfrage -- und seit dem Vorrat fragt die Gegenwart das
+    // 1,5-Fache an, die Vergangenheit bis zum Doppelten. Am Galaxy wechselte
+    // das Bild deshalb beim Verschieben zwischen Kerzen und Kurve (5 Tage:
+    // 1,3 gegen 2,6 Punkte). Auf 310 Punkten sind 400 Kerzen ohnehin zu fein.
+    //
+    // Jetzt werden je `g` Kerzen zu einer: Eroeffnung der ersten, Schluss der
+    // letzten, Hoch und Tief ueber alle, Volumen summiert -- bis jede
+    // mindestens drei Punkte breit ist. Die Gruppen enden am rechten Rand des
+    // Fensters, damit die juengste Kerze live weiterlaeuft, und der Vorrat
+    // wird mit denselben Grenzen gebuendelt, damit beim Ziehen nichts
+    // springt. Die Kurve bleibt ungebuendelt, dort zaehlt jeder Punkt.
+    function gebuendelt(ab, liste) {
+        var n = liste.length;
+        var roh = ab >= 0 ? root.kerzen : liste;
+        // **Nicht `feldBreite`**: die zieht `padR` ab, und das misst den
+        // hoechsten Preis der gezeigten Kerzen -- ein Kreis ueber `sicht`.
+        // Die Leinwand ohne Achsenrand ist fuer die Frage "wie viele passen"
+        // genau genug.
+        var platz = Math.max(1, leinwand.width - root.baseFont * 4);
+        var g = root.kind === "candles" && n >= 3
+                ? Math.max(1, Math.ceil(n * 3 / platz)) : 1;
+        if (g <= 1)
+            return { "ab": ab, "liste": liste, "quelle": roh };
+        if (ab < 0) {
+            var nur = root.buendeln(liste, g, n % g);
+            return { "ab": -1, "liste": nur, "quelle": nur };
+        }
+        var ende = ab + n;                  // hinter dem Fenster, in `kerzen`
+        var rest = ende % g;
+        var alle = root.buendeln(root.kerzen, g, rest);
+        var erste = rest > 0 ? rest : g;
+        var gruppeEnde = (ende - 1) < erste ? 0 : 1 + Math.floor((ende - 1 - erste) / g);
+        var ganze = Math.max(1, Math.floor(n / g));
+        var start = Math.max(0, gruppeEnde - ganze + 1);
+        return { "ab": start, "liste": alle.slice(start, gruppeEnde + 1), "quelle": alle };
+    }
+
+    // Je `g` Kerzen zu einer; die erste Gruppe nimmt `rest` (0 heisst voll)
+    function buendeln(liste, g, rest) {
+        var aus = [];
+        var i = 0;
+        while (i < liste.length) {
+            var groesse = (aus.length === 0 && rest > 0) ? rest : g;
+            var bis = Math.min(liste.length, i + groesse);
+            var k0 = liste[i];
+            var hoch = k0[2], tief = k0[3], kauf = 0, verkauf = 0, getrennt = true;
+            for (var j = i; j < bis; j++) {
+                var k = liste[j];
+                hoch = Math.max(hoch, k[2]);
+                tief = Math.min(tief, k[3]);
+                kauf += k[5] || 0;
+                if (k.length > 6)
+                    verkauf += k[6];
+                else
+                    getrennt = false;
+            }
+            aus.push(getrennt ? [k0[0], k0[1], hoch, tief, liste[bis - 1][4], kauf, verkauf]
+                              : [k0[0], k0[1], hoch, tief, liste[bis - 1][4], kauf]);
+            i = bis;
+        }
+        return aus;
+    }
 
     function zoomen(faktor) {
         root.zoomAuf(root.sichtSekunden * faktor);
@@ -773,54 +841,12 @@ Item {
             }
         }
 
-        // Eigener Zeitraum: eine Zahl mit Einheit, etwa "72h" oder "90d".
-        // Ein Kalender mit Von und Bis waere ein eigenes Bauteil; hierfuer
-        // genuegt, was man ohnehin tippen wuerde.
-        Rectangle {
+        // Eigener Zeitraum -- hier oben nur, wenn Platz ist. Am Telefon lief
+        // die Reihe mit dem Feld nach links in die Unterreiter und lag auf
+        // "Heatmap" (13.09.2026); dort steht es in der zweiten Zeile.
+        EigenFeld {
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.range === "custom"
-            width: (root.vonZeit && root.bisZeit) ? root.baseFont * 15
-                                                  : root.baseFont * 5
-            height: Math.round(root.baseFont * 2.0)
-            radius: height / 2
-            color: "transparent"
-            border.width: 1
-            border.color: eingabe.activeFocus ? root.accentColor : root.lineColor
-
-            TextInput {
-                id: eingabe
-
-                anchors.fill: parent
-                anchors.leftMargin: root.baseFont * 0.7
-                verticalAlignment: TextInput.AlignVCenter
-                color: root.textColor
-                font.pixelSize: root.baseFont
-                selectByMouse: true
-                text: (root.vonZeit && root.bisZeit)
-                      ? Qt.formatDateTime(new Date(root.vonZeit * 1000), "dd.MM.yyyy")
-                        + ".." + Qt.formatDateTime(new Date(root.bisZeit * 1000), "dd.MM.yyyy")
-                      : root.eigenText(root.customSecs)
-                onAccepted: {
-                    // Zwei Punkte trennen ein ausdrueckliches Fenster:
-                    // "01.01.2021..31.03.2021". Ohne sie ist es eine Laenge,
-                    // die bis jetzt reicht.
-                    if (text.indexOf("..") >= 0) {
-                        var teile = text.split("..");
-                        var a = root.datumSekunden(teile[0]);
-                        var b = root.datumSekunden(teile[1]);
-                        if (a > 0 && b > a) {
-                            root.fensterEnde = 0;
-                            root.vonBisRequested(a, b);
-                        }
-                        return;
-                    }
-                    var sek = root.eigenSekunden(text);
-                    if (sek > 0) {
-                        root.vonBisLoeschen();
-                        root.customSecsRequested(sek);
-                    }
-                }
-            }
+            visible: root.range === "custom" && root.platzUmschalter
         }
 
         DropDown {
@@ -833,6 +859,16 @@ Item {
             flaecheColor: root.panelColor
             model: root.zeitraeume
             current: root.range
+            // **Am Telefon der Wert statt "Eigener Zeitraum".** Der lange
+            // Text machte die Auswahl so breit, dass sie in jedem Unterreiter
+            // auf "Heatmap" lag (Galaxy, 13.09.2026). "3d" sagt mehr und
+            // braucht keine neue Uebersetzung.
+            anzeige: (root.range === "custom" && !root.platzUmschalter)
+                     ? ((root.vonZeit && root.bisZeit)
+                        ? Qt.formatDateTime(new Date(root.vonZeit * 1000), "dd.MM.")
+                          + "–" + Qt.formatDateTime(new Date(root.bisZeit * 1000), "dd.MM.")
+                        : root.eigenText(root.customSecs))
+                     : ""
             uiFont: root.baseFont
             textColor: root.textColor
             dimColor: root.dimColor
@@ -843,6 +879,62 @@ Item {
                 // stehen, sieht die Wahl hier folgenlos aus.
                 root.vonBisLoeschen();
                 root.rangeRequested(k);
+            }
+        }
+    }
+
+    // Eigener Zeitraum: eine Zahl mit Einheit, etwa "72h" oder "90d".
+    // Ein Kalender mit Von und Bis waere ein eigenes Bauteil; hierfuer
+    // genuegt, was man ohnehin tippen wuerde. Ein Bauteil, weil es an zwei
+    // Stellen stehen kann: oben neben der Auswahl oder am Telefon in der
+    // zweiten Zeile.
+    component EigenFeld: Rectangle {
+        id: feld
+
+        property real hoechstens: 100000
+
+        width: Math.min(feld.hoechstens, (root.vonZeit && root.bisZeit) ? root.baseFont * 15
+                                                                        : root.baseFont * 5)
+        height: Math.round(root.baseFont * 2.0)
+        radius: height / 2
+        color: "transparent"
+        border.width: 1
+        border.color: eingabe.activeFocus ? root.accentColor : root.lineColor
+        clip: true
+
+        TextInput {
+            id: eingabe
+
+            anchors.fill: parent
+            anchors.leftMargin: root.baseFont * 0.7
+            anchors.rightMargin: root.baseFont * 0.5
+            verticalAlignment: TextInput.AlignVCenter
+            color: root.textColor
+            font.pixelSize: root.baseFont
+            selectByMouse: true
+            text: (root.vonZeit && root.bisZeit)
+                  ? Qt.formatDateTime(new Date(root.vonZeit * 1000), "dd.MM.yyyy")
+                    + ".." + Qt.formatDateTime(new Date(root.bisZeit * 1000), "dd.MM.yyyy")
+                  : root.eigenText(root.customSecs)
+            onAccepted: {
+                // Zwei Punkte trennen ein ausdrueckliches Fenster:
+                // "01.01.2021..31.03.2021". Ohne sie ist es eine Laenge,
+                // die bis jetzt reicht.
+                if (text.indexOf("..") >= 0) {
+                    var teile = text.split("..");
+                    var a = root.datumSekunden(teile[0]);
+                    var b = root.datumSekunden(teile[1]);
+                    if (a > 0 && b > a) {
+                        root.fensterEnde = 0;
+                        root.vonBisRequested(a, b);
+                    }
+                    return;
+                }
+                var sek = root.eigenSekunden(text);
+                if (sek > 0) {
+                    root.vonBisLoeschen();
+                    root.customSecsRequested(sek);
+                }
             }
         }
     }
@@ -923,6 +1015,21 @@ Item {
         anchors.verticalCenter: kopf.verticalCenter
         spacing: root.baseFont * 0.5
         z: 50
+
+        // Das Feld fuer den eigenen Zeitraum, wenn oben kein Platz ist.
+        // Hoechstens ein Drittel der Breite -- ein getipptes Von-Bis ist
+        // sonst 210 Punkte breit, und bei 45 % stand der Preis schon
+        // abgeschnitten da. Der Text laesst sich im Feld verschieben.
+        //
+        // **Nicht in der Vergangenheit.** Dort steht neben dem Preis "Jetzt",
+        // und fuer Feld und Knopf zusammen reicht die Zeile nicht -- vom Knopf
+        // blieb ein halber Rand. "Jetzt" fuehrt zurueck und ist wichtiger; die
+        // Auswahl oben nennt den Zeitraum ohnehin.
+        EigenFeld {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.range === "custom" && !root.inVergangenheit
+            hoechstens: root.width * 0.34
+        }
 
         Repeater {
             model: [
@@ -1079,7 +1186,7 @@ Item {
             // Beim Ziehen ruecken Nachbarn aus dem Vorrat ins Bild, gezaehlt
             // vom Beginn des Fensters in `kerzen`. Ohne Versatz ist es genau
             // das Fenster, wie vorher.
-            var quelle = root.sichtAb >= 0 ? root.kerzen : root.sicht;
+            var quelle = root.sichtAb >= 0 ? root.sichtQuelle : root.sicht;
             var basis0 = root.sichtAb >= 0 ? root.sichtAb : 0;
             var extraL = root.ziehVersatz > 0 ? Math.ceil(root.ziehVersatz / kerzeBreite) + 1 : 0;
             var extraR = root.ziehVersatz < 0 ? Math.ceil(-root.ziehVersatz / kerzeBreite) + 1 : 0;
