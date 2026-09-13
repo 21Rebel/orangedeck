@@ -381,6 +381,18 @@ Item {
     // Zeitraum bleibt, ohne ihn ist der Reiter nicht mehr bedienbar.
     readonly property bool platzQuellen: root.width > root.baseFont * 66
     readonly property bool platzTrades: root.width > root.baseFont * 56
+    // **Am Telefon passt die Kopfzeile nicht in eine Reihe.** Am 13.09.2026 am
+    // Galaxy A55 gesehen: zwischen Unterreitern und Zeitraum blieb vom Preis
+    // "77.1" -- der `clip` unten hat das Uebereinander verhindert, aber nicht
+    // das Abschneiden. Passen Reiter, Preis und Wahl nicht nebeneinander,
+    // rutscht die Preiszeile unter die Reiter.
+    readonly property bool kopfUmbruch: unterreiter.width + root.baseFont * 2.0
+                                        + preisText.implicitWidth + wahl.width > root.width
+    // Wo der Inhalt unter der Kopfzeile beginnt -- an einer Stelle gerechnet,
+    // weil vier Flaechen darauf stehen.
+    readonly property real kopfHoehe: root.kopfUmbruch
+                                      ? Math.max(unterreiter.height, wahl.height) + kopf.height
+                                      : Math.max(kopf.height, wahl.height)
     readonly property bool platzUmschalter: root.width > root.baseFont * 44
     readonly property real schieberHoehe: root.schieberDa ? root.baseFont * 1.7 : 0
     readonly property real feldBreite: Math.max(1, leinwand.width - root.padR)
@@ -549,19 +561,22 @@ Item {
     Row {
         id: kopf
 
-        anchors.left: unterreiter.right
-        anchors.leftMargin: root.baseFont * 1.4
+        anchors.left: root.kopfUmbruch ? parent.left : unterreiter.right
+        anchors.leftMargin: root.kopfUmbruch ? 0 : root.baseFont * 1.4
         // **Ein rechter Anker mit `clip`** als letzte Sicherung: was trotz
         // aller Stufen nicht passt, wird abgeschnitten statt uebereinander
         // gezeichnet. Ein halber Text ist unschoen, zwei uebereinander sind
         // unlesbar.
-        anchors.right: wahl.left
-        anchors.rightMargin: root.baseFont * 0.6
+        anchors.right: root.kopfUmbruch ? parent.right : wahl.left
+        anchors.rightMargin: root.kopfUmbruch ? 0 : root.baseFont * 0.6
         anchors.top: parent.top
+        anchors.topMargin: root.kopfUmbruch ? Math.max(unterreiter.height, wahl.height) : 0
         clip: true
         spacing: root.baseFont
 
         Text {
+            id: preisText
+
             anchors.verticalCenter: parent.verticalCenter
             text: root.letzterPreis
                   ? Tr.price1(root.letzterPreis, root.zeichen, root.lang) : "–"
@@ -860,7 +875,7 @@ Item {
         anchors.bottom: parent.bottom
         // Der Platz der Ablesezeile bleibt frei, auch wenn sie leer ist --
         // sonst huepft der Graph bei jedem Ueberfahren um eine Zeilenhoehe.
-        anchors.topMargin: Math.max(kopf.height, wahl.height)
+        anchors.topMargin: root.kopfHoehe
                            + root.baseFont * 0.25 + ablesen.implicitHeight
                            + root.baseFont * 0.35
         anchors.bottomMargin: root.bandHoehe + root.schieberHoehe
@@ -1097,7 +1112,7 @@ Item {
         anchors.right: wahl.left
         anchors.rightMargin: root.baseFont
         anchors.top: parent.top
-        anchors.topMargin: Math.max(kopf.height, wahl.height) + root.baseFont * 0.25
+        anchors.topMargin: root.kopfHoehe + root.baseFont * 0.25
         visible: root.zeigerDa || root.vorschau
         elide: Text.ElideRight
         text: {
@@ -1279,7 +1294,7 @@ Item {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        anchors.topMargin: Math.max(kopf.height, wahl.height, unterreiter.height)
+        anchors.topMargin: Math.max(root.kopfHoehe, unterreiter.height)
                            + root.baseFont * 0.6
         lang: root.lang
         zeichen: root.zeichen
@@ -1303,7 +1318,7 @@ Item {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        anchors.topMargin: Math.max(kopf.height, wahl.height, unterreiter.height)
+        anchors.topMargin: Math.max(root.kopfHoehe, unterreiter.height)
                            + root.baseFont * 0.6
         lang: root.lang
         zeichen: root.zeichen

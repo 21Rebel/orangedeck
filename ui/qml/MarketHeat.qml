@@ -331,70 +331,78 @@ Item {
     // ---------------------------------------------------------- Legende
     // Ohne sie ist das Bild huebsch und stumm: niemand weiss, ob hell viel
     // oder wenig heisst, und die weisse Linie koennte alles sein.
-    Row {
+    // **Zwei Gruppen in einem Flow**: am Telefon passt die Legende nicht in
+    // eine Zeile, und "Kurs · ueber der Linie ..." endete am Bildrand
+    // (13.09.2026, 384 Punkte breit). Innerhalb einer Gruppe bleibt es eine
+    // Row, weil ein Flow keine senkrechte Mitte kennt.
+    Flow {
         id: legende
 
         visible: root.hatDaten
         anchors.left: parent.left
+        anchors.right: parent.right
         anchors.bottom: parent.bottom
-        spacing: root.baseFont * 0.5
+        spacing: root.baseFont
 
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: Tr.t("market.heatLittle", root.lang)
-            color: root.dimColor
-            font.pixelSize: Math.max(7, root.baseFont - 3)
-        }
+        Row {
+            spacing: root.baseFont * 0.5
 
-        // Der Verlauf kommt aus **derselben** Funktion wie das Bild
-        Canvas {
-            id: verlauf
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: Tr.t("market.heatLittle", root.lang)
+                color: root.dimColor
+                font.pixelSize: Math.max(7, root.baseFont - 3)
+            }
 
-            anchors.verticalCenter: parent.verticalCenter
-            width: root.baseFont * 8
-            height: Math.max(6, root.baseFont * 0.7)
-            antialiasing: false
+            // Der Verlauf kommt aus **derselben** Funktion wie das Bild
+            Canvas {
+                id: verlauf
 
-            onPaint: {
-                var ctx = getContext("2d");
-                ctx.reset();
-                var schritte = 48;
-                for (var i = 0; i < schritte; i++) {
-                    ctx.fillStyle = root.farbeFuer(i / (schritte - 1));
-                    ctx.fillRect(i * width / schritte, 0,
-                                 width / schritte + 1, height);
+                anchors.verticalCenter: parent.verticalCenter
+                width: root.baseFont * 8
+                height: Math.max(6, root.baseFont * 0.7)
+                antialiasing: false
+
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.reset();
+                    var schritte = 48;
+                    for (var i = 0; i < schritte; i++) {
+                        ctx.fillStyle = root.farbeFuer(i / (schritte - 1));
+                        ctx.fillRect(i * width / schritte, 0,
+                                     width / schritte + 1, height);
+                    }
                 }
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: Tr.t("market.heatMuch", root.lang) + "  "
+                      + root.zeichen + " " + root.geld(root.hoechst)
+                color: root.dimColor
+                font.pixelSize: Math.max(7, root.baseFont - 3)
             }
         }
 
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: Tr.t("market.heatMuch", root.lang) + "  "
-                  + root.zeichen + " " + root.geld(root.hoechst)
-            color: root.dimColor
-            font.pixelSize: Math.max(7, root.baseFont - 3)
-        }
+        Row {
+            spacing: root.baseFont * 0.5
 
-        Item {
-            width: root.baseFont
-            height: 1
-        }
+            // Damit die weisse Linie nicht geraten werden muss
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: root.baseFont * 1.6
+                height: 2
+                color: "#ffffff"
+                opacity: 0.85
+            }
 
-        // Damit die weisse Linie nicht geraten werden muss
-        Rectangle {
-            anchors.verticalCenter: parent.verticalCenter
-            width: root.baseFont * 1.6
-            height: 2
-            color: "#ffffff"
-            opacity: 0.85
-        }
-
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: Tr.t("market.heatPriceLine", root.lang) + "  ·  "
-                  + Tr.t("market.heatSides", root.lang)
-            color: root.dimColor
-            font.pixelSize: Math.max(7, root.baseFont - 3)
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: Tr.t("market.heatPriceLine", root.lang) + "  ·  "
+                      + Tr.t("market.heatSides", root.lang)
+                color: root.dimColor
+                font.pixelSize: Math.max(7, root.baseFont - 3)
+            }
         }
     }
 

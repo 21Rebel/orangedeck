@@ -121,12 +121,13 @@ Item {
     // stuende im nackten Widget oben ein leerer Streifen in Reiterhoehe.
     readonly property real tabSpace: root.tabsVisible ? tabs.height + root.gap : 0
 
-    // Zwei Reiter fallen im Direktbezug weg, und zwar nicht aus Bequemlichkeit:
-    // die Wallet-Ableitung ist Rechenarbeit des Dienstes, und die
-    // Boersenstroeme werden dort zu Kerzen verdichtet. Ein Reiter, hinter dem
-    // nichts sein kann, ist schlimmer als keiner. (Der Miner stand hier auch;
-    // seit dem 11.09.2026 zeigt er ohne Geraet das Netz.)
-    readonly property bool canMarket: root.feed && !root.feed.direkt
+    // Die Wallet faellt im Direktbezug weg, und zwar nicht aus Bequemlichkeit:
+    // die Ableitung ist Rechenarbeit des Dienstes. Ein Reiter, hinter dem
+    // nichts sein kann, ist schlimmer als keiner. Der Markt stand hier bis zum
+    // 13.09.2026 auch; seitdem rechnet `DirectMarket` ihn selbst, und nur ein
+    // fehlendes QtWebSockets nimmt ihn noch weg. (Der Miner zeigt seit dem
+    // 11.09.2026 ohne Geraet das Netz.)
+    readonly property bool canMarket: !!(root.feed && root.feed.canMarket)
 
     // **Jeder Reiter laesst sich abschalten, und die Reihenfolge gehoert dem
     // Anwender.** Wer keinen Miner hat, braucht den Reiter nicht; wer meist

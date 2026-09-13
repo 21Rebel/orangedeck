@@ -3875,3 +3875,116 @@ nachgesehen ist das nicht.
   dem Netz, ein Rechner mit anderer Skalierung als 100 %.
 - **Ausgeliefert wird Windows fruehestens mit 0.2.9.** `v0.2.8` steht fest
   und enthaelt beide Pack-Korrekturen nicht.
+
+## Der Markt ohne Dienst (13.09.2026)
+
+**Weg A doch, und zwar jetzt.** Das Kapitel vom 12.09. hatte den Nachbau
+zurueckgestellt, bis klar ist, ob der Markt am Telefon taugt. Der
+Geraetelauf am 13.09. hat die Frage anders beantwortet als gedacht: nicht
+der Markt war das Problem, sondern der Weg dorthin.
+
+### Warum Weg B am Telefon nicht reicht
+
+Dienst auf `0.0.0.0:21021` geoeffnet, `ufw` fuer das Telefon frei, im Feld
+`192.168.100.7`. Die App meldete "Marktdaten nicht verfuegbar" und im Feed
+"keine Verbindung zum Feed". Nachgemessen:
+
+    adb shell ... nc 192.168.100.7 21021   GET /market  -> HTTP 200, Kerzen
+    /health des Dienstes                   hits.market = 7, alle aus eigenen Tests
+
+**Die App hat den Dienst nie erreicht, die Shell auf demselben Geraet
+schon.** Ausgeschlossen: Firewall, Bindung, Klartext-HTTP
+(`cleartextTrafficPermitted`), Androids Sperre des lokalen Netzes
+(`RESTRICT_LOCAL_NETWORK` aus, `sLocalNetBlockedUidMap` leer), ein
+dauerhaftes VPN mit Sperre. Auf dem Telefon lief NordVPN; seine Routen
+nehmen 192.168.0.0/16 aber aus. Die Ursache ist **offen**.
+
+Der Punkt ist ein anderer: selbst wenn es geht, braucht Weg B einen Rechner
+im selben Netz, einen geoeffneten Port und keine Stoerung dazwischen.
+Unterwegs geht er nie.
+
+### `DirectMarket.qml`
+
+Ein dritter Loader in `FeedState`, neben `DirectFeed` und `DirectMiner`.
+`getJson` reicht `/market...` im Direktbezug dorthin; die Antworten sind
+**Feld fuer Feld** die des Dienstes, `MarketView`, `MarketLiq` und
+`MarketHeat` sind unveraendert. `FeedState.canMarket` ersetzt das pauschale
+`!direkt` in `FeedTabs`: der Reiter fehlt nur noch, wenn QtWebSockets fehlt.
+
+| Teil | Quelle | anders als im Dienst |
+|---|---|---|
+| Kerzen, alle Fenster | Binance REST `klines` | nein |
+| Uebersicht seit 2017 | Binance REST, vier Seiten | nein |
+| Long/Short | OKX, Bybit, Binance REST | die erste Antwort kommt ohne, die naechste mit |
+| Heatmap | Binance `klines` + `openInterestHist` | nein -- das Modell braucht nichts Gesammeltes |
+| Band, Trades | Binance `aggTrade`, Bybit `publicTrade` | nur solange die Ansicht fragt (wie dort) |
+| Liquidationen | OKX und Bybit live, **dazu OKX REST** | kein Verlauf ueber den Tag hinaus |
+| Waehrung | `conversions` von mempool.space aus `DirectFeed` | ohne Rueckfall auf den Kursverlauf |
+
+Die Stroeme laufen wie im Dienst nur, solange jemand `/market` fragt, und
+120 Sekunden danach.
+
+### Liquidationen gibt es doch rueckwirkend -- einen Tag lang
+
+Der Dienst sagt seit dem 04.09.: "Keine der Boersen bietet sie rueckwirkend
+an." Fuer OKX stimmt das nicht mehr: `GET /api/v5/public/liquidation-orders`
+mit `state=filled` liefert Seiten zu 100 und blaettert mit `after` zurueck.
+Gemessen: **402 Eintraege ueber rund 23 Stunden**, die sechste Seite ist
+leer. Binance hat `allForceOrders` abgeschaltet (404), Bybit hat keinen Weg.
+
+`liqSince` ist im Direktbezug deshalb der Beginn dieses Rueckgriffs. Fuer
+Bybit ist das zu grosszuegig -- dort gibt es nur, was seit dem Verbinden
+kam --, aber "zugehoert seit eben" ueber einem Tag voller Marken waere
+falsch in die andere Richtung. Der Dienst nutzt den Rueckgriff noch nicht.
+
+**Falle beim Messen:** Pythons `urllib` bekam beim Blaettern 403, `curl`
+nicht -- OKX sortiert nach Kennung. Qt (`XMLHttpRequest`) kommt durch.
+
+### Gemessen, nicht angenommen
+
+`DirectMarket.qml` allein und `FeedState` im Direktbezug, ohne Fenster
+(`QT_QPA_PLATFORM=offscreen`), gegen die echten Boersen:
+
+    /market 24h        96 Kerzen, Band nach 25 s 35 Eintraege, vier Stroeme online
+    Liquidationen      400 im Fenster, liqSince 12.09. 09:53 (OKX REST)
+    /market/heatmap    24h: 64 Stufen, 661 Zellen; 1y in EUR: clamped, 180 Spalten
+    /market/overview   3315 Tageskerzen
+    FeedState          canMarket nach 500 ms; /wallets weiter abgelehnt
+
+Im ersten Lauf kam die Heatmap mit `kein_oi` zurueck: Binance Futures
+antwortete nicht rechtzeitig. Der Dienst verhaelt sich genauso, die Ansicht
+fragt nach 60 s neu.
+
+**Ohne `QT_FORCE_STDERR_LOGGING=1` schreibt `qml` nichts**, wenn stderr kein
+Terminal ist: die Meldungen gehen ins Journal. Das erste Protokoll war
+0 Byte gross und sah aus wie ein stummer Fehlschlag.
+
+### Nebenbefund: die Kopfzeile am Telefon
+
+Am Galaxy blieb vom Preis "77.1": Unterreiter, Preis und Zeitraum stehen
+in einer Reihe, und der `clip` schnitt ab, was nicht passte. Jetzt rutscht
+die Preiszeile unter die Reiter, sobald die drei nicht nebeneinander passen
+(`kopfUmbruch`), und Graph, Ablesezeile, Liquidationen und Heatmap rechnen
+mit einer gemeinsamen `kopfHoehe`. In derselben Breite (384 Punkte) liefen
+auch die Legenden von Liquidationen und Heatmap aus dem Bild; beide sind
+jetzt ein `Flow`. Bei 1400 Punkten ist das Bild unveraendert -- beides als
+PNG ueber `grabToImage` nachgesehen.
+
+### Am Galaxy gesehen
+
+Der Anwender am 13.09.2026, 0.2.9 im Direktbezug mit den Umbruechen: "sieht
+soweit gut aus". Dabei aufgefallen, beides **nicht** durch diesen Umbau
+entstanden:
+
+- Am Telefon fehlen im Kurs die Umschalter (Kerze/Kurve, Volumen/CVD) --
+  sie haengen an einer Breitenschwelle und haben keinen Ersatzplatz.
+- Zoomen mit zwei Fingern tut nichts.
+- Mit dem Markt-Reiter ist die Reiterleiste voll: der Vollbildknopf liegt
+  auf "Einstellungen".
+
+### Was ungeprueft bleibt
+
+- Der Markt ohne Dienst unter Windows und macOS.
+- Warum die App den Dienst im WLAN nicht erreichte.
+- `Market.kerzen()` im Dienst wird nirgends aufgerufen -- die Kerzen
+  kommen fertig von Binance, der Sekundenring fuellt sich umsonst.

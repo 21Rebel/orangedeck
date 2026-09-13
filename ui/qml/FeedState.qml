@@ -55,6 +55,9 @@ Item {
     // `canMiner` ist seit dem 11.09.2026 weg: der Miner-Reiter zeigt ohne
     // Geraet das Netz und hat damit immer einen Inhalt.
     readonly property bool canWallet: !root.direkt
+    // Der Markt geht seit dem 13.09.2026 auch direkt (`DirectMarket.qml`) --
+    // solange dessen Loader steht. Fehlt QtWebSockets, bleibt der Reiter weg.
+    readonly property bool canMarket: !root.direkt || markt.status === Loader.Ready
 
     // Die Adressen aus den Einstellungen. Im Daemon-Betrieb bleiben sie
     // ungenutzt -- dort liest der Dienst `sources.json`.
@@ -148,11 +151,16 @@ Item {
 
     // Eine beliebige Abfrage gegen den Daemon, JSON zurueck. Getrennt von
     // `lookup`, weil das die Pfade nach draussen meint -- hier geht es um die
-    // eigenen Pfade des Dienstes (`/wallets`).
+    // eigenen Pfade des Dienstes (`/wallets`, `/market...`).
     function getJson(path, done) {
         if (root.direkt) {
-            // `/wallets` ist der einzige Aufrufer. Die Ableitung aus dem xpub
-            // ist Punktarithmetik auf secp256k1 und bleibt im Dienst.
+            // Der Markt rechnet im Direktbezug selbst, mit denselben Antworten.
+            if (path.indexOf("/market") === 0 && markt.item) {
+                markt.item.getJson(path, done);
+                return;
+            }
+            // `/wallets`: die Ableitung aus dem xpub ist Punktarithmetik auf
+            // secp256k1 und bleibt im Dienst.
             done(null, "im Direktbezug nicht verfuegbar");
             return;
         }
@@ -352,6 +360,23 @@ Item {
             });
             bergwerk.item.active = Qt.binding(function () {
                 return root.active;
+            });
+        }
+    }
+
+    // Der Markt. Eigener Loader aus demselben Grund wie die beiden oben: faellt
+    // er aus, bleiben Mempool und Miner stehen.
+    Loader {
+        id: markt
+
+        active: root.direkt
+        source: "DirectMarket.qml"
+        onLoaded: {
+            markt.item.active = Qt.binding(function () {
+                return root.active;
+            });
+            markt.item.preise = Qt.binding(function () {
+                return root.price;
             });
         }
     }

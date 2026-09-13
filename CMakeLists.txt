@@ -67,6 +67,7 @@ set(SHARED_QML
     ui/qml/FeedState.qml
     ui/qml/DirectFeed.qml
     ui/qml/DirectMiner.qml
+    ui/qml/DirectMarket.qml
     ui/qml/FeedCanvas.qml
     ui/qml/FeedPanel.qml
     ui/qml/FrostedPanel.qml

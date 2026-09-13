@@ -195,7 +195,11 @@ Item {
             wrapMode: Text.WordWrap
         }
 
-        Row {
+        // **Flow, nicht Row**: am Telefon passen beide Summen nicht
+        // nebeneinander, und "Shorts liquidiert" lief rechts aus dem Bild
+        // (13.09.2026, 384 Punkte breit).
+        Flow {
+            width: parent.width
             spacing: root.baseFont * 1.2
             visible: root.hatDaten
 

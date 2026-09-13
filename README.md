@@ -11,7 +11,7 @@ weitere Ansichten:
     Uhr          Blockhoehe gross, Kennzahlen, Kursverlauf bis 2013 zurueck
     Miner        AxeOS und cgminer im Heimnetz, Hashrate und Freigaben
     Explorer     Suche, Transaktionsfluss, Bloecke, geplante Bloecke
-    Markt        Kerzen aus den Trades von Binance und Bybit, laufendes Band
+    Markt        Kerzen, laufendes Band, Long/Short, Liquidationen, Heatmap
     Wallet       watch-only ueber xpub, ypub oder zpub
     Einstellungen
 
@@ -25,7 +25,8 @@ Android-Fassung, die ein Tablet zur Wanduhr macht — siehe `docs/ZIELBILD.md`.
 
 Die Daten kommen von [mempool.space](https://mempool.space) (kein eigener Node
 noetig) und, allein fuer den Markt-Reiter, von den oeffentlichen
-Handelsstroemen von Binance und Bybit. Ohne Schluessel, ohne Anmeldung.
+Schnittstellen von Binance, Bybit und OKX -- ueber den Dienst oder, wo es
+keinen gibt, direkt aus der Anwendung. Ohne Schluessel, ohne Anmeldung.
 
 ## Wo es laeuft, und wie gut geprueft
 
@@ -37,7 +38,7 @@ fehlte monatelang unbemerkt TLS. Deshalb hier getrennt:
 | Linux (Arch, Qt 6.11) | ja | taeglich, alle fuenf Wirte |
 | Linux (Flatpak) | ja | **ja**, Ubuntu 24.04 GNOME und Fedora 44 KDE, frisch in einer VM (12.09.2026, 0.2.8) |
 | Android | ja, signiert | **ja**, Galaxy A55 mit Android 16 (12.09.2026, 0.2.8); Emulator 9, 11, 14 |
-| Windows | ja, unsigniert | **ja**, Windows 11 25H2 in einer VM (12.09.2026): Feed und Markt ueber den Dienst, Widgets. Der Direktbezug mit Daten ist noch ungesehen. Ausgeliefert ab 0.2.9 |
+| Windows | ja, unsigniert | **ja**, Windows 11 25H2 in einer VM (12.09.2026): Feed und Markt ueber den Dienst, Widgets; Feed und Mining im Direktbezug (13.09.2026). Der Markt ohne Dienst ist dort noch ungesehen. Ausgeliefert ab 0.2.9 |
 | macOS | ja, unsigniert | **noch von niemandem** |
 
 Windows und macOS entstehen bei jedem Push in der Baustrecke
