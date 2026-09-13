@@ -38,7 +38,7 @@ fehlte monatelang unbemerkt TLS. Deshalb hier getrennt:
 | Linux (Arch, Qt 6.11) | ja | taeglich, alle fuenf Wirte |
 | Linux (Flatpak) | ja | **ja**, Ubuntu 24.04 GNOME und Fedora 44 KDE, frisch in einer VM (12.09.2026, 0.2.8) |
 | Android | ja, signiert | **ja**, Galaxy A55 mit Android 16 (12.09.2026, 0.2.8); Emulator 9, 11, 14 |
-| Windows | ja, unsigniert | **ja**, Windows 11 25H2 in einer VM (12.09.2026): Feed und Markt ueber den Dienst, Widgets; Feed und Mining im Direktbezug (13.09.2026). Der Markt ohne Dienst ist dort noch ungesehen. Ausgeliefert ab 0.2.9 |
+| Windows | ja, unsigniert | **ja**, Windows 11 25H2 in einer VM (12.09.2026): Feed und Markt ueber den Dienst, Widgets; Feed, Mining und Markt ohne Dienst (13.09.2026). Ausgeliefert ab 0.2.9 |
 | macOS | ja, unsigniert | **noch von niemandem** |
 
 Windows und macOS entstehen bei jedem Push in der Baustrecke

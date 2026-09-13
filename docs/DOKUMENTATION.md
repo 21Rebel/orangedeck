@@ -4112,7 +4112,11 @@ es noch aus, das Kneifen laesst sich ohne Touchscreen nicht ausloesen.
 
 ### Was ungeprueft bleibt
 
-- Der Markt ohne Dienst unter Windows und macOS.
+- Der Markt ohne Dienst unter macOS. Unter Windows am 13.09.2026 abends auf
+  053f502 gesehen: Kurs, Liquidationen ("Zugehoert seit" vom Vortag aus dem
+  OKX-Rueckgriff), Heatmap, Zahnrad, Widget mit Q. Der Prozess stand dabei
+  bei rund 600 MB Arbeitsspeicher -- nicht mit dem Feed verglichen, nur
+  notiert.
 - Warum die App den Dienst im WLAN nicht erreichte.
 - `Market.kerzen()` im Dienst wird nirgends aufgerufen -- die Kerzen
   kommen fertig von Binance, der Sekundenring fuellt sich umsonst.

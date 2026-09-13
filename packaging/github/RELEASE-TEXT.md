@@ -4,19 +4,20 @@
 
      **Vor dem Veroeffentlichen, und erst dann:**
 
-     1. ERLEDIGT 13.09.2026 (Stand 80aee84): IPv4-Sperre gefallen; in der
-        Windows-VM Feed und Mining im Direktbezug mit Daten, Q schliesst
-        Hauptfenster und Widget (`tasklist` leer). Siehe DOKUMENTATION.md,
-        "Nachgemessen am 13.09.2026". Fuer den getaggten Stand gilt es erst,
-        wenn sich app/ und ui/ bis zum Tag nicht aendern.
+     1. ERLEDIGT 13.09.2026, zweimal: morgens auf 80aee84, abends auf
+        053f502 mit dem Markt ohne Dienst. In der Windows-VM Kurs,
+        Liquidationen und Heatmap mit Daten, Feed und Mining im Direktbezug,
+        Zahnrad oeffnet und schliesst die Einstellungen, Q schliesst
+        Hauptfenster und Widget (`tasklist` 1 -> 0), keine neue
+        Defender-Erkennung. Gilt fuer den Tag, solange sich app/ und ui/
+        nach 053f502 nicht mehr aendern.
      2. Geraetelauf auf dem Galaxy mit dem **Markt ohne Dienst**
         (`DirectMarket.qml`): am 13.09.2026 gesehen, Daten und Umbrueche in
         Ordnung. Danach am selben Tag gebaut und am Galaxy gesehen
         ("sieht jetzt gut aus"): Kurzknoepfe Kerze/Volumen, Zoomen mit zwei
         Fingern, fluessiges Ziehen mit Vorrat, Zahnrad statt Reiter
         "Einstellungen", eigener Zeitraum ohne Ueberlappung, Kerzen bleiben
-        Kerzen. **Vor dem Tag noch einmal**, weil app/ und ui/ sich danach
-        geaendert haben: der Direktbezug unter Windows (Punkt 1 galt 80aee84). Der Weg "Dienst auf einem anderen Geraet" kam am
+        Kerzen. Windows danach nachgemessen, siehe Punkt 1. Der Weg "Dienst auf einem anderen Geraet" kam am
         13.09. auf dem Galaxy **nicht** an (App erreichte den Dienst nie,
         die Shell schon, Ursache offen) -- er bleibt fuer die Wallet, wird
         aber nicht als geprueft genannt.
@@ -77,7 +78,7 @@ It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included. 
 
 ## Tested on
 
-- **Windows:** <GEMESSEN-WINDOWS> — bisher: Windows 11 25H2 in a VM, feed and market through a service, feed and mining directly from mempool.space without a service, widgets including Win+D, closing window and widget with Q.
+- **Windows:** <GEMESSEN-WINDOWS> — bisher: Windows 11 25H2 in a VM, feed and market through a service, feed and mining directly from mempool.space without a service, the market without a service (price, liquidations, heatmap), widgets including Win+D, closing window and widget with Q.
 - **Android:** <GEMESSEN-ANDROID>
 - **Linux:** <GEMESSEN-LINUX>
 - **Not yet:** macOS, real tablets, displays above 100 % scaling on Windows. If something looks wrong, please open an issue.
