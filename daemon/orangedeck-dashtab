@@ -8,19 +8,32 @@ Paketupdate weg) legt dieses Skript unter ~/.config/quickshell/dms-custom eine
 geaenderten Dateien sind echte Kopien. DMS wird per systemd-Drop-in von dort
 gestartet (`dms run -c <pfad>`).
 
-Damit fliessen DMS-Updates durch die Symlinks weiter. Nur wenn sich die beiden
-gepatchten Dateien selbst aendern, muss dieses Skript einmal neu laufen:
+**Seit DMS 1.6.1 steckt die Oberflaeche im `dms`-Binary**, /usr/share/quickshell/dms
+gibt es nicht mehr. Die Quelle der Ueberlagerung ist deshalb eine eigene Kopie
+unter ~/.local/share/orangedeck/dms-ui/<version>: bevorzugt das, was die laufende
+DMS nach /run/user/<uid>/danklinux-shell/ entpackt (bitgleich zum Binary), sonst
+der passende Git-Tag samt Untermodul. Am 12.09.2026 zeigten nach dem Update
+alle Symlinks ins Leere und DMS startete nicht mehr.
+
+Updates fliessen damit **nicht** mehr durch. Der Drop-in startet die
+Ueberlagerung deshalb nur, wenn ihre VERSION zu `dms version` passt, sonst die
+eingebaute Oberflaeche (ohne Bitcoin-Tab). Nach einem DMS-Update also einmal:
 
   orangedeck-dashtab            einrichten oder auffrischen
   orangedeck-dashtab --remove   rueckgaengig machen
   orangedeck-dashtab --check    nachsehen, ob die Ueberlagerung noch passt
 """
+import glob
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
 
-SRC = "/usr/share/quickshell/dms"
+LEGACY_SRC = "/usr/share/quickshell/dms"
+UI_CACHE = os.path.expanduser("~/.local/share/orangedeck/dms-ui")
+DMS_REPO = "https://github.com/AvengeMedia/DankMaterialShell"
+SRC = LEGACY_SRC  # wird in build() festgelegt
 DST = os.path.expanduser("~/.config/quickshell/dms-custom")
 QML = os.path.expanduser("~/.local/share/orangedeck/qml")
 DROPIN_DIR = os.path.expanduser("~/.config/systemd/user/dms.service.d")
@@ -505,6 +518,61 @@ def patch_popout(text):
     return text
 
 
+def dms_version():
+    """`dms version` gibt `dms v1.6.1` aus."""
+    out = subprocess.run(["dms", "version"], capture_output=True, text=True).stdout
+    for word in out.split():
+        if word.startswith("v") and word[1:2].isdigit():
+            return word
+    fail("Version von dms nicht lesbar: " + out.strip())
+
+
+def read_version(path):
+    try:
+        with open(os.path.join(path, "VERSION")) as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def ui_source():
+    """Liefert ein Verzeichnis mit der DMS-Oberflaeche passend zum Binary."""
+    if os.path.isfile(os.path.join(LEGACY_SRC, "shell.qml")):
+        return LEGACY_SRC
+    ver = dms_version()
+    cache = os.path.join(UI_CACHE, ver)
+    if read_version(cache) == ver:
+        return cache
+    for stale in (cache, cache + ".tmp"):
+        shutil.rmtree(stale, ignore_errors=True)
+
+    # 1. was die laufende DMS entpackt hat -- bitgleich zum Binary
+    run = "/run/user/%d/danklinux-shell" % os.getuid()
+    for cand in sorted(glob.glob(os.path.join(run, "*"))):
+        if read_version(cand) == ver and os.path.isfile(os.path.join(cand, "shell.qml")):
+            shutil.copytree(cand, cache + ".tmp", symlinks=False, dirs_exist_ok=True)
+            os.replace(cache + ".tmp", cache)
+            print("DMS-Oberflaeche %s aus %s uebernommen" % (ver, cand))
+            return cache
+
+    # 2. der passende Git-Tag; DankCommon ist ein Untermodul
+    print("DMS-Oberflaeche %s aus %s holen ..." % (ver, DMS_REPO))
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = os.path.join(tmp, "dms")
+        for cmd in (["git", "-c", "advice.detachedHead=false", "clone", "-q",
+                     "--depth", "1", "--branch", ver, DMS_REPO, repo],
+                    ["git", "-C", repo, "submodule", "update", "--init", "--depth", "1", "-q"]):
+            if subprocess.run(cmd).returncode != 0:
+                fail("konnte DMS %s nicht holen" % ver)
+        # symlinks=False loest DankCommon -> ../dank-qml-common/DankCommon auf
+        shutil.copytree(os.path.join(repo, "quickshell"), cache + ".tmp",
+                        symlinks=False, dirs_exist_ok=True)
+    os.replace(cache + ".tmp", cache)
+    if read_version(cache) != ver:
+        fail("VERSION in %s passt nicht zu dms %s" % (cache, ver))
+    return cache
+
+
 def mirror(rel):
     """Legt ein Verzeichnis als Symlink-Spiegel des Originals an."""
     src = os.path.join(SRC, rel) if rel else SRC
@@ -522,8 +590,8 @@ def mirror(rel):
 
 
 def build():
-    if not os.path.isdir(SRC):
-        fail("DMS nicht gefunden unter " + SRC)
+    global SRC
+    SRC = ui_source()
     if os.path.exists(DST):
         shutil.rmtree(DST)
     mirror("")
@@ -559,12 +627,21 @@ def build():
             os.unlink(link)
         os.symlink(os.path.join(QML, name), link)
 
-    # systemd-Drop-in
+    # systemd-Drop-in. Die Weiche faengt ab, was am 12.09.2026 passiert ist:
+    # passt die Ueberlagerung nicht zum installierten dms, startet die
+    # eingebaute Oberflaeche statt gar keiner. ($$ ist systemds $.)
     os.makedirs(DROPIN_DIR, exist_ok=True)
     with open(DROPIN, "w") as f:
-        f.write("# Von orangedeck-dashtab angelegt: DMS aus der Ueberlagerung starten\n"
+        f.write("# Von orangedeck-dashtab angelegt: DMS aus der Ueberlagerung starten,\n"
+                "# bei Versionsabweichung die eingebaute Oberflaeche\n"
                 "[Service]\nExecStart=\n"
-                "ExecStart=/usr/bin/dms run --session -c %s\n" % DST)
+                "ExecStart=/bin/sh -c 'd=%s; "
+                "if [ -f \"$$d/shell.qml\" ] && [ -s \"$$d/VERSION\" ] "
+                "&& /usr/bin/dms version 2>/dev/null | grep -qwF \"$$(cat \"$$d/VERSION\")\"; "
+                "then exec /usr/bin/dms run --session -c \"$$d\"; "
+                "else echo \"orangedeck-dashtab: Ueberlagerung passt nicht zu dms, "
+                "starte eingebaute Oberflaeche\" >&2; exec /usr/bin/dms run --session; fi'\n"
+                % DST)
     subprocess.run(["systemctl", "--user", "daemon-reload"], check=False)
     print("Ueberlagerung liegt in " + DST)
     print("Neu starten mit:  systemctl --user restart dms")
@@ -584,13 +661,13 @@ def check():
         print("keine Ueberlagerung eingerichtet")
         return 1
     ok = True
-    for sub, name in (("Common", "SettingsData.qml"),
-                      (os.path.join("Modules", "DankDash"), "DankDashPopout.qml"),
-                      ("", "DMSShellIPC.qml")):
-        mine = os.path.join(DST, sub, name) if sub else os.path.join(DST, name)
-        orig = os.path.join(SRC, sub, name) if sub else os.path.join(SRC, name)
-        if os.path.getmtime(orig) > os.path.getmtime(mine):
-            print("veraltet: %s ist neuer als die gepatchte Kopie" % orig)
+    have, want = read_version(DST), dms_version()
+    if have != want:
+        print("veraltet: Ueberlagerung ist %s, dms ist %s" % (have or "ohne Version", want))
+        ok = False
+    for link in glob.glob(os.path.join(DST, "**"), recursive=True):
+        if os.path.islink(link) and not os.path.exists(link):
+            print("Verweis ins Leere: " + link)
             ok = False
     print("Ueberlagerung aktuell" if ok else "orangedeck-dashtab erneut aufrufen")
     return 0 if ok else 1
