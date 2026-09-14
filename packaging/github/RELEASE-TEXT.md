@@ -21,10 +21,16 @@
         13.09. auf dem Galaxy **nicht** an (App erreichte den Dienst nie,
         die Shell schon, Ursache offen) -- er bleibt fuer die Wallet, wird
         aber nicht als geprueft genannt.
-     3. Das Windows-ZIP aus dem getaggten Stand bauen lassen, als
-        `orangedeck-0.2.9-windows-x86_64.zip` packen, Pruefsumme anhaengen.
-     4. Die drei Pruefsummen unten eintragen, "Tested on" gegen das Gemessene
-        halten, jede Aussage fuer den getaggten Stand nachsehen.
+     3. ERLEDIGT 14.09.2026: das Windows-ZIP aus dem CI-Lauf 34852519395 auf
+        a5637b5 (die CI laeuft nicht auf Tags; a5637b5 aendert gegenueber
+        v0.2.9 = 1147e7a nur den Pin im Flatpak-Bauplan), als
+        `orangedeck-0.2.9-windows-x86_64.zip` gepackt, 72 Dateien und
+        Bytezahl gegen das Artefakt gehalten.
+     4. ERLEDIGT 14.09.2026: drei Pruefsummen eingetragen, APK-Zertifikat
+        gegen den Fingerabdruck unten gehalten. Linux neu gemessen: das
+        Buendel frisch in Ubuntu 24.04 GNOME und Fedora 44 KDE, Feed, Uhr,
+        Mining, Explorer, Markt mit Daten. Zahnrad, Liquidationen und
+        Heatmap dort nicht erreicht (in der VM kommen keine Klicks an).
 
      Veroeffentlicht wird nur mit ausdruecklichem OK des Anwenders. -->
 
@@ -78,16 +84,16 @@ It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included. 
 
 ## Tested on
 
-- **Windows:** <GEMESSEN-WINDOWS> — bisher: Windows 11 25H2 in a VM, feed and market through a service, feed and mining directly from mempool.space without a service, the market without a service (price, liquidations, heatmap), widgets including Win+D, closing window and widget with Q.
-- **Android:** <GEMESSEN-ANDROID>
-- **Linux:** <GEMESSEN-LINUX>
+- **Windows:** Windows 11 25H2 in a VM: feed and mining directly from mempool.space without a service, the market without a service (price, liquidations, heatmap), feed and market through a service, widgets including Win+D, closing window and widget with Q.
+- **Android:** Samsung Galaxy A55, Android 16: the market without a service (candles, liquidations, heatmap) with compact buttons, two-finger zoom and the gear button, and the narrow layouts. The wallet through a service on another device did **not** connect on this phone and is untested.
+- **Linux:** this Flatpak bundle, freshly installed in Ubuntu 24.04 with GNOME and Fedora 44 with KDE (live sessions in a VM): feed, clock, mining, explorer and the market with live data.
 - **Not yet:** macOS, real tablets, displays above 100 % scaling on Windows. If something looks wrong, please open an issue.
 
 ## Checksums (SHA-256)
 
-    <PRUEFSUMME-WINDOWS>  orangedeck-0.2.9-windows-x86_64.zip
-    <PRUEFSUMME-APK>  orangedeck-0.2.9-arm64-v8a.apk
-    <PRUEFSUMME-FLATPAK>  orangedeck-0.2.9.flatpak
+    f4dc5d45e05bd51f71b839b11e26fcbc08ec86df4105541f22cb6f861b3e4f2d  orangedeck-0.2.9-windows-x86_64.zip
+    bfd75987bf6be12465e75e5ee771eab4265f209842e11c0eed405fa180bd51ce  orangedeck-0.2.9-arm64-v8a.apk
+    9e7a9fb7c3ad273790858b6b6cb515a335ab58a5d6af008ba0c43119569fde30  orangedeck-0.2.9.flatpak
 
 ---
 
