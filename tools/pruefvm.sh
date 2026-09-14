@@ -241,11 +241,19 @@ Dasselbe Geruest, vier Abweichungen (gemessen am 12.09.2026):
     SELinux statt AppArmor stellt sich dem Sandkasten nicht in den Weg.
 
   * **ctrl-alt-t ist nicht belegt.** Die Konsole kommt ueber KRunner:
-        alt-f2, dann 'konsole', dann ret
+        alt-spc, dann 'konsole', dann ret
+    **Nicht alt-f2.** Am 14.09.2026 ging KRunner darauf nicht auf; die
+    Konsole kam erst Minuten spaeter, und die Befehlszeile landete bis
+    dahin im Suchfeld von Firefox (DuckDuckGo) statt in einer Shell.
     Kommt sie spaeter doch noch -- ctrl-alt-t wirkt hier verzoegert --,
     stehen zwei Fenster da, und ein Befehl, der WAEHREND des Tippens den
     Fokus wechselt, wird zwischen beiden zerschnitten. Dann einfach im
     vorderen Fenster neu tippen.
+
+    **Vor jeder langen Zeile eine Probezeile** (`echo FOKUS-OK`) und ein
+    Bild: jede Taste geht einzeln ueber den Monitor, eine Zeile mit den
+    Schritten 4 bis 6 braucht gut zwei Minuten -- und landet sie im
+    falschen Fenster, merkt man es erst danach.
 
   * Das Konto heisst liveuser, nicht ubuntu -- das chown in Schritt 4
     entsprechend. mkfs braucht -F, weil die Platte vom vorigen Lauf noch
