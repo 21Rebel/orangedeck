@@ -179,24 +179,25 @@
 
        **0.2.8 ist am 12.09.2026 veroeffentlicht worden.** Ab hier gilt die
        Regel andersherum: jede Nummer ist eine Zusage, und ein Befund nach
-       dem Tag wird eine neue Nummer, keine verschobene. 0.2.9 bringt Windows
-       und Markt und Wallet ueber einen Dienst im eigenen Netz. **Das Datum
-       unten ist vorlaeufig** und wird beim Tag auf den Tag der
-       Veroeffentlichung gesetzt. -->
+       dem Tag wird eine neue Nummer, keine verschobene. 0.2.9 bringt Windows,
+       den Markt ohne Dienst und die Wallet ueber einen Dienst im eigenen
+       Netz. Das Datum ist am 14.09.2026 beim Tag auf den Tag der
+       Veroeffentlichung gesetzt worden. -->
   <releases>
-    <release version="0.2.9" date="2026-09-12">
+    <release version="0.2.9" date="2026-09-14">
       <description>
         <p>
-          A first Windows build, desktop widgets on Windows, and the market and
-          watch-only wallet on every device without its own service: phones,
-          tablets and Windows can use the OrangeDeck service on another
-          computer in the same network.
+          A first Windows build and desktop widgets on Windows. Phones, tablets
+          and Windows fetch the market themselves from the public APIs of
+          Binance, Bybit and OKX, without a service; the watch-only wallet
+          comes from the OrangeDeck service on another computer in the same
+          network.
         </p>
         <p xml:lang="de">
-          Die erste Windows-Fassung, Desktop-Widgets unter Windows, und Markt
-          und Watch-only-Wallet auf jedem Geraet ohne eigenen Dienst: Telefon,
-          Tablet und Windows koennen den OrangeDeck-Dienst auf einem anderen
-          Rechner im selben Netz nutzen.
+          Die erste Windows-Fassung und Desktop-Widgets unter Windows. Telefon,
+          Tablet und Windows holen den Markt selbst von Binance, Bybit und OKX,
+          ohne Dienst; die Watch-only-Wallet kommt vom OrangeDeck-Dienst auf
+          einem anderen Rechner im selben Netz.
         </p>
       </description>
     </release>
