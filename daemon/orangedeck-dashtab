@@ -627,6 +627,18 @@ def build():
             os.unlink(link)
         os.symlink(os.path.join(QML, name), link)
 
+    # Eigene Nachbearbeitungen, die nichts mit OrangeDeck zu tun haben (z. B.
+    # Aenderungen an der Leiste). Sie muessen hier laufen, weil jeder Aufruf
+    # die Ueberlagerung komplett neu baut und alles andere wegwerfen wuerde.
+    hooks = os.path.expanduser("~/.config/orangedeck/dashtab-hooks.d")
+    if os.path.isdir(hooks):
+        env = dict(os.environ, ORANGEDECK_DMS_DST=DST, ORANGEDECK_DMS_SRC=SRC)
+        for name in sorted(os.listdir(hooks)):
+            hook = os.path.join(hooks, name)
+            if os.path.isfile(hook) and os.access(hook, os.X_OK):
+                if subprocess.run([hook], env=env).returncode != 0:
+                    fail("Nachbearbeitung %s ist gescheitert" % hook)
+
     # systemd-Drop-in. Die Weiche faengt ab, was am 12.09.2026 passiert ist:
     # passt die Ueberlagerung nicht zum installierten dms, startet die
     # eingebaute Oberflaeche statt gar keiner. ($$ ist systemds $.)
