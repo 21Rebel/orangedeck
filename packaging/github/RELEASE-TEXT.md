@@ -34,37 +34,37 @@
 
      Veroeffentlicht wird nur mit ausdruecklichem OK des Anwenders. -->
 
-**Windows, and the market on every device.** · *Windows, und der Markt auf jedem Geraet.*
+A Bitcoin dashboard with the mempool as a live tile mosaic, a block height clock, mining figures for the whole network and your own Bitaxe, a block explorer and the BTC market. MIT licensed, no account needed.
 
-A Bitcoin dashboard: the mempool as a live tile mosaic, a block height clock, mining figures for the whole network and your own Bitaxe, a block explorer and the BTC market. MIT, no account.
+This release brings a first Windows build and the market on every device.
 
 ## What's new since 0.2.8
 
-- **Windows.** A first Windows build, as a ZIP that runs without installation. Feed, clock, mining, explorer, market and settings work on their own; the wallet comes from an OrangeDeck service on another computer (see below).
-- **Desktop widgets on Windows.** The same command line as on Linux turns any view into a frameless widget without a taskbar entry, above or below all other windows — and it stays on the desktop when you press Win+D.
-- **The market without a service.** Phones, tablets, Windows and macOS now fetch candles, the trade tape, long/short account ratios and the liquidation heatmap themselves, from the public APIs of Binance, Bybit and OKX. Liquidations come in live while the view is open, plus the last day from OKX; the Linux service keeps listening around the clock and holds two days.
-- **Watch-only wallet on phones, tablets and Windows.** New setting *Data source → Service on another device*: enter the address of the Linux computer running the OrangeDeck service, and the wallet appears. **The service then answers anyone on your network**, including with the wallet addresses; the settings page says so, and the service stays local until you open it yourself.
-- On narrow screens the market header and the legends of liquidations and heatmap wrap instead of being cut off, candles/line and volume/CVD get compact buttons, and the chart zooms with two fingers.
-- Settings open from a gear button next to the fullscreen button instead of a tab; on a phone the last tab used to sit under that button. Back on Android closes them.
-- `--bare` widgets now really hide the header and footer, as documented.
+- A first Windows build, as a ZIP that runs without installation. Feed, clock, mining, explorer, market and settings work on their own. The wallet comes from an OrangeDeck service on another computer (see below).
+- Desktop widgets on Windows. The same command line as on Linux turns any view into a frameless widget without a taskbar entry, above or below all other windows. Widgets stay on the desktop when you press Win+D.
+- The market no longer needs a service. Phones, tablets and Windows fetch candles, the trade tape, long/short account ratios and the liquidation heatmap directly from the public APIs of Binance, Bybit and OKX. Liquidations arrive live while the view is open, and the last day is loaded from OKX. On Linux the service keeps listening around the clock and holds two days.
+- Watch-only wallet on phones, tablets and Windows. Under Data source > Service on another device, enter the address of the Linux computer running the OrangeDeck service, and the wallet appears. The service then answers anyone on your network, including requests for the wallet addresses. The settings page points this out, and the service stays local until you open it yourself.
+- On narrow screens, the market header and the legends of liquidations and heatmap wrap instead of being cut off. Candles/line and volume/CVD have compact buttons, and the chart zooms with two fingers.
+- Settings open from a gear button next to the fullscreen button instead of a tab. On a phone, the last tab used to sit under that button. The Android back gesture closes the settings.
+- Widgets started with `--bare` now hide the header and footer, as documented.
 
-## Windows — `orangedeck-0.2.9-windows-x86_64.zip`
+## Windows: `orangedeck-0.2.9-windows-x86_64.zip`
 
-Unzip anywhere and run `orangedeck-app.exe`. Windows 10/11, 64-bit.
+Unzip anywhere and run `orangedeck-app.exe`. Requires Windows 10 or 11, 64-bit.
 
-**Not signed.** A certificate costs money every year and this project is meant to cost nothing. SmartScreen will warn when you start it for the first time (*More info → Run anyway*). Compare the checksum below before you do.
+The build is not signed. A certificate costs money every year, and this project is meant to cost nothing. SmartScreen will warn you on the first start (More info > Run anyway). Please compare the checksum below before you do.
 
-Widgets, for example the block clock in the top right corner:
+To start a widget, for example the block clock in the top right corner:
 
     orangedeck-app.exe --layer bottom --anchor top,right --width 300 --height 220 --margin 24 --view 1 --bare --id clock
 
-Click a widget and press **Q** to close it. Details in `packaging/widgets/README.md`.
+Click a widget and press Q to close it. Details are in `packaging/widgets/README.md`.
 
-## Android — `orangedeck-0.2.9-arm64-v8a.apk`
+## Android: `orangedeck-0.2.9-arm64-v8a.apk`
 
-For phones and tablets with a 64-bit ARM processor (arm64-v8a), Android 9 or newer. Everything from 0.2.8, plus the market without a service and the wallet through a service on your network.
+For phones and tablets with a 64-bit ARM processor (arm64-v8a) and Android 9 or newer. Includes everything from 0.2.8, plus the market without a service and the wallet through a service on your network.
 
-**Check the signature before installing:**
+Please check the signature before installing:
 
     apksigner verify --print-certs orangedeck-0.2.9-arm64-v8a.apk
 
@@ -72,11 +72,11 @@ The SHA-256 fingerprint of the signing certificate must be:
 
     B3:CC:83:79:CE:27:93:4D:30:B5:48:B3:F5:A1:D5:51:6E:E1:11:14:FF:D5:4E:F1:7E:57:D2:38:12:02:92:E0
 
-## Linux — `orangedeck-0.2.9.flatpak`
+## Linux: `orangedeck-0.2.9.flatpak`
 
     flatpak install --user orangedeck-0.2.9.flatpak
 
-It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included. To serve the wallet to other devices on your network:
+This pulls the KDE runtime 6.9 from Flathub. All six views are included on Linux. To serve the wallet to other devices on your network:
 
     systemctl --user edit orangedeck.service
     # [Service]
@@ -84,10 +84,10 @@ It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included. 
 
 ## Tested on
 
-- **Windows:** Windows 11 25H2 in a VM: feed and mining directly from mempool.space without a service, the market without a service (price, liquidations, heatmap), feed and market through a service, widgets including Win+D, closing window and widget with Q.
-- **Android:** Samsung Galaxy A55, Android 16: the market without a service (candles, liquidations, heatmap) with compact buttons, two-finger zoom and the gear button, and the narrow layouts. The wallet through a service on another device did **not** connect on this phone and is untested.
-- **Linux:** this Flatpak bundle, freshly installed in Ubuntu 24.04 with GNOME and Fedora 44 with KDE (live sessions in a VM): feed, clock, mining, explorer and the market with live data.
-- **Not yet:** macOS, real tablets, displays above 100 % scaling on Windows. If something looks wrong, please open an issue.
+- Windows 11 25H2 in a VM: feed and mining directly from mempool.space, the market without a service (price, liquidations, heatmap), feed and market through a service, widgets including Win+D, closing window and widget with Q.
+- Samsung Galaxy A55 with Android 16: the market without a service (candles, liquidations, heatmap), compact buttons, two-finger zoom, the gear button and the narrow layouts. The wallet through a service on another device did not connect on this phone and remains untested.
+- This Flatpak bundle, freshly installed in live sessions of Ubuntu 24.04 with GNOME and Fedora 44 with KDE: feed, clock, mining, explorer and the market with live data.
+- Not tested yet: macOS, real tablets, and display scaling above 100% on Windows. If something looks wrong, please open an issue.
 
 ## Checksums (SHA-256)
 
@@ -97,4 +97,12 @@ It pulls the KDE runtime 6.9 from Flathub. On Linux all six views are included. 
 
 ---
 
-**Deutsch:** 0.2.9 bringt die erste Windows-Fassung – als ZIP ohne Installation, unsigniert (SmartScreen warnt beim ersten Start) – samt Desktop-Widgets, die auch »Desktop anzeigen« stehen lassen. Neu auf allen Geräten ohne eigenen Dienst: Der Markt holt Kerzen, Band, Long/Short-Verhältnis und Heatmap selbst von Binance, Bybit und OKX; Liquidationen gibt es live und für den letzten Tag. Unter *Datenquelle → Dienst auf einem anderen Gerät* holen Telefon, Tablet und Windows die Watch-only-Wallet vom Linux-Rechner im eigenen Netz. Der Dienst antwortet dann jedem im Netz, auch mit den Wallet-Adressen; er bleibt lokal, bis man ihn selbst öffnet. Vor dem Installieren bitte Prüfsumme und Signatur prüfen.
+## Deutsch
+
+0.2.9 bringt die erste Windows-Fassung. Sie kommt als ZIP ohne Installation und ist nicht signiert, daher warnt SmartScreen beim ersten Start. Die Desktop-Widgets bleiben auch bei „Desktop anzeigen“ stehen.
+
+Der Markt braucht keinen Dienst mehr. Telefon, Tablet und Windows holen Kerzen, Handelsband, Long/Short-Verhältnis und Heatmap selbst von Binance, Bybit und OKX. Liquidationen kommen live, dazu der letzte Tag von OKX.
+
+Unter Datenquelle > Dienst auf einem anderen Gerät holen Telefon, Tablet und Windows die Watch-only-Wallet vom Linux-Rechner im eigenen Netz. Der Dienst antwortet dann jedem im Netz, auch mit den Wallet-Adressen. Er bleibt lokal, bis man ihn selbst freigibt.
+
+Bitte vor dem Installieren Prüfsumme und Signatur prüfen.
