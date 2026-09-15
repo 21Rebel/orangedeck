@@ -394,6 +394,14 @@ Window {
             win.startView = value;
         else if (key === "dataSource")
             win.dataSource = value;
+        // **Fehlte bis zum 15.09.2026.** Das Feld "Dienst auf einem anderen
+        // Geraet" meldete seine Eingabe hierher, und ohne diesen Zweig fiel
+        // sie stillschweigend weg: die Anwendung fragte weiter 127.0.0.1 auf
+        // dem Telefon selbst. Am 13.09. sah das aus wie ein Netzproblem
+        // (die Shell erreichte den Dienst, die App nie), am 15.09. zeigte der
+        // Zaehler in /health, dass von der App gar keine Anfrage kam.
+        else if (key === "daemonHost")
+            win.daemonHost = (value || "").trim();
         else if (key === "colorMode")
             win.colorMode = value;
         else if (key === "sizeMode")

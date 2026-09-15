@@ -4312,6 +4312,43 @@ Abruf-Faden und zeichnet **vor** dem Freigeben: die Werte, oder "offline".
 Ein haengender Abruf bleibt liegen. Das deckt auch einen DNS-Haenger, fuer
 den keine Frist in `holeVon` gilt.
 
-Offen: Das Umstellen der Waehrung in der Anwendung stiess die Widgets am
-Galaxy nicht an, obwohl `currency` in `main.cpp` am `WidgetWecker` haengt.
-Im Protokoll kam danach keine einzige Aktualisierung an.
+Das Umstellen der Waehrung stiess die Widgets gegen 12:55 nicht an, um 13:58
+mit der Fassung samt Wache dann alle zehn in elf Sekunden. Warum der erste
+Versuch ausblieb, ist nicht geklaert; moeglich ist der eingefrorene Prozess
+der vorigen Fassung.
+
+## Der Dienst auf einem anderen Geraet war nie erreichbar (15.09.2026)
+
+Seit dem 13.09.2026 offen: "Die App erreicht den Dienst im WLAN nicht, die
+Shell auf demselben Telefon schon." Vermutet waren das NordVPN am Telefon und
+heute zusaetzlich der Kill-Switch von ProtonVPN am Rechner. Beides war es
+nicht.
+
+Gemessen, Schritt fuer Schritt:
+
+- Der Dienst lauschte nur auf `127.0.0.1` -- nach dem Test vom 13.09. wieder
+  geschlossen. Geoeffnet vom Anwender (Drop-in `lan.conf`, ufw nur fuer das
+  Galaxy).
+- ProtonVPN leitet Antworten ins Heimnetz nicht in den Tunnel: `lookup main
+  suppress_prefixlength 0` steht vor der Tunnel-Tabelle.
+- Die Shell des Galaxy, **mit** NordVPN: `GET /health` -> 200 nach 96 ms.
+- Die App mit eingetragener Adresse: "keine Verbindung". Im Kernel-Protokoll
+  kein UFW BLOCK fuer Port 21021, am Rechner keine Verbindung von
+  192.168.100.6, und der Zaehler `state` in `/health` stieg in zehn Sekunden
+  um 5 -- das sind die lokalen Abnehmer. Eine App, die alle 400 ms fragt,
+  haette rund 25 dazugegeben. **Die App fragte den Dienst also gar nicht.**
+
+Die Ursache: `setOpt` in `app/qml/Main.qml` hatte keinen Zweig fuer
+`daemonHost`. Die Einstellungsseite meldete die Eingabe, `setOpt` kannte den
+Schluessel nicht und liess ihn fallen; `effEndpoint` blieb bei
+`http://127.0.0.1:21021`, also beim Telefon selbst. Der Weg war damit auf
+keinem Geraet nutzbar, auch nicht unter Windows.
+
+Die Gegenprobe: alle 43 Schluessel, die die Einstellungsseiten mit
+`changed("...")` melden, gegen die Zweige in `setOpt` gehalten -- sonst fehlt
+keiner. Sie erfasst nur Schluessel, die als fester Text im Aufruf stehen.
+
+**Die Lehre fuer den Ablauf:** Am 13.09. wurde der Befund "Shell ja, App
+nein" als Netzfrage abgelegt und so ins Release geschrieben. Der Zaehler in
+`/health` haette die Frage in einer Minute beantwortet: kommt von der App
+ueberhaupt etwas an.
