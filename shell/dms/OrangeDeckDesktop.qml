@@ -40,6 +40,24 @@ Item {
         return v.length ? v.split("|") : [];
     }
 
+    function put(key, value) {
+        if (root.pluginService)
+            root.pluginService.savePluginData(root.pluginId, key, value);
+    }
+
+    // Gegenstueck zu `getList`: Listen kommen als Feld herein und gehen als
+    // Zeichenkette hinaus -- eine leere Liste ueberlebt die Ablage sonst nicht.
+    // Gleiche Schluesselliste wie im Leisten-Widget (OrangeDeckWidget.setOpt).
+    function setOpt(key, value) {
+        if (["clockFields", "minerFields", "bigFields", "explorerParts",
+             "explorerPanels", "minerPanes", "netParts", "tabRotateViews",
+             "tabOrder"].indexOf(key) >= 0) {
+            root.put(key + "Raw", (value || []).join("|"));
+            return;
+        }
+        root.put(key, value);
+    }
+
     // Nur dem Desktop-Widget eigen: Untergrund und Kachelgroesse haengen daran,
     // wie gross das Fenster auf dem Schirm ist -- das ist je Instanz etwas
     // anderes als im Dashboard.
@@ -175,5 +193,17 @@ Item {
         accentColor: Theme.primary
         lineColor: Theme.outlineMedium
         panelColor: Theme.surfaceContainerHighest
+
+        // Ohne diesen Handler liefen alle Umschaltungen innerhalb der Ansicht
+        // ins Leere: die Ansicht meldet sie ueber `optRequested`, der Wirt muss
+        // sie ablegen. Das Leisten-Widget tat das, das Desktop-Widget nicht --
+        // aufgefallen am 15.09.2026 am Miner-Umschalter "Network", betraf aber
+        // jede Einstellung, die man in der Ansicht selbst anfasst.
+        // `savePluginData` schreibt hier je Instanz (DMS reicht dem Bauteil
+        // einen instanzbezogenen pluginService durch), zwei Widgets auf dem
+        // Desktop bleiben also unabhaengig.
+        onOptRequested: function (key, value) {
+            root.setOpt(key, value);
+        }
     }
 }
