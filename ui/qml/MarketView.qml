@@ -11,6 +11,12 @@
 // schon zweimal die CPU-Zeit hochgegangen ist.
 //
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
+// **Bound** (15.09.2026): die Delegates und `EigenFeld` greifen auf `root`
+// zu. Ohne das Pragma ist nicht zugesichert, dass Ids aus der umgebenden
+// Komponente dort sichtbar sind -- qmllint meldete das 55-mal. Die Delegates
+// deklarieren `modelData` ohnehin als `required`.
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import "money.js" as Money
 import "strings.js" as Tr

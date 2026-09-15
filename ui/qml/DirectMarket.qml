@@ -613,7 +613,10 @@ Item {
                 var sek = Math.floor(aeltest / 1000);
                 if (!root.__liqSeit || sek < root.__liqSeit)
                     root.__liqSeit = sek;
-                if (nr < 10 && (!nach || aeltest < nach))
+                // 30 Seiten zu je 100 (15.09.2026, vorher 10): an diesem
+                // Morgen reichten zehn nur fuer 16,5 Stunden, am 13.09. 402
+                // Marken fuer 23. Hoechstens alle fuenf Minuten, siehe oben.
+                if (nr < 30 && (!nach || aeltest < nach))
                     seite(aeltest, nr + 1);
             });
         }

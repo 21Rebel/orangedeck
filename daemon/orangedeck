@@ -1131,7 +1131,9 @@ def liq_nachholen():
                  "?instType=SWAP&instFamily=BTC-USDT&state=filled&limit=100")
         nach = 0
         aeltest_gesamt = 0.0
-        for _seite in range(10):
+        # 30 Seiten (15.09.2026, vorher 10): zehn reichten an diesem Morgen
+        # nur fuer 16,5 Stunden. Gleiche Grenze wie in DirectMarket.qml.
+        for _seite in range(30):
             try:
                 d = _hol_json(basis + ("&after=%d" % nach if nach else ""), timeout=15)
             except Exception as e:

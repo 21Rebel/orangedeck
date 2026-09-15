@@ -4383,6 +4383,24 @@ selbst weg. Die Zeilen "Datenquelle" und "Dienst auf einem anderen Geraet"
 blendet `SettingsView` ueber `dienstMoeglich` aus; DMS-Plugin und Quickshell
 kennen den Schluessel nicht und behalten beide.
 
+## Zwei kleine Punkte vor dem Tagesabschluss (15.09.2026)
+
+**OKX-Nachholen: 30 Seiten statt 10**, in `DirectMarket.qml` und im Dienst
+gleich. Roh nachgesehen, laufen die Seiten mit `after` sauber rueckwaerts,
+aber die Dichte schwankt stark: die ersten 100 Marken deckten 1,4 Stunden,
+drei Stunden zurueck (eine Kaskade) nur Minuten. Zehn Seiten reichten deshalb
+mal fuer 16,5 Stunden, mal fuer weit weniger. Mit 30 im Dienst gemessen: 3000
+Marken in 26 s, sortiert, bis 16,6 Stunden zurueck. Auch das ist wieder genau
+die Grenze; ein ganzer Tag ist an einem unruhigen Tag nicht zu haben, ohne
+die Grenze weiter zu heben. Der Dienst fragt hoechstens alle fuenf Minuten.
+
+**`pragma ComponentBehavior: Bound` in `MarketView.qml`.** Die 55 Warnungen
+("Unqualified access") lagen alle in vier Delegates bzw. `EigenFeld`, die auf
+`root` zugreifen; die Delegates deklarierten `modelData` schon als `required`.
+Mit dem Pragma: qmllint 0. Ohne Fenster gegen den laufenden Dienst geladen,
+900 und 384 Punkte breit, Kurs, Liquidationen, Heatmap, Band mit bis zu 49
+Zeilen, die Kurzknoepfe: keine Laufzeitmeldung, beide Bilder in Ordnung.
+
 Offen fuer die naechste Nummer: der Freigabetext muss sagen, dass die Wallet
 unter Android und Windows wegfaellt -- 0.2.9 hat sie dort ausdruecklich
 angekuendigt. Ebenso die Metainfo. Eine Wallet direkt auf dem Telefon (Ableitung
