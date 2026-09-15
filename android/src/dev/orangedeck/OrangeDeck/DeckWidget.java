@@ -127,20 +127,50 @@ public abstract class DeckWidget extends AppWidgetProvider {
             }
         };
         new android.os.Handler(android.os.Looper.getMainLooper())
-                .postDelayed(freigeben, BUDGET_MS + 500);
+                .postDelayed(freigeben, BUDGET_MS + 1500);
         new Thread(new Runnable() {
             @Override
             public void run() {
-                String[] z;
-                ENDE.set(System.currentTimeMillis() + BUDGET_MS);
+                // **Gewartet wird hoechstens das Budget, gezeichnet wird immer
+                // vor dem Freigeben.** Die erste Fassung vom 15.09.2026 liess
+                // den Abruf nach dem Freigeben weiterlaufen. Android friert
+                // einen Prozess ohne laufenden Empfaenger aber kurz danach
+                // ein, und der Faden kam nie mehr dazu, "offline" zu zeichnen:
+                // am Galaxy blieb hinter einem VPN, dem mempool.space nicht
+                // antwortete, das Auslassungszeichen stehen. Ein DNS-Haenger
+                // ist von keiner Frist in `holeVon` gedeckt, deshalb die Wache
+                // hier aussen.
+                final String[][] ergebnis = new String[1][];
+                Thread abruf = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        ENDE.set(System.currentTimeMillis() + BUDGET_MS);
+                        try {
+                            String[] w = werte(c);
+                            merke(c, w);
+                            synchronized (ergebnis) {
+                                ergebnis[0] = w;
+                            }
+                        } catch (Exception e) {
+                            // bleibt leer, gezeichnet wird "offline"
+                        }
+                    }
+                });
+                abruf.setDaemon(true);
+                abruf.start();
                 try {
-                    z = werte(c);
-                    merke(c, z);
-                } catch (Exception e) {
-                    // Kein leeres Widget: ein Strich sagt "gerade nichts da",
-                    // eine leere Flaeche sieht aus wie ein Fehler im Launcher.
-                    z = new String[] { "--", Texte.t(c, "offline"), null };
+                    abruf.join(BUDGET_MS + 300);
+                } catch (InterruptedException e) {
+                    // weiter mit dem, was da ist
                 }
+                String[] z;
+                synchronized (ergebnis) {
+                    z = ergebnis[0];
+                }
+                // Kein leeres Widget: ein Strich sagt "gerade nichts da",
+                // eine leere Flaeche sieht aus wie ein Fehler im Launcher.
+                if (z == null)
+                    z = new String[] { "--", Texte.t(c, "offline"), null };
                 try {
                     zeichne(c, manager, ids, z);
                 } finally {

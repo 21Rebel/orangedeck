@@ -4289,3 +4289,29 @@ Widgets zugleich angestossen werden.
 Nicht pruefbar per `adb`: `am broadcast` mit APPWIDGET_UPDATE verweigert
 Android der Shell (`SecurityException: Permission Denial`). Geprueft wird am
 Geraet ueber denselben Weg wie heute morgen, die Neuinstallation.
+
+### Was am Geraet herauskam
+
+**Die langsamen Abrufe waren das VPN des Telefons.** Vom Galaxy ueber NordVPN
+kam von mempool.space keine Antwort (HTTP auf Port 80 nach 12,5 s leer),
+github.com ueber dasselbe VPN antwortete nach 0,56 s. Der Rechner, selbst
+ueber ProtonVPN, bekam von denselben Adressen nach 0,33 s eine Antwort. Mit
+getrenntem VPN antwortete mempool.space dem Telefon nach 313 ms. Es trifft
+also einen VPN-Ausgang, nicht die Anwendung.
+
+**Mit getrenntem VPN**, nach einer Neuinstallation: alle acht Widgets je
+zweimal gezeichnet (Platzhalter, dann Werte), zusammen in 1,6 s, kein ANR.
+Auf dem Bild Hashrate, Schwierigkeit und der Verlauf seit dem 15.06.
+
+**Mit VPN blieb das Auslassungszeichen stehen**, nicht "offline". Die erste
+Fassung gab `goAsync()` nach 6,5 s frei und liess den Abruf weiterlaufen;
+Android friert einen Prozess ohne laufenden Empfaenger aber kurz danach ein
+(`ActivityManager: freezing ... dev.orangedeck`), und der Faden zeichnete nie
+mehr. Jetzt wartet der Empfaenger hoechstens das Budget auf einen eigenen
+Abruf-Faden und zeichnet **vor** dem Freigeben: die Werte, oder "offline".
+Ein haengender Abruf bleibt liegen. Das deckt auch einen DNS-Haenger, fuer
+den keine Frist in `holeVon` gilt.
+
+Offen: Das Umstellen der Waehrung in der Anwendung stiess die Widgets am
+Galaxy nicht an, obwohl `currency` in `main.cpp` am `WidgetWecker` haengt.
+Im Protokoll kam danach keine einzige Aktualisierung an.
