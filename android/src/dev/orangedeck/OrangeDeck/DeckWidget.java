@@ -81,22 +81,61 @@ public abstract class DeckWidget extends AppWidgetProvider {
 
     private static final String API = "https://mempool.space/api";
 
+    /**
+     * **Alle Abrufe eines Widgets zusammen, nicht je Anfrage.** Am 15.09.2026
+     * nach einer Neuinstallation am Galaxy: der Starter schickte allen zehn
+     * Widgets auf einmal ihre Groesse, jedes holte mit bis zu 6 s Frist je
+     * Anfrage ueber ein VPN, und nach rund elf Sekunden meldete Android
+     * "bg anr" und beendete den Prozess -- viermal hintereinander, und jedes
+     * Mal mit den halb fertigen Abrufen der anderen Widgets darin. Keine
+     * Kachel wurde gezeichnet, nicht einmal der Strich fuer "offline".
+     * Zwischen Prozessstart und ANR lagen 11,6 s; der Start selbst nimmt
+     * davon einen Teil. Sechs Sekunden fuer das Netz lassen Luft.
+     */
+    private static final long BUDGET_MS = 6000;
+    private static final ThreadLocal<Long> ENDE = new ThreadLocal<>();
+
     @Override
     public void onUpdate(Context context, AppWidgetManager manager, int[] ids) {
+        final Context c = context.getApplicationContext();
+        Texte.vorbereiten(c);
+        // **Zuerst zeichnen, ohne Netz**: der zuletzt geholte Stand, beim
+        // ersten Mal Ueberschrift und Auslassung. Wird der Prozess danach
+        // doch beendet, bleibt eine Kachel mit Inhalt statt einer leeren.
+        final String[] alt = gemerkt(c);
+        try {
+            zeichne(c, manager, ids, alt != null ? alt : new String[] { "…", null, null });
+        } catch (Exception e) {
+            // Ein Widget mit eigenem Aufbau kann mit dem Platzhalter nichts
+            // anfangen -- dann eben erst nach dem Abruf.
+        }
+
         // **Netz nie im Vordergrund-Faden.** `onUpdate` laeuft aus
         // `onReceive` heraus, und dort wirft jede Verbindung eine
         // NetworkOnMainThreadException. `goAsync()` haelt den Empfaenger am
-        // Leben, bis der Faden fertig ist -- rund zehn Sekunden hat er dafuer.
+        // Leben, bis der Faden fertig ist -- und wird spaetestens nach dem
+        // Budget freigegeben, damit Android keinen ANR ausloest. Der Faden
+        // darf danach weiterzeichnen, solange der Prozess lebt.
         final PendingResult offen = goAsync();
-        final Context c = context.getApplicationContext();
+        final java.util.concurrent.atomic.AtomicBoolean frei =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+        final Runnable freigeben = new Runnable() {
+            @Override
+            public void run() {
+                if (frei.compareAndSet(false, true))
+                    offen.finish();
+            }
+        };
+        new android.os.Handler(android.os.Looper.getMainLooper())
+                .postDelayed(freigeben, BUDGET_MS + 500);
         new Thread(new Runnable() {
             @Override
             public void run() {
                 String[] z;
-                // Die Sprache zuerst: `zahl()` in werte() schreibt schon nach ihr.
-                Texte.vorbereiten(c);
+                ENDE.set(System.currentTimeMillis() + BUDGET_MS);
                 try {
                     z = werte(c);
+                    merke(c, z);
                 } catch (Exception e) {
                     // Kein leeres Widget: ein Strich sagt "gerade nichts da",
                     // eine leere Flaeche sieht aus wie ein Fehler im Launcher.
@@ -105,10 +144,40 @@ public abstract class DeckWidget extends AppWidgetProvider {
                 try {
                     zeichne(c, manager, ids, z);
                 } finally {
-                    offen.finish();
+                    freigeben.run();
                 }
             }
         }).start();
+    }
+
+    // -- der zuletzt geholte Stand ---------------------------------------------
+
+    private String gemerktSchluessel() {
+        return getClass().getName();
+    }
+
+    private String[] gemerkt(Context c) {
+        String roh = c.getSharedPreferences("widget_stand", Context.MODE_PRIVATE)
+                      .getString(gemerktSchluessel(), null);
+        if (roh == null)
+            return null;
+        try {
+            JSONArray a = new JSONArray(roh);
+            String[] z = new String[a.length()];
+            for (int i = 0; i < z.length; i++)
+                z[i] = a.isNull(i) ? null : a.getString(i);
+            return z;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void merke(Context c, String[] z) {
+        JSONArray a = new JSONArray();
+        for (String s : z)
+            a.put(s == null ? JSONObject.NULL : s);
+        c.getSharedPreferences("widget_stand", Context.MODE_PRIVATE).edit()
+         .putString(gemerktSchluessel(), a.toString()).apply();
     }
 
     /**
@@ -279,6 +348,14 @@ public abstract class DeckWidget extends AppWidgetProvider {
      * Sekunden fuer alles zusammen.
      */
     protected static String holeVon(String url, int frist) throws Exception {
+        // Die eigene Frist, aber nie ueber das Budget des Widgets hinaus
+        Long ende = ENDE.get();
+        if (ende != null) {
+            long rest = ende - System.currentTimeMillis();
+            if (rest < 300)
+                throw new java.io.IOException("Budget des Widgets aufgebraucht");
+            frist = (int) Math.min(frist, rest);
+        }
         HttpURLConnection v = (HttpURLConnection) new URL(url).openConnection();
         try {
             v.setConnectTimeout(frist);

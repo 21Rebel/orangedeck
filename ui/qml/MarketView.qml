@@ -1393,6 +1393,11 @@ Item {
             if (!root.zeigerDa)
                 return "";
             var k = root.sicht[root.zeiger];
+            // Aendert sich `sicht` mitten in einer Geste (Kneifen, Ziehen),
+            // kann der Zeiger fuer einen Durchlauf auf nichts zeigen. Am
+            // Galaxy am 15.09.2026 als TypeError im Protokoll.
+            if (!k)
+                return "";
             var zeile = root.zeitpunkt(k[0]) + "    O " + Tr.group(k[1], root.lang)
                       + "   H " + Tr.group(k[2], root.lang)
                       + "   L " + Tr.group(k[3], root.lang)

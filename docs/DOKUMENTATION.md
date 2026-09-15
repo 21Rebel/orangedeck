@@ -4252,3 +4252,40 @@ Willkommensdialog, der Zeiger stand genau dort, und der Dialog schaltete auf
 Deutsch. Ein ganzer Lauf der Anwendung mit Klicks steht mit der naechsten
 Freigabe an (Punkt 4 der Pruefliste in `RELEASE-TEXT.md`). Rollen geht in der
 VM weiterhin nicht, dafuer bleibt der Durchgang im Xvfb.
+
+## Leere Widgets nach einer Neuinstallation (15.09.2026)
+
+Nach `adb install -r` des Test-APKs standen am Galaxy vier Widgets voellig leer
+da, ohne Ueberschrift; nur der Miner zeigte Werte. mempool.space war vom
+Telefon aus erreichbar (Ping 300 ms ueber NordVPN). Das Systemprotokoll:
+
+    08:12:08  der Starter bindet alle OrangeDeck-Widgets neu
+    08:12:20  Broadcast APPWIDGET_UPDATE_OPTIONS an WidgetUhr ... Killing (bg anr)
+    08:12:20  Start proc ... for broadcast WidgetMempoolGross
+    08:12:32  ... Killing (bg anr)
+    08:12:43  WidgetKurs, bg anr        08:12:55  WidgetNetz, bg anr
+
+Jedes Widget holte in `goAsync()` mit bis zu 6 s Frist **je Anfrage**; das
+grosse Mempool-Widget stellt vier, die grosse Uhr fuenf. Zwischen Prozessstart
+und ANR lagen 11,6 s. Der Abbruch beendet den **ganzen Prozess**, also auch die
+halb fertigen Abrufe der anderen Widgets, und gezeichnet wurde nur am Ende des
+Fadens -- deshalb nicht einmal der Strich fuer "offline". Mit den
+Aenderungen des Tages hat es nichts zu tun; der Java-Teil war seit 0.2.9
+unveraendert, ausgeloest hat es die Neuinstallation, bei der alle zehn
+Widgets zugleich angestossen werden.
+
+`DeckWidget` jetzt:
+
+- **zuerst zeichnen, ohne Netz**: der zuletzt geholte Stand aus
+  `SharedPreferences` (`widget_stand`, je Klasse), beim ersten Mal
+  Ueberschrift und Auslassungszeichen;
+- **ein Budget von 6 s fuer alle Abrufe eines Widgets** (`ENDE` als
+  ThreadLocal, `holeVon` kuerzt die eigene Frist darauf und gibt unter 300 ms
+  auf);
+- `goAsync()` wird spaetestens nach 6,5 s freigegeben, der Faden darf danach
+  noch zeichnen, solange der Prozess lebt;
+- was erfolgreich kam, wird gemerkt.
+
+Nicht pruefbar per `adb`: `am broadcast` mit APPWIDGET_UPDATE verweigert
+Android der Shell (`SecurityException: Permission Denial`). Geprueft wird am
+Geraet ueber denselben Weg wie heute morgen, die Neuinstallation.
