@@ -1,38 +1,45 @@
-<!-- Text fuer das GitHub-Release von 0.2.9. Die Vorlage fuer 0.2.8 ist am
-     12.09.2026 veroeffentlicht worden (https://github.com/21Rebel/orangedeck/releases/tag/v0.2.8)
-     und steht in der Geschichte dieser Datei.
+<!-- Der Text unten ist der von 0.2.9, veroeffentlicht am 14.09.2026
+     (https://github.com/21Rebel/orangedeck/releases/tag/v0.2.9). Fuer die
+     naechste Nummer wird er umgeschrieben; 0.2.8 und die abgehakte Liste von
+     0.2.9 stehen in der Geschichte dieser Datei.
 
-     **Vor dem Veroeffentlichen, und erst dann:**
+     **Die Pruefliste gilt fuer jede Nummer, nicht nur fuer die, bei der sie
+     entstand.** Am 14.09.2026 nannte sie fuer 0.2.9 nur Windows und das
+     Galaxy, weil am Vortag nur dort gemessen worden war; Linux fiel erst an
+     einem leeren Platzhalter auf. Deshalb steht hier alles, jedes Mal, und
+     was nicht gemessen ist, wird nicht als getestet genannt.
 
-     1. ERLEDIGT 13.09.2026, zweimal: morgens auf 80aee84, abends auf
-        053f502 mit dem Markt ohne Dienst. In der Windows-VM Kurs,
-        Liquidationen und Heatmap mit Daten, Feed und Mining im Direktbezug,
-        Zahnrad oeffnet und schliesst die Einstellungen, Q schliesst
-        Hauptfenster und Widget (`tasklist` 1 -> 0), keine neue
-        Defender-Erkennung. Gilt fuer den Tag, solange sich app/ und ui/
-        nach 053f502 nicht mehr aendern.
-     2. Geraetelauf auf dem Galaxy mit dem **Markt ohne Dienst**
-        (`DirectMarket.qml`): am 13.09.2026 gesehen, Daten und Umbrueche in
-        Ordnung. Danach am selben Tag gebaut und am Galaxy gesehen
-        ("sieht jetzt gut aus"): Kurzknoepfe Kerze/Volumen, Zoomen mit zwei
-        Fingern, fluessiges Ziehen mit Vorrat, Zahnrad statt Reiter
-        "Einstellungen", eigener Zeitraum ohne Ueberlappung, Kerzen bleiben
-        Kerzen. Windows danach nachgemessen, siehe Punkt 1. Der Weg "Dienst auf einem anderen Geraet" kam am
-        13.09. auf dem Galaxy **nicht** an (App erreichte den Dienst nie,
-        die Shell schon, Ursache offen) -- er bleibt fuer die Wallet, wird
-        aber nicht als geprueft genannt.
-     3. ERLEDIGT 14.09.2026: das Windows-ZIP aus dem CI-Lauf 34852519395 auf
-        a5637b5 (die CI laeuft nicht auf Tags; a5637b5 aendert gegenueber
-        v0.2.9 = 1147e7a nur den Pin im Flatpak-Bauplan), als
-        `orangedeck-0.2.9-windows-x86_64.zip` gepackt, 72 Dateien und
-        Bytezahl gegen das Artefakt gehalten.
-     4. ERLEDIGT 14.09.2026: drei Pruefsummen eingetragen, APK-Zertifikat
-        gegen den Fingerabdruck unten gehalten. Linux neu gemessen: das
-        Buendel frisch in Ubuntu 24.04 GNOME und Fedora 44 KDE, Feed, Uhr,
-        Mining, Explorer, Markt mit Daten. Zahnrad, Liquidationen und
-        Heatmap dort nicht erreicht (in der VM kommen keine Klicks an).
+     **Vor dem Tag:**
 
-     Veroeffentlicht wird nur mit ausdruecklichem OK des Anwenders. -->
+     1. Metainfo (`packaging/flatpak/*.metainfo.xml`): Fassung, Datum, und die
+        Beschreibung gegen das, was die Nummer wirklich bringt. Am 14.09.2026
+        beschrieb sie noch den Markt ueber einen Dienst, einen Tag nachdem er
+        ohne Dienst kam.
+     2. Geraetelauf am Galaxy mit dem gebauten APK, vom Anwender selbst
+        durchgegangen. Danach `adb shell wm user-rotation free`.
+     3. Windows-VM: Feed, Mining und Markt mit Daten, Zahnrad (auch `,`),
+        Widgets mit Win+D, Q schliesst Fenster und Widget, keine neue
+        Defender-Erkennung.
+     4. Linux in **beiden** Pruef-VMs (Ubuntu GNOME, Fedora KDE), das Buendel
+        aus dem Pin frisch installiert: alle Reiter, Einstellungen ueber `,`.
+     5. `python3 tools/bauplan-pruefen.py`, Pin im Flatpak-Bauplan auf dem
+        Commit, der getaggt wird.
+
+     **Vor dem Veroeffentlichen:**
+
+     6. Windows-ZIP aus dem **Lauf auf dem Pin-Commit** (die CI laeuft nur
+        auf main, nicht auf Tags; der Pin-Commit unterscheidet sich vom Tag
+        nur im Bauplan). Dateien und Bytes gegen das Artefakt halten.
+     7. APK signiert der Anwender; Zertifikat gegen den Fingerabdruck unten.
+        Test-APKs und ihre Zeilen in `PRUEFSUMMEN.txt` vorher wegraeumen.
+     8. Drei Pruefsummen eintragen, "Tested on" nur mit dem, was in Punkt 2
+        bis 4 wirklich gesehen wurde.
+     9. **Stil des Textes**, maschinell pruefen: keine Gedankenstriche als
+        Einschub, keine Mittelpunkte oder Pfeile, keine fett gesetzten
+        Satzanfaenge, saubere Interpunktion, Umlaute im deutschen Teil.
+     10. Release als Entwurf; veroeffentlicht wird nur mit ausdruecklichem OK
+         des Anwenders. -->
+
 
 A Bitcoin dashboard with the mempool as a live tile mosaic, a block height clock, mining figures for the whole network and your own Bitaxe, a block explorer and the BTC market. MIT licensed, no account needed.
 
