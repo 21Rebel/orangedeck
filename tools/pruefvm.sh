@@ -78,7 +78,7 @@ bauen() {
 starten() {
     [ -f "$ISO" ] || { echo "Keine Ubuntu-ISO unter $ISO (ORANGEDECK_VM_ISO setzt den Pfad)"; exit 1; }
     [ -f "$VM/daten.iso" ] || { echo "Keine Daten-ISO -- erst 'tools/pruefvm.sh bauen'"; exit 1; }
-    rm -f "$VM/mon.sock"
+    rm -f "$VM/mon.sock" "$VM/qmp.sock"
     # **Das Tablett von Anfang an, nicht nachgesteckt** -- und die Frage, die
     # hier bis zum 08.09.2026 als offen stand, ist seit dem 06.09. gemessen
     # und beantwortet: **es hilft nicht.**
@@ -93,14 +93,19 @@ starten() {
     # Das Tablett ist da, es ist aktiv, es ist absolut -- und `mouse_move`
     # bewegt trotzdem nichts. Von Anfang an eingehaengt statt nachgesteckt
     # aendert daran nichts; damit sind es sieben erfolglose Konfigurationen.
-    # Ungeprueft bleibt allein QMP `input-send-event`, wofuer die VM mit
-    # `-qmp` starten muesste.
     #
-    # **Die Folgerung, und sie ist keine Notloesung, sondern die Aufgabe
-    # dieser VM:** sie prueft Darstellung und Geometrie auf einem fremden
-    # System, kein Zeigerverhalten. Was am Zeiger haengt, prueft `xtest.py`
-    # im Xvfb; was am Finger haengt, prueft nur ein echtes Geraet. Das Tablett
-    # bleibt eingehaengt, weil es nichts kostet.
+    # **Der achte Weg geht: QMP `input-send-event`** (15.09.2026). Deshalb
+    # `-qmp` neben dem Monitor. `mouse_move` schickt relative Schritte, das
+    # aktive Geraet ist aber das absolute Tablett; QMP setzt dessen Achsen
+    # direkt, 0 bis 32767. Gemessen im Willkommensdialog von Ubuntu 24.04:
+    # `vm.klick(618, 336)` auf "Deutsch", der Zeiger stand genau dort, und
+    # der Dialog schaltete auf Deutsch. `tools/vm.py` hat dafuer `zeiger()`
+    # und `klick()`. Zahnrad, Liquidationen und Heatmap sind damit auch
+    # unter Linux erreichbar; das Zahnrad ab dem Stand vom 15.09.2026 auch
+    # ueber `,`.
+    #
+    # Was am Finger haengt (Kneifen, Wischen), prueft weiterhin nur ein
+    # echtes Geraet.
     #
     # **Zwei Laufwerke von Anfang an.** Am 04.09. wurde das Medium im Betrieb
     # getauscht; der Gast lieferte danach weiter den alten Inhalt aus dem
@@ -113,6 +118,7 @@ starten() {
         -vga std -display none \
         -device qemu-xhci,id=xhci -device usb-tablet,bus=xhci.0 \
         -monitor "unix:$VM/mon.sock,server,nowait" \
+        -qmp "unix:$VM/qmp.sock,server,nowait" \
         -netdev user,id=n0 -device virtio-net-pci,netdev=n0 -boot d \
         > "$VM/qemu.log" 2>&1 &
     echo $! > "$VM/qemu.pid"
@@ -274,9 +280,10 @@ Dasselbe Geruest, vier Abweichungen (gemessen am 12.09.2026):
 
 == Was diese VM NICHT prueft ==
 
-Zeigerverhalten. mouse_move bewegt im Gast nichts (sieben Konfigurationen,
-siehe Kommentar bei 'starten'). Geprueft werden Darstellung und Geometrie
-auf einem fremden System -- was am Finger haengt, prueft nur ein Geraet.
+Gesten. Klicks gehen seit dem 15.09.2026 ueber QMP (vm.klick(x, y) in
+Bildpunkten des letzten Bildes; mouse_move im Monitor bewegt weiterhin
+nichts, siehe Kommentar bei 'starten'). Was am Finger haengt, prueft nur
+ein Geraet.
 
 **Und damit auch: den unteren Teil langer Seiten.** `tools/ansichten.py`
 rollt mit dem Rad (`xtest.rad`); hier gibt es keines. Ueber die Tastatur

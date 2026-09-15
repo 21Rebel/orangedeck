@@ -4225,3 +4225,30 @@ gleich, bis es jemanden stoert.
 `Market.kerzen()` und der Ring aus Sekundenfaechern dahinter sind geloescht,
 dazu `MARKET_SECONDS` und `MARKET_MAX_CANDLES`. Die Kerzen kommen seit langem
 fertig von Binance; der Ring wurde bei jedem Trade gefuellt und nie gelesen.
+
+## Klicks in der Pruef-VM (15.09.2026)
+
+Seit dem 05.09.2026 stand fest, dass `mouse_move` im QEMU-Monitor in der
+Linux-Pruef-VM nichts bewegt, ueber sieben Konfigurationen. Ungeprueft war
+allein QMP `input-send-event`. In der Windows-VM gingen Klicks genau darueber,
+unter Linux war es nie versucht worden. Die Folge am 14.09.: Zahnrad,
+Liquidationen und Heatmap blieben unter Linux ungeprueft.
+
+`tools/pruefvm.sh starten` legt jetzt neben `mon.sock` einen `qmp.sock` an.
+`tools/vm.py` bekommt:
+
+    vm.zeiger(x, y)     Zeiger auf Bildpunkt (x, y) der Anzeige
+    vm.klick(x, y)      hinfahren, druecken, loslassen
+    vm._qmp([...])      beliebige QMP-Befehle, nach qmp_capabilities
+
+Die Achsen gehen von 0 bis 32767 ueber die ganze Anzeige; die Aufloesung holt
+`klick()` aus einem frischen Bild, wenn sie nicht mitgegeben wird. Erst
+hinfahren, dann den Knopf: in einem Rutsch nimmt mancher Gast den Druck noch
+an der alten Stelle.
+
+Gemessen mit Ubuntu 24.04 live: `query-mice` nennt das HID-Tablett als
+aktives, absolutes Geraet; `vm.klick(618, 336)` auf "Deutsch" im
+Willkommensdialog, der Zeiger stand genau dort, und der Dialog schaltete auf
+Deutsch. Ein ganzer Lauf der Anwendung mit Klicks steht mit der naechsten
+Freigabe an (Punkt 4 der Pruefliste in `RELEASE-TEXT.md`). Rollen geht in der
+VM weiterhin nicht, dafuer bleibt der Durchgang im Xvfb.

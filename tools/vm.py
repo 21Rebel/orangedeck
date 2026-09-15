@@ -104,6 +104,78 @@ def bild(name):
     return png
 
 
+# -- Klicks ueber QMP --------------------------------------------------------
+# `mouse_move` im Monitor sendet relative Schritte, und das aktive Geraet ist
+# das absolute Tablett: sieben Konfigurationen lang bewegte sich nichts
+# (Kommentar bei `starten` in pruefvm.sh). QMP `input-send-event` spricht die
+# absoluten Achsen direkt an, 0 bis 32767 ueber die ganze Anzeige -- in der
+# Windows-VM gehen Klicks genau so. Dafuer startet die VM mit `-qmp`.
+QMP_SOCK = os.environ.get("ORANGEDECK_VM_QMP", os.path.join(SC, "qmp.sock"))
+
+
+def _qmp(befehle):
+    """Befehle an QMP, nach dem Pflichtgruss `qmp_capabilities`."""
+    import json
+    if not os.path.exists(QMP_SOCK):
+        raise SystemExit(
+            "Kein QMP-Sockel unter %s.\n"
+            "Die VM muss mit  -qmp unix:%s,server,nowait  laufen "
+            "(tools/pruefvm.sh starten tut das seit dem 15.09.2026)." % (QMP_SOCK, QMP_SOCK))
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect(QMP_SOCK)
+    f = s.makefile("rw")
+    f.readline()                                    # Gruss mit Fassung
+    antworten = []
+    for b in [{"execute": "qmp_capabilities"}] + list(befehle):
+        f.write(json.dumps(b) + "\n")
+        f.flush()
+        # Ereignisse (`"event"`) koennen dazwischenkommen; gewartet wird
+        # auf die Antwort zum Befehl.
+        while True:
+            z = json.loads(f.readline())
+            if "return" in z or "error" in z:
+                antworten.append(z)
+                break
+    s.close()
+    fehler = [a["error"] for a in antworten if "error" in a]
+    if fehler:
+        raise SystemExit("QMP: %s" % fehler)
+    return antworten[1:]
+
+
+def _groesse():
+    """Die Aufloesung der Anzeige, aus einem frischen Bild."""
+    p = bild("_groesse")
+    aus = subprocess.run(["magick", "identify", "-format", "%w %h", p],
+                         capture_output=True, text=True).stdout.split()
+    os.path.exists(p) and os.remove(p)
+    return int(aus[0]), int(aus[1])
+
+
+def zeiger(x, y, groesse=None):
+    """Den Zeiger auf Bildpunkt (x, y) der Anzeige setzen."""
+    w, h = groesse or _groesse()
+    ax = max(0, min(32767, round(x * 32767 / max(1, w - 1))))
+    ay = max(0, min(32767, round(y * 32767 / max(1, h - 1))))
+    _qmp([{"execute": "input-send-event", "arguments": {"events": [
+        {"type": "abs", "data": {"axis": "x", "value": ax}},
+        {"type": "abs", "data": {"axis": "y", "value": ay}}]}}])
+    return w, h
+
+
+def klick(x, y, groesse=None, taste="left"):
+    """Linksklick auf Bildpunkt (x, y). Erst hinfahren, dann druecken und
+    loslassen -- in einem Rutsch nimmt mancher Gast den Druck noch an der
+    alten Stelle."""
+    g = zeiger(x, y, groesse)
+    time.sleep(0.1)
+    for unten in (True, False):
+        _qmp([{"execute": "input-send-event", "arguments": {"events": [
+            {"type": "btn", "data": {"down": unten, "button": taste}}]}}])
+        time.sleep(0.05)
+    return g
+
+
 def _sauber(roh):
     """Die Monitor-Antwort vom Echo befreien.
 
