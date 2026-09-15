@@ -11,7 +11,8 @@ Bilder des Buendels -- gleiche Groesse, gleiche Reihenfolge, also direkt
 vergleichbar (`PIL.ImageChops.difference`).
 
 **Warum Texterkennung und nicht feste Koordinaten.** Die Hauptreiter liegen
-auf den Tasten 1 bis 6, die Unterreiter von Markt und Einstellungen nicht.
+auf den Tasten 1 bis 6, die Einstellungen (das Zahnrad) auf dem Komma, die
+Unterreiter von Markt und Einstellungen auf keiner Taste.
 Feste Punkte waeren an jede Fenstergroesse und jede Schrift gebunden -- und
 gerade die Schrift ist im Flatpak eine andere als am Rechner. `tesseract`
 sucht das Wort, geklickt wird in seine Mitte. Gefunden wird so auch, was
@@ -180,7 +181,13 @@ for name, text in (("05b_liq", "Liquidations"), ("05c_heat", "Heatmap")):
         bild(name)
 klicke_text("Price", ym - 14, ym + 14)
 time.sleep(1)
-reiter(6, 3)
+# Die Einstellungen haben seit dem 13.09.2026 keinen Reiter mehr, sondern das
+# Zahnrad -- auf der Tastatur das Komma. Die Ziffer 6 waere die Wallet.
+xtest.klick(W - 5, H - 5)
+xtest.taste("Escape")
+time.sleep(0.3)
+xtest.taste("comma")
+time.sleep(3)
 gerollt("06_einst")
 ys = zeile_von("General") or 47
 for i, text in enumerate(("Layout", "Feed", "Clock", "Mining", "Explorer",

@@ -3365,6 +3365,10 @@ Alle drei lesen jetzt aus `ui/qml/views.js`:
 | 4 | `tab.wallet` | — (haengt an `walletEnabled`) |
 | 5 | `tab.settings` | — (bleibt immer) |
 
+*Nachtrag 15.09.2026:* In der Anwendung hat `5` seit dem 13.09.2026 keinen
+Reiter mehr, sondern das Zahnrad, auf der Tastatur `,`. Im DMS-Plugin und im
+Quickshell-Fenster bleibt es ein Reiter. Siehe "Das Zahnrad auf der Tastatur".
+
 **Die `id` ist nicht die Position.** Der Markt kam als 6 dazu und steht
 trotzdem an fuenfter Stelle. Umzunumerieren haette jeden gemerkten Wert, jedes
 `--view N` und jede Android-Verknuepfung verschoben.
@@ -4120,3 +4124,33 @@ es noch aus, das Kneifen laesst sich ohne Touchscreen nicht ausloesen.
 - Warum die App den Dienst im WLAN nicht erreichte.
 - `Market.kerzen()` im Dienst wird nirgends aufgerufen -- die Kerzen
   kommen fertig von Binance, der Sekundenring fuellt sich umsonst.
+
+## Das Zahnrad auf der Tastatur (15.09.2026)
+
+Seit die Einstellungen in der Anwendung ein Zahnrad statt eines Reiters sind,
+zaehlen die Ziffern 1 bis 6 sie nicht mehr mit -- die Ziffer zaehlt die
+sichtbaren Reiter ab, und die Einstellungen sind keiner. Ohne Maus kam man
+nicht mehr hinein. In der Pruef-VM, wo keine Klicks ankommen, blieben sie am
+14.09.2026 deshalb ungeprueft, und `tools/ansichten.py` drueckte weiter die 6
+(heute die Wallet oder nichts).
+
+    ,     oeffnet die Einstellungen, ein zweites Mal fuehrt zurueck
+    Esc   schliesst offene Einstellungen
+
+Beides ruft dieselben Funktionen wie der Klick (`einstKnopf.oeffnen()` und
+`schliessen()`), also auch derselbe Rueckweg zur vorigen Ansicht. Im nackten
+Widget und im Vollbild tut `,` nichts, dort gibt es auch kein Zahnrad. Esc im
+Suchfeld des Explorers nimmt weiterhin zuerst das Feld; erst danach kommt es
+hier an. Die Tastenhilfe nennt `, Einstellungen` mit dem Reiternamen, der in
+allen dreizehn Sprachen schon uebersetzt ist.
+
+Warum das Komma: Strg+Komma oeffnet in vielen Programmen die Einstellungen,
+und die Taste liegt auf deutscher und englischer Belegung ohne Umschalten.
+
+Die Werkzeuge: `ansichten.py` drueckt `comma`, `ansichten-android.py` schickt
+`KEYCODE_COMMA` (55) statt nach dem Wort "Settings" in der Reiterzeile zu
+suchen, das es dort nicht mehr gibt.
+
+In Xvfb gemessen, mit Texterkennung: Uhr, `,` Einstellungen (Zahnrad orange),
+`,` wieder Uhr, `,` und Esc wieder Uhr. qmllint zaehlt in `Main.qml` eine
+Warnung mehr, das dritte `Tr` in der Zeile der Tastenhilfe.

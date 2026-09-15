@@ -136,20 +136,23 @@ if tippe_auf("Explorer", max(0, ytab - 40), ytab + 40):
     gerollt("04b_block", HOEHE)
     adb("shell", "input", "keyevent", "111")   # Escape: Tastatur weg
 
-# Einstellungen samt Unterreitern
-if tippe_auf("Settings", max(0, ytab - 40), ytab + 40):
-    time.sleep(4)
-    gerollt("06_einst", HOEHE)
-    for i, text in enumerate(("Layout", "Feed", "Clock", "Mining", "Explorer", "Market", "Wallet")):
-        p = bild("_suche")
-        kand = [w for w in woerter(p, ytab + 20, ytab + 160) if w[0].lower().startswith(text.lower())]
-        if not kand:
-            protokoll.append(f"Unterreiter fehlt: {text}")
-            continue
-        x, y = kand[0][1], kand[0][2]
-        adb("shell", "input", "tap", str(x), str(y))
-        time.sleep(2)
-        gerollt(f"06{chr(ord('b') + i)}_{text.lower()}", HOEHE)
+# Einstellungen samt Unterreitern. Seit dem 13.09.2026 kein Reiter
+# "Settings" mehr, sondern das Zahnrad; ohne Wort zum Suchen geht es ueber
+# die Taste dahinter (KEYCODE_COMMA). Das Escape oben hat den Fokus aus dem
+# Suchfeld schon zurueckgegeben.
+adb("shell", "input", "keyevent", "55")
+time.sleep(5)
+gerollt("06_einst", HOEHE)
+for i, text in enumerate(("Layout", "Feed", "Clock", "Mining", "Explorer", "Market", "Wallet")):
+    p = bild("_suche")
+    kand = [w for w in woerter(p, ytab + 20, ytab + 160) if w[0].lower().startswith(text.lower())]
+    if not kand:
+        protokoll.append(f"Unterreiter fehlt: {text}")
+        continue
+    x, y = kand[0][1], kand[0][2]
+    adb("shell", "input", "tap", str(x), str(y))
+    time.sleep(2)
+    gerollt(f"06{chr(ord('b') + i)}_{text.lower()}", HOEHE)
 
 if os.path.exists(f"{OUT}/{PRE}__suche.png"):
     os.remove(f"{OUT}/{PRE}__suche.png")

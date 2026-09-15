@@ -711,6 +711,23 @@ Window {
                     hint.flash();
                 }
                 break;
+            case Qt.Key_Comma:
+                // **Das Zahnrad auf der Tastatur.** Seit die Einstellungen
+                // keinen Reiter mehr haben (13.09.2026), zaehlen die Ziffern
+                // sie nicht mit, und ohne Maus kam man nicht mehr hinein --
+                // in der Pruef-VM gar nicht (15.09.2026). Komma wie Strg+Komma
+                // in vielen Programmen; ein zweites Mal fuehrt zurueck.
+                if (win.bare || win.vollbild)
+                    return;
+                einstKnopf.offen ? einstKnopf.schliessen() : einstKnopf.oeffnen();
+                hint.flash();
+                break;
+            case Qt.Key_Escape:
+                // Nur offene Einstellungen; sonst geht Esc weiter.
+                if (win.view !== 5 || win.vollbild)
+                    return;
+                einstKnopf.schliessen();
+                break;
             case Qt.Key_F11:
                 win.vollbild = !win.vollbild;
                 break;
@@ -783,7 +800,8 @@ Window {
             horizontalAlignment: Text.AlignHCenter
             color: "#9a94a6"
             font.pixelSize: 11
-            text: Tr.t("keys.help", win.lang) + " · " + Tr.t("keys.fullscreen", win.lang)
+            // ", Einstellungen" aus dem Reiternamen, der in allen Sprachen schon da ist.
+            text: Tr.t("keys.help", win.lang) + " · , " + Tr.t("tab.settings", win.lang) + " · " + Tr.t("keys.fullscreen", win.lang)
         }
 
         function flash() {
