@@ -86,6 +86,8 @@ Item {
     property var liqHist: []
     property var ratio: []
     property int liqSeit: 0
+    // Je Quelle {id, name, online, since} -- `since` nur im Direktbezug
+    property var liqQuellen: []
     // Die Heatmap kommt ueber einen eigenen Weg und **nicht im Sekundentakt**:
     // sie ist gerechnet, nicht beobachtet, und aendert sich nur mit dem
     // offenen Interesse -- das schreibt Binance alle fuenf Minuten fort.
@@ -98,10 +100,22 @@ Item {
                  + (root.range === "custom" ? "&secs=" + root.sichtSekunden : "")
                  + "&cur=" + root.currency;
         root.feed.getJson(pfad, function (d, err) {
-            if (err || !d)
+            if (err || !d) {
+                // Nicht erst in einer Minute: beim Oeffnen stuende so lange
+                // nichts da (15.09.2026, Binance Futures zu langsam).
+                heatNochmal.restart();
                 return;
+            }
+            heatNochmal.stop();
             root.heat = d;
         });
+    }
+
+    Timer {
+        id: heatNochmal
+
+        interval: 10000
+        onTriggered: root.heatHolen()
     }
 
     Timer {
@@ -595,6 +609,7 @@ Item {
             root.liqHist = d.liqHist || [];
             root.ratio = d.ratio || [];
             root.liqSeit = d.liqSince || 0;
+            root.liqQuellen = d.liqSources || [];
             root.tradeZahl = d.trades || 0;
             root.umgerechnet = d.converted === true;
             // Nur das Neue anhaengen und vorne abschneiden -- der Dienst
@@ -1476,19 +1491,34 @@ Item {
 
         // **Zwei Finger** tun dasselbe wie das Rad. Bis zum 13.09.2026 gab es
         // hier nur den WheelHandler, und der nimmt keinen Touchscreen -- am
-        // Galaxy tat Kneifen nichts. Der Rand rechts bleibt stehen, wie beim
-        // Rad; `sicht` schneidet von dort aus zu.
+        // Galaxy tat Kneifen nichts.
+        //
+        // **Die Stelle zwischen den Fingern bleibt stehen**, nicht der rechte
+        // Rand (15.09.2026). Wer auf eine Kerze in der Mitte zieht, will sie
+        // groesser sehen, nicht die juengste. Gerechnet wird vom Stand beim
+        // Aufsetzen: die Zeit unter der Mitte, und ihr Anteil der Breite von
+        // links. In der Gegenwart heisst Hineinzoomen damit, in die
+        // Vergangenheit zu ruecken; ganz rechts angesetzt bleibt es live.
         PinchHandler {
             id: kneifen
 
             target: null
 
             property int startSekunden: 0
+            property int startEnde: 0
+            property real anteil: 1
 
             onActiveChanged: {
-                if (!kneifen.active)
+                if (!kneifen.active) {
+                    // Wie nach dem Ziehen: das neue Fenster gilt, und geholt
+                    // wird einmal, nach der Geste.
+                    if (kneifen.anteil < 1)
+                        root.fensterSetzen(root.endeEffektiv);
                     return;
+                }
                 kneifen.startSekunden = root.sichtSekunden;
+                kneifen.startEnde = root.endeEffektiv;
+                kneifen.anteil = Math.max(0, Math.min(1, kneifen.centroid.position.x / Math.max(1, root.feldBreite)));
                 // Der erste Finger hat schon als Ziehen angefangen. Ohne das
                 // verschoebe das Loslassen das Fenster zusaetzlich.
                 zeigerFeld.druck = false;
@@ -1497,8 +1527,14 @@ Item {
                 leinwand.requestPaint();
             }
             onActiveScaleChanged: {
-                if (kneifen.active && kneifen.activeScale > 0)
-                    root.zoomAuf(kneifen.startSekunden / kneifen.activeScale);
+                if (!kneifen.active || kneifen.activeScale <= 0)
+                    return;
+                root.zoomAuf(kneifen.startSekunden / kneifen.activeScale);
+                if (kneifen.anteil >= 1)
+                    return;
+                var rechtsVorher = (1 - kneifen.anteil) * kneifen.startSekunden;
+                var mitte = kneifen.startEnde - rechtsVorher;
+                root.fensterSchieben(mitte + (1 - kneifen.anteil) * root.sichtSekunden);
             }
         }
     }
@@ -1607,6 +1643,7 @@ Item {
         hist: root.liqHist
         ratio: root.ratio
         seit: root.liqSeit
+        liqQuellen: root.liqQuellen
         preis: root.letzterPreis
         quellen: root.quellen
         textColor: root.textColor

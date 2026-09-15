@@ -33,6 +33,28 @@ Item {
     property var ratio: []
     // Seit wann ueberhaupt zugehoert wird, 0 = noch nie
     property int seit: 0
+    // {id, name, online, since} je Quelle; `since` gibt es nur im Direktbezug
+    property var liqQuellen: []
+    // **Bybit getrennt, wenn es spaeter kam.** Im Direktbezug ist `seit` der
+    // Beginn des OKX-Rueckgriffs, rund ein Tag zurueck; Bybit hat keinen
+    // Rueckgriff und zaehlt erst ab dem Verbinden (15.09.2026). Der Dienst
+    // hoert beiden gleich lange zu und schickt kein `since`.
+    readonly property int bybitSeit: {
+        for (var i = 0; i < root.liqQuellen.length; i++) {
+            var q = root.liqQuellen[i];
+            if (q.id === "bybit-liq" && q.since > 0)
+                return q.since;
+        }
+        return 0;
+    }
+
+    function seitText() {
+        var f = "dd.MM.yyyy HH:mm";
+        var s = Qt.formatDateTime(new Date(root.seit * 1000), f);
+        if (root.bybitSeit > root.seit + 600)
+            s += " (OKX), " + Qt.formatDateTime(new Date(root.bybitSeit * 1000), f) + " (Bybit)";
+        return s;
+    }
     property real preis: 0
     property var quellen: []
 
@@ -186,8 +208,7 @@ Item {
 
         Text {
             text: root.seit > 0
-                  ? Tr.t("market.liqSince", root.lang,
-                         Qt.formatDateTime(new Date(root.seit * 1000), "dd.MM.yyyy HH:mm"))
+                  ? Tr.t("market.liqSince", root.lang, root.seitText())
                   : Tr.t("market.liqNever", root.lang)
             color: root.dimColor
             font.pixelSize: root.baseFont - 3

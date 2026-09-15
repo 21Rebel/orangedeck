@@ -4154,3 +4154,50 @@ suchen, das es dort nicht mehr gibt.
 In Xvfb gemessen, mit Texterkennung: Uhr, `,` Einstellungen (Zahnrad orange),
 `,` wieder Uhr, `,` und Esc wieder Uhr. qmllint zaehlt in `Main.qml` eine
 Warnung mehr, das dritte `Tr` in der Zeile der Tastenhilfe.
+
+## Der Markt ohne Dienst, vier Feinheiten (15.09.2026)
+
+Offen seit dem 13.09.2026, alle vier aus `DirectMarket.qml` und der Ansicht.
+
+**1. Long/Short kommt nicht mehr erst mit der langsamsten Boerse.** Die Liste
+galt, wenn OKX, Bybit und Binance geantwortet hatten; bis dahin war sie leer,
+bei einer haengenden Boerse bis zur Frist von 20 s. Jetzt gilt jeder
+Zwischenstand, solange er mehr enthaelt als der bisherige. Beim spaeteren
+Auffrischen (alle fuenf Minuten) ersetzt eine halbe Liste die volle nicht.
+
+**2. Bybit hat sein eigenes "seit".** `liqSince` ist im Direktbezug der Beginn
+des OKX-Rueckgriffs, rund ein Tag. Bybit hat keinen Rueckgriff und zaehlt ab
+dem Verbinden. `liqSources` traegt jetzt je Quelle `since`, und `MarketLiq`
+nennt Bybit getrennt, wenn es mehr als zehn Minuten spaeter kam:
+
+    Zugehört seit 14.09.2026 07:52 (OKX), 15.09.2026 06:45 (Bybit)
+
+Der Dienst schickt kein `since` je Quelle, er hoert beiden gleich lange zu;
+dort bleibt die Zeile, wie sie war. Keine neue Uebersetzung, der Satz nimmt
+den zusammengesetzten Wert als `{0}`.
+
+**3. Kein offenes Interesse ist nicht dasselbe wie keine Antwort.** Kam
+`openInterestHist` von Binance Futures nicht rechtzeitig, rechnete die
+Heatmap mit einer leeren Reihe und schickte `kein_oi` -- als gueltige Antwort,
+die die Ansicht eine Minute stehen liess. Jetzt geht ein Fehler zurueck, die
+Ansicht behaelt das letzte Bild und fragt nach zehn Sekunden wieder
+(`heatNochmal`). Ein Puffer von frueher wird weiter genommen.
+
+**4. Zwei Finger zoomen um die Stelle zwischen ihnen.** Bisher blieb der rechte
+Rand stehen, wie beim Rad. Beim Aufsetzen werden Ende, Spanne und der Anteil
+der Fingermitte an der Breite gemerkt; waehrend der Geste bleibt die Zeit unter
+der Mitte fest:
+
+    mitte    = ende0 - (1 - anteil) * spanne0
+    ende     = mitte + (1 - anteil) * spanne
+
+In der Gegenwart heisst Hineinzoomen damit, in die Vergangenheit zu ruecken;
+ganz rechts angesetzt bleibt es live. Nach der Geste `fensterSetzen`, also
+einmal holen, wie nach dem Ziehen. Das Rad bleibt am rechten Rand.
+
+Gemessen im Pruefstand ohne Fenster, gegen die echten Boersen: Long/Short nach
+1,9 s mit OKX allein, 2,0 s mit Bybit, 2,5 s mit allen dreien; OKX-`since`
+wanderte mit dem Rueckgriff zurueck, Bybit blieb beim Verbinden; die Heatmap
+kam mit 1977 Zellen. `MarketLiq` in 384 Punkten Breite als Bild, eine Zeile.
+Das Kneifen laesst sich ohne Touchscreen nicht ausloesen, es steht am Galaxy
+aus. qmllint unveraendert (MarketView 55, die beiden anderen 0).

@@ -86,6 +86,7 @@ Item {
     property var __liqGesehen: ({})
     property int __liqGesehenZahl: 0
     property real __liqSeit: 0
+    property real __bybitSeit: 0    // erstes Verbinden, Bybit hat keinen Rueckgriff
     property real __nachgeholt: 0
 
     property var __puffer: ({})     // url -> {t, d}
@@ -348,19 +349,31 @@ Item {
             return;
         root.__ratioLaeuft = true;
         var aus = [], offen = 3;
-        function fertig() {
-            if (--offen > 0)
-                return;
-            root.__ratioLaeuft = false;
+        function geordnet() {
             var rang = { "okx": 0, "bybit": 1, "binance": 2 };
-            aus.sort(function (a, b) {
+            var k = aus.map(function (x) {
+                return { "id": x.id, "name": x.name, "long": root.__r(Math.max(0, Math.min(1, x.long)), 4) };
+            });
+            k.sort(function (a, b) {
                 return rang[a.id] - rang[b.id];
             });
-            for (var i = 0; i < aus.length; i++)
-                aus[i].long = root.__r(Math.max(0, Math.min(1, aus[i].long)), 4);
+            return k;
+        }
+        // **Zwischenstaende, solange noch weniger da ist.** Bis zum 15.09.2026
+        // galt die Liste erst, wenn alle drei geantwortet hatten -- beim
+        // Oeffnen stand der Balken also so lange leer wie die langsamste
+        // Boerse brauchte, bei einer haengenden bis zur Frist von 20 s. Ein
+        // spaeteres Auffrischen ersetzt eine volle Liste nicht durch eine halbe.
+        function fertig() {
+            if (--offen > 0) {
+                if (aus.length > root.__ratio.length)
+                    root.__ratio = geordnet();
+                return;
+            }
+            root.__ratioLaeuft = false;
             // Fielen alle aus, wird beim naechsten Mal neu gefragt
             if (aus.length) {
-                root.__ratio = aus;
+                root.__ratio = geordnet();
                 root.__ratioT = root.__jetzt();
             }
         }
@@ -580,9 +593,11 @@ Item {
     // Liste leer ist (gemessen: nach fuenf Seiten). Hoechstens alle fuenf
     // Minuten -- danach traegt der Strom.
     //
-    // **`liqSince` wird damit zum Beginn dieses Rueckgriffs.** Fuer Bybit ist
-    // das zu grosszuegig, dort gibt es nur, was seit dem Verbinden kam. Ohne
-    // es stuende "zugehoert seit eben" ueber einem Tag voller Marken.
+    // **`liqSince` wird damit zum Beginn dieses Rueckgriffs.** Ohne es stuende
+    // "zugehoert seit eben" ueber einem Tag voller Marken. Fuer Bybit ist das
+    // zu grosszuegig, dort gibt es nur, was seit dem Verbinden kam -- deshalb
+    // traegt seit dem 15.09.2026 jede Quelle in `liqSources` ihr eigenes
+    // `since`, und die Ansicht nennt Bybit getrennt, wenn es spaeter kam.
     function __nachholen() {
         if (root.__jetzt() - root.__nachgeholt < 300)
             return;
@@ -693,8 +708,10 @@ Item {
                 "ratio": root.__ratio,
                 "liqSince": Math.round(root.__liqSeit),
                 "liqSources": [
-                    { "id": "okx", "name": "OKX", "online": okxSock.status === WebSocket.Open },
-                    { "id": "bybit-liq", "name": "Bybit", "online": bybitLiqSock.status === WebSocket.Open }
+                    { "id": "okx", "name": "OKX", "online": okxSock.status === WebSocket.Open,
+                      "since": Math.round(root.__liqSeit) },
+                    { "id": "bybit-liq", "name": "Bybit", "online": bybitLiqSock.status === WebSocket.Open,
+                      "since": Math.round(root.__bybitSeit) }
                 ],
                 "sources": [
                     { "id": "binance", "name": "Binance", "online": binanceSock.status === WebSocket.Open },
@@ -876,7 +893,16 @@ Item {
             }
             var raster = root.__oiRasterFuer(kerzen);
             root.__gepuffert("https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period="
-                             + raster + "&limit=500", 240, root.__oiAus, function (oi) {
+                             + raster + "&limit=500", 240, root.__oiAus, function (oi, oiErr) {
+                // **Keine Antwort ist nicht "kein offenes Interesse".** Bis zum
+                // 15.09.2026 wurde aus einem Ausfall von Binance Futures eine
+                // Heatmap mit `kein_oi`, und die Ansicht zeigte sie eine Minute
+                // lang als gueltig. Jetzt ein Fehler: die Ansicht behaelt das
+                // letzte Bild und fragt bald wieder.
+                if (!oi && oiErr) {
+                    done(null, oiErr);
+                    return;
+                }
                 var d = root.__heatmap(kerzen, oi || { "zeiten": [], "werte": [] });
                 var k = root.__kurs(cur);
                 var f = k[0];
@@ -1013,6 +1039,8 @@ Item {
             if (bybitLiqSock.status === WebSocket.Open) {
                 bybitLiqSock.sendTextMessage(JSON.stringify({ "op": "subscribe", "args": ["allLiquidation.BTCUSDT"] }));
                 root.__liqVerbunden();
+                if (!root.__bybitSeit)
+                    root.__bybitSeit = Math.floor(root.__jetzt());
             }
         }
         onTextMessageReceived: function (message) {
