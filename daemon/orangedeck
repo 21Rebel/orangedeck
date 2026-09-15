@@ -743,9 +743,10 @@ def http_json(path, timeout=15):
 # ihre Kerzen liefert -- so kommen ueberall zwischen 60 und 400 Kerzen heraus,
 # egal ob eine Stunde oder neun Jahre gezeigt werden.
 #
-# **Die Live-Trades reichen dafuer nicht.** Der Dienst haelt eine Stunde
-# Sekundenfaecher; 7 Tage oder ein Jahr kann er daraus nicht bauen. Fuer alles
-# ausser dem laufenden Fach kommen die Kerzen deshalb fertig von der Boerse.
+# **Die Kerzen kommen fertig von der Boerse**, fuer jeden Zeitraum. Bis zum
+# 15.09.2026 hielt der Dienst daneben noch eine Stunde Sekundenfaecher aus den
+# Live-Trades (`Market.kerzen()`), die niemand mehr abfragte -- der Ring
+# fuellte sich bei jedem Trade umsonst und ist weg.
 KLINE_SPANS = {
     "1h":  ("1m", 60),
     "12h": ("5m", 144),
@@ -760,7 +761,6 @@ KLINE_SPANS = {
 KLINE_CACHE_TTL = {"1m": 20, "5m": 60, "15m": 120, "1h": 300,
                    "4h": 600, "1d": 1800, "1w": 3600}
 
-MARKET_SECONDS = 3600     # eine Stunde Sekundenkerzen im Ring
 # Das Band unter dem Graphen: wie viele Trades aufgehoben werden und ab
 # welchem Gegenwert einer ueberhaupt hineinkommt.
 MARKET_TAPE_KEEP = 400
@@ -774,7 +774,6 @@ MARKET_TAPE_MIN = 1000    # Dollar
 LIQ_SEKUNDEN = 86400 * 2  # zwei Tage
 LIQ_KEEP = 20000          # Notbremse gegen Speicherwuchs
 MARKET_LINGER = 120       # so lange nach der letzten Abfrage bleibt der Strom
-MARKET_MAX_CANDLES = 400  # mehr zeichnet keine Oberflaeche sinnvoll
 
 
 def _binance_trades(msg):
@@ -910,16 +909,11 @@ MARKETS = (
 
 
 class Market:
-    """Sekundenkerzen aus den Trades aller Boersen zusammen.
-
-    Ein Ring aus `MARKET_SECONDS` Faechern, eines je Sekunde. Groebere Raster
-    entstehen beim Abfragen durch Zusammenfassen -- so wird **einmal**
-    verdichtet, und jedes Raster bleibt moeglich.
-    """
+    """Die Trades aller Boersen zusammen: das Band, die Zaehlung, und ob
+    gerade jemand hinsieht."""
 
     def __init__(self):
         self.lock = threading.Lock()
-        self.sekunden = {}        # Sekunde -> [o, h, l, c, vKauf, vVerkauf]
         self.letzte_abfrage = 0.0
         self.online = {}          # Boersenkennung -> True/False
         self.trades = 0
@@ -931,7 +925,6 @@ class Market:
         self.band_nr = 0
 
     def add(self, ts, preis, menge, kauf, quelle=""):
-        sek = int(ts)
         wert = preis * menge
         with self.lock:
             # Ins Band nur, was auch etwas bedeutet. Ohne Schwelle waere es
@@ -940,22 +933,7 @@ class Market:
                 self.band_nr += 1
                 self.band.append([self.band_nr, round(ts, 2), round(preis, 2),
                                   round(wert), 1 if kauf else 0, quelle])
-
-            k = self.sekunden.get(sek)
-            if k is None:
-                k = [preis, preis, preis, preis, 0.0, 0.0]
-                self.sekunden[sek] = k
-            else:
-                k[1] = max(k[1], preis)
-                k[2] = min(k[2], preis)
-                k[3] = preis
-            k[4 if kauf else 5] += menge
             self.trades += 1
-            # Alte Faecher wegwerfen -- ohne das waechst der Ring endlos
-            if len(self.sekunden) > MARKET_SECONDS + 120:
-                grenze = sek - MARKET_SECONDS
-                for alt in [x for x in self.sekunden if x < grenze]:
-                    del self.sekunden[alt]
 
     def gefragt(self):
         """Jede Abfrage haelt die Stroeme am Leben."""
@@ -971,33 +949,6 @@ class Market:
             letzte = self.band[-1][0] if self.band else 0
         return neu[-hoechstens:], letzte
 
-    def kerzen(self, raster, anzahl):
-        """Sekundenfaecher zu Kerzen von `raster` Sekunden zusammenfassen."""
-        raster = max(1, int(raster))
-        anzahl = max(1, min(MARKET_MAX_CANDLES, int(anzahl)))
-        with self.lock:
-            roh = sorted(self.sekunden.items())
-        if not roh:
-            return []
-        gruppen = {}
-        for sek, k in roh:
-            fach = sek - (sek % raster)
-            g = gruppen.get(fach)
-            if g is None:
-                gruppen[fach] = [k[0], k[1], k[2], k[3], k[4], k[5]]
-            else:
-                g[1] = max(g[1], k[1])
-                g[2] = min(g[2], k[2])
-                g[3] = k[3]
-                g[4] += k[4]
-                g[5] += k[5]
-        aus = []
-        for fach in sorted(gruppen)[-anzahl:]:
-            o, h, l, c, vk, vv = gruppen[fach]
-            aus.append([fach, round(o, 2), round(h, 2), round(l, 2), round(c, 2),
-                        round(vk, 4), round(vv, 4)])
-        return aus
-
 
 MARKT = Market()
 
@@ -1005,10 +956,11 @@ MARKT = Market()
 class Liquidationen:
     """Zwangsliquidationen, wie sie hereinkommen.
 
-    **Es gibt sie nur live.** Keine der Boersen bietet sie rueckwirkend an --
-    weder Binance noch Bybit noch OKX haben dafuer einen REST-Weg, es
-    existiert allein der Strom. Was hier liegt, hat der Dienst selbst gehoert;
-    ein Fenster im Jahr 2021 bleibt zwangslaeufig leer. Das ist keine Luecke
+    **Es gibt sie fast nur live.** Binance hat `allForceOrders` abgeschaltet,
+    Bybit hat keinen Weg zurueck. OKX liefert per REST rund den letzten Tag
+    (`liq_nachholen`, seit dem 15.09.2026; vorher stand hier, auch OKX habe
+    keinen). Alles Aeltere hat der Dienst selbst gehoert, oder es fehlt: ein
+    Fenster im Jahr 2021 bleibt zwangslaeufig leer. Das ist keine Luecke
     im Bau, sondern die Datenlage, und die Oberflaeche sagt es auch so.
 
     Gehalten wird nach Zeit, nicht nach Anzahl: an einem ruhigen Tag sind das
@@ -1049,6 +1001,14 @@ class Liquidationen:
             grenze = time.time() - LIQ_SEKUNDEN
             while self.liste and self.liste[0][0] < grenze:
                 self.liste.popleft()
+
+    def ordnen(self):
+        """Wieder nach Zeit sortieren. Nachgeholtes ist aelter als das, was
+        der Strom schon brachte, und das Kuerzen in `add` schaut nur vorne."""
+        with self.lock:
+            sortiert = sorted(self.liste, key=lambda x: x[0])
+            self.liste.clear()
+            self.liste.extend(sortiert)
 
     def fenster(self, von, bis, hoechstens=400):
         """Was in einem Zeitfenster liegt -- die groessten zuerst begrenzt.
@@ -1144,6 +1104,63 @@ def run_liq_sichern():
         LIQ.sichern()
 
 
+_liq_nachholen_lock = threading.Lock()
+_liq_nachgeholt = [0.0]
+
+
+def liq_nachholen():
+    """Den letzten Tag von OKX per REST, wie `__nachholen` in DirectMarket.qml.
+
+    Der Dienst hoert nur zu, solange jemand den Markt ansieht. Wer morgens
+    oeffnet, sah bis zum 15.09.2026 die Nacht als Luecke, obwohl OKX sie
+    liefern kann: `liquidation-orders` gibt es auch per REST, blaetternd mit
+    `after`, gemessen rund 23 Stunden. Die Antwort hat dieselbe Form wie der
+    Strom, also derselbe Parser. Doppeltes faengt die Sperre in `LIQ.add`.
+
+    Hoechstens alle fuenf Minuten und nie zweimal gleichzeitig -- es wird bei
+    jedem Verbinden des OKX-Stroms angestossen, und der verbindet nach einem
+    Abbruch neu.
+    """
+    if not _liq_nachholen_lock.acquire(blocking=False):
+        return
+    try:
+        if time.time() - _liq_nachgeholt[0] < 300:
+            return
+        _liq_nachgeholt[0] = time.time()
+        basis = ("https://www.okx.com/api/v5/public/liquidation-orders"
+                 "?instType=SWAP&instFamily=BTC-USDT&state=filled&limit=100")
+        nach = 0
+        aeltest_gesamt = 0.0
+        for _seite in range(10):
+            try:
+                d = _hol_json(basis + ("&after=%d" % nach if nach else ""), timeout=15)
+            except Exception as e:
+                sys.stderr.write("Liquidationen nachholen: %s\n" % e)
+                break
+            if str(d.get("code")) != "0":
+                break
+            aeltest = 0.0
+            for ts, preis, menge, ist_long in _okx_liquidationen(
+                    {"arg": {"channel": "liquidation-orders"}, "data": d.get("data")}):
+                LIQ.add(ts, preis, menge, ist_long, "okx")
+                if not aeltest or ts < aeltest:
+                    aeltest = ts
+            if not aeltest:
+                break
+            aeltest_gesamt = aeltest
+            ms = int(aeltest * 1000)
+            if nach and ms >= nach:
+                break
+            nach = ms
+        LIQ.ordnen()
+        # `seit` ist die Grenze, vor der sicher nichts liegt. Mit dem
+        # Rueckgriff rueckt sie zurueck, nie vor.
+        if aeltest_gesamt and (not LIQ.seit or aeltest_gesamt < LIQ.seit):
+            LIQ.seit = aeltest_gesamt
+    finally:
+        _liq_nachholen_lock.release()
+
+
 def run_liquidationen(quelle):
     """Ein Faden je Quelle. Wie `run_market`, aber **mit Ping**.
 
@@ -1168,6 +1185,8 @@ def run_liquidationen(quelle):
             LIQ.online[quelle["id"]] = True
             if not LIQ.seit:
                 LIQ.seit = time.time()
+            if quelle["id"] == "okx":
+                threading.Thread(target=liq_nachholen, daemon=True).start()
             backoff = 2
             letzter_ping = time.time()
             while MARKT.erwuenscht():
@@ -2535,10 +2554,10 @@ class _Handler(BaseHTTPRequestHandler):
                     "liq": liq,
                     "liqHist": liq_hist,
                     "ratio": verhaeltnis(),
-                    # **Liquidationen gibt es nur live.** Keine Boerse bietet
-                    # sie rueckwirkend an. Damit die Oberflaeche eine leere
-                    # Spur von einer stummen Verbindung unterscheiden kann,
-                    # steht hier, seit wann zugehoert wird.
+                    # **Liquidationen gibt es fast nur live** (OKX liefert
+                    # rund einen Tag nach, `liq_nachholen`). Damit die
+                    # Oberflaeche eine leere Spur von einer stummen Verbindung
+                    # unterscheiden kann, steht hier, seit wann zugehoert wird.
                     "liqSince": round(LIQ.seit),
                     "liqSources": [{"id": q["id"], "name": q["name"],
                                     "online": bool(LIQ.online.get(q["id"]))}

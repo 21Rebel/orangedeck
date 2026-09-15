@@ -4201,3 +4201,27 @@ wanderte mit dem Rueckgriff zurueck, Bybit blieb beim Verbinden; die Heatmap
 kam mit 1977 Zellen. `MarketLiq` in 384 Punkten Breite als Bild, eine Zeile.
 Das Kneifen laesst sich ohne Touchscreen nicht ausloesen, es steht am Galaxy
 aus. qmllint unveraendert (MarketView 55, die beiden anderen 0).
+
+### Der Dienst holt OKX ebenfalls nach, und der Sekundenring ist weg
+
+`Liquidationen` behauptete, keine Boerse biete Liquidationen rueckwirkend an.
+Fuer OKX stimmt das seit dem 13.09.2026 nachweislich nicht mehr, die App nutzt
+es. Der Dienst hoert aber nur zu, solange jemand den Markt ansieht, und zeigte
+die Nacht deshalb als Luecke. Jetzt stoesst jedes Verbinden des OKX-Stroms
+`liq_nachholen()` an: hoechstens alle fuenf Minuten, nie zweimal
+gleichzeitig, hoechstens zehn Seiten zu je 100. Die REST-Antwort hat dieselbe
+Form wie der Strom (am 15.09.2026 nachgesehen: `instId` BTC-USDT-SWAP,
+`details` mit `bkPx`, `sz`, `posSide`, `ts`), also nimmt sie denselben Parser.
+Danach `LIQ.ordnen()`, weil das Kuerzen nach zwei Tagen nur vorne schaut, und
+`seit` rueckt auf den aeltesten Eintrag zurueck.
+
+Als Modul geladen gemessen, mit dem Cache im Kratzverzeichnis: 8,7 s, 1000
+OKX-Marken ueber 16,5 Stunden, sortiert, ein zweiter Aufruf aendert nichts,
+auch ohne Fuenf-Minuten-Sperre kommt nichts doppelt. **Die zehn Seiten reichten
+an diesem Morgen nicht fuer den ganzen Tag** (am 13.09. waren es 402 Marken
+ueber 23 Stunden). Dieselbe Grenze steht in `DirectMarket.qml`; beide bleiben
+gleich, bis es jemanden stoert.
+
+`Market.kerzen()` und der Ring aus Sekundenfaechern dahinter sind geloescht,
+dazu `MARKET_SECONDS` und `MARKET_MAX_CANDLES`. Die Kerzen kommen seit langem
+fertig von Binance; der Ring wurde bei jedem Trade gefuellt und nie gelesen.
