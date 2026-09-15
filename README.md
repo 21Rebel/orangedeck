@@ -98,7 +98,9 @@ Zwei Wege, umschaltbar in den Einstellungen unter "Allgemein":
   Heimnetz, das andere ist Rechenarbeit des Dienstes.
 
 Auf dem Rechner ist der Dienst die bessere Wahl, auf dem Handy gibt es ihn
-nicht. Auf der Befehlszeile: `orangedeck-app --source direct`. Der Direktbezug
+nicht. **Unter Android und Windows gibt es nur den Direktbezug**, und damit
+keine Wallet: einen Dienst auf einem anderen Rechner kann man dort seit dem
+15.09.2026 nicht mehr eintragen. Auf der Befehlszeile: `orangedeck-app --source direct`. Der Direktbezug
 braucht `qt6-websockets`; fehlt das Paket, bleibt der Dienst.
 
 ## Als Flatpak

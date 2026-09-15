@@ -63,8 +63,18 @@ Window {
     // und eine Bedingung, die zweimal dasteht, laeuft irgendwann auseinander.
     readonly property bool ohneTastatur: Qt.platform.os === "android"
                                       || Qt.platform.os === "ios"
-    readonly property string effSource: win.forcedSource.length ? win.forcedSource
-                                                                : win.dataSource
+    // **Ausserhalb von Linux gibt es nur den Direktbezug** (15.09.2026). Bis
+    // dahin liess sich unter Android und Windows ein Dienst auf einem anderen
+    // Rechner eintragen, fuer Markt und Wallet. Der Markt kommt seit dem
+    // 13.09. ohne Dienst; die Wallet ging dafuer unverschluesselt durchs
+    // WLAN, liess sich nur am Rechner eintragen, und der Weg funktionierte
+    // nie (`daemonHost` fehlte in `setOpt`). Entschieden: Wallet und Dienst-
+    // Weg fallen dort weg. Ein gespeichertes "daemon" von frueher wird
+    // uebergangen, statt es umzuschreiben.
+    readonly property bool dienstMoeglich: Qt.platform.os === "linux"
+    readonly property string effSource: !win.dienstMoeglich ? "direct"
+                                        : (win.forcedSource.length ? win.forcedSource
+                                                                   : win.dataSource)
     // Vorgabe USD wie in FeedTabs, SettingsView, den DMS-Ansichten, dem
     // Dashtab und DeckWidget.waehrung(). Am 09.09.2026 wurden die fuenf dort
     // umgestellt und diese sechste Stelle vergessen: die Anwendung zeigte
@@ -516,6 +526,7 @@ Window {
         "startView": win.startView,
         "dataSource": win.dataSource,
         "daemonHost": win.daemonHost,
+        "dienstMoeglich": win.dienstMoeglich,
         "colorMode": win.colorMode,
         "sizeMode": win.sizeMode,
         "showInfo": win.showInfo,

@@ -4352,3 +4352,39 @@ keiner. Sie erfasst nur Schluessel, die als fester Text im Aufruf stehen.
 nein" als Netzfrage abgelegt und so ins Release geschrieben. Der Zaehler in
 `/health` haette die Frage in einer Minute beantwortet: kommt von der App
 ueberhaupt etwas an.
+
+Nach der Korrektur kam der Feed am Galaxy vom Dienst (30 Abfragen in zehn
+Sekunden statt 5, Verbindungen von 192.168.100.6). Eine Wallet liess sich am
+Telefon aber nicht eintragen: der Dienst nimmt bewusst nichts entgegen, und
+eingetragen wird mit `orangedeck --watch-add` am Rechner. Zum Pruefen stand
+kurz die zpub aus BIP84 ("abandon ... about") im Dienst -- 40 benutzte
+Adressen, 276 Transaktionen, Guthaben 0 -- und wurde wieder entfernt.
+
+## Wallet und Dienst-Weg nur noch unter Linux (15.09.2026)
+
+**Entschieden vom Anwender**, nach dem Test oben: Unter Android und Windows
+fallen die Wallet und "Dienst auf einem anderen Geraet" weg. Die Gruende:
+
+- Die Wallet ging dort nur ueber einen ins WLAN geoeffneten Dienst, und
+  Adressen, Betraege und Transaktionen liefen unverschluesselt durchs Netz.
+  Der Warntext ("Der Schluessel verlaesst das Geraet nie") stimmte fuer
+  diesen Weg nicht.
+- Eintragen liess sie sich nur am Rechner; ein Eingabefeld am Telefon haette
+  bedeutet, dass der Dienst Schreibbefehle aus dem WLAN annimmt, ohne
+  Anmeldung.
+- Der Markt braucht den Dienst seit dem 13.09. nicht mehr, und der Weg
+  funktionierte bis heute ohnehin nie.
+
+Umgesetzt mit einem Schalter: `dienstMoeglich` in `Main.qml` ist nur unter
+Linux wahr, sonst ist `effSource` immer `direct` -- auch wenn frueher
+"daemon" gespeichert wurde. Wallet-Reiter und Wallet-Seite der Einstellungen
+haengen schon an `feed.canWallet`, also am Direktbezug, und fallen damit von
+selbst weg. Die Zeilen "Datenquelle" und "Dienst auf einem anderen Geraet"
+blendet `SettingsView` ueber `dienstMoeglich` aus; DMS-Plugin und Quickshell
+kennen den Schluessel nicht und behalten beide.
+
+Offen fuer die naechste Nummer: der Freigabetext muss sagen, dass die Wallet
+unter Android und Windows wegfaellt -- 0.2.9 hat sie dort ausdruecklich
+angekuendigt. Ebenso die Metainfo. Eine Wallet direkt auf dem Telefon (Ableitung
+in der App, xpub bleibt dort) waere der saubere Weg zurueck, falls sie
+jemand vermisst.

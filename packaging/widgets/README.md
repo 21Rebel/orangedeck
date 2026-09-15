@@ -110,7 +110,7 @@ Unterschiede zu Wayland:
 | `--exclusive` | haelt Platz frei | wirkt nicht (Warnung) |
 | `--keyboard` | Tasten nur auf Wunsch | Tasten immer -- **anklicken, dann Q schliesst** |
 | `--id` | `~/.config/orangedeck/orangedeck-<name>.conf` | Registry: `HKCU\Software\orangedeck\orangedeck-<name>` |
-| Daten | vom Dienst | Direktbezug -- oder Dienst auf einem anderen Geraet (Einstellungen, Datenquelle) |
+| Daten | vom Dienst | Direktbezug (keine Wallet) |
 
 **Beim Anmelden mitstarten:** `Win+R`, `shell:startup`, dort eine Verknuepfung
 auf `orangedeck-app.exe` anlegen und die Schalter hinten an das Ziel haengen.

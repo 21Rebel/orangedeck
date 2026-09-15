@@ -593,9 +593,13 @@ Item {
                 width: parent.width
                 visible: root.tab === "allgemein"
 
+                // Ohne Dienst (Android, Windows) gibt es nichts zu waehlen. Das
+                // DMS-Plugin und Quickshell kennen den Schluessel nicht und
+                // behalten mit der Vorgabe beide Zeilen.
                 Zeile {
                     label: Tr.t("set.source", root.lang)
                     help: Tr.t("set.sourceHelp", root.lang)
+                    visible: root.val("dienstMoeglich", true)
 
                     Wahl {
                         gewaehlt: root.val("dataSource", "daemon")
@@ -619,7 +623,8 @@ Item {
                 Zeile {
                     label: Tr.t("set.daemonHost", root.lang)
                     help: Tr.t("set.daemonHostHelp", root.lang)
-                    visible: root.val("dataSource", "daemon") === "daemon"
+                    visible: root.val("dienstMoeglich", true)
+                             && root.val("dataSource", "daemon") === "daemon"
 
                     Textzeile {
                         wert: root.val("daemonHost", "")
