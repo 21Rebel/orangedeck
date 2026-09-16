@@ -147,8 +147,9 @@ Dazu, alle gemessen:
 ### Was sonst noch offen ist
 
 1. **0.2.10 veroeffentlichen** (Anwender), siehe oben.
-2. **Test-APKs** in `geraetetest-0.2.9/` (542 MB) und `geraetetest-0.2.10/`
-   -- loeschen nur auf Wort des Anwenders.
+2. ~~Test-APKs~~: `geraetetest-0.2.9/` (542 MB) und `geraetetest-0.2.10/`
+   (327 MB) am 16.09. auf Wort des Anwenders geloescht. Im
+   Auslieferungsordner liegen nur noch 0.2.9 und 0.2.10.
 3. **Windows mit Daten** (Feed, Uhr, Mining), sobald die IPv4-Sperre faellt.
 4. **Widgets**: das 30-Minuten-Update lief nach der Installation bei
    gesperrtem Telefon offenbar nicht; erst das Anstossen half. Beobachten.
