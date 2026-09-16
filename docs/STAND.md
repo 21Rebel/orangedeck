@@ -34,8 +34,8 @@ Anwender hat es selbst getan. Danach drei Berichtigungen fuer 0.2.11 auf
 
 Nichts Dringendes. Wenn das Galaxy steckt:
 
-1. Die drei Berichtigungen von heute (Liquidationen bei "all", Leertext,
-   RBF-Spalten) am Geraet ansehen, sobald ein naechstes APK gebaut wird.
+1. **Leertext der Liquidationen am Geraet**: nur im APK nachgewiesen (Text
+   im Paket), nicht gesehen -- dafuer braucht es ein Fenster ohne Marken.
 
 ### Was heute dazugekommen ist
 
@@ -150,8 +150,11 @@ Dazu, alle gemessen:
 5. **Waehrung um 12:55** (15.09.) stiess die Widgets nicht an. Nicht
    geklaert.
 6. **OKX-Nachholen**: 30 Seiten reichen an unruhigen Tagen nicht.
-7. **Die drei Berichtigungen von heute am Geraet** und in der App-Oberflaeche
-   ansehen (bisher nur Dienst gemessen und qmllint).
+7. **Am Galaxy gesehen (16.09., 11:30, Test-APK aus `d362ada`,
+   `geraetetest-0.2.11/...-geraetetest-liq.apk`)**: Liquidationen bei 13y
+   mit Summen (Longs 24,9 M $, Shorts 7,3 M $) und Balken statt leer; RBF-
+   Tafel mit "vorher"/"neu" aus dem neuen Schluessel. Englisch nicht
+   gesehen, Leertext nicht gesehen.
 8. **`tools/ansichten-android.py`** mit KEYCODE_COMMA am Galaxy.
 9. **Windows ungeprueft:** 600 MB im Markt, README-Startzeile in Win+R,
    Skalierung ueber 100 %, SmartScreen. **macOS** ungeprueft.
