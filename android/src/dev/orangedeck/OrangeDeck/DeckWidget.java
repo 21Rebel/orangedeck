@@ -152,7 +152,11 @@ public abstract class DeckWidget extends AppWidgetProvider {
                                 ergebnis[0] = w;
                             }
                         } catch (Exception e) {
-                            // bleibt leer, gezeichnet wird "offline"
+                            // Bleibt leer, gezeichnet wird "offline". Der Grund
+                            // gehoert ins Protokoll: am 16.09.2026 liess sich
+                            // nachher nicht mehr sagen, warum alle scheiterten.
+                            android.util.Log.w("OrangeDeck", "Widget "
+                                    + DeckWidget.this.getClass().getSimpleName() + ": " + e);
                         }
                     }
                 });
@@ -169,8 +173,14 @@ public abstract class DeckWidget extends AppWidgetProvider {
                 }
                 // Kein leeres Widget: ein Strich sagt "gerade nichts da",
                 // eine leere Flaeche sieht aus wie ein Fehler im Launcher.
-                if (z == null)
+                // Und ein zweiter Versuch, sobald Netz da ist -- sonst bleibt
+                // "offline" bis zum naechsten Takt stehen (WidgetNachholen).
+                if (z == null) {
                     z = new String[] { "--", Texte.t(c, "offline"), null };
+                    WidgetNachholen.einplanen(c, DeckWidget.this.getClass());
+                } else {
+                    WidgetNachholen.erledigt(c, DeckWidget.this.getClass());
+                }
                 try {
                     zeichne(c, manager, ids, z);
                 } finally {

@@ -208,6 +208,14 @@
                 android:resource="@xml/widget_miner_gross" />
         </receiver>
 
+        <!-- **Der zweite Versuch eines Widgets** (WidgetNachholen.java).
+             BIND_JOB_SERVICE ist Pflicht: nur das System darf den Job
+             starten. Nicht exportiert, niemand sonst ruft ihn. -->
+        <service
+            android:name=".WidgetNachholen"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.qtprovider"
