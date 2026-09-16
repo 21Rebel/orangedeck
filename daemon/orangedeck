@@ -1001,6 +1001,11 @@ class Liquidationen:
             grenze = time.time() - LIQ_SEKUNDEN
             while self.liste and self.liste[0][0] < grenze:
                 self.liste.popleft()
+            # Was vor der Grenze lag, ist weg -- also ist auch `seit` nicht
+            # aelter. Bis zum 16.09.2026 stand dort weiter der 04.09., und
+            # die Ansicht sagte "zugehoert seit" ueber zwei Tagen Daten.
+            if self.seit and self.seit < grenze:
+                self.seit = grenze
 
     def ordnen(self):
         """Wieder nach Zeit sortieren. Nachgeholtes ist aelter als das, was
@@ -1073,6 +1078,9 @@ class Liquidationen:
                 except (IndexError, TypeError, ValueError):
                     continue
             self.seit = float(d.get("seit") or 0.0)
+            # Die Datei kann aelter sein als das, was von ihr bleibt
+            if self.seit and self.seit < grenze:
+                self.seit = grenze
 
     def sichern(self):
         if not self.schmutzig:
@@ -1131,9 +1139,14 @@ def liq_nachholen():
                  "?instType=SWAP&instFamily=BTC-USDT&state=filled&limit=100")
         nach = 0
         aeltest_gesamt = 0.0
-        # 30 Seiten (15.09.2026, vorher 10): zehn reichten an diesem Morgen
-        # nur fuer 16,5 Stunden. Gleiche Grenze wie in DirectMarket.qml.
-        for _seite in range(30):
+        # **Bis OKX leer antwortet, nicht eine feste Seitenzahl.** Gemessen am
+        # 16.09.2026: OKX liefert per REST genau 24 Stunden, danach leere
+        # Seiten -- an diesem Tag nach 20 Seiten (1874 Marken, 9,7 s). Am
+        # 15.09. reichten 30 Seiten nur fuer 16,6 Stunden, vorher 10 fuer
+        # 16,5. Die 100 sind nur noch Schutz gegen eine Schleife; sie decken
+        # auch einen Tag mit dem Dreifachen des 15.09. Gleiche Grenze wie in
+        # DirectMarket.qml.
+        for _seite in range(100):
             try:
                 d = _hol_json(basis + ("&after=%d" % nach if nach else ""), timeout=15)
             except Exception as e:

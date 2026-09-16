@@ -493,6 +493,9 @@ Item {
         weg = Math.max(weg, l.length - root.liqKeep);
         if (weg > 0)
             l.splice(0, weg);
+        // Was vor der Grenze lag, ist weg -- `seit` rueckt mit, wie im Dienst
+        if (root.__liqSeit && root.__liqSeit < grenze)
+            root.__liqSeit = Math.floor(grenze);
     }
 
     // `fenster()`: bei mehr als 400 die groessten, wieder nach Zeit sortiert
@@ -590,7 +593,7 @@ Item {
     }
 
     // Der letzte Tag von OKX, per REST. Blaettert mit `after` zurueck, bis die
-    // Liste leer ist (gemessen: nach fuenf Seiten). Hoechstens alle fuenf
+    // Liste leer ist (am 13.09. nach fuenf Seiten, am 16.09. nach zwanzig). Hoechstens alle fuenf
     // Minuten -- danach traegt der Strom.
     //
     // **`liqSince` wird damit zum Beginn dieses Rueckgriffs.** Ohne es stuende
@@ -613,10 +616,10 @@ Item {
                 var sek = Math.floor(aeltest / 1000);
                 if (!root.__liqSeit || sek < root.__liqSeit)
                     root.__liqSeit = sek;
-                // 30 Seiten zu je 100 (15.09.2026, vorher 10): an diesem
-                // Morgen reichten zehn nur fuer 16,5 Stunden, am 13.09. 402
-                // Marken fuer 23. Hoechstens alle fuenf Minuten, siehe oben.
-                if (nr < 30 && (!nach || aeltest < nach))
+                // Bis OKX leer antwortet: es liefert genau 24 Stunden (gemessen
+                // 16.09.2026, 20 Seiten). Feste 30 Seiten reichten am 15.09.
+                // nur fuer 16,6 Stunden. 100 nur als Schutz, wie im Dienst.
+                if (nr < 100 && (!nach || aeltest < nach))
                     seite(aeltest, nr + 1);
             });
         }
