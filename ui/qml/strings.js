@@ -291,6 +291,8 @@ var S = {
     "panel.difficulty": ["SCHWIERIGKEITSANPASSUNG", "DIFFICULTY ADJUSTMENT", "AJUSTE DE DIFICULTAD", "AJUSTEMENT DE DIFFICULTÉ", "AGGIUSTAMENTO DIFFICOLTÀ", "AJUSTE DE DIFICULDADE", "MOEILIJKHEIDSAANPASSING", "КОРРЕКТИРОВКА СЛОЖНОСТИ", "難易度調整", "难度调整", "AJUSTE DE DIFICULDADE", "KOREKTA TRUDNOŚCI", "ÚPRAVA OBTÍŽNOSTI"],
     "panel.mempool": ["MEMPOOL", "MEMPOOL", "MEMPOOL", "MEMPOOL", "MEMPOOL", "MEMPOOL", "MEMPOOL", "МЕМПУЛ", "メンプール", "内存池", "MEMPOOL", "MEMPOOL", "MEMPOOL"],
     "panel.rbf": ["ERSETZTE TRANSAKTIONEN (RBF)", "REPLACED TRANSACTIONS (RBF)", "TRANSACCIONES REEMPLAZADAS (RBF)", "TRANSACTIONS REMPLACÉES (RBF)", "TRANSAZIONI SOSTITUITE (RBF)", "TRANSAÇÕES SUBSTITUÍDAS (RBF)", "VERVANGEN TRANSACTIES (RBF)", "ЗАМЕНЁННЫЕ ТРАНЗАКЦИИ (RBF)", "置換されたトランザクション (RBF)", "被替换的交易 (RBF)", "TRANSAÇÕES SUBSTITUÍDAS (RBF)", "ZASTĄPIONE TRANSAKCJE (RBF)", "NAHRAZENÉ TRANSAKCE (RBF)"],
+    "panel.rbfOld": ["vorher", "old", "antes", "avant", "prima", "antes", "oud", "было", "変更前", "之前", "antes", "przed", "před"],
+    "panel.rbfNew": ["neu", "new", "ahora", "après", "dopo", "agora", "nieuw", "стало", "変更後", "之后", "agora", "po", "po"],
     "fee.none": ["Keine Priorität", "No priority", "Sin prioridad", "Sans priorité", "Nessuna priorità", "Sem prioridade", "Geen prioriteit", "Без приоритета", "優先度なし", "无优先级", "Sem prioridade", "Bez priorytetu", "Bez priority"],
     "fee.low": ["Niedrige", "Low", "Baja", "Faible", "Bassa", "Baixa", "Laag", "Низкая", "低", "低", "Baixa", "Niska", "Nízká"],
     "fee.medium": ["Mittlere", "Medium", "Media", "Moyenne", "Media", "Média", "Gemiddeld", "Средняя", "中", "中", "Média", "Średnia", "Střední"],

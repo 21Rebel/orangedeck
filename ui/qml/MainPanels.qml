@@ -467,7 +467,7 @@ Grid {
                 Text {
                     width: parent.width * 0.2
                     horizontalAlignment: Text.AlignRight
-                    text: "vorher"
+                    text: Tr.t("panel.rbfOld", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.72
                 }
@@ -475,7 +475,7 @@ Grid {
                 Text {
                     width: parent.width * 0.2
                     horizontalAlignment: Text.AlignRight
-                    text: "neu"
+                    text: Tr.t("panel.rbfNew", root.lang)
                     color: root.dimColor
                     font.pixelSize: root.uiFont * 0.72
                 }
