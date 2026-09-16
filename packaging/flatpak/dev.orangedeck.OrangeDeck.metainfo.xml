@@ -182,8 +182,47 @@
        dem Tag wird eine neue Nummer, keine verschobene. 0.2.9 bringt Windows,
        den Markt ohne Dienst und die Wallet ueber einen Dienst im eigenen
        Netz. Das Datum ist am 14.09.2026 beim Tag auf den Tag der
-       Veroeffentlichung gesetzt worden. -->
+       Veroeffentlichung gesetzt worden.
+
+       **0.2.10 nimmt eine Zusage von 0.2.9 zurueck.** Die Wallet ueber einen
+       Dienst auf einem anderen Rechner stand dort als Neuerung fuer Telefon,
+       Tablet und Windows. Sie ging unverschluesselt durchs WLAN und kam in
+       0.2.9 nie an, weil die Anwendung die eingetragene Adresse verwarf. Am
+       15.09.2026 entschieden: Wallet und dieser Weg gibt es nur noch unter
+       Linux. Der Eintrag muss das sagen, sonst steht die Wallet fuer diese
+       Systeme weiter als vorhanden da. Das Datum ist vorlaeufig (16.09.2026)
+       und wird beim Tag auf den Tag der Veroeffentlichung gesetzt. -->
   <releases>
+    <release version="0.2.10" date="2026-09-16">
+      <description>
+        <p>
+          The watch-only wallet and the connection to a service on another
+          device are now available on Linux only. On phones, tablets and
+          Windows they did not work in 0.2.9 and are removed. Everything else
+          there fetches its data directly, as before.
+        </p>
+        <p xml:lang="de">
+          Die Watch-only-Wallet und die Verbindung zu einem Dienst auf einem
+          anderen Geraet gibt es nur noch unter Linux. Auf Telefon, Tablet und
+          Windows funktionierten sie in 0.2.9 nicht und fallen weg. Alles
+          andere holt dort seine Daten wie bisher direkt.
+        </p>
+        <p>
+          Android widgets draw their last known values right away and show
+          "offline" instead of staying empty when the network does not answer.
+          The market without a service shows long/short as soon as the first
+          exchange answers and zooms around the point between two fingers.
+          On the desktop, the comma key opens the settings.
+        </p>
+        <p xml:lang="de">
+          Android-Widgets zeigen sofort den letzten Stand und "offline", statt
+          leer zu bleiben, wenn das Netz nicht antwortet. Der Markt ohne Dienst
+          zeigt Long/Short, sobald die erste Boerse antwortet, und zoomt um die
+          Stelle zwischen zwei Fingern. Am Rechner oeffnet die Komma-Taste die
+          Einstellungen.
+        </p>
+      </description>
+    </release>
     <release version="0.2.9" date="2026-09-14">
       <description>
         <p>
