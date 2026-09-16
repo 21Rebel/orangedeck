@@ -22,25 +22,19 @@
 
 ### Der Stand in einem Satz
 
-**0.2.10 ist getaggt und liegt als Entwurf auf GitHub, veroeffentlicht ist es
-noch nicht**: Tag `v0.2.10` auf `e4e74ef`, drei Dateien hochgeladen und gegen
-die Pruefsummen gehalten, "Tested on" mit Windows, Galaxy und beiden
-Linux-VMs. Das Veroeffentlichen hat die Rechtepruefung von Claude Code
-abgelehnt ("Create Public Surface"); der Anwender macht es selbst. Danach
-drei Berichtigungen fuer 0.2.11 auf `main`. Alles gepusht, Arbeitsbaum
-sauber.
+**0.2.10 ist veroeffentlicht**
+(https://github.com/21Rebel/orangedeck/releases/tag/v0.2.10, "Latest"), Tag
+`v0.2.10` auf `e4e74ef`, drei Dateien gegen die Pruefsummen gehalten, "Tested
+on" mit Windows, Galaxy und beiden Linux-VMs. Das Veroeffentlichen hat die
+Rechtepruefung von Claude Code abgelehnt ("Create Public Surface"); der
+Anwender hat es selbst getan. Danach drei Berichtigungen fuer 0.2.11 auf
+`main`. Alles gepusht, Arbeitsbaum sauber.
 
 ### Was morgen als Erstes drankommt
 
-1. **Ist 0.2.10 veroeffentlicht?** `gh release list --limit 2`. Wenn nicht,
-   der Befehl fuer den Anwender:
+Nichts Dringendes. Wenn das Galaxy steckt:
 
-       gh release edit v0.2.10 --draft=false --latest
-
-   Die Notizen haengen schon am Entwurf.
-
-2. Dann `auslieferung-und-geraetetest` in der Erinnerung auf 0.2.10 ziehen.
-3. Die drei Berichtigungen von heute (Liquidationen bei "all", Leertext,
+1. Die drei Berichtigungen von heute (Liquidationen bei "all", Leertext,
    RBF-Spalten) am Geraet ansehen, sobald ein naechstes APK gebaut wird.
 
 ### Was heute dazugekommen ist
@@ -58,7 +52,7 @@ sauber.
 | Leere Liquidationsansicht: OKX liefert einen Tag rueckwirkend | `3f4035e` | Galaxy |
 | Explorer, RBF: "vorher"/"neu" in jeder Sprache | `83171b1` | beide Linux-VMs |
 | Pruef-VM: KRunner unter Fedora ging nicht, Startmenue | `c8771d4` | Fedora-Lauf |
-| Tag `v0.2.10`, Release als Entwurf | -- | Anwender |
+| Tag `v0.2.10`, Release als Entwurf, vom Anwender veroeffentlicht | -- | Anwender |
 
 **Die drei Dateien der Auslieferung** (SHA-256, auch im Release, von GitHub
 nach dem Hochladen bestaetigt, und in `PRUEFSUMMEN.txt`):
@@ -146,7 +140,7 @@ Dazu, alle gemessen:
 
 ### Was sonst noch offen ist
 
-1. **0.2.10 veroeffentlichen** (Anwender), siehe oben.
+1. ~~0.2.10 veroeffentlichen~~: am 16.09. um 10:55 vom Anwender.
 2. ~~Test-APKs~~: `geraetetest-0.2.9/` (542 MB) und `geraetetest-0.2.10/`
    (327 MB) am 16.09. auf Wort des Anwenders geloescht. Im
    Auslieferungsordner liegen nur noch 0.2.9 und 0.2.10.
