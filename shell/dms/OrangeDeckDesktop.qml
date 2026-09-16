@@ -193,6 +193,7 @@ Item {
         accentColor: Theme.primary
         lineColor: Theme.outlineMedium
         panelColor: Theme.surfaceContainerHighest
+        frostedTint: Theme.surfaceContainer
 
         // Ohne diesen Handler liefen alle Umschaltungen innerhalb der Ansicht
         // ins Leere: die Ansicht meldet sie ueber `optRequested`, der Wirt muss

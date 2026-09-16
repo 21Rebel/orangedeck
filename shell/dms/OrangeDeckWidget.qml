@@ -194,6 +194,7 @@ PluginComponent {
                 accentColor: Theme.primary
                 lineColor: Theme.outlineMedium
                 panelColor: Theme.surfaceContainerHighest
+                frostedTint: Theme.surfaceContainer
                 onOptRequested: function (key, value) {
                     root.setOpt(key, value);
                 }
@@ -290,6 +291,7 @@ PluginComponent {
                     dimColor: Theme.surfaceVariantText
                     accentColor: Theme.primary
                     lineColor: Theme.outlineMedium
+                    frostedTint: Theme.surfaceContainer
                     onOptRequested: function (key, value) {
                         root.setOpt(key, value);
                     }

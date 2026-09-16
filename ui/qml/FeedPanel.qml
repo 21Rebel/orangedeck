@@ -39,6 +39,10 @@ Item {
     property color dimColor: "#9a94a6"
     property color accentColor: "#c9a227"
     property color lineColor: "#2a2a38"
+    // Toenung der Milchglas-Kaestchen (Kopf, Info, Legende, Goggles). Vorgabe wie
+    // bisher dunkel; die DMS-Wirte geben eine Theme-Flaeche mit, damit sie im
+    // Hellmodus hell werden.
+    property color frostedTint: "#0b0b12"
     property int baseFont: 12
     property string lang: "de"
     property string btcZeichen: "\u20BF"
@@ -154,6 +158,7 @@ Item {
         content: header
         backdropSource: canvasView
         blurred: root.frostedBlur
+        tint: root.frostedTint
         visible: root.frostedInfo && header.visible
         z: 4
     }
@@ -162,6 +167,7 @@ Item {
         content: info
         backdropSource: canvasView
         blurred: root.frostedBlur
+        tint: root.frostedTint
         visible: root.frostedInfo && info.visible
         z: 4
     }
@@ -170,6 +176,7 @@ Item {
         content: legend
         backdropSource: canvasView
         blurred: root.frostedBlur
+        tint: root.frostedTint
         visible: root.frostedInfo && legend.visible
         z: 4
     }
@@ -183,6 +190,7 @@ Item {
         content: goggles
         backdropSource: canvasView
         blurred: root.frostedBlur
+        tint: root.frostedTint
         visible: root.frostedInfo && goggles.visible
         z: 4
     }

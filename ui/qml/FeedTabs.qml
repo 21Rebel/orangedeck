@@ -60,6 +60,9 @@ Item {
     // dessen eigene Flaechenfarbe -- damit traegt das Auswahlfeld dieselbe
     // Deckkraft wie die Einstellungen daneben, statt eine eigene zu erfinden.
     property color panelColor: "#16161f"
+    // Toenung der Milchglas-Kaestchen im Feed; getrennt von panelColor, damit
+    // App und Quickshell-Fenster ihr bisheriges Dunkel behalten
+    property color frostedTint: "#0b0b12"
     property real baseFont: 13
     property real tabFont: 12
     property real gap: 8
@@ -396,6 +399,7 @@ Item {
         dimColor: root.dimColor
         accentColor: root.accentColor
         lineColor: root.lineColor
+        frostedTint: root.frostedTint
         baseFont: root.baseFont
         onColorModeRequested: function (m) {
             root.optRequested("colorMode", m);

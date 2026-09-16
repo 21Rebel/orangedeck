@@ -285,6 +285,7 @@ Item {
         accentColor: Theme.primary
         lineColor: Theme.outlineMedium
         panelColor: Theme.surfaceContainerHighest
+        frostedTint: Theme.surfaceContainer
         onOptRequested: function (key, value) {
             root.setOpt(key, value);
         }
