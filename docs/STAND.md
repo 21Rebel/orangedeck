@@ -53,6 +53,10 @@ Nichts Dringendes. Wenn das Galaxy steckt:
 | Explorer, RBF: "vorher"/"neu" in jeder Sprache | `83171b1` | beide Linux-VMs |
 | Pruef-VM: KRunner unter Fedora ging nicht, Startmenue | `c8771d4` | Fedora-Lauf |
 | Tag `v0.2.10`, Release als Entwurf, vom Anwender veroeffentlicht | -- | Anwender |
+| Widgets: nach einem Fehlschlag nachholen (JobScheduler), Grund ins Protokoll | `fe60fd0` | Galaxy, 08:53 |
+| Tastenhilfe im Explorer: "Esc Suche verlassen" | `4814067` | Liste, Idee |
+| Rollen mit der Tastatur: Bild auf/ab, Pos1, Ende (`roll.js`) | `cae3c06` | Liste, 12.09. |
+| OKX bis 24 h nachholen; `seit` rueckt beim Kuerzen mit | `c40896a` | Liste; /market |
 
 **Die drei Dateien der Auslieferung** (SHA-256, auch im Release, von GitHub
 nach dem Hochladen bestaetigt, und in `PRUEFSUMMEN.txt`):
@@ -158,7 +162,9 @@ Dazu, alle gemessen:
    Zwang: morgen frueh ansehen, bevor 0.2.11 eine Nummer bekommt.
 5. **Waehrung um 12:55** (15.09.) stiess die Widgets nicht an. Nicht
    geklaert.
-6. **OKX-Nachholen**: 30 Seiten reichen an unruhigen Tagen nicht.
+6. ~~OKX-Nachholen~~: `c40896a`. OKX liefert per REST genau 24 h (gemessen,
+   20 Seiten); jetzt bis zur leeren Seite, 100 als Schutz. Dabei gefunden
+   und behoben: `seit` blieb beim Kuerzen auf dem 04.09. stehen.
 7. **Am Galaxy gesehen (16.09., 11:30, Test-APK aus `d362ada`,
    `geraetetest-0.2.11/...-geraetetest-liq.apk`)**: Liquidationen bei 13y
    mit Summen (Longs 24,9 M $, Shorts 7,3 M $) und Balken statt leer; RBF-
@@ -167,10 +173,17 @@ Dazu, alle gemessen:
 8. **`tools/ansichten-android.py`** mit KEYCODE_COMMA am Galaxy.
 9. **Windows ungeprueft:** 600 MB im Markt, README-Startzeile in Win+R,
    Skalierung ueber 100 %, SmartScreen. **macOS** ungeprueft.
-10. **Idee:** in der Tastenhilfe "Esc verlaesst die Suche" (13 Sprachen).
-11. Vom 12.09. unveraendert: `bitfeed` ansehen, dann Stufe 3 und 4; Ansichten
-    rollen nicht mit der Tastatur; technische Fehlermeldungen aus dem
-    Datenweg; DMS-Anteil deutsch; Android 11 im Emulator.
+10. ~~Tastenhilfe Esc~~: `4814067`, in Xvfb deutsch und englisch gesehen.
+11. Vom 12.09.: `bitfeed` ansehen, dann Stufe 3 und 4; technische
+    Fehlermeldungen aus dem Datenweg; DMS-Anteil deutsch; Android 11 im
+    Emulator. ~~Ansichten rollen nicht mit der Tastatur~~: `cae3c06`, in Xvfb
+    gesehen (Mining, Explorer); die RBF-Tafel dabei englisch "old/new".
+13. **DMS neu starten**, damit die laufende Shell `roll.js` sieht:
+    `systemctl --user restart dms`. Die Verknuepfungen liegen seit 16.09.
+    nachmittags (`install-links.sh --check`: "Alles verteilt.").
+14. **Alles seit `v0.2.10` fuer 0.2.11**, erst nach dem Widget-Blick morgen
+    frueh: Liquidationen bei "all", Leertext, RBF-Spalten, Widgets
+    nachholen, Esc-Hinweis, Tastatur-Rollen, OKX 24 h, `seit`.
 12. **Idee fuer spaeter**: Wallet direkt auf dem Telefon.
 
 ### Fuer den naechsten Lauf
