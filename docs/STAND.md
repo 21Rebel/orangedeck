@@ -22,44 +22,61 @@
 
 ### Der Stand in einem Satz
 
-**0.2.10 ist veroeffentlicht**
-(https://github.com/21Rebel/orangedeck/releases/tag/v0.2.10, "Latest"), Tag
-`v0.2.10` auf `e4e74ef`, drei Dateien gegen die Pruefsummen gehalten, "Tested
-on" mit Windows, Galaxy und beiden Linux-VMs. Das Veroeffentlichen hat die
-Rechtepruefung von Claude Code abgelehnt ("Create Public Surface"); der
-Anwender hat es selbst getan. Danach drei Berichtigungen fuer 0.2.11 auf
-`main`. Alles gepusht, Arbeitsbaum sauber.
+**0.2.10 ist veroeffentlicht** ("Latest", Tag `v0.2.10` auf `e4e74ef`), und
+auf `main` liegen **acht Aenderungen fuer 0.2.11**, noch ohne Nummer: die
+Fassung in CMakeLists/Manifest ist weiter 0.2.10. Am Galaxy laeuft ein
+Test-APK mit dem Nachholen der Widgets (Stand `fe60fd0`); ueber Nacht zeigt
+sich, ob die Widgets nach dem Doze von selbst wieder Daten haben. Alles
+gepusht, Arbeitsbaum sauber, der Dienst laeuft lokal, DMS mit `roll.js`
+neu gestartet, keine VM an.
 
 ### Was morgen als Erstes drankommt
 
-Nichts Dringendes. Wenn das Galaxy steckt:
-
-1. **Leertext der Liquidationen am Geraet**: nur im APK nachgewiesen (Text
-   im Paket), nicht gesehen -- dafuer braucht es ein Fenster ohne Marken.
+1. **Widgets am Galaxy ansehen, bevor die App geoeffnet wird.**
+   - **Mit Daten**: bestanden. Weiter mit Punkt 2.
+   - **"gerade nicht erreichbar"**: Galaxy anstecken, App **nicht** oeffnen,
+     dann `adb logcat -d -v time | grep -E ' (I|W)/OrangeDeck'` -- Grund und
+     ob Nachholversuche liefen. Laeuft der Puffer ueber, beim naechsten Mal
+     mitschneiden.
+2. **0.2.11 vorbereiten**, nach der Pruefliste oben in
+   `packaging/github/RELEASE-TEXT.md`: Nummer an drei Stellen (CMakeLists,
+   Manifest 14 / 0.2.11, Metainfo), Freigabetext, Pin, APK aus dem Pin,
+   Galaxy, Windows-VM, beide Linux-VMs. **Die acht Aenderungen** seit
+   `v0.2.10`:
+   - Liquidationen bei "all" zeigen die laufende Woche (`116b2ce`, Dienst+App)
+   - Leertext: OKX liefert einen Tag rueckwirkend (`3f4035e`)
+   - Explorer, RBF-Spalten in jeder Sprache (`83171b1`)
+   - Widgets holen nach einem Fehlschlag nach, sobald Netz da ist (`fe60fd0`)
+   - Tastenhilfe "Esc Suche verlassen" (`4814067`)
+   - Rollen mit der Tastatur (`cae3c06`, neue Datei `roll.js`)
+   - OKX bis 24 h nachholen (`c40896a`, Dienst+App)
+   - "zugehoert seit" rueckt beim Kuerzen mit (`c40896a`, Dienst+App)
+3. **Vor dem Test mempool.space pruefen** (`curl -4`/`-6`): heute wieder
+   IPv4-gesperrt. Ist die Sperre weg, laesst sich Windows mit Daten pruefen.
 
 ### Was heute dazugekommen ist
 
-10 Commits, dazu Tag und Release-Entwurf.
+22 Commits (14 Code/Werkzeug, 8 Stand), Tag `v0.2.10`, Release.
 
 | Was | Commit | Anstoss |
 |---|---|---|
-| Nummer 0.2.10, Metainfo und Freigabetext nennen den Wegfall der Wallet | `7d30b40` | Tagesabschluss 15.09. |
-| Bauplan auf 0.2.10 | `65f858e` | Ablauf |
+| Nummer 0.2.10; Metainfo und Freigabetext nennen den Wegfall der Wallet | `7d30b40` | Tagesabschluss 15.09. |
+| Bauplan auf 0.2.10, dann auf `e4e74ef` | `65f858e`, `ab7c079` | Ablauf |
 | Hinweis zur Dienstadresse: nicht mehr "Tablet und Telefon", 13 Sprachen | `e4e74ef` | Ubuntu-VM, vor dem Signieren |
-| Bauplan auf `e4e74ef` | `ab7c079` | Ablauf |
 | Freigabetext: Pruefsummen, Windows, Linux, Galaxy | `47e47b0`, `41711f0` | Ablauf |
-| Liquidationen bei "all": die laufende Woche fehlte (Dienst und App) | `116b2ce` | Galaxy, 13y leer |
+| Tag `v0.2.10`, Entwurf; veroeffentlicht vom Anwender | -- | Anwender |
+| Liquidationen bei "all": die laufende Woche fehlte | `116b2ce` | Galaxy, 13y leer |
 | Leere Liquidationsansicht: OKX liefert einen Tag rueckwirkend | `3f4035e` | Galaxy |
 | Explorer, RBF: "vorher"/"neu" in jeder Sprache | `83171b1` | beide Linux-VMs |
 | Pruef-VM: KRunner unter Fedora ging nicht, Startmenue | `c8771d4` | Fedora-Lauf |
-| Tag `v0.2.10`, Release als Entwurf, vom Anwender veroeffentlicht | -- | Anwender |
-| Widgets: nach einem Fehlschlag nachholen (JobScheduler), Grund ins Protokoll | `fe60fd0` | Galaxy, 08:53 |
-| Tastenhilfe im Explorer: "Esc Suche verlassen" | `4814067` | Liste, Idee |
-| Rollen mit der Tastatur: Bild auf/ab, Pos1, Ende (`roll.js`) | `cae3c06` | Liste, 12.09. |
-| OKX bis 24 h nachholen; `seit` rueckt beim Kuerzen mit | `c40896a` | Liste; /market |
+| Widgets: nach einem Fehlschlag nachholen, Grund ins Protokoll | `fe60fd0` | Galaxy, 08:53 |
+| Tastenhilfe im Explorer: "Esc Suche verlassen" | `4814067` | Liste |
+| Rollen mit der Tastatur: Bild auf/ab, Pos1, Ende | `cae3c06` | Liste, 12.09. |
+| OKX bis 24 h nachholen; "seit" rueckt beim Kuerzen mit | `c40896a` | Liste; /market |
+| Test-APKs 0.2.9 und 0.2.10 geloescht (869 MB) | `f812762` | Anwender |
 
-**Die drei Dateien der Auslieferung** (SHA-256, auch im Release, von GitHub
-nach dem Hochladen bestaetigt, und in `PRUEFSUMMEN.txt`):
+**Die drei Dateien von 0.2.10** (SHA-256, im Release, von GitHub nach dem
+Hochladen bestaetigt, in `PRUEFSUMMEN.txt`):
 
     9c446d2b396cea1730b89f1dc4195c2a577c85609b4033a24edf5eeb0eafb04f  orangedeck-0.2.10-windows-x86_64.zip
     14e7b7014c84a3138102486781a87eac995d7a9574b5611ad862de676428d25c  orangedeck-0.2.10-arm64-v8a.apk
@@ -67,127 +84,128 @@ nach dem Hochladen bestaetigt, und in `PRUEFSUMMEN.txt`):
 
 **Gemessen heute:**
 
-- **Windows 11, VM, ZIP aus `65f858e`** (Stand `7d30b40`; `e4e74ef` aendert
-  nur einen Text, den Windows ausblendet): Registry wie nach 0.2.9
+- **Windows 11, VM, ZIP aus `65f858e`**: Registry wie nach 0.2.9
   (`dataSource=daemon`, `daemonHost`, `walletEnabled=true`) -- kein
   Wallet-Reiter, keine Datenquelle, Markt direkt mit Daten; `,` und Esc;
   Widget bleibt bei Win+D; Q schliesst Widget und Fenster; keine neue
-  Defender-Erkennung, kein Absturz im Protokoll.
-- **Ubuntu 24.04 und Fedora 44, Buendel aus `e4e74ef`**: Pruefsummen,
-  Installation, alle Reiter, `,`, der berichtigte Hinweistext, Markt ueber
-  den Dienst mit Daten. Unter Linux Datenquelle und Wallet-Reiter vorhanden.
-- **Galaxy, Release-APK ueber adb**: keine Wallet, keine
-  Dienst-Einstellungen, Zurueck schliesst sie, Feed und Markt mit Daten,
-  Long/Short von allen drei Boersen, Bybit mit eigenem "seit". Widgets nach
-  der Installation bei gesperrtem Telefon "gerade nicht erreichbar", nach
-  dem Anstossen alle mit Daten, kein ANR -- damit ist "offline statt ..."
-  gesehen. Zwei Finger nicht geprueft (adb kann das nicht).
-- **Dienst, `/market?range=all`**: vorher Marken bis 15.09., nachher bis
-  16.09. 09:04.
+  Defender-Erkennung, kein Absturz. Feed, Uhr, Mining ohne Daten (IPv4).
+- **Ubuntu 24.04 und Fedora 44, Buendel aus `e4e74ef`**: alle Reiter, `,`,
+  berichtigter Hinweistext, Markt ueber den Dienst mit Daten; Datenquelle
+  und Wallet-Reiter unter Linux da. Feed, Uhr, Mining leer (IPv4).
+- **Galaxy, Release-APK 0.2.10**: keine Wallet, keine Dienst-Einstellungen,
+  Zurueck schliesst sie, Feed und Markt mit Daten, Long/Short von allen
+  drei Boersen, Widgets nach dem Anstossen mit Daten, kein ANR.
+- **Galaxy, Test-APK `...-geraetetest-liq`** (aus `d362ada`): 13y mit
+  Summen (Longs 24,9 M $, Shorts 7,3 M $) statt leer; RBF-Tafel "vorher"/"neu".
+- **Galaxy, Test-APK `...-geraetetest-nachholen`** (Stand `fe60fd0`):
+  Bildschirm aus am Strom -- alle zehn Widgets kamen durch. Mit
+  `deviceidle force-idle`: alle zehn `UnknownHostException` (Miner
+  Zeitueberschreitung), zehn Jobs; nach `unforce` alle zehn sofort, 20
+  Zeichnungen, keine Warnung, kein Job wartend; um 12:56 alle zehn auf dem
+  Bildschirm mit Daten.
+- **Xvfb, Desktop-App** (eigener `XDG_CONFIG_HOME`, ueber den Dienst):
+  Taste 4 zeigt "Esc Suche verlassen"/"Esc Leave search", Esc und 1 zurueck
+  zur vollen Hilfe; Mining Ende/Pos1, Explorer Ende/Bild auf; RBF englisch
+  "old"/"new".
+- **OKX per REST**: genau 24 h, danach leere Seiten -- 20 Seiten, 1874
+  Marken, 9,7 s. In der Datei des Dienstes alle 24 Stunden mit OKX-Marken.
+- **Dienst**: `/market?range=all` Marken vorher bis 15.09., nachher bis
+  16.09.; `liqSince` vorher 04.09., nachher 14.09. 13:56 (48,0 h).
 
-**Beim Anwender eingerichtet und zurueckgenommen:** `win11` auf 4 GB und
-wieder auf 10240000 KiB, aus. Pruef-VM aus. Drehung am Galaxy freigegeben.
-In der Windows-VM steht noch die Registry wie nach 0.2.9 (`daemon`,
-`192.168.100.7`, Wallet an) -- absichtlich, schadet unter 0.2.10 nicht.
-`PRUEFSUMMEN.txt`: die Zeile des verworfenen ersten 0.2.10-Baus entfernt,
-ZIP und Flatpak ergaenzt.
+**Beim Anwender eingerichtet und zurueckgenommen:** `win11` 4 GB und zurueck
+auf 10240000 KiB, aus; Registry dort absichtlich wie nach 0.2.9. Pruef-VM
+aus. Galaxy: Drehung frei, Akku-Simulation und Doze zurueckgesetzt, Test-APK
+`nachholen` installiert. Auslieferungsordner: nur 0.2.9 und 0.2.10 plus
+`geraetetest-0.2.11/` (zwei signierte Test-APKs, umbenannt).
+`PRUEFSUMMEN.txt` bereinigt. Neue Erinnerung: neue QML-Datei zuerst verlinken.
 
-### Die Erkenntnis des Tages
+### Die Erkenntnisse des Tages
 
 **Ein Text, der eine Faehigkeit beschreibt, faellt mit ihr nicht von selbst
-weg.** Die Wallet unter Android und Windows war seit gestern entfernt, der
-Hinweis bei der Dienstadresse versprach sie unter Linux weiter "Tablet und
-Telefon". Gefunden in der VM, als niemand danach suchte, eine halbe Stunde
-bevor das APK signiert wurde. Beim Entfernen einer Faehigkeit gehoert eine
-Suche nach ihren Namen in `strings.js` dazu.
+weg.** Die Wallet war unter Android und Windows seit gestern entfernt; der
+Hinweis bei der Dienstadresse versprach sie weiter "Tablet und Telefon".
+Gefunden in der VM, eine halbe Stunde vor dem Signieren. Beim Entfernen
+einer Faehigkeit ihre Namen in `strings.js` suchen.
 
-Die zweite: **"Springt von selbst zurueck" war eine Einstellung.** Am Galaxy
-wechselte die Ansicht alle 30 s -- der Reiterwechsel des Anwenders, kein
-Absturz (dieselbe PID). Zehn Bilder im Abstand von 10 s haben das in 90 s
-geklaert.
+**Ein stummer `catch` macht einen Fehler unerforschbar.** Die Widgets
+scheiterten morgens, und niemand konnte sagen warum -- der Grund ging
+verloren, den logcat hatte ich selbst geleert. Mit einer Zeile Protokoll und
+`deviceidle force-idle` war die Ursache in zwei Minuten da: im Doze gibt es
+fuer den Prozess kein Netz. Nachgestellt ist besser als abgewartet.
 
-Die dritte: **Eine Grenze, die "ein Tag" annimmt, passt nur zu Kerzen bis
-zu einem Tag.** Der Fehler stand wortgleich in Dienst und App, seit dem
-13.09., und fiel erst beim Zeitraum auf, den am Telefon jemand wirklich
-eingestellt hatte.
+**Eine Grenze, die "ein Tag" annimmt, passt nur zu Kerzen bis zu einem
+Tag.** Wortgleich in Dienst und App seit dem 13.09.; aufgefallen erst beim
+Zeitraum, den am Telefon wirklich jemand eingestellt hatte.
+
+**Vor "mehr Seiten" messen, wie weit die Quelle reicht.** OKX liefert 24
+Stunden, nicht mehr. Die richtige Grenze ist die leere Seite, keine Zahl.
+
+**Die laufende Shell ist ein Nutzer des Repos.** DMS laedt geaenderte
+Dateien sofort; ein Import auf eine noch nicht verlinkte Datei legte die
+Uhr-Ansicht elf Minuten lahm. Neue Datei: erst `install-links.sh`, dann
+Imports.
+
+**"Springt von selbst zurueck" war eine Einstellung.** Am Galaxy wechselte
+die Ansicht alle 30 s -- der Reiterwechsel des Anwenders, dieselbe PID.
+Zehn Bilder im Abstand von 10 s klaerten es.
 
 Dazu, alle gemessen:
 
 - **mempool.space sperrt die IPv4-Adresse wieder** (IPv4 `000`, IPv6 200).
-  Der QEMU-Gast erreicht mempool.space ueber IPv6 (`wget -6` 200), die App
-  darin nimmt aber IPv4; die Windows-VM hat nur IPv4.
-- **`od-start.cmd` und ein zweiter Start**: die Umleitung in dieselbe
-  Logdatei scheitert, solange das Fenster sie offen haelt, und die exe
-  startet nie, ohne Meldung. `OD_LOG` waehlt jetzt die Datei (in `build/`,
-  nicht im Repo).
-- **SetForegroundWindow holt ein minimiertes Fenster nicht zurueck**; Q ging
-  ins Leere. Alt+Tab stellt es wieder her.
-- **Die libvirt-VM tippt ueber `virsh send-key` mit deutscher Belegung**
-  (z/y getauscht, `:` = Shift+Punkt, `\` = AltGr+sz); Helfer im Kratzbereich,
-  nicht im Repo. Klicks ueber `virsh qemu-monitor-command` mit
-  `input-send-event`.
-- **Der Galaxy-Startbildschirm** hat zehn OrangeDeck-Widgets auf drei Seiten.
+  Der QEMU-Gast erreicht es ueber IPv6 (`wget -6`), die App darin nimmt
+  IPv4; die Windows-VM hat nur IPv4.
+- **Veroeffentlichen** (`gh release edit --draft=false`) lehnt die
+  Rechtepruefung von Claude Code ab; Tag pushen und Entwurf anlegen gehen.
+- **`od-start.cmd` und ein zweiter Start**: gleiche Logdatei, die exe
+  startet nie, ohne Meldung. `OD_LOG` (in `build/`, nicht im Repo).
+- **SetForegroundWindow stellt ein minimiertes Fenster nicht wieder her**;
+  Alt+Tab schon.
+- **Windows-VM**: `virsh send-key` mit deutscher Belegung, Klicks ueber
+  `virsh qemu-monitor-command` mit `input-send-event`.
+- **Galaxy**: zehn OrangeDeck-Widgets auf drei Startseiten; ohne Doze und
+  am Strom kommen alle beim ersten Mal durch; `am broadcast` weiter
+  verweigert, Anstossen per Neuinstallation.
+- **Galaxy-Taps**: Koordinaten aus einem nebeneinandergelegten Bild erst
+  zurueckrechnen -- ein Tipp landete im Suchfeld des Explorers.
+- **Fedora-Live**: KRunner startete gar nicht ("startup job failed");
+  Startmenue und bis zu einer Minute Geduld.
 
 ### Und was ich selbst falsch gemacht habe
 
-- **Das Widget unter Windows fehlte, und ich habe erst nach der App
-  gesucht**, bevor ich das eigene Testskript verdaechtigt habe.
+- **Den logcat um 09:54 geleert**, bevor ich wusste, dass ich den Morgen
+  noch brauche.
+- **`roll.js` importiert, bevor sie verlinkt war** -- DMS elf Minuten mit
+  kaputter Uhr-Ansicht.
+- **Das Widget unter Windows fehlte, und ich habe erst in der App gesucht**
+  statt im eigenen Testskript.
 - **Q an ein minimiertes Fenster geschickt** und kurz fuer einen Befund
   gehalten.
-- **Einen Befehl mit `$V` als Variable** an die zsh-artige Shell gegeben;
-  sie teilt nicht in Woerter, sechs Tasten gingen ins Leere.
-- **In Fedora "konsole" getippt, ohne vorher ein Bild zu holen**; es landete
-  im Willkommensfenster.
-- **"ok" des Anwenders als Freigabe genommen und veroeffentlichen wollen** --
-  die Rechtepruefung hat es gestoppt. Die Frage war gestellt, die Antwort
-  kam; der Weg ueber den Anwender ist trotzdem der richtige.
+- **Eine Befehlszeile in `$V` abgelegt**; die Shell teilt sie nicht,
+  sechs Tasten gingen ins Leere.
+- **In Fedora "konsole" getippt, ohne vorher ein Bild zu holen.**
+- **Am Galaxy eine Koordinate falsch umgerechnet** (1756 statt 676) und das
+  Suchfeld getroffen; nichts eingegeben, wieder geschlossen.
+- **`--lang` fuer die Desktop-App geraten**; die Sprache kommt aus `LANG`.
+- **"ok" als Freigabe genommen und veroeffentlichen wollen** -- die
+  Rechtepruefung stoppte es; der Anwender hat es dann selbst getan.
 
 ### Was sonst noch offen ist
 
-1. ~~0.2.10 veroeffentlichen~~: am 16.09. um 10:55 vom Anwender.
-2. ~~Test-APKs~~: `geraetetest-0.2.9/` (542 MB) und `geraetetest-0.2.10/`
-   (327 MB) am 16.09. auf Wort des Anwenders geloescht. Im
-   Auslieferungsordner liegen nur noch 0.2.9 und 0.2.10.
+1. **Widgets ueber Nacht** und **0.2.11**: siehe oben.
+2. **Leertext der Liquidationen** nirgends gesehen, nur im Paket
+   nachgewiesen -- braucht ein Fenster ohne Marken.
 3. **Windows mit Daten** (Feed, Uhr, Mining), sobald die IPv4-Sperre faellt.
-4. ~~Widgets blieben "gerade nicht erreichbar"~~: **Ursache gemessen, am
-   Nachmittag behoben** (`fe60fd0`). Im Doze sperrt Android dem Prozess das
-   Netz (`UnknownHostException` fuer mempool.space, beim Miner eine
-   Zeitueberschreitung), und nach einem Fehlschlag gab es keinen Versuch bis
-   zum naechsten Takt. Jetzt je Widget-Art ein Job mit Netz-Bedingung.
-   Nachgestellt am Galaxy mit `force-idle`: zehn Fehlschlaege, zehn Jobs;
-   nach `unforce` liefen alle zehn sofort, 20 Zeichnungen, keine Warnung,
-   kein Job mehr wartend. Ohne Doze (nur Bildschirm aus, am Strom) kam alles
-   beim ersten Mal durch. Um 12:56 alle zehn Widgets auf drei Seiten mit
-   Daten gesehen (Blockhoehe 967.305). Offen nur der Fall ueber Nacht ohne
-   Zwang: morgen frueh ansehen, bevor 0.2.11 eine Nummer bekommt.
+4. **Rollen in den Einstellungen** nicht nachgewiesen (Seite passte ins
+   Fenster); am Galaxy ist Rollen ohnehin Finger.
 5. **Waehrung um 12:55** (15.09.) stiess die Widgets nicht an. Nicht
    geklaert.
-6. ~~OKX-Nachholen~~: `c40896a`. OKX liefert per REST genau 24 h (gemessen,
-   20 Seiten); jetzt bis zur leeren Seite, 100 als Schutz. Dabei gefunden
-   und behoben: `seit` blieb beim Kuerzen auf dem 04.09. stehen.
-7. **Am Galaxy gesehen (16.09., 11:30, Test-APK aus `d362ada`,
-   `geraetetest-0.2.11/...-geraetetest-liq.apk`)**: Liquidationen bei 13y
-   mit Summen (Longs 24,9 M $, Shorts 7,3 M $) und Balken statt leer; RBF-
-   Tafel mit "vorher"/"neu" aus dem neuen Schluessel. Englisch nicht
-   gesehen, Leertext nicht gesehen.
-8. **`tools/ansichten-android.py`** mit KEYCODE_COMMA am Galaxy.
-9. **Windows ungeprueft:** 600 MB im Markt, README-Startzeile in Win+R,
+6. **`tools/ansichten-android.py`** mit KEYCODE_COMMA am Galaxy.
+7. **Windows ungeprueft:** 600 MB im Markt, README-Startzeile in Win+R,
    Skalierung ueber 100 %, SmartScreen. **macOS** ungeprueft.
-10. ~~Tastenhilfe Esc~~: `4814067`, in Xvfb deutsch und englisch gesehen.
-11. Vom 12.09.: `bitfeed` ansehen, dann Stufe 3 und 4; technische
-    Fehlermeldungen aus dem Datenweg; DMS-Anteil deutsch; Android 11 im
-    Emulator. ~~Ansichten rollen nicht mit der Tastatur~~: `cae3c06`, in Xvfb
-    gesehen (Mining, Explorer); die RBF-Tafel dabei englisch "old/new".
-13. ~~DMS neu starten~~: um 14:08:45 geschehen, Plugin geladen, keine
-    Meldung zu `roll.js`. **Aber von 13:57 bis 14:08 war die Uhr-Ansicht in
-    DMS kaputt** ("Script roll.js unavailable"): die Shell laedt die Dateien
-    aus dem Repo neu, sobald sie sich aendern, und sah den Import vor der
-    Verknuepfung. **Eine neue Datei unter `ui/qml/` zuerst verlinken
-    (`tools/install-links.sh`), dann die Imports schreiben.**
-14. **Alles seit `v0.2.10` fuer 0.2.11**, erst nach dem Widget-Blick morgen
-    frueh: Liquidationen bei "all", Leertext, RBF-Spalten, Widgets
-    nachholen, Esc-Hinweis, Tastatur-Rollen, OKX 24 h, `seit`.
-12. **Idee fuer spaeter**: Wallet direkt auf dem Telefon.
+8. **`bitfeed`** ansehen (kitty, Hintergrund, CPU), dann Stufe 3 und 4.
+9. **Technische Fehlermeldungen** aus dem Datenweg; **DMS-Anteil** nur
+   deutsch; **Android 11** im Emulator.
+10. **Idee fuer spaeter**: Wallet direkt auf dem Telefon.
 
 ### Fuer den naechsten Lauf
 
@@ -218,7 +236,7 @@ Dazu, alle gemessen:
       KRunner mit alt-spc, vor langen Zeilen  echo FOKUS-OK  und ein Bild
       Klicks:  python3 -c 'import sys; sys.path.insert(0,"tools"); import vm; vm.klick(x, y)'
     gh release create v<v> --draft --verify-tag --title "OrangeDeck <v>" --notes-file <text> <dateien>
-    gh release edit v<v> --notes-file <text> --draft=false --latest
+    gh release edit v<v> --draft=false --latest   (nur der Anwender: Rechtepruefung)
     virsh -c qemu:///system setmem win11 4G --config      (und setmaxmem; danach 10240000)
     im Windows-Gast nur Skripte starten, keine Schalter in Win+R (ClickFix)
     Pruefstand ohne Fenster:
@@ -226,7 +244,10 @@ Dazu, alle gemessen:
           /usr/lib/qt6/bin/qml <datei>.qml      (grabToImage, 384 Punkte = Galaxy)
     qmllint: /usr/lib/qt6/bin/qmllint -I ui/qml [-I app/qml] <datei>
     laeuft ein Prozess:  ps -C <name>   (nicht pgrep -f)
-    tools/install-links.sh --check
+    tools/install-links.sh --check        (neue Datei unter ui/qml: ZUERST verlinken)
+    Xvfb-Probe:  xvfb-run -a --server-args='-screen 0 1000x600x24' env -u WAYLAND_DISPLAY \
+                 XDG_CONFIG_HOME=<kratz> LANG=en_US.UTF-8 QT_QPA_PLATFORM=xcb ./build/orangedeck-app
+                 dazu tools/xtest.py: fenster_suchen, groesse, klick, taste("End")
     tools/install-links.sh && python3 -B daemon/orangedeck-dashtab && systemctl --user restart dms
 
 ---
