@@ -669,7 +669,13 @@ Item {
             var band = root.__bandSeit(bandAb);
             root.__liqAufraeumen();
             var liqVon = kerzen.length ? kerzen[0][0] : 0;
-            var liqBis = kerzen.length ? kerzen[kerzen.length - 1][0] + 86400 : 0;
+            // Bis ans Ende der letzten Kerze, mindestens einen Tag -- wie im
+            // Dienst. Pauschal ein Tag liess bei Wochenkerzen ("all") die
+            // laufende Woche nach ihrem ersten Tag leer (16.09.2026).
+            var schritt = kerzen.length > 1
+                          ? kerzen[kerzen.length - 1][0] - kerzen[kerzen.length - 2][0] : 0;
+            var liqBis = kerzen.length
+                         ? kerzen[kerzen.length - 1][0] + Math.max(86400, schritt) : 0;
             var liq = liqVon ? root.__liqFenster(liqVon, liqBis) : [];
             var hist = [];
             if (kerzen.length) {

@@ -2512,8 +2512,13 @@ class _Handler(BaseHTTPRequestHandler):
                 # abgeleitet aus dem, was zurueckkommt, nicht aus dem, was
                 # gefragt wurde: bei "all" weiss nur die Antwort, wo sie
                 # anfaengt.
+                # **Bis ans Ende der letzten Kerze, mindestens einen Tag.**
+                # Bis zum 16.09.2026 stand hier pauschal ein Tag: bei "all"
+                # mit Wochenkerzen fiel damit alles nach dem ersten Tag der
+                # laufenden Woche heraus, die Ansicht blieb leer.
                 if kerzen:
-                    liq_von, liq_bis = kerzen[0][0], kerzen[-1][0] + 86400
+                    schritt = kerzen[-1][0] - kerzen[-2][0] if len(kerzen) > 1 else 0
+                    liq_von, liq_bis = kerzen[0][0], kerzen[-1][0] + max(86400, schritt)
                 else:
                     liq_von, liq_bis = 0, 0
                 liq = LIQ.fenster(liq_von, liq_bis) if liq_von else []
