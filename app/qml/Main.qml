@@ -249,6 +249,8 @@ Window {
     // gemerkt, damit ein Tablet nach dem Einschalten gleich wieder als
     // Uhr hochkommt.
     property int view: 0
+    // Das Suchfeld des Explorers hat den Fokus -- dann gilt eine andere Tastenhilfe
+    property bool sucheOffen: false
     // Von der Befehlszeile gesetzt (`--view`, `--bare`) und **nicht**
     // gespeichert: ein Widget an der Wand soll seine Ansicht behalten, ohne
     // die zuletzt benutzte Ansicht des grossen Fensters umzuschreiben.
@@ -666,7 +668,17 @@ Window {
             // Das Suchfeld des Explorers nimmt den Fokus, solange es zu sehen ist.
             // Beim Verlassen gehoert er wieder hierher -- sonst sind die
             // Tastenkuerzel nach einem Besuch im Explorer tot.
-            onSearchFocusReleased: keys.forceActiveFocus()
+            onSearchFocusReleased: {
+                win.sucheOffen = false;
+                keys.forceActiveFocus();
+            }
+            // **Die Tastenhilfe sagt, wie man wieder herauskommt.** Das Feld
+            // schluckt die Ziffern, und wer nicht weiss, dass Esc den Fokus
+            // zurueckgibt, haelt die Kuerzel fuer kaputt (Idee vom 15.09.2026).
+            onSearchFocusTaken: {
+                win.sucheOffen = true;
+                hint.flash();
+            }
 
             // **Auf dem Telefon holt sich das Suchfeld den Fokus nicht.** Dort
             // haengt am Fokus die Bildschirmtastatur, und die deckt die halbe
@@ -820,7 +832,9 @@ Window {
             color: "#9a94a6"
             font.pixelSize: 11
             // ", Einstellungen" aus dem Reiternamen, der in allen Sprachen schon da ist.
-            text: Tr.t("keys.help", win.lang) + " · , " + Tr.t("tab.settings", win.lang) + " · " + Tr.t("keys.fullscreen", win.lang)
+            text: win.sucheOffen
+                  ? Tr.t("keys.search", win.lang)
+                  : Tr.t("keys.help", win.lang) + " · , " + Tr.t("tab.settings", win.lang) + " · " + Tr.t("keys.fullscreen", win.lang)
         }
 
         function flash() {

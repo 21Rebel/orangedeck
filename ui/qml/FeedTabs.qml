@@ -68,6 +68,7 @@ Item {
     signal viewRequested(int v)
     // Der Explorer hat den Tastaturfokus wieder hergegeben.
     signal searchFocusReleased()
+    signal searchFocusTaken()
 
     function o(key, def) {
         return root.opts[key] === undefined ? def : root.opts[key];
@@ -468,6 +469,7 @@ Item {
         }
         // Weiterreichen: der Wirt holt sich seine Tastenkuerzel zurueck.
         onSearchFocusReleased: root.searchFocusReleased()
+        onSearchFocusTaken: root.searchFocusTaken()
     }
 
     MarketView {

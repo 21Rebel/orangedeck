@@ -49,6 +49,8 @@ Item {
     // (Fenster und Quickshell) holen ihn sich darauf zurueck -- sonst sind
     // ihre Kuerzel nach einem Besuch im Explorer tot.
     signal searchFocusReleased()
+    // ... und hat ihn genommen: die Ziffern tippen jetzt ins Feld
+    signal searchFocusTaken()
 
     onVisibleChanged: {
         if (root.visible) {
@@ -70,8 +72,10 @@ Item {
     }
 
     function focusSearchField() {
-        if (root.visible && root.focusSearch)
+        if (root.visible && root.focusSearch) {
             field.forceActiveFocus();
+            root.searchFocusTaken();
+        }
     }
 
     // In die Zwischenablage. QtQuick hat dafuer keine eigene Schnittstelle --
