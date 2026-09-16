@@ -256,6 +256,13 @@ Dasselbe Geruest, vier Abweichungen (gemessen am 12.09.2026):
     Fokus wechselt, wird zwischen beiden zerschnitten. Dann einfach im
     vorderen Fenster neu tippen.
 
+    **Am 16.09.2026 ging auch alt-spc nicht.** Plasma meldete "Launching
+    KRunner (Failed): startup job failed", zweimal. Sicherer Weg: das
+    Startmenue per Klick (vm.klick(35, 768) im 1280x800-Bild), 'konsole'
+    tippen, ret -- und dann bis zu einer Minute warten, bis das Fenster
+    kommt. Getipptes landet vorher im Willkommensfenster; das loest nichts
+    aus, geht aber verloren. Vor dem Tippen in die Konsole klicken.
+
     **Vor jeder langen Zeile eine Probezeile** (`echo FOKUS-OK`) und ein
     Bild: jede Taste geht einzeln ueber den Monitor, eine Zeile mit den
     Schritten 4 bis 6 braucht gut zwei Minuten -- und landet sie im
