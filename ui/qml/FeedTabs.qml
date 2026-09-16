@@ -70,6 +70,22 @@ Item {
     signal searchFocusReleased()
     signal searchFocusTaken()
 
+    // **Rollen mit der Tastatur**, an die sichtbare Ansicht gereicht. Feed und
+    // Markt rollen nicht; dort geht die Taste ins Leere.
+    function rollen(wie) {
+        if (root.view === 1)
+            return uhr.visible && uhr.rollen(wie);
+        if (root.view === 2)
+            return miner.visible && miner.rollen(wie);
+        if (root.view === 3)
+            return explorer.visible && explorer.rollen(wie);
+        if (root.view === 4)
+            return wallet.visible && wallet.rollen(wie);
+        if (root.view === 5)
+            return einstellungen.visible && einstellungen.rollen(wie);
+        return false;
+    }
+
     function o(key, def) {
         return root.opts[key] === undefined ? def : root.opts[key];
     }
@@ -391,6 +407,8 @@ Item {
     }
 
     ClockView {
+        id: uhr
+
         visible: root.live && root.view === 1
         anchors.fill: parent
         anchors.topMargin: root.tabSpace
@@ -518,6 +536,8 @@ Item {
     }
 
     WatchView {
+        id: wallet
+
         visible: root.live && root.view === 4 && root.walletEnabled
         // Nur nachfragen, wenn die Ansicht auch zu sehen ist
         live: visible
@@ -541,6 +561,8 @@ Item {
     }
 
     SettingsView {
+        id: einstellungen
+
         visible: root.live && root.view === 5
         anchors.fill: parent
         anchors.topMargin: root.tabSpace

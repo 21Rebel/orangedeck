@@ -10,11 +10,17 @@ import "search.js" as Search
 import "txtype.js" as TxType
 import "strings.js" as Tr
 import "fonts.js" as Fonts
+import "roll.js" as Roll
 
 pragma ComponentBehavior: Bound
 
 Item {
     id: root
+
+    // Tastatur: Bild auf/ab, Pos1, Ende (roll.js; aus Main.qml ueber FeedTabs)
+    function rollen(wie) {
+        return Roll.rollen(flick, wie);
+    }
 
     property var feed: null
     property color textColor: "#f2eef8"

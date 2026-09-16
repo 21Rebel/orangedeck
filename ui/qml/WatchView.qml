@@ -15,11 +15,17 @@ import QtQuick
 import "money.js" as Money
 import "strings.js" as Tr
 import "fonts.js" as Fonts
+import "roll.js" as Roll
 
 pragma ComponentBehavior: Bound
 
 Item {
     id: root
+
+    // Tastatur: Bild auf/ab, Pos1, Ende (roll.js; aus Main.qml ueber FeedTabs)
+    function rollen(wie) {
+        return Roll.rollen(flick, wie);
+    }
 
     property var feed: null
     // Sieht jemand hin? Sonst wird nicht nachgefragt.

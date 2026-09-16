@@ -101,6 +101,7 @@ set(SHARED_QML
     ui/qml/search.js
     ui/qml/txtype.js
     ui/qml/money.js
+    ui/qml/roll.js
     ui/qml/strings.js
     ui/qml/views.js
     ui/qml/mondrian.js

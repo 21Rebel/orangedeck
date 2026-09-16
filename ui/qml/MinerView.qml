@@ -17,11 +17,18 @@
 // Nur `import QtQuick` -- laeuft damit auch unter Android.
 import QtQuick
 import "strings.js" as Tr
+import "roll.js" as Roll
 
 pragma ComponentBehavior: Bound
 
 Item {
     id: root
+
+    // Tastatur: Bild auf/ab, Pos1, Ende -- im Netzwerk-Bereich rollt dessen
+    // Flaeche, am Geraet die eigene (roll.js; aus Main.qml ueber FeedTabs)
+    function rollen(wie) {
+        return root.paneNow === "net" ? netz.rollen(wie) : Roll.rollen(flick, wie);
+    }
 
     property var feed: null
     property color textColor: "#f2eef8"

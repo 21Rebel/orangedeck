@@ -9,6 +9,7 @@
 import QtQuick
 import "money.js" as Money
 import "strings.js" as Tr
+import "roll.js" as Roll
 
 // Der Repeater unten greift auf `root` zu. Ohne diese Zeile warnt qmllint,
 // dass IDs aus dem umgebenden Bauteil in geschachtelten Bauteilen nicht
@@ -17,6 +18,11 @@ pragma ComponentBehavior: Bound
 
 Item {
     id: root
+
+    // Tastatur: Bild auf/ab, Pos1, Ende (roll.js; aus Main.qml ueber FeedTabs)
+    function rollen(wie) {
+        return Roll.rollen(flick, wie);
+    }
 
     property var feed: null
     property color textColor: "#f2eef8"

@@ -759,6 +759,16 @@ Window {
                     return;
                 einstKnopf.schliessen();
                 break;
+            case Qt.Key_PageDown:
+            case Qt.Key_PageUp:
+            case Qt.Key_Home:
+            case Qt.Key_End:
+                // An die sichtbare Ansicht (roll.js). Die Leertaste bleibt
+                // frei: sie hat in Feldern ihre eigene Bedeutung.
+                tabs.rollen(event.key === Qt.Key_PageDown ? "ab"
+                            : event.key === Qt.Key_PageUp ? "auf"
+                            : event.key === Qt.Key_Home ? "anfang" : "ende");
+                break;
             case Qt.Key_F11:
                 win.vollbild = !win.vollbild;
                 break;
