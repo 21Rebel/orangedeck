@@ -153,8 +153,9 @@ Dazu, alle gemessen:
    Nachgestellt am Galaxy mit `force-idle`: zehn Fehlschlaege, zehn Jobs;
    nach `unforce` liefen alle zehn sofort, 20 Zeichnungen, keine Warnung,
    kein Job mehr wartend. Ohne Doze (nur Bildschirm aus, am Strom) kam alles
-   beim ersten Mal durch. Noch nicht gesehen: die Widgets selbst danach auf
-   dem Bildschirm, und der Fall ueber Nacht ohne Zwang.
+   beim ersten Mal durch. Um 12:56 alle zehn Widgets auf drei Seiten mit
+   Daten gesehen (Blockhoehe 967.305). Offen nur der Fall ueber Nacht ohne
+   Zwang: morgen frueh ansehen, bevor 0.2.11 eine Nummer bekommt.
 5. **Waehrung um 12:55** (15.09.) stiess die Widgets nicht an. Nicht
    geklaert.
 6. **OKX-Nachholen**: 30 Seiten reichen an unruhigen Tagen nicht.
