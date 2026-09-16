@@ -15,158 +15,156 @@
      geschrieben wurde. Hier bleibt nur der neueste Tagesabschluss stehen.
      Wandert er morgen ins Journal, kommt der von morgen an seine Stelle;
      die Datei bleibt damit so lang, wie ein Einstieg sein darf. -->
-## TAGESABSCHLUSS 15.09.2026 -- wo das Projekt steht
+## TAGESABSCHLUSS 16.09.2026 -- wo das Projekt steht
 
 > Einstieg fuer den naechsten Tag. Alles Aeltere liegt im Journal unter
 > `docs/journal/`, ein Tag je Datei.
 
 ### Der Stand in einem Satz
 
-**Alles fuer 0.2.10 liegt auf `main`, aber es ist nichts getaggt**: Zahnrad
-per Taste, vier Feinheiten im Markt ohne Dienst, Widgets ohne leere Kacheln,
-und unter Android und Windows **keine Wallet und kein Dienst-Weg mehr**. Am
-Galaxy laeuft das Test-APK aus dem Stand `2c0cc24`; `1e0720f` (nur DMS) und
-`b812c4e` sind danach dazugekommen. Gepusht bis `b812c4e`, Arbeitsbaum
-sauber, der Dienst lauscht wieder nur lokal.
+**0.2.10 ist getaggt und liegt als Entwurf auf GitHub, veroeffentlicht ist es
+noch nicht**: Tag `v0.2.10` auf `e4e74ef`, drei Dateien hochgeladen und gegen
+die Pruefsummen gehalten, "Tested on" mit Windows, Galaxy und beiden
+Linux-VMs. Das Veroeffentlichen hat die Rechtepruefung von Claude Code
+abgelehnt ("Create Public Surface"); der Anwender macht es selbst. Danach
+drei Berichtigungen fuer 0.2.11 auf `main`. Alles gepusht, Arbeitsbaum
+sauber.
 
 ### Was morgen als Erstes drankommt
 
-Die Entscheidung ueber 0.2.10. Wenn ja, die Pruefliste in
-`packaging/github/RELEASE-TEXT.md`, und dabei zuerst:
+1. **Ist 0.2.10 veroeffentlicht?** `gh release list --limit 2`. Wenn nicht,
+   der Befehl fuer den Anwender:
 
-1. **Freigabetext und Metainfo**: sie muessen sagen, dass Wallet und "Dienst
-   auf einem anderen Geraet" unter Android und Windows wegfallen. 0.2.9 hat
-   beides dort als Neuerung angekuendigt.
-2. **Windows-VM**: der Wegfall ist dort ungeprueft, auch ein frueher
-   gespeichertes "Eigener Dienst".
-3. **Linux in beiden Pruef-VMs**, jetzt mit Klicks (`vm.klick`).
-4. **APK aus dem Pin-Commit**, Geraetelauf am Galaxy mit `b812c4e`
-   (MarketView mit `Bound`).
+       gh release edit v0.2.10 --draft=false --latest
+
+   Die Notizen haengen schon am Entwurf.
+
+2. Dann `auslieferung-und-geraetetest` in der Erinnerung auf 0.2.10 ziehen.
+3. Die drei Berichtigungen von heute (Liquidationen bei "all", Leertext,
+   RBF-Spalten) am Geraet ansehen, sobald ein naechstes APK gebaut wird.
 
 ### Was heute dazugekommen ist
 
-11 Commits, alle gepusht.
+10 Commits, dazu Tag und Release-Entwurf.
 
 | Was | Commit | Anstoss |
 |---|---|---|
-| Freigabevorlage: eine Pruefliste fuer jede Nummer | `aac3424` | Erkenntnis vom 14.09. |
-| Zahnrad auf der Tastatur: `,` oeffnet, Esc schliesst | `8241f4a` | Pruef-VM |
-| Markt ohne Dienst: Long/Short sofort, Bybit mit eigenem "seit", Heatmap faengt Ausfaelle ab, Kneifen um die Fingermitte | `4bdaa94` | Liste, Punkt 3 |
-| Dienst: OKX-Liquidationen nachholen, Sekundenring entfernt | `7b3d2d4` | Liste, Punkt 4 |
-| Pruef-VM: Klicks ueber QMP | `972d6f7` | Liste, Punkt 7 |
-| Widgets: sofort zeichnen, ein Budget fuer alle Abrufe | `6924dd7` | leere Widgets am Galaxy |
-| Widgets: vor dem Freigeben zeichnen | `b63bdc4` | "..." blieb stehen |
-| Dienst auf einem anderen Geraet: Adresse wurde verworfen | `fa6322c` | Liste, Punkt 2 |
-| Wallet und Dienst-Weg nur noch unter Linux | `2c0cc24` | Anwender |
-| Desktop-Widget: Umschaltungen wurden verworfen | `1e0720f` | andere Sitzung, gegengelesen |
-| OKX-Nachholen mit 30 Seiten, MarketView mit `Bound` | `b812c4e` | Liste, Punkte 5 und 8 |
+| Nummer 0.2.10, Metainfo und Freigabetext nennen den Wegfall der Wallet | `7d30b40` | Tagesabschluss 15.09. |
+| Bauplan auf 0.2.10 | `65f858e` | Ablauf |
+| Hinweis zur Dienstadresse: nicht mehr "Tablet und Telefon", 13 Sprachen | `e4e74ef` | Ubuntu-VM, vor dem Signieren |
+| Bauplan auf `e4e74ef` | `ab7c079` | Ablauf |
+| Freigabetext: Pruefsummen, Windows, Linux, Galaxy | `47e47b0`, `41711f0` | Ablauf |
+| Liquidationen bei "all": die laufende Woche fehlte (Dienst und App) | `116b2ce` | Galaxy, 13y leer |
+| Leere Liquidationsansicht: OKX liefert einen Tag rueckwirkend | `3f4035e` | Galaxy |
+| Explorer, RBF: "vorher"/"neu" in jeder Sprache | `83171b1` | beide Linux-VMs |
+| Pruef-VM: KRunner unter Fedora ging nicht, Startmenue | `c8771d4` | Fedora-Lauf |
+| Tag `v0.2.10`, Release als Entwurf | -- | Anwender |
+
+**Die drei Dateien der Auslieferung** (SHA-256, auch im Release, von GitHub
+nach dem Hochladen bestaetigt, und in `PRUEFSUMMEN.txt`):
+
+    9c446d2b396cea1730b89f1dc4195c2a577c85609b4033a24edf5eeb0eafb04f  orangedeck-0.2.10-windows-x86_64.zip
+    14e7b7014c84a3138102486781a87eac995d7a9574b5611ad862de676428d25c  orangedeck-0.2.10-arm64-v8a.apk
+    50d0ab4b459459951b9c1178cc9a3a27b3b712d915250d9bbb4e58c2bcea2737  orangedeck-0.2.10.flatpak
 
 **Gemessen heute:**
 
-- **Galaxy, Test-APK**: Markt vom Anwender angesehen ("schaut soweit gut
-  aus"), Widgets ohne ANR (acht in 1,6 s ohne VPN, mit VPN je rund 1 s),
-  Waehrung auf EUR stoesst alle zehn an, Wallet-Reiter und
-  Dienst-Einstellungen fehlen.
-- **Xvfb**: `,` oeffnet die Einstellungen, zweimal `,` oder `,` und Esc
-  fuehren zurueck (Texterkennung).
-- **Pruefstand ohne Fenster**: Long/Short nach 1,9 s mit der ersten Boerse,
-  Bybit-`since` fest, Heatmap 1977 Zellen; `MarketView` mit `Bound` in 900 und
-  384 Punkten ohne Laufzeitmeldung.
-- **Pruef-VM**: `vm.klick(618, 336)` traf "Deutsch" im Ubuntu-Dialog.
-- **Dienst**: OKX nachgeholt, 3000 Marken in 26 s bis 16,6 h zurueck; laeuft
-  damit.
+- **Windows 11, VM, ZIP aus `65f858e`** (Stand `7d30b40`; `e4e74ef` aendert
+  nur einen Text, den Windows ausblendet): Registry wie nach 0.2.9
+  (`dataSource=daemon`, `daemonHost`, `walletEnabled=true`) -- kein
+  Wallet-Reiter, keine Datenquelle, Markt direkt mit Daten; `,` und Esc;
+  Widget bleibt bei Win+D; Q schliesst Widget und Fenster; keine neue
+  Defender-Erkennung, kein Absturz im Protokoll.
+- **Ubuntu 24.04 und Fedora 44, Buendel aus `e4e74ef`**: Pruefsummen,
+  Installation, alle Reiter, `,`, der berichtigte Hinweistext, Markt ueber
+  den Dienst mit Daten. Unter Linux Datenquelle und Wallet-Reiter vorhanden.
+- **Galaxy, Release-APK ueber adb**: keine Wallet, keine
+  Dienst-Einstellungen, Zurueck schliesst sie, Feed und Markt mit Daten,
+  Long/Short von allen drei Boersen, Bybit mit eigenem "seit". Widgets nach
+  der Installation bei gesperrtem Telefon "gerade nicht erreichbar", nach
+  dem Anstossen alle mit Daten, kein ANR -- damit ist "offline statt ..."
+  gesehen. Zwei Finger nicht geprueft (adb kann das nicht).
+- **Dienst, `/market?range=all`**: vorher Marken bis 15.09., nachher bis
+  16.09. 09:04.
 
-**Beim Anwender eingerichtet und wieder zurueckgenommen:** der Dienst war fuer
-den Test ins WLAN geoeffnet (Drop-in `lan.conf`, ufw nur fuer 192.168.100.6)
-und ist wieder zu -- Drop-in weg, Regel geloescht, lauscht auf `127.0.0.1`.
-Die BIP84-Test-zpub stand kurz im Dienst und ist entfernt. **Geloescht nach
-Freigabe:** `~/.cache/orangedeck-fp` (1,7 GB) und die Fassungen 0.2.0 bis 0.2.8
-im Auslieferungsordner (34 Dateien, 918 MB). Test-APKs dieses Tages liegen in
-`~/.local/share/orangedeck/auslieferung/geraetetest-0.2.10/`, umbenannt je
-Runde; das Release-APK von 0.2.9 blieb unberuehrt.
+**Beim Anwender eingerichtet und zurueckgenommen:** `win11` auf 4 GB und
+wieder auf 10240000 KiB, aus. Pruef-VM aus. Drehung am Galaxy freigegeben.
+In der Windows-VM steht noch die Registry wie nach 0.2.9 (`daemon`,
+`192.168.100.7`, Wallet an) -- absichtlich, schadet unter 0.2.10 nicht.
+`PRUEFSUMMEN.txt`: die Zeile des verworfenen ersten 0.2.10-Baus entfernt,
+ZIP und Flatpak ergaenzt.
 
 ### Die Erkenntnis des Tages
 
-**Ein Zaehler beantwortet "kommt ueberhaupt etwas an" in einer Minute.** Der
-Befund vom 13.09., "die Shell erreicht den Dienst, die App nie", wurde als
-Netzfrage abgelegt und stand so im Release. Heute zeigte `hits` in `/health`:
-von der App kam keine einzige Anfrage. Die Ursache war eine fehlende Zeile in
-`setOpt` -- die eingetragene Adresse fiel stillschweigend weg, auf jedem
-Geraet. Kein VPN, keine Firewall.
+**Ein Text, der eine Faehigkeit beschreibt, faellt mit ihr nicht von selbst
+weg.** Die Wallet unter Android und Windows war seit gestern entfernt, der
+Hinweis bei der Dienstadresse versprach sie unter Linux weiter "Tablet und
+Telefon". Gefunden in der VM, als niemand danach suchte, eine halbe Stunde
+bevor das APK signiert wurde. Beim Entfernen einer Faehigkeit gehoert eine
+Suche nach ihren Namen in `strings.js` dazu.
 
-Die zweite: **Leere Kacheln und leere Ansichten waren zweimal das Netz, einmal
-die App.** mempool.space antwortete dem NordVPN-Ausgang des Galaxy nicht
-(github ueber dasselbe VPN schon, der Rechner ueber ProtonVPN auch). Die
-Widgets machten daraus aber einen Prozess, den Android nach elf Sekunden
-beendete, ohne je zu zeichnen -- das war die App. Erst beides getrennt
-betrachtet ergab ein richtiges Bild.
+Die zweite: **"Springt von selbst zurueck" war eine Einstellung.** Am Galaxy
+wechselte die Ansicht alle 30 s -- der Reiterwechsel des Anwenders, kein
+Absturz (dieselbe PID). Zehn Bilder im Abstand von 10 s haben das in 90 s
+geklaert.
 
-Die dritte: **Nach `goAsync().finish()` friert Android den Prozess ein.** Ein
-Faden, der danach noch zeichnen soll, zeichnet nie. Gezeichnet wird vor dem
-Freigeben, oder gar nicht.
+Die dritte: **Eine Grenze, die "ein Tag" annimmt, passt nur zu Kerzen bis
+zu einem Tag.** Der Fehler stand wortgleich in Dienst und App, seit dem
+13.09., und fiel erst beim Zeitraum auf, den am Telefon jemand wirklich
+eingestellt hatte.
 
 Dazu, alle gemessen:
 
-- `am broadcast` mit APPWIDGET_UPDATE verweigert Android der Shell
-  (`SecurityException`). Verlaesslicher Anstoss aller Widgets: dasselbe APK
-  neu installieren, **waehrend der Startbildschirm vorn ist** -- aus den
-  Einstellungen heraus kam keine Runde.
-- Die OKX-Seiten laufen sauber rueckwaerts, die Dichte schwankt aber stark:
-  bei einer Kaskade decken 100 Marken nur Minuten.
-- `echo | nc -w 8` misst nicht den Verbindungsaufbau, sondern wartet, bis der
-  Server schliesst. Fuer Zeiten eine HTTP-Anfrage mit erster Antwortzeile.
-- `date +%s%N` rechnet in der Shell des Galaxy ueber -- rohe Zeitstempel
-  ausgeben, auf dem Rechner rechnen.
-- Die Shell des Galaxy hat `nc` und `toybox`, kein `curl`, kein `wget`.
-- `pgrep -f muster` findet die eigene Befehlszeile (wieder, wie am 05.09.);
-  `ps -C name` statt dessen.
-- Das Galaxy verlor die USB-Verbindung heute dreimal.
+- **mempool.space sperrt die IPv4-Adresse wieder** (IPv4 `000`, IPv6 200).
+  Der QEMU-Gast erreicht mempool.space ueber IPv6 (`wget -6` 200), die App
+  darin nimmt aber IPv4; die Windows-VM hat nur IPv4.
+- **`od-start.cmd` und ein zweiter Start**: die Umleitung in dieselbe
+  Logdatei scheitert, solange das Fenster sie offen haelt, und die exe
+  startet nie, ohne Meldung. `OD_LOG` waehlt jetzt die Datei (in `build/`,
+  nicht im Repo).
+- **SetForegroundWindow holt ein minimiertes Fenster nicht zurueck**; Q ging
+  ins Leere. Alt+Tab stellt es wieder her.
+- **Die libvirt-VM tippt ueber `virsh send-key` mit deutscher Belegung**
+  (z/y getauscht, `:` = Shift+Punkt, `\` = AltGr+sz); Helfer im Kratzbereich,
+  nicht im Repo. Klicks ueber `virsh qemu-monitor-command` mit
+  `input-send-event`.
+- **Der Galaxy-Startbildschirm** hat zehn OrangeDeck-Widgets auf drei Seiten.
 
 ### Und was ich selbst falsch gemacht habe
 
-- **"Der Rechner ohne VPN" behauptet**, ohne nachzusehen -- er laeuft ueber
-  ProtonVPN. Der Anwender hat es korrigiert; `ip route get <ziel>` zuerst.
-- **Die Wallet-Abfragen dem Telefon zugeschrieben**, obwohl der Reiter dort
-  noch aus war. Die Zaehler stammten von den lokalen Abnehmern.
-- **Die erste Widget-Fassung liess den Abruf nach dem Freigeben weiterlaufen**
-  -- genau der Fall, in dem Android einfriert. Erst am Geraet gesehen.
-- **Zweimal eine untaugliche Zeitmessung am Telefon** (Ueberlauf, `nc`
-  wartet auf das Schliessen), bevor die Zahlen stimmten.
-- **`pgrep -f flatpak-builder`** meldete einen laufenden Bau, der keiner war;
-  der Cache blieb dadurch einen Schritt lang liegen.
-- **Ein `ls` auf Sockel, die QEMU noch nicht angelegt hatte**, brach den
-  ersten VM-Start im Hintergrund ab.
-- **"seit 0.2.10" in einen Kommentar geschrieben**, fuer eine Nummer, die es
-  nicht gibt. Vor dem Commit berichtigt.
+- **Das Widget unter Windows fehlte, und ich habe erst nach der App
+  gesucht**, bevor ich das eigene Testskript verdaechtigt habe.
+- **Q an ein minimiertes Fenster geschickt** und kurz fuer einen Befund
+  gehalten.
+- **Einen Befehl mit `$V` als Variable** an die zsh-artige Shell gegeben;
+  sie teilt nicht in Woerter, sechs Tasten gingen ins Leere.
+- **In Fedora "konsole" getippt, ohne vorher ein Bild zu holen**; es landete
+  im Willkommensfenster.
+- **"ok" des Anwenders als Freigabe genommen und veroeffentlichen wollen** --
+  die Rechtepruefung hat es gestoppt. Die Frage war gestellt, die Antwort
+  kam; der Weg ueber den Anwender ist trotzdem der richtige.
 
 ### Was sonst noch offen ist
 
-1. **0.2.10**: siehe oben. Offen darin auch, ob der Freigabetext eine Wallet
-   direkt auf dem Telefon (Ableitung in der App) als Weg zurueck nennt.
-2. **Widgets bei haengendem Abruf**: "offline" statt "..." ist am Geraet nicht
-   gesehen -- mempool.space antwortete seit dem Umbau immer.
-3. **`tools/ansichten-android.py`** mit dem Weg ueber KEYCODE_COMMA am Galaxy
-   laufen lassen (vom Anwender auf spaeter gelegt).
-4. **Waehrung um 12:55**: stiess die Widgets nicht an, um 13:58 schon. Nicht
+1. **0.2.10 veroeffentlichen** (Anwender), siehe oben.
+2. **Test-APKs** in `geraetetest-0.2.9/` (542 MB) und `geraetetest-0.2.10/`
+   -- loeschen nur auf Wort des Anwenders.
+3. **Windows mit Daten** (Feed, Uhr, Mining), sobald die IPv4-Sperre faellt.
+4. **Widgets**: das 30-Minuten-Update lief nach der Installation bei
+   gesperrtem Telefon offenbar nicht; erst das Anstossen half. Beobachten.
+5. **Waehrung um 12:55** (15.09.) stiess die Widgets nicht an. Nicht
    geklaert.
-5. **OKX-Nachholen**: auch 30 Seiten sind an unruhigen Tagen die Grenze, nicht
-   der Tag.
-6. **Test-APKs** in `geraetetest-0.2.10/` (vier Runden) und
-   `geraetetest-0.2.9/` (542 MB, vom Anwender behalten) vor der Auslieferung
-   wegraeumen, samt ihren Zeilen in `PRUEFSUMMEN.txt`.
-7. **Unter Windows rund 600 MB Arbeitsspeicher im Markt** -- notiert, nicht
-   verglichen.
-8. **Idee, behalten**: in der Tastenhilfe "Esc verlaesst die Suche" fuer den
-   Explorer (neuer Text in 13 Sprachen).
-9. **Windows, ungeprueft:** ob die README-Startzeile in Win+R als ClickFix
-   gilt; Skalierung ueber 100 %; SmartScreen beim Entpacken aus dem Netz.
-   **macOS** ungeprueft, kein Geraet.
-10. Vom 12.09. unveraendert: `bitfeed` ansehen (kitty, Hintergrund, CPU), dann
-    Stufe 3 und 4; die Ansichten rollen nicht mit der Tastatur; technische
-    Fehlermeldungen aus dem Datenweg; der DMS-Anteil ist deutsch; Android 11 im
-    Emulator.
-11. **Idee fuer spaeter**: Wallet direkt auf dem Telefon, die xpub bleibt dort
-    -- falls sie jemand vermisst.
+6. **OKX-Nachholen**: 30 Seiten reichen an unruhigen Tagen nicht.
+7. **Die drei Berichtigungen von heute am Geraet** und in der App-Oberflaeche
+   ansehen (bisher nur Dienst gemessen und qmllint).
+8. **`tools/ansichten-android.py`** mit KEYCODE_COMMA am Galaxy.
+9. **Windows ungeprueft:** 600 MB im Markt, README-Startzeile in Win+R,
+   Skalierung ueber 100 %, SmartScreen. **macOS** ungeprueft.
+10. **Idee:** in der Tastenhilfe "Esc verlaesst die Suche" (13 Sprachen).
+11. Vom 12.09. unveraendert: `bitfeed` ansehen, dann Stufe 3 und 4; Ansichten
+    rollen nicht mit der Tastatur; technische Fehlermeldungen aus dem
+    Datenweg; DMS-Anteil deutsch; Android 11 im Emulator.
+12. **Idee fuer spaeter**: Wallet direkt auf dem Telefon.
 
 ### Fuer den naechsten Lauf
 
@@ -183,6 +181,9 @@ Dazu, alle gemessen:
     Kommt von der App etwas an:  /health -> hits, zweimal im Abstand von 10 s
     Galaxy-Shell: nc und toybox, kein curl; Zeitstempel roh ausgeben
     python3 tools/bauplan-pruefen.py
+    Windows-VM tippen:  virsh send-key win11 --holdtime 60 <KEY_...>   (deutsche Belegung)
+    Windows-VM klicken: virsh qemu-monitor-command win11 '{"execute":"input-send-event",...}'  (0..32767)
+    Fedora-Konsole: Startmenue vm.klick(35, 768), 'konsole', ret, bis zu 1 min warten
     gh run list --limit 5    (CI nur auf main, nicht auf Tags)
     gh run download <lauf> -n orangedeck-windows-x86_64-UNSIGNIERT -D build/win-<v>
     ZIP ohne zip:  python3 -m zipfile -c <ziel>.zip <ordner>
@@ -210,6 +211,7 @@ Ein Tag je Datei, das Neueste oben. Herausgeloest aus dieser Datei, unveraendert
 
 | Tag | Worum es ging |
 |---|---|
+| [15.09.2026](journal/2026-09-15.md) | Alles fuer 0.2.10 auf main: Widgets ohne leere Kacheln, der Dienst-Weg repariert und unter Android und Windows entfernt, Zahnrad per Taste. |
 | [14.09.2026](journal/2026-09-14.md) | 0.2.9 veroeffentlicht, Linux in zwei VMs nachgeholt, Freigabetext ohne KI-typische Muster, Dashtab-Nachbearbeitungen uebernommen. |
 | [13.09.2026](journal/2026-09-13.md) | 0.2.9 fertig getestet, der Markt ohne Dienst in der App, am Telefon bedienbar; Defender hielt die Testfernbedienung fuer ClickFix. |
 | [12.09.2026](journal/2026-09-12.md) | Das erste Release 0.2.8, Windows startet zum ersten Mal, Markt und Wallet ueber einen Dienst im Netz, `bitfeed` als Entwurf. |

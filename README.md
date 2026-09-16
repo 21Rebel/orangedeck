@@ -36,9 +36,9 @@ fehlte monatelang unbemerkt TLS. Deshalb hier getrennt:
 | System | Baut | Gelaufen |
 |---|---|---|
 | Linux (Arch, Qt 6.11) | ja | taeglich, alle fuenf Wirte |
-| Linux (Flatpak) | ja | **ja**, Ubuntu 24.04 GNOME und Fedora 44 KDE, frisch in einer VM (14.09.2026, 0.2.9) |
-| Android | ja, signiert | **ja**, Galaxy A55 mit Android 16 (13.09.2026, 0.2.9 mit dem Markt ohne Dienst); Emulator 9, 11, 14 |
-| Windows | ja, unsigniert | **ja**, Windows 11 25H2 in einer VM (12.09.2026): Feed und Markt ueber den Dienst, Widgets; Feed, Mining und Markt ohne Dienst (13.09.2026). Ausgeliefert ab 0.2.9 |
+| Linux (Flatpak) | ja | **ja**, Ubuntu 24.04 GNOME und Fedora 44 KDE, frisch in einer VM (16.09.2026, 0.2.10) |
+| Android | ja, signiert | **ja**, Galaxy A55 mit Android 16 (16.09.2026, 0.2.10, ohne Wallet); Emulator 9, 11, 14 |
+| Windows | ja, unsigniert | **ja**, Windows 11 25H2 in einer VM (12.09.2026): Feed und Markt ueber den Dienst, Widgets; Feed, Mining und Markt ohne Dienst (13.09.2026); ohne Wallet, Widgets mit Win+D (16.09.2026, 0.2.10). Ausgeliefert ab 0.2.9 |
 | macOS | ja, unsigniert | **noch von niemandem** |
 
 Windows und macOS entstehen bei jedem Push in der Baustrecke
