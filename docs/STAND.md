@@ -145,8 +145,16 @@ Dazu, alle gemessen:
    (327 MB) am 16.09. auf Wort des Anwenders geloescht. Im
    Auslieferungsordner liegen nur noch 0.2.9 und 0.2.10.
 3. **Windows mit Daten** (Feed, Uhr, Mining), sobald die IPv4-Sperre faellt.
-4. **Widgets**: das 30-Minuten-Update lief nach der Installation bei
-   gesperrtem Telefon offenbar nicht; erst das Anstossen half. Beobachten.
+4. ~~Widgets blieben "gerade nicht erreichbar"~~: **Ursache gemessen, am
+   Nachmittag behoben** (`fe60fd0`). Im Doze sperrt Android dem Prozess das
+   Netz (`UnknownHostException` fuer mempool.space, beim Miner eine
+   Zeitueberschreitung), und nach einem Fehlschlag gab es keinen Versuch bis
+   zum naechsten Takt. Jetzt je Widget-Art ein Job mit Netz-Bedingung.
+   Nachgestellt am Galaxy mit `force-idle`: zehn Fehlschlaege, zehn Jobs;
+   nach `unforce` liefen alle zehn sofort, 20 Zeichnungen, keine Warnung,
+   kein Job mehr wartend. Ohne Doze (nur Bildschirm aus, am Strom) kam alles
+   beim ersten Mal durch. Noch nicht gesehen: die Widgets selbst danach auf
+   dem Bildschirm, und der Fall ueber Nacht ohne Zwang.
 5. **Waehrung um 12:55** (15.09.) stiess die Widgets nicht an. Nicht
    geklaert.
 6. **OKX-Nachholen**: 30 Seiten reichen an unruhigen Tagen nicht.
@@ -175,6 +183,9 @@ Dazu, alle gemessen:
       vor jeder Runde das signierte umbenennen: ...-geraetetest-<name>.apk
     SIGNER=$(command ls -d ~/Android/sdk/build-tools/*/apksigner | sort -V | tail -1)
     Widgets anstossen: dasselbe APK neu installieren, Startbildschirm vorn
+    Doze nachstellen:  adb shell dumpsys battery unplug; adb shell dumpsys deviceidle force-idle
+      zurueck:         adb shell dumpsys deviceidle unforce; adb shell dumpsys battery reset
+    Widget-Protokoll:  adb logcat -d -v time | grep -E ' (I|W)/OrangeDeck'
     adb logcat -d -v time | grep -E "AppWidgetManager\(|bg anr|freezing"
     Kommt von der App etwas an:  /health -> hits, zweimal im Abstand von 10 s
     Galaxy-Shell: nc und toybox, kein curl; Zeitstempel roh ausgeben
