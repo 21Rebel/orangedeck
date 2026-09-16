@@ -178,9 +178,12 @@ Dazu, alle gemessen:
     Fehlermeldungen aus dem Datenweg; DMS-Anteil deutsch; Android 11 im
     Emulator. ~~Ansichten rollen nicht mit der Tastatur~~: `cae3c06`, in Xvfb
     gesehen (Mining, Explorer); die RBF-Tafel dabei englisch "old/new".
-13. **DMS neu starten**, damit die laufende Shell `roll.js` sieht:
-    `systemctl --user restart dms`. Die Verknuepfungen liegen seit 16.09.
-    nachmittags (`install-links.sh --check`: "Alles verteilt.").
+13. ~~DMS neu starten~~: um 14:08:45 geschehen, Plugin geladen, keine
+    Meldung zu `roll.js`. **Aber von 13:57 bis 14:08 war die Uhr-Ansicht in
+    DMS kaputt** ("Script roll.js unavailable"): die Shell laedt die Dateien
+    aus dem Repo neu, sobald sie sich aendern, und sah den Import vor der
+    Verknuepfung. **Eine neue Datei unter `ui/qml/` zuerst verlinken
+    (`tools/install-links.sh`), dann die Imports schreiben.**
 14. **Alles seit `v0.2.10` fuer 0.2.11**, erst nach dem Widget-Blick morgen
     frueh: Liquidationen bei "all", Leertext, RBF-Spalten, Widgets
     nachholen, Esc-Hinweis, Tastatur-Rollen, OKX 24 h, `seit`.

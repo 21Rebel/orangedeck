@@ -589,12 +589,45 @@ def mirror(rel):
             os.symlink(os.path.join(src, name), target)
 
 
+def dms_active():
+    return subprocess.run(["systemctl", "--user", "is-active", "--quiet", "dms"]).returncode == 0
+
+
 def build():
+    """Ueberlagerung neu bauen.
+
+    Laeuft DMS, wird es vorher angehalten und danach wieder gestartet: der
+    Neubau loescht und ersetzt Dateien, die die laufende Oberflaeche beobachtet
+    -- am 16.09.2026 stuerzte Quickshell dabei ab (SIGSEGV in
+    QFileSystemWatcher::files())."""
+    lief = dms_active()
+    if lief:
+        print("DMS wird fuer den Neubau angehalten ...", flush=True)
+        subprocess.run(["systemctl", "--user", "stop", "dms"], check=False)
+    try:
+        _build()
+    finally:
+        if lief:
+            subprocess.run(["systemctl", "--user", "start", "dms"], check=False)
+            print("DMS wieder gestartet")
+        else:
+            print("DMS lief nicht -- starten mit:  systemctl --user start dms")
+
+
+def _build():
     global SRC
     SRC = ui_source()
     if os.path.exists(DST):
         shutil.rmtree(DST)
     mirror("")
+    # VERSION erst ganz am Ende schreiben. Die Weiche im Drop-in startet die
+    # Ueberlagerung nur mit passender VERSION -- stand sie schon hier und
+    # scheiterte danach eine Nachbearbeitung, lief eine halb gepatchte
+    # Oberflaeche (Risiko seit 13.09.2026 bekannt). Ohne VERSION startet DMS
+    # stattdessen die eingebaute Oberflaeche.
+    version_link = os.path.join(DST, "VERSION")
+    if os.path.lexists(version_link):
+        os.unlink(version_link)
 
     # gepatchte Dateien als echte Kopien
     dash = os.path.join(DST, "Modules", "DankDash")
@@ -637,7 +670,14 @@ def build():
             hook = os.path.join(hooks, name)
             if os.path.isfile(hook) and os.access(hook, os.X_OK):
                 if subprocess.run([hook], env=env).returncode != 0:
-                    fail("Nachbearbeitung %s ist gescheitert" % hook)
+                    fail("Nachbearbeitung %s ist gescheitert -- Ueberlagerung ohne VERSION, "
+                         "DMS startet die eingebaute Oberflaeche" % hook)
+
+    # erst jetzt ist die Ueberlagerung vollstaendig
+    with open(os.path.join(SRC, "VERSION")) as f:
+        version = f.read()
+    with open(version_link, "w") as f:
+        f.write(version)
 
     # systemd-Drop-in. Die Weiche faengt ab, was am 12.09.2026 passiert ist:
     # passt die Ueberlagerung nicht zum installierten dms, startet die
@@ -656,7 +696,6 @@ def build():
                 % DST)
     subprocess.run(["systemctl", "--user", "daemon-reload"], check=False)
     print("Ueberlagerung liegt in " + DST)
-    print("Neu starten mit:  systemctl --user restart dms")
 
 
 def remove():
