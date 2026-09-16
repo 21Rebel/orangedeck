@@ -94,16 +94,16 @@ This pulls the KDE runtime 6.9 from Flathub. All six views are included on Linux
 
 ## Tested on
 
-- WINDOWS: PLATZHALTER
+- Windows 11 25H2 in a VM, with settings left over from 0.2.9 (a service address and the wallet switched on): no wallet tab and no service settings, the market loads directly from the exchanges, the comma key and Esc, a widget that stays on the desktop with Win+D, closing window and widget with Q. mempool.space did not answer this test network over IPv4 that day, so feed, clock and mining were not seen with data.
 - ANDROID: PLATZHALTER
-- LINUX: PLATZHALTER
+- This Flatpak bundle, freshly installed in live sessions of Ubuntu 24.04 with GNOME and Fedora 44 with KDE: all tabs, the settings with the comma key, and the market with live data through the service. Feed, clock, mining and explorer stayed empty there for the same reason.
 - Not tested yet: macOS, real tablets, and display scaling above 100% on Windows. If something looks wrong, please open an issue.
 
 ## Checksums (SHA-256)
 
-    PLATZHALTER  orangedeck-0.2.10-windows-x86_64.zip
-    PLATZHALTER  orangedeck-0.2.10-arm64-v8a.apk
-    PLATZHALTER  orangedeck-0.2.10.flatpak
+    9c446d2b396cea1730b89f1dc4195c2a577c85609b4033a24edf5eeb0eafb04f  orangedeck-0.2.10-windows-x86_64.zip
+    14e7b7014c84a3138102486781a87eac995d7a9574b5611ad862de676428d25c  orangedeck-0.2.10-arm64-v8a.apk
+    50d0ab4b459459951b9c1178cc9a3a27b3b712d915250d9bbb4e58c2bcea2737  orangedeck-0.2.10.flatpak
 
 ---
 
