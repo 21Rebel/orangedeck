@@ -66,10 +66,22 @@ PluginSettings {
         defaultValue: true
     }
 
+    // Gleicher Schluessel wie "Weichzeichnung hinter der Schrift" auf der
+    // Einstellungsseite der Ansicht: aus heisst, die Kaestchen hinter Kopf,
+    // Blockangaben und Legende fallen ganz weg. Das Desktop-Widget hat keine
+    // Reiterzeile und damit keine eigene Einstellungsseite, darum steht er
+    // auch hier.
+    ToggleSetting {
+        settingKey: "frosted"
+        label: "Kästchen hinter der Schrift"
+        description: "Milchglas-Hintergrund hinter Kopfzeile, Blockangaben und Legende. Aus: Schrift steht direkt auf den Kacheln."
+        defaultValue: true
+    }
+
     SliderSetting {
         settingKey: "desktopOpacity"
         label: "Deckkraft Desktop-Widget"
-        description: "Hintergrund des Desktop-Widgets"
+        description: "Hintergrund des Desktop-Widgets, 0 % blendet ihn ganz aus"
         defaultValue: 70
         minimum: 0
         maximum: 100
