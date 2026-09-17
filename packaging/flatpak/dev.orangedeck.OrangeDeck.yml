@@ -86,4 +86,4 @@ modules:
     sources:
       - type: git
         url: https://github.com/21Rebel/orangedeck.git
-        commit: 0d995ffb789abdcfa95096805daae2d5358c0dfb
+        commit: d630c380faeefd4fe48ae6b67ff214709397445e
