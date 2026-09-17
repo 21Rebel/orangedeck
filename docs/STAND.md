@@ -15,6 +15,12 @@
      geschrieben wurde. Hier bleibt nur der neueste Tagesabschluss stehen.
      Wandert er morgen ins Journal, kommt der von morgen an seine Stelle;
      die Datei bleibt damit so lang, wie ein Einstieg sein darf. -->
+> **17.09.2026, aus der Desktop-Optik-Sitzung:** zwei Fehler am Desktop-Widget
+> behoben (linke Taste zog das Fenster statt zu klicken; Tooltip blieb stehen),
+> Tooltip abgedunkelt, Hintergrund und Blur der beiden Widgets aus. Ursache und
+> alle Pfade stehen in `docs/UEBERGABE-2026-09-17-desktop-optik.md`. Die
+> Aenderung an `ui/qml/FeedPanel.qml` ist uncommittet.
+
 ## TAGESABSCHLUSS 16.09.2026 -- wo das Projekt steht
 
 > Einstieg fuer den naechsten Tag. Alles Aeltere liegt im Journal unter
