@@ -1,6 +1,6 @@
-<!-- Der Text unten ist der Entwurf fuer 0.2.10 (16.09.2026). "Tested on" und
+<!-- Der Text unten ist der Entwurf fuer 0.2.11 (17.09.2026). "Tested on" und
      die Pruefsummen sind Platzhalter, bis Punkt 2 bis 8 erledigt sind. Die
-     Texte von 0.2.8 und 0.2.9 stehen in der Geschichte dieser Datei.
+     Texte von 0.2.8 bis 0.2.10 stehen in der Geschichte dieser Datei.
 
      **Die Pruefliste gilt fuer jede Nummer, nicht nur fuer die, bei der sie
      entstand.** Am 14.09.2026 nannte sie fuer 0.2.9 nur Windows und das
@@ -44,21 +44,18 @@
 
 A Bitcoin dashboard with the mempool as a live tile mosaic, a block height clock, mining figures for the whole network and your own Bitaxe, a block explorer and the BTC market. MIT licensed, no account needed.
 
-This release removes the wallet from phones, tablets and Windows and fixes Android widgets that stayed empty.
+This release fixes what the last one left behind. Widgets that came back empty after a night in standby, a liquidation view that stayed blank, and tables you could not scroll with the keyboard.
 
-## Removed since 0.2.9
+## What's new since 0.2.10
 
-- The watch-only wallet and the setting Data source > Service on another device are gone on phones, tablets and Windows. 0.2.9 announced both as new, but they never worked there: the app discarded the address you entered and kept asking itself. The wallet addresses would also have crossed your network unencrypted. On Linux both remain, and the address you enter is now actually used.
-- A service address saved with 0.2.9 is ignored on these systems. There is nothing to clean up.
+- Android widgets fetch what they missed as soon as the network is back. While a phone is dozing it has no connection, so the update failed and the widget waited for the next hour. Now the attempt is repeated the moment there is a network again, and the reason for a failure is written to the log.
+- The liquidation view no longer stays blank. Over a long range it now includes the running week, and when the last hours are empty it says so instead of showing nothing. The service fills the view from the last 24 hours that OKX still serves, which is as far back as that exchange goes.
+- The time in "listening since" now moves along when older entries drop out of the stored window, instead of claiming a longer history than the numbers cover.
+- In the explorer, the two columns of a replaced transaction are translated in every language. They read "old" and "new" in English and the same in the other twelve.
+- Tables can be read with the keyboard: page up and down, home and end. The key help says how to leave the search with Esc.
+- The tooltip over the mempool mosaic sits on the same dark, blurred backing as the other readings, so it stays legible above bright tiles.
 
-## What's new since 0.2.9
-
-- Android widgets draw their last known values immediately and share one time budget for all requests. Several widgets updating at once no longer stay empty, and a request that gets no answer shows "offline" instead of "...".
-- The market without a service shows long/short as soon as the first exchange answers instead of waiting for the slowest one. Bybit gets its own "listening since" time when it joined later, the heatmap keeps its last picture when Binance does not answer, and two-finger zoom centers on the point between your fingers.
-- The comma key opens the settings. Pressing it again or Esc goes back.
-- On Linux, the service fetches missed OKX liquidations when it reconnects, up to 3,000 entries back. On a quiet night that covers the hours nobody had the market open.
-
-## Windows: `orangedeck-0.2.10-windows-x86_64.zip`
+## Windows: `orangedeck-0.2.11-windows-x86_64.zip`
 
 Unzip anywhere and run `orangedeck-app.exe`. Requires Windows 10 or 11, 64-bit.
 
@@ -70,21 +67,21 @@ To start a widget, for example the block clock in the top right corner:
 
 Click a widget and press Q to close it. Details are in `packaging/widgets/README.md`.
 
-## Android: `orangedeck-0.2.10-arm64-v8a.apk`
+## Android: `orangedeck-0.2.11-arm64-v8a.apk`
 
-For phones and tablets with a 64-bit ARM processor (arm64-v8a) and Android 9 or newer. Installs over 0.2.9.
+For phones and tablets with a 64-bit ARM processor (arm64-v8a) and Android 9 or newer. Installs over 0.2.10.
 
 Please check the signature before installing:
 
-    apksigner verify --print-certs orangedeck-0.2.10-arm64-v8a.apk
+    apksigner verify --print-certs orangedeck-0.2.11-arm64-v8a.apk
 
 The SHA-256 fingerprint of the signing certificate must be:
 
     B3:CC:83:79:CE:27:93:4D:30:B5:48:B3:F5:A1:D5:51:6E:E1:11:14:FF:D5:4E:F1:7E:57:D2:38:12:02:92:E0
 
-## Linux: `orangedeck-0.2.10.flatpak`
+## Linux: `orangedeck-0.2.11.flatpak`
 
-    flatpak install --user orangedeck-0.2.10.flatpak
+    flatpak install --user orangedeck-0.2.11.flatpak
 
 This pulls the KDE runtime 6.9 from Flathub. All six views are included on Linux. To serve the wallet to other Linux computers on your network:
 
@@ -94,23 +91,27 @@ This pulls the KDE runtime 6.9 from Flathub. All six views are included on Linux
 
 ## Tested on
 
-- Windows 11 25H2 in a VM, with settings left over from 0.2.9 (a service address and the wallet switched on): no wallet tab and no service settings, the market loads directly from the exchanges, the comma key and Esc, a widget that stays on the desktop with Win+D, closing window and widget with Q. mempool.space did not answer this test network over IPv4 that day, so feed, clock and mining were not seen with data.
-- Samsung Galaxy A55 with Android 16, this signed APK installed over 0.2.9: no wallet tab and no service settings, the back button closes the settings, feed and market with live data, long/short from all three exchanges, and the widgets refreshed with data after the update. Two-finger zoom was not checked with this build.
-- This Flatpak bundle, freshly installed in live sessions of Ubuntu 24.04 with GNOME and Fedora 44 with KDE: all tabs, the settings with the comma key, and the market with live data through the service. Feed, clock, mining and explorer stayed empty there for the same reason.
+- PLATZHALTER Galaxy (Punkt 2 der Pruefliste)
+- PLATZHALTER Windows-VM (Punkt 3)
+- PLATZHALTER Ubuntu und Fedora (Punkt 4)
 - Not tested yet: macOS, real tablets, and display scaling above 100% on Windows. If something looks wrong, please open an issue.
 
 ## Checksums (SHA-256)
 
-    9c446d2b396cea1730b89f1dc4195c2a577c85609b4033a24edf5eeb0eafb04f  orangedeck-0.2.10-windows-x86_64.zip
-    14e7b7014c84a3138102486781a87eac995d7a9574b5611ad862de676428d25c  orangedeck-0.2.10-arm64-v8a.apk
-    50d0ab4b459459951b9c1178cc9a3a27b3b712d915250d9bbb4e58c2bcea2737  orangedeck-0.2.10.flatpak
+    PLATZHALTER  orangedeck-0.2.11-windows-x86_64.zip
+    PLATZHALTER  orangedeck-0.2.11-arm64-v8a.apk
+    PLATZHALTER  orangedeck-0.2.11.flatpak
 
 ---
 
 ## Deutsch
 
-0.2.10 nimmt die Wallet auf Telefon, Tablet und Windows wieder heraus. 0.2.9 hatte sie dort über einen Dienst auf einem anderen Gerät angekündigt, angekommen ist sie nie, weil die App die eingetragene Adresse verwarf. Die Wallet-Adressen wären außerdem unverschlüsselt durchs Netz gegangen. Unter Linux bleiben Wallet und Dienst-Weg, und die eingetragene Adresse wird jetzt übernommen.
+0.2.11 bessert nach, was die letzte Nummer offen gelassen hat: Widgets, die nach einer Nacht im Standby leer zurückkamen, eine Liquidationsansicht, die nichts zeigte, und Tabellen, die sich mit der Tastatur nicht bewegen ließen.
 
-Android-Widgets zeigen sofort den letzten Stand und bleiben nicht mehr leer, wenn mehrere zugleich laden oder das Netz nicht antwortet. Der Markt ohne Dienst zeigt Long/Short, sobald die erste Börse antwortet, und zoomt um die Stelle zwischen zwei Fingern. Die Komma-Taste öffnet die Einstellungen.
+Android-Widgets holen nach, sobald das Netz wieder da ist. Im Doze hat das Telefon keine Verbindung, der Versuch scheiterte, und das Widget wartete auf die nächste Stunde. Jetzt wird er wiederholt, sobald wieder ein Netz da ist.
+
+Die Liquidationsansicht bleibt nicht mehr leer. Über einen langen Zeitraum zählt sie auch die laufende Woche mit, und sind die letzten Stunden leer, sagt sie das, statt nichts zu zeigen. Sie füllt sich aus den letzten 24 Stunden, weiter zurück gibt OKX nichts heraus. Die Angabe "zugehört seit" rückt mit, wenn ältere Einträge herausfallen.
+
+Im Explorer sind die Spalten einer ersetzten Transaktion in jeder Sprache übersetzt. Tabellen lassen sich mit Bild auf und ab, Pos1 und Ende lesen, und die Tastenhilfe sagt, wie man die Suche mit Esc verlässt. Der Tooltip über dem Kachelfeld liegt auf demselben dunklen Untergrund wie die übrigen Angaben und bleibt damit auch über hellen Kacheln lesbar.
 
 Bitte vor dem Installieren Prüfsumme und Signatur prüfen.

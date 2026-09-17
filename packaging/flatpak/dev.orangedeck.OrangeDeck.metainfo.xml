@@ -191,8 +191,52 @@
        15.09.2026 entschieden: Wallet und dieser Weg gibt es nur noch unter
        Linux. Der Eintrag muss das sagen, sonst steht die Wallet fuer diese
        Systeme weiter als vorhanden da. Das Datum ist vorlaeufig (16.09.2026)
-       und wird beim Tag auf den Tag der Veroeffentlichung gesetzt. -->
+       und wird beim Tag auf den Tag der Veroeffentlichung gesetzt.
+
+       **0.2.11 sammelt Nachbesserungen, keine neue Faehigkeit.** Der Eintrag
+       nennt darum nur, was jemand auch merkt: Widgets, die nach einem
+       Funkloch von selbst nachholen, Liquidationen, die nicht mehr leer
+       dastehen, und den Explorer, der sich mit der Tastatur bedienen laesst.
+       Zurueckgenommen wird nichts. Das Datum ist vorlaeufig (17.09.2026) und
+       wird beim Tag auf den Tag der Veroeffentlichung gesetzt. -->
   <releases>
+    <release version="0.2.11" date="2026-09-17">
+      <description>
+        <p>
+          Android widgets now fetch what they missed as soon as the network is
+          back. A widget that failed while the phone was dozing no longer waits
+          for the next hour to pass.
+        </p>
+        <p xml:lang="de">
+          Android-Widgets holen nach, sobald das Netz wieder da ist. Ein
+          Widget, das im Doze nicht durchkam, wartet nicht mehr auf die
+          naechste Stunde.
+        </p>
+        <p>
+          The liquidation view no longer stays empty. Over a long range it
+          shows the running week as well, and it fills from the last 24 hours
+          that OKX still serves.
+        </p>
+        <p xml:lang="de">
+          Die Liquidationsansicht bleibt nicht mehr leer. Ueber einen langen
+          Zeitraum zeigt sie auch die laufende Woche, und sie fuellt sich aus
+          den letzten 24 Stunden, die OKX noch herausgibt.
+        </p>
+        <p>
+          The explorer can be read with the keyboard: page up and down, home
+          and end, and the key help says how to leave the search. The columns
+          of a replaced transaction are translated in every language, and the
+          tooltip over the mempool mosaic stays readable on bright tiles.
+        </p>
+        <p xml:lang="de">
+          Der Explorer laesst sich mit der Tastatur lesen: Bild auf und ab,
+          Pos1 und Ende, und die Tastenhilfe sagt, wie man die Suche verlaesst.
+          Die Spalten einer ersetzten Transaktion sind in jeder Sprache
+          uebersetzt, und der Tooltip ueber dem Kachelfeld bleibt auch auf
+          hellen Kacheln lesbar.
+        </p>
+      </description>
+    </release>
     <release version="0.2.10" date="2026-09-16">
       <description>
         <p>
