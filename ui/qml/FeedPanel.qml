@@ -743,6 +743,16 @@ Item {
         }
     }
 
+    FrostedPanel {
+        content: tip
+        backdropSource: canvasView
+        blurred: root.frostedBlur
+        tint: root.frostedTint
+        pad: 0
+        visible: root.frostedInfo && tip.visible
+        z: 199
+    }
+
     Rectangle {
         id: tip
 
@@ -756,9 +766,11 @@ Item {
         width: tipCol.width + 20
         height: tipCol.height + 16
         radius: 6
-        color: Qt.rgba(root.lineColor.r, root.lineColor.g, root.lineColor.b, 0.97)
+        // Derselbe dunkle Untergrund wie bei den uebrigen Angaben: auf dem
+        // Kachelfeld ist die Linienfarbe zu hell, die Schrift verliert dagegen.
+        color: Qt.rgba(root.frostedTint.r, root.frostedTint.g, root.frostedTint.b, 0.88)
         border.width: 1
-        border.color: Qt.lighter(root.lineColor, 1.6)
+        border.color: Qt.lighter(root.lineColor, 1.4)
         z: 200
 
         x: Math.max(0, Math.min(root.width - width, canvasView.x + canvasView.hoverX + 14))
