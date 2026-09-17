@@ -15,11 +15,35 @@
      geschrieben wurde. Hier bleibt nur der neueste Tagesabschluss stehen.
      Wandert er morgen ins Journal, kommt der von morgen an seine Stelle;
      die Datei bleibt damit so lang, wie ein Einstieg sein darf. -->
-> **17.09.2026, aus der Desktop-Optik-Sitzung:** zwei Fehler am Desktop-Widget
-> behoben (linke Taste zog das Fenster statt zu klicken; Tooltip blieb stehen),
-> Tooltip abgedunkelt, Hintergrund und Blur der beiden Widgets aus. Ursache und
-> alle Pfade stehen in `docs/UEBERGABE-2026-09-17-desktop-optik.md`. Die
-> Aenderung an `ui/qml/FeedPanel.qml` ist uncommittet.
+> **17.09.2026, Zwischenstand.** Punkt 1 von gestern ist **bestanden**: der
+> Anwender hatte die App am Galaxy den ganzen Tag nicht offen, die Widgets
+> haben trotzdem saubere Daten gezeigt. Das Nachholen nach dem Doze
+> (`fe60fd0`) traegt also ueber Nacht, ohne dass jemand die App oeffnet.
+>
+> Die Nummer steht auf **0.2.11** (CMakeLists, Manifest 14, Metainfo mit
+> vorlaeufigem Datum, Freigabetext neu geschrieben, "Tested on" und
+> Pruefsummen als PLATZHALTER). Elf Aenderungen seit `v0.2.10`. Der Pin im
+> Bauplan hinkt noch hinterher, das ist Punkt 5 unmittelbar vor dem Tag.
+> Offen sind die Messungen: Galaxy, Windows-VM, beide Linux-VMs.
+> **mempool.space antwortet wieder ueber IPv4**, Windows laesst sich diesmal
+> also mit Daten pruefen.
+>
+> Aus der Desktop-Optik-Sitzung uebernommen und eingecheckt: Tooltip auf dem
+> dunklen Untergrund der uebrigen Angaben. Zwei Fehler am Desktop-Widget
+> lagen in DMS, nicht hier (linke Taste zog das Fenster statt zu klicken,
+> Tooltip blieb stehen); Hintergrund und Blur der beiden Desktop-Instanzen
+> sind aus. Ursache und alle Pfade in
+> `docs/UEBERGABE-2026-09-17-desktop-optik.md`. Merksatz: im Desktop-Widget
+> zieht die rechte Taste, die linke gehoert dem Inhalt.
+>
+> Gemessen am Pruefstand (Xvfb, ohne GPU, zwanzig Sekunden Zeiger ueber der
+> Halde, je zwei Laeufe): der Untergrund hinter dem Tooltip kostet rund ein
+> Fuenftel mehr CPU (478/489 % vorher, 581/602 % nachher). Er haengt am
+> Zeiger, und `FrostedPanel` zieht bei jeder Lageaenderung sofort einen neuen
+> Ausschnitt, waehrend die vier anderen Felder stillstehen. Am Telefon faellt
+> es nicht an, dort gibt es kein Ueberfahren. Ein Riegel waere eine Zeile:
+> das sofortige Nachziehen abschaltbar machen und den Tooltip beim
+> 200-ms-Takt lassen. Nicht gemacht, das Aussehen ist abgenommen.
 
 ## TAGESABSCHLUSS 16.09.2026 -- wo das Projekt steht
 
