@@ -171,12 +171,29 @@ Item {
             root.__setTip(msg.block, true);
     }
 
+    // **Dieselbe Transaktion zweimal.** Am 17.09.2026 standen kurz nach dem
+    // Start fuenf von zwoelf Zeilen doppelt in "Zuletzt im Mempool gesehen",
+    // mit derselben Gebuehr und demselben Betrag: mempool.space schickte
+    // denselben Satz in zwei Nachrichten, und angehaengt wurde bisher alles,
+    // was hereinkam. Wer schon in der Liste steht, kommt nicht noch einmal
+    // dazu -- die Kachel behaelt dabei ihren Platz und ihre Nummer.
     function __addTxs(txs) {
         var rec = root.__recent.slice();
+        var drin = {};
+        for (var k = 0; k < rec.length; k++)
+            if (rec[k].t)
+                drin["x" + rec[k].t] = true;
         for (var i = 0; i < txs.length; i++) {
             var t = txs[i];
             if (!t)
                 continue;
+            // Ohne TxID laesst sich nichts vergleichen, die kommt mit.
+            var id = t.txid || "";
+            if (id) {
+                if (drin["x" + id])
+                    continue;
+                drin["x" + id] = true;
+            }
             var vsize = root.__num(t.vsize) || 1;
             var rate = (t.rate === undefined || t.rate === null)
                 ? root.__num(t.fee) / vsize : root.__num(t.rate);

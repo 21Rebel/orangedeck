@@ -1989,14 +1989,28 @@ class Feed:
 
     # -- Einspeisung ------------------------------------------------------
     def add_txs(self, txs):
+        # **Dieselbe Transaktion zweimal.** Am 17.09.2026 am Galaxy gesehen:
+        # kurz nach dem Start standen fuenf von zwoelf Zeilen doppelt in
+        # "Zuletzt im Mempool gesehen". Hier faellt es noch staerker an --
+        # `poll_rest` holt `/mempool/recent` bei **jedem** Durchlauf, und das
+        # sind jedes Mal weitgehend dieselben Eintraege. Wer schon in der
+        # Liste steht, kommt nicht noch einmal dazu.
+        drin = {r["t"] for r in self.recent if r.get("t")}
         for t in txs:
             try:
+                # Ohne TxID laesst sich nichts vergleichen, die kommt mit.
+                # Geprueft wird **vor** `seq`: die Nummer ist die Marke, an
+                # der die Ansicht abschneidet, und darf keine Luecken haben.
+                txid = t.get("txid") or ""
+                if txid:
+                    if txid in drin:
+                        continue
+                    drin.add(txid)
                 rate = t.get("rate")
                 vsize = float(t.get("vsize") or 0) or 1.0
                 if rate is None:
                     rate = float(t.get("fee") or 0) / vsize
                 self.seq += 1
-                txid = t.get("txid") or ""
                 eintrag = {
                     "n": self.seq,
                     "t": txid,                    # voll, fuer den Tooltip
