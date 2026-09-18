@@ -15,175 +15,130 @@
      geschrieben wurde. Hier bleibt nur der neueste Tagesabschluss stehen.
      Wandert er morgen ins Journal, kommt der von morgen an seine Stelle;
      die Datei bleibt damit so lang, wie ein Einstieg sein darf. -->
-## TAGESABSCHLUSS 17.09.2026 -- wo das Projekt steht
+## TAGESABSCHLUSS 18.09.2026 -- wo das Projekt steht
 
 > Einstieg fuer den naechsten Tag. Alles Aeltere liegt im Journal unter
 > `docs/journal/`, ein Tag je Datei.
 
 ### Der Stand in einem Satz
 
-**0.2.11 ist fertig gebaut und signiert, aber nicht getaggt.** Die Nummer
-steht an allen drei Stellen, zwoelf Aenderungen seit `v0.2.10`, der Pin zeigt
-auf `d630c38`, die CI ist auf allen vier Jobs gruen. Das signierte APK liegt
-in der Auslieferung, Windows ist geprueft und **zum ersten Mal seit Tagen mit
-Daten**. Offen sind die beiden Linux-VMs, eine Nachschau am Galaxy und der
-Text mit den Pruefsummen. Alles gepusht, Arbeitsbaum sauber, keine VM an,
-der Dienst laeuft lokal -- noch mit dem Code von heute frueh.
-
-### Was morgen als Erstes drankommt
-
-1. **Galaxy**: das signierte APK (`7156ac36`) installieren und **direkt nach
-   dem Start** in den Explorer, ganz nach unten: "Zuletzt im Mempool
-   gesehen" muss zwoelf **verschiedene** Zeilen zeigen. Das ist die zweite
-   Probe auf `d630c38`; unter Windows ist sie schon bestanden. Danach
-   `adb shell wm user-rotation free`. Vorsicht: `tabRotate` ist am Telefon
-   an, die Ansicht wandert alle 30 s weiter.
-2. **Beide Linux-VMs** mit `build/flatpak-0.2.11/orangedeck.flatpak` (aus
-   dem Lauf auf dem Pin-Commit): Ubuntu GNOME und Fedora KDE, frisch
-   installiert, alle Reiter, Einstellungen ueber `,`.
-3. **Punkt 8 der Pruefliste**: drei Pruefsummen und "Tested on" in
-   `packaging/github/RELEASE-TEXT.md` (dort stehen PLATZHALTER), Stilpruefung
-   wiederholen, `PRUEFSUMMEN.txt` und `geraetetest-0.2.11/` aufraeumen.
-4. **Tag `v0.2.11` auf `d630c38`**, Release als Entwurf mit den drei Dateien.
-   **Veroeffentlichen nur der Anwender.**
-5. **Den Dienst neu starten** -- er laeuft noch ohne die Dubletten-Korrektur.
-   Das setzt "zugehoert seit" fuer OKX und Bybit zurueck, darum nicht
-   mittendrin.
+**0.2.11 ist veroeffentlicht** ("Latest", Tag `v0.2.11` auf `e438305`, seit
+18:18 UTC), mit APK, Windows-ZIP und Flatpak aus dem CI-Lauf auf dem
+Pin-Commit. Gemessen wurde die ausgelieferte Fassung auf allen vier Systemen:
+Galaxy, Windows 11, Ubuntu 24.04 und Fedora 44. Arbeitsbaum sauber, alles
+gepusht, keine VM an, der Dienst laeuft lokal mit dem aktuellen Code.
 
 ### Was heute dazugekommen ist
 
-Neun Commits, davon sechs am Code und an der Auslieferung.
+Sieben Commits, davon zwei am Code.
 
 | Was | Commit | Anstoss |
 |---|---|---|
-| Tooltip der Halde auf dem dunklen Untergrund der uebrigen Angaben | `11b6836` | Desktop-Optik-Sitzung |
-| Schalter "Kaestchen hinter der Schrift" auf der DMS-Plugin-Seite | `20c995b` | lag seit gestern im Baum |
-| Uebergabe der Desktop-Optik-Sitzung abgelegt | `573d380` | andere Sitzung |
-| Nummer 0.2.11: CMakeLists, Manifest 14, Metainfo, Freigabetext | `76b8525` | Ablauf |
-| STAND: Widgets haben die Nacht bestanden | `0d995ff` | Anwender |
-| Bauplan auf `0d995ff` | `e786fa8` | CI rot |
-| Dieselbe Transaktion nicht zweimal in "Zuletzt im Mempool gesehen" | `d630c38` | Geraetelauf |
-| Bauplan auf `d630c38` | `1a2ed0c` | Ablauf |
-| Werkzeug: `tools/win-tippen.py` | -- | heute dreimal gebraucht |
+| Freigabetext: Pruefsummen und "Tested on" | `58c826f` | Ablauf |
+| Keine Ueberschrift ueber einer Flaeche, die leer bleiben muss | `b614c64` | Geraetelauf |
+| Bauplan auf `b614c64` | `c2b9268` | Ablauf |
+| Freigabetext: die Zahlen der dritten Runde | `a610cb0` | Ablauf |
+| Ein Satz statt der Leere unter "Eingehende Transaktionen" | `e438305` | Anwender |
+| Bauplan auf `e438305` | `38bb90e` | Ablauf |
+| Freigabetext: die Zahlen der vierten Runde | `49ba6fd` | Ablauf |
 
-**Die Dateien von 0.2.11** (noch nicht veroeffentlicht):
+**Die Dateien von 0.2.11** (veroeffentlicht):
 
-    7156ac36fb4a2e406bb09cca7107f7be7e6937b4efb6cb52fc1fc590008b0496  orangedeck-0.2.11-arm64-v8a.apk (signiert)
-    dc91255fdddb9deecd860e2641b554c34407aa8909d201aa4101e07145beaa00  orangedeck-0.2.11-arm64-v8a-unsigniert.apk
-    Windows-ZIP und Flatpak liegen in build/zip-0.2.11/ und build/flatpak-0.2.11/,
-    beide aus dem CI-Lauf 35278774885 auf dem Pin-Commit.
+    3cfeeb1cd1db86386415c9fa661660326b5cbb09f1a012402641285ccf91f449  orangedeck-0.2.11-arm64-v8a.apk (signiert)
+    89e7f82244a44bcd6432cdb6c15a9563d7b7801402068a43fa338feaf7e51f8e  orangedeck-0.2.11-arm64-v8a-unsigniert.apk
+    cad9f256905dfc174711a4a7b201b53441bcb897ba35ef6bd74f100587fec16f  orangedeck-0.2.11-windows-x86_64.zip
+    a3d4c63a63388645a0a146629d506ccaaa6725df22e711f9727289ef6e74db82  orangedeck-0.2.11.flatpak
 
 **Gemessen heute:**
 
-- **Galaxy ueber Nacht, ohne dass die App geoeffnet wurde**: die Widgets
-  hatten am Morgen saubere Daten. Damit traegt das Nachholen nach dem Doze
-  (`fe60fd0`) ueber eine ganze Nacht. Im Protokoll steht derselbe Ablauf noch
-  einmal ungestellt: um 16:21 fuenf Fehlschlaege mit
-  `UnknownHostException`, jeder mit "Versuch 1 in 1 min", um 16:26 fuer alle
-  zehn "Widget nachholen".
-- **Galaxy, Release-APK 0.2.11 (erste Runde)**: Liquidationen bei `13y` und
-  `Alles` mit Summen (Longs 2,9 M $, Shorts 4,6 M $, Balken bei 77.361 mit
-  7,5 M), Long/Short von allen drei Boersen. Bei `1 Stunde` **der Leertext**,
-  zum ersten Mal auf einem Bildschirm: "Noch keine Liquidationen in diesem
-  Zeitraum. Sie kommen live dazu; rueckwirkend reicht nur OKX rund einen Tag
-  zurueck." "Zugehoert seit 16.09. 16:43 (OKX), 17.09. 16:36 (Bybit)" --
-  getrennt und ehrlich. Explorer mit der RBF-Tafel "vorher"/"neu".
-- **Windows 11, VM, ZIP aus dem Pin-Lauf**: `curl` im Gast bekam
-  `mempool 200` ueber IPv4, und danach **alle Ansichten mit Daten** -- Feed
-  (Block 967.473, "vor 0 s"), Uhr (Moscow Time 1.312 sat, 956 EH/s), Mining
-  (Kurve ueber ein Jahr), Explorer, Markt (Heatmap, 132 Trades). Registry
-  noch so, wie 0.2.10 sie hinterlassen hat (`dataSource=direct`,
-  `walletEnabled=false`). `,` oeffnet die Einstellungen, kein Wallet-Reiter,
-  keine Datenquelle. Esc gibt das Suchfeld frei, Ende springt ans Seitenende.
-  Widget bleibt bei Win+D stehen und zeigt Daten, Q schliesst Fenster und
-  Widget. **Keine neue Defender-Erkennung**, die juengste ist vom 13.09.
-- **Die Dubletten-Korrektur im echten Bau**: unter Windows direkt nach einem
-  Neustart sechs verschiedene Zeilen, spaeter zwoelf verschiedene. Dazu
-  dieselbe Probe auf beiden Seiten im Quelltext (dreimal derselbe Satz, dann
-  zwei alte und ein neuer): vorher `a,b,c,a,b,c,a,b,d`, jetzt `a,b,c,d`,
-  Nummern lueckenlos, Eintraege ohne TxID erhalten.
-- **Der Untergrund hinter dem Tooltip kostet Rechenzeit**: am Pruefstand
-  (Xvfb ohne GPU, 20 s Zeiger ueber der Halde, je zwei Laeufe) 478/489 %
-  vorher gegen 581/602 % nachher, also rund ein Fuenftel mehr. Er haengt am
-  Zeiger, und `FrostedPanel` zieht bei jeder Lageaenderung sofort einen neuen
-  Ausschnitt, waehrend die vier anderen Felder stillstehen.
-- **mempool.space antwortet wieder ueber IPv4** (200, Hoehe 967.462 am
-  Nachmittag) -- die Sperre von gestern ist weg, auch aus dem QEMU-Gast.
-
-**Beim Anwender eingerichtet und zurueckgenommen:** `win11` auf 4 GB und
-zurueck auf 10240000 KiB, VM aus. Am Galaxy liegt 0.2.11 (erste Runde)
-installiert; das signierte APK der zweiten Runde ist noch nicht drauf. Das
-erste signierte APK liegt als `...-geraetetest-erste-runde.apk` in
-`geraetetest-0.2.11/`, damit es nicht mit dem Release durcheinanderkommt.
+- **Galaxy, die Probe auf `d630c38`**: "Zuletzt im Mempool gesehen" zeigte
+  direkt nach dem Start zwoelf **verschiedene** Zeilen, vier Minuten spaeter
+  zwoelf andere, wieder ohne Dublette. Damit ist die Entdoppelung auch am
+  Telefon nachgewiesen, nicht nur unter Windows.
+- **Ubuntu 24.04 GNOME und Fedora 44 KDE**, je frisch aus der Live-Sitzung,
+  Pruefsummen im Gast gegengehalten: alle fuenf Ansichten mit Live-Daten,
+  Liquidationen mit Long/Short von allen drei Boersen, Einstellungen ueber
+  `,`, Ende rollt den Explorer ans Seitenende. Beide Gaeste zweimal
+  durchlaufen, mit dem Bau vor und nach der Korrektur.
+- **Windows 11, VM, mit dem ausgelieferten ZIP**: alle fuenf Ansichten mit
+  Daten, kein Wallet-Reiter und keine Datenquelle, `,` oeffnet die
+  Einstellungen, die Ziffern wechseln den Reiter, Ende springt ans
+  Seitenende, zwoelf verschiedene Zeilen. Widget bleibt bei Win+D stehen und
+  zeigt Daten, Q schliesst Fenster und Widget. **Kein neuer Defender-Fund**,
+  die juengste Erkennung ist weiter vom 13.09.
+- **Der Zulauf im Direktbezug ist nicht zu haben.** Gemessen im Xvfb mit dem
+  echten Bau: 105 WebSocket-Nachrichten in 120 s, fast alle mit **denselben
+  sechs** Transaktionen. `seq` blieb ueber 200 s bei 10, `vBytesPerSecond`
+  stand still. Eine Kurve daraus waere eine Reihe Nullen.
+- **mempool.space** antwortet dieser Maschine ueber IPv4 und IPv6, und im
+  Windows-Gast ebenfalls (`mempool 200`).
 
 ### Die Erkenntnisse des Tages
 
-**Ein Test, der nur nach der Korrektur gruen ist, beweist nichts.** Die Probe
-zu den Dubletten lief erst gegen den reparierten Stand -- sauber. Erst der
-zweite Lauf, gegen einen Arbeitsbaum auf dem Stand davor, hat gezeigt, dass
-sie den Fehler ueberhaupt sieht: `a,b,c,a,b,c,a,b,d`. Seitdem gehoert der
-Lauf gegen das Alte zur Probe dazu.
+**Der erste Riegel war der falsche, und die Messung hat es gesagt.** Der
+Befund lautete "Ueberschrift ueber einer leeren Flaeche". Der naechstliegende
+Schluss war, den Zulauf im Direktbezug selbst zu rechnen, so wie der Dienst
+es tut -- 40 Zeilen, Probe gruen, Bau fertig. Erst der Lauf gegen den echten
+Bau zeigte, dass die Kurve leer blieb: der Zaehler bewegt sich nicht, weil
+der Server dieselben sechs Transaktionen wiederholt. Ein Riegel, der sauber
+aussieht und nichts bewirkt, kostet genauso viel wie einer, der wirkt.
 
-**Dieselbe Luecke lag an zwei Stellen.** `DirectFeed.qml` und `daemon/
-orangedeck` bereiten denselben Zustand auf, absichtlich deckungsgleich. Der
-Fund kam vom Telefon, die staerkere Ursache lag im Dienst: `poll_rest` holt
-`/mempool/recent` bei **jedem** Durchlauf. Wer eine Aufbereitung zweimal hat,
-repariert sie zweimal.
+**Dieselbe Referenz ist in QML keine Aenderung.** Auf dem Weg dorthin lag
+noch ein zweiter Fehler: `__statsHist` wurde mit sich selbst belegt, gefuellt
+statt neu gebaut. Die Zahlen standen im Zustand, die Kachel zeichnete nie.
+Beim Dienst faellt das nicht auf, dort kommt jedes Mal frisch geparstes JSON.
 
-**Ein Klick ohne Mausbewegung ist kein Fokuswechsel.** Q schloss das
-Windows-Widget nicht, und es sah nach einem Befund aus. Mit drei Zeigerpunkten
-vor dem Klick ging es sofort. Dasselbe Muster wie am 16.09. mit dem
-minimierten Fenster: erst der Zustand, dann die Taste.
+**Ein Fund im Geraetelauf kostet eine Runde -- heute zwei.** Die Nummer ging
+viermal durch Bau, Signatur und Pruefung: zweite Runde von gestern, dritte
+mit dem versteckten Kopf, vierte mit dem Satz. Der Tag danebengehalten: jede
+Runde war eine Entscheidung des Anwenders, und jede hat den Text verbessert.
+Teuer ist nicht die Runde, teuer ist die Runde, die man nicht anmeldet.
 
-**Der Fokus im Suchfeld schluckt die Tastenbefehle.** "Ende" tat unter Windows
-nichts, weil der Explorer den Cursor im Suchfeld hat. Genau dafuer gibt es
-seit gestern die Zeile "Esc Suche verlassen" -- sie hat sich heute selbst
-bewiesen, an mir.
+**Der Klick in die libvirt-VM geht ueber QMP.** `virsh qemu-monitor-command`
+nimmt dasselbe `input-send-event`, das `tools/vm.py` fuer die Pruef-VM
+benutzt. Damit ist das Widget unter Windows zum ersten Mal per Klick
+fokussiert und mit Q geschlossen worden -- vorher half nur `od-fokus.cmd`,
+und das findet das Widget nicht.
 
-**"Springt von selbst zurueck" war `tabRotate`.** Am Galaxy wanderte die
-Ansicht heute alle 30 s weiter, Explorer, Markt, Feed, ohne jede Eingabe. Der
-Eintrag von gestern ("der Reiterwechsel des Anwenders") war falsch; es ist
-eine Einstellung, und sie ist an diesem Telefon an.
+**Der Absturzbericht in Ubuntu war nicht unserer.** Beim Start des Flatpaks
+meldete die Live-Sitzung einen internen Fehler; hinter "Show Details" stand
+`/usr/libexec/xdg-permission-store`, der Rechtespeicher des Portal-Stapels.
+Die Anwendung lief unbeirrt weiter. Erst nachsehen, wessen Absturz es ist.
 
-**Die rote CI war die Wache, nicht der Fehler.** `bauplan-pruefen.py` hat den
-Lauf angehalten, weil der Pin noch auf dem Stand von 0.2.10 zeigte -- ein Bau
-daraus haette die Nummer 0.2.11 getragen und den Inhalt von 0.2.10. Windows,
-Linux und macOS waren im selben Lauf gruen; nur das Flatpak faellt ueber die
-Pruefung, und genau dafuer steht sie da.
-
-**Ein Fund im Geraetelauf kostet eine Runde.** Das APK war gebaut und
-signiert, bevor der Lauf durch war. Der Fund danach hiess: neu bauen, Pin ein
-zweites Mal nachziehen, noch einmal signieren. Das Paket gehoert ans Ende der
-Pruefliste, nicht in ihre Mitte.
+**Zwei Konsolen zerschneiden eine Zeile.** In Fedora kam die erste Konsole
+verspaetet, die zweite stand vorn, und ein langer Befehl landete haelftig in
+beiden ("hare/flatpak: No such file or directory"). Seitdem: erst zaehlen,
+wie viele Fenster offen sind, dann tippen -- und lange Ketten in kurze Zeilen
+zerlegen.
 
 ### Und was ich selbst falsch gemacht habe
 
-- **Das APK vor dem Geraetelauf gebaut** und den Anwender dadurch zweimal
-  signieren lassen.
-- **Bei der PIN zu schnell getippt**: 0,4 s Abstand, eine Ziffer ging
-  verloren, ohne Meldung. Steht jetzt als 0,45 s in `tools/win-tippen.py`.
-- **Q an ein Widget geschickt, das keinen Fokus hatte**, und es kurz fuer
-  einen Befund gehalten.
-- **Den Reiterwechsel am Galaxy erst fuer einen Fehler gehalten**, statt
-  zuerst in den Einstellungen nachzusehen.
-- **"0.2.10" pauschal durch "0.2.11" ersetzt** -- das traf auch die
-  Ueberschrift "What's new since" und zwei Stellen im Kommentar, die von der
-  Geschichte erzaehlen. Gefunden beim Gegenlesen, aber eine Ersetzung ueber
-  eine ganze Datei liest keinen Sinn mit.
+- **Eine Korrektur gebaut, ohne die Ursache gemessen zu haben.** Die
+  Entdoppelung von gestern und der stehende Zaehler haengen zusammen; das
+  waere vor dem Schreiben zu sehen gewesen.
+- **`end` statt `End`**: der QEMU-Monitor kennt nur Kleinschreibung, und die
+  Taste verschwand ohne Meldung. Zweimal daran haengengeblieben, bis der
+  Vergleich mit dem frueheren Lauf es zeigte.
+- **In die Windows-VM getippt, waehrend der Aufweck-Tastendruck noch im
+  PIN-Feld stand** -- die erste Anmeldung schlug deshalb fehl.
+- **Den ganzen Bildschirm des Anwenders abgelichtet**, statt nur das Fenster
+  der Anwendung: `grim` nimmt den Arbeitsbereich, und der gehoert ihm.
+  Seitdem laeuft die Sichtpruefung im Xvfb.
 
 ### Was sonst noch offen ist
 
-1. **0.2.11 zu Ende bringen**: siehe oben, Punkte 1 bis 5.
-2. **Der Tooltip-Untergrund** kostet rund ein Fuenftel mehr CPU, solange der
+1. **Der Tooltip-Untergrund** kostet rund ein Fuenftel mehr CPU, solange der
    Zeiger ueber der Halde wandert. Ein Riegel waere eine Zeile: das sofortige
    Nachziehen bei Lageaenderung abschaltbar machen und den Tooltip beim
    200-ms-Takt lassen. Nicht gemacht, das Aussehen ist abgenommen.
+2. **Flathub**: bei 0.2.6 ging der Antrag raus und war in einer Minute zu. Ob
+   es jetzt anders liefe, ist offen.
 3. **Rollen in den Einstellungen** nicht nachgewiesen (Seite passte ins
    Fenster); am Galaxy ist Rollen ohnehin Finger.
 4. **Waehrung um 12:55** (15.09.) stiess die Widgets nicht an. Nicht geklaert.
 5. **`tools/ansichten-android.py`** mit KEYCODE_COMMA am Galaxy.
-6. **Windows ungeprueft:** 600 MB im Markt, README-Startzeile in Win+R,
-   Skalierung ueber 100 %, SmartScreen. **macOS** ungeprueft.
+6. **Ungeprueft:** 600 MB im Markt unter Windows, README-Startzeile in Win+R,
+   Skalierung ueber 100 %, SmartScreen. **macOS** ganz.
 7. **`bitfeed`** ansehen (kitty, Hintergrund, CPU), dann Stufe 3 und 4.
 8. **Technische Fehlermeldungen** aus dem Datenweg; **DMS-Anteil** nur
    deutsch; **Android 11** im Emulator.
@@ -206,27 +161,42 @@ Pruefliste, nicht in ihre Mitte.
     Bildschirm des Telefons: adb exec-out screencap -p > bild.png (1080x2340)
     python3 tools/bauplan-pruefen.py        (der Pin ist Punkt 5, vor dem Tag)
     gh run list --limit 5    (CI nur auf main, nicht auf Tags)
+    gh: zwei Remotes im Ordner, darum --repo 21Rebel/orangedeck mitgeben
     gh run download <lauf> -n orangedeck-windows-x86_64-UNSIGNIERT -D build/win-<v>
     gh run download <lauf> -n orangedeck-flatpak -D build/flatpak-<v>
-    ZIP ohne zip:  python3 -m zipfile -c <ziel>.zip <ordner>   (Ordner im ZIP wie der Name)
+    ZIP ohne zip:  python3 -m zipfile -c <ziel>.zip <ordner>   (89 Eintraege, 72 Dateien)
     Windows-VM:
       virsh -c qemu:///system setmaxmem win11 4G --config   (und setmem; danach 10240000)
       virsh -c qemu:///system start win11 ; Anmeldung: PIN vom Anwender
+      Bildschirm schwarz: erst KEY_SPACE/KEY_ESC schicken -- und danach das
+        PIN-Feld mit BACKSPACE leeren, sonst steht der Aufwecker noch darin
       python3 tools/win-tippen.py 'Z:\orangedeck\build\od-start.cmd'   (deutsche Belegung)
       dann KEY_ENTER; in Win+R nur Pfade, keine Schalter (ClickFix)
       Paket nach Z:\orangedeck\build\win-test, dann od-vorbereiten.cmd
       od-start.cmd | od-widget.cmd | od-defender.cmd | od-fokus.cmd, Ausgaben nach Z:
-      Klick: erst drei Zeigerpunkte, dann die Taste -- sonst kein Fokuswechsel
+      Klick per QMP:  virsh -c qemu:///system qemu-monitor-command win11 \
+        '{"execute":"input-send-event","arguments":{"events":[...]}}'
+        (abs-Achsen 0..32767, erst drei Zeigerpunkte, dann btn down/up)
       Bild: virsh -c qemu:///system screenshot win11 <datei>.ppm   (2560x1440)
     tools/pruefvm.sh bauen | starten | anhalten | gast
+      **Nicht `bauen`,** wenn das Buendel aus der CI geprueft werden soll:
+        cp build/flatpak-<v>/orangedeck.flatpak ~/.cache/orangedeck-vm/daten/ ;
+        dort sha256sum ./*.flatpak > PRUEFSUMMEN.txt ; xorriso -as mkisofs -V ORANGEDECK -J -r -o ../daten.iso .
       Fedora:  setsid env ORANGEDECK_VM_ISO=$HOME/VMs/fedora-kde-44.iso tools/pruefvm.sh starten
-      KRunner mit alt-spc, vor langen Zeilen  echo FOKUS-OK  und ein Bild
+      Fedora: KRunner geht oft nicht; Startmenue klicken (35, 768), dann
+        Konsole im Favoritenfeld (398, 421) -- und warten, sie kommt verspaetet
+      Tasten im Monitor sind **klein**: "end", nicht "End"
       Klicks:  python3 -c 'import sys; sys.path.insert(0,"tools"); import vm; vm.klick(x, y)'
     gh release create v<v> --draft --verify-tag --title "OrangeDeck <v>" --notes-file <text> <dateien>
+      den HTML-Kopfkommentar vorher aus dem Text nehmen, er gehoert nicht ins Release
     gh release edit v<v> --draft=false --latest   (nur der Anwender: Rechtepruefung)
     Pruefstand ohne Fenster:
       env -u WAYLAND_DISPLAY -u DISPLAY QT_QPA_PLATFORM=offscreen QT_FORCE_STDERR_LOGGING=1 \
           /usr/lib/qt6/bin/qml <datei>.qml      (Import als file:/... , kein absoluter Pfad)
+      mit Fenster, ohne den Bildschirm des Anwenders:
+        xvfb-run -a --server-args="-screen 0 1400x1000x24" bash -c \
+          "env -u WAYLAND_DISPLAY QT_QPA_PLATFORM=xcb ./build/orangedeck-app --source direct --id probe & \
+           sleep 70; python3 tools/xtest.py ... ; import -window root bild.png"
       eine Aufbereitung allein pruefen: DirectFeed { active: false } und die Funktion rufen
     qmllint: /usr/lib/qt6/bin/qmllint -I ui/qml [-I app/qml] <datei>
     Dienst im Test laden:  SourceFileLoader("od", "daemon/orangedeck") -- die
@@ -243,6 +213,7 @@ Ein Tag je Datei, das Neueste oben. Herausgeloest aus dieser Datei, unveraendert
 
 | Tag | Worum es ging |
 |---|---|
+| [17.09.2026](journal/2026-09-17.md) | 0.2.11 gebaut und signiert, die Widgets haben die Nacht bestanden, dieselbe Transaktion stand doppelt im Mempool-Protokoll, Windows lief mit Daten. |
 | [16.09.2026](journal/2026-09-16.md) | 0.2.10 veroeffentlicht, acht Aenderungen fuer 0.2.11 auf main, Widgets im Doze nachgestellt, OKX reicht nur 24 Stunden zurueck. |
 | [15.09.2026](journal/2026-09-15.md) | Alles fuer 0.2.10 auf main: Widgets ohne leere Kacheln, der Dienst-Weg repariert und unter Android und Windows entfernt, Zahnrad per Taste. |
 | [14.09.2026](journal/2026-09-14.md) | 0.2.9 veroeffentlicht, Linux in zwei VMs nachgeholt, Freigabetext ohne KI-typische Muster, Dashtab-Nachbearbeitungen uebernommen. |
