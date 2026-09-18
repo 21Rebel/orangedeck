@@ -103,6 +103,17 @@ PRICE_MAX_AGE = 3600
 PRICE_POINTS = 360
 
 WRITE_INTERVAL = 0.4      # Sekunden zwischen zwei Schreibvorgaengen
+
+# **So lange darf der WebSocket schweigen, dann wird er abgeraeumt.**
+# Am 18.09.2026 hing der Dienst an einem Knoten von mempool.space, der
+# nach dem Verbindungsaufbau nichts mehr schickte -- nur noch Ping-Rahmen,
+# die `recv()` still beantwortet. Damit lief weder die Sockelfrist ab (es
+# kam ja etwas) noch flog eine Ausnahme, die den Wiederaufbau ausgeloest
+# haette: `source` stand weiter auf "ws", und die Widgets standen still.
+# Eine frische Verbindung derselben Maschine bekam im selben Moment 189
+# verschiedene Transaktionen in 60 s. Ein Draht, der nichts traegt, ist
+# kein Draht.
+WS_STILL_MAX = 60
 RECENT_KEEP = 120         # wie viele frische TX im Zustand liegen bleiben
 # Felder, die sich hoechstens im Minutentakt aendern. Sie machen fast die
 # Haelfte des Zustands aus und werden deshalb nur mitgeschickt, wenn sich
@@ -3502,10 +3513,34 @@ def handle_projected(feed, p):
     return True
 
 
-def run_ws(feed):
+def run_ws(feed, still_max=None):
     ws = WebSocket(WS_URL, origin=f"https://{HOST}")
     feed.source = "ws"
     feed.error = ""
+
+    # **Die Wache gegen den stummen Draht.** `recv()` kehrt nur bei einem
+    # Textrahmen zurueck; Pings beantwortet es selbst und wartet weiter. Ein
+    # Knoten, der nur noch pingt, haelt den Faden damit beliebig lange fest.
+    # Diese Wache laeuft daneben, schaut auf die Uhr des letzten Textrahmens
+    # und raeumt den Sockel ab -- `recv()` faellt dann mit einer Ausnahme
+    # heraus, und der Aufrufer verbindet neu (und haelt derweil per REST nach).
+    grenze = WS_STILL_MAX if still_max is None else still_max
+    letzte = [time.time()]
+    halt = threading.Event()
+
+    def wache():
+        while not halt.wait(min(5.0, grenze / 4.0)):
+            still = time.time() - letzte[0]
+            if still > grenze:
+                sys.stderr.write(
+                    "WebSocket schweigt seit %.0f s -- Verbindung wird abgeraeumt\n" % still)
+                try:
+                    ws.sock.shutdown(socket.SHUT_RDWR)
+                except Exception:
+                    pass
+                return
+
+    threading.Thread(target=wache, daemon=True).start()
     try:
         ws.send(json.dumps({"action": "init"}))
         ws.send(json.dumps({"action": "want",
@@ -3513,6 +3548,7 @@ def run_ws(feed):
         last_write = 0.0
         while True:
             raw = ws.recv()
+            letzte[0] = time.time()
             if raw is None:
                 continue
             try:
@@ -3544,6 +3580,7 @@ def run_ws(feed):
                 feed.write()
                 last_write = now
     finally:
+        halt.set()
         ws.close()
 
 
