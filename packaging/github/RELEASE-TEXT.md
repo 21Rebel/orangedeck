@@ -54,6 +54,7 @@ This release fixes what the last one left behind. Widgets that came back empty a
 - In the explorer, the two columns of a replaced transaction are translated in every language. They read "old" and "new" in English and the same in the other twelve.
 - Tables can be read with the keyboard: page up and down, home and end. The key help says how to leave the search with Esc.
 - The tooltip over the mempool mosaic sits on the same dark, blurred backing as the other readings, so it stays legible above bright tiles.
+- Without a service, the mempool tile no longer heads an empty area. The curve of incoming transactions is written by the service. On Android, and on Windows and Linux unless a service runs, that reading does not exist, so the tile shows its three numbers alone.
 
 ## Windows: `orangedeck-0.2.11-windows-x86_64.zip`
 
@@ -91,16 +92,16 @@ This pulls the KDE runtime 6.9 from Flathub. All six views are included on Linux
 
 ## Tested on
 
-- Samsung Galaxy A55 with Android 16, this signed APK installed over the build before it: clock and explorer with live data, and the list of recently seen transactions held twelve different entries right after the start and twelve different ones again four minutes later. Liquidations with the text for an empty range, long/short from all three exchanges and the widgets after a night in standby were seen on an earlier build of this release, not on this file.
-- Windows 11 25H2 in a VM, this ZIP, with the settings left over from 0.2.10 (direct data source, wallet switched off): feed, clock, mining, explorer and market with data, no wallet tab and no service settings, the comma key and Esc, End jumps to the end of a page, a widget that stays on the desktop with Win+D, and Q closes window and widget. The list of recently seen transactions held six and later twelve different entries. No new detection from Defender.
-- This Flatpak bundle, freshly installed in live sessions of Ubuntu 24.04 with GNOME and Fedora 44 with KDE: all five views with live data, liquidations with long/short from all three exchanges, and the settings with the comma key. Under Ubuntu, End and Home moved the explorer page.
+- Samsung Galaxy A55 with Android 16, this signed APK installed over the build before it: feed, clock, mining, explorer and market with live data, the miner reached directly, and liquidations over the last hour with long/short from all three exchanges. The list of recently seen transactions held twelve different entries right after the start and twelve different ones again three minutes later. The widgets after a night in standby were seen on an earlier build of this release, not on this file.
+- Windows 11 25H2 in a VM, with the settings left over from 0.2.10 (direct data source, wallet switched off): feed, clock, mining, explorer and market with data, no wallet tab and no service settings, the comma key and Esc, End jumps to the end of a page, a widget that stays on the desktop with Win+D, and Q closes window and widget. The list of recently seen transactions held six and later twelve different entries. No new detection from Defender. That run used the build before this one. The two differ in one place, the mempool tile, which without a service no longer heads an empty area.
+- This Flatpak bundle, freshly installed in live sessions of Ubuntu 24.04 with GNOME and Fedora 44 with KDE: all five views with live data, liquidations with long/short from all three exchanges, the settings with the comma key, and End moved the explorer to the end of the page in both.
 - Not tested yet: macOS, real tablets, and display scaling above 100% on Windows. If something looks wrong, please open an issue.
 
 ## Checksums (SHA-256)
 
-    36435c6ff108180651cabe75bd367b471b64a07099929398058bde588f3b1872  orangedeck-0.2.11-windows-x86_64.zip
-    7156ac36fb4a2e406bb09cca7107f7be7e6937b4efb6cb52fc1fc590008b0496  orangedeck-0.2.11-arm64-v8a.apk
-    75004738913d56123b53f828a76c6143eb548138105c71067bb6cdaf23158a6b  orangedeck-0.2.11.flatpak
+    03fc2d60a570a98fa765470d1a7a1066194e2f944515936550b6a16965728cb7  orangedeck-0.2.11-windows-x86_64.zip
+    867a3d395aa126e834c6e22ad26c8d2f7695aeb7e04a7013c16d6726398deb68  orangedeck-0.2.11-arm64-v8a.apk
+    a9b997e8bc3db24f18e5f0e3af8a44174fc5c46481ba141aed120fe8b52ee514  orangedeck-0.2.11.flatpak
 
 ---
 
@@ -112,6 +113,6 @@ Android-Widgets holen nach, sobald das Netz wieder da ist. Im Doze hat das Telef
 
 Die Liquidationsansicht bleibt nicht mehr leer. Über einen langen Zeitraum zählt sie auch die laufende Woche mit, und sind die letzten Stunden leer, sagt sie das, statt nichts zu zeigen. Sie füllt sich aus den letzten 24 Stunden, weiter zurück gibt OKX nichts heraus. Die Angabe "zugehört seit" rückt mit, wenn ältere Einträge herausfallen.
 
-Im Explorer sind die Spalten einer ersetzten Transaktion in jeder Sprache übersetzt. Tabellen lassen sich mit Bild auf und ab, Pos1 und Ende lesen, und die Tastenhilfe sagt, wie man die Suche mit Esc verlässt. Der Tooltip über dem Kachelfeld liegt auf demselben dunklen Untergrund wie die übrigen Angaben und bleibt damit auch über hellen Kacheln lesbar.
+Im Explorer sind die Spalten einer ersetzten Transaktion in jeder Sprache übersetzt. Tabellen lassen sich mit Bild auf und ab, Pos1 und Ende lesen, und die Tastenhilfe sagt, wie man die Suche mit Esc verlässt. Der Tooltip über dem Kachelfeld liegt auf demselben dunklen Untergrund wie die übrigen Angaben und bleibt damit auch über hellen Kacheln lesbar. Ohne Dienst kündigt die Mempool-Kachel keine Kurve mehr an: Den Zulauf schreibt der Dienst mit, und wo keiner läuft, zeigt die Kachel nur noch ihre drei Zahlen.
 
 Bitte vor dem Installieren Prüfsumme und Signatur prüfen.
