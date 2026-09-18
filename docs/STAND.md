@@ -127,19 +127,41 @@ zerlegen.
 
 ### Was sonst noch offen ist
 
-1. **Der Tooltip-Untergrund** kostet rund ein Fuenftel mehr CPU, solange der
-   Zeiger ueber der Halde wandert. Ein Riegel waere eine Zeile: das sofortige
-   Nachziehen bei Lageaenderung abschaltbar machen und den Tooltip beim
-   200-ms-Takt lassen. Nicht gemacht, das Aussehen ist abgenommen.
+1. **Der Tooltip-Untergrund** kostet Rechenzeit, aber nicht dort, wo es
+   aussah. Der Riegel ist am 18.09.2026 gebaut und **wieder verworfen**:
+   `redrawOnMove` abgeschaltet gegen eingeschaltet, am selben Pruefstand,
+   Zeiger 20 s ueber der Halde, Tooltip nachweislich offen -- 708/717/707 %
+   mit Riegel gegen 693/662 % ohne. Kein Gewinn, die Streuung ist groesser
+   als der Unterschied. Die Messung vom 17.09. verglich "Untergrund da" mit
+   "Untergrund weg" (581/602 gegen 478/489); der Aufwand steckt also in der
+   Weichzeichnung selbst, nicht im Nachziehen bei Bewegung. Wer sparen will,
+   muss an die Weichzeichnung -- und das ist das abgenommene Aussehen.
 2. **Flathub**: bei 0.2.6 ging der Antrag raus und war in einer Minute zu. Ob
    es jetzt anders liefe, ist offen.
-3. **Rollen in den Einstellungen** nicht nachgewiesen (Seite passte ins
-   Fenster); am Galaxy ist Rollen ohnehin Finger.
+3. ~~Rollen in den Einstellungen~~ **nachgewiesen** (18.09.2026): in einem
+   900x300 grossen Fenster rollt die Seite "Darstellung" mit dem Rad und mit
+   Bild ab bis zum 6. Reiter. Der Punkt stand nur offen, weil die Seite bis
+   dahin immer ins Fenster passte. **Falle dabei:** im Xvfb ohne
+   Fenstermanager ist das Fenster groesser als der Bildschirm -- dann sieht
+   man einen Ausschnitt und haelt ihn fuer eine Seite, die nicht rollt.
+   `tools/xtest.py groesse(f, b, h)` setzt die Fenstergroesse.
 4. **Waehrung um 12:55** (15.09.) stiess die Widgets nicht an. Nicht geklaert.
 5. **`tools/ansichten-android.py`** mit KEYCODE_COMMA am Galaxy.
 6. **Ungeprueft:** 600 MB im Markt unter Windows, README-Startzeile in Win+R,
    Skalierung ueber 100 %, SmartScreen. **macOS** ganz.
-7. **`bitfeed`** ansehen (kitty, Hintergrund, CPU), dann Stufe 3 und 4.
+7. **`bitfeed`**: am 18.09.2026 zum ersten Mal **gesehen**, in kitty im Xvfb
+   (den Bildschirm des Anwenders faellt es damit nicht an). Es laeuft: Kopf
+   mit Blockhoehe und Gebuehr, Halde unten, geplanter Block in der Mitte,
+   Zugaenge fliegen ein, `[c]` schaltet auf Gebuehrenfarben und macht aus der
+   orangen Flaeche einen Verlauf. Bei "Alter" ist alles orange, und das ist
+   richtig: der ganze Mempool kommt beim Start auf einmal herein, in der App
+   sieht das Feld genauso aus. Rechenzeit: **bitfeed selbst 8,6 %**, kitty
+   daneben 335 % -- letzteres nur, weil im Xvfb per Software gezeichnet wird;
+   mit GPU sagt die Zahl nichts. Offen bleiben: eine Messung in der Sitzung
+   des Anwenders, `kitten panel --edge=background` unter niri (legt etwas auf
+   seinen Desktop, braucht sein OK), dann Stufe 3 und 4.
+   **Falle:** kitty startet groesser als der Xvfb-Bildschirm; mit
+   `-o remember_window_size=no -o initial_window_width/height` passt es.
 8. **Technische Fehlermeldungen** aus dem Datenweg; **DMS-Anteil** nur
    deutsch; **Android 11** im Emulator.
 9. **Idee fuer spaeter**: Wallet direkt auf dem Telefon.
