@@ -92,16 +92,16 @@ This pulls the KDE runtime 6.9 from Flathub. All six views are included on Linux
 
 ## Tested on
 
-- Samsung Galaxy A55 with Android 16, this signed APK installed over the build before it: feed, clock, mining, explorer and market with live data, the miner reached directly, and liquidations over the last hour with long/short from all three exchanges. The list of recently seen transactions held twelve different entries right after the start and twelve different ones again three minutes later. The widgets after a night in standby were seen on an earlier build of this release, not on this file.
-- Windows 11 25H2 in a VM, with the settings left over from 0.2.10 (direct data source, wallet switched off): feed, clock, mining, explorer and market with data, no wallet tab and no service settings, the comma key and Esc, End jumps to the end of a page, a widget that stays on the desktop with Win+D, and Q closes window and widget. The list of recently seen transactions held six and later twelve different entries. No new detection from Defender. That run used the build before this one. The two differ in one place, the mempool tile, which without a service no longer heads an empty area.
-- This Flatpak bundle, freshly installed in live sessions of Ubuntu 24.04 with GNOME and Fedora 44 with KDE: all five views with live data, liquidations with long/short from all three exchanges, the settings with the comma key, and End moved the explorer to the end of the page in both.
+- Samsung Galaxy A55 with Android 16, this signed APK installed over the build before it: feed, clock, mining, explorer and market with live data, the miner reached directly, and liquidations over the last hour with long/short from all three exchanges. The list of recently seen transactions held twelve different entries right after the start and twelve different ones again a minute later, and the mempool tile said why it has no curve. The widgets after a night in standby were seen on an earlier build of this release, not on this file.
+- Windows 11 25H2 in a VM, this ZIP, with the settings left over from 0.2.10 (direct data source, wallet switched off): feed, clock, mining, explorer and market with data, no wallet tab and no service settings, the comma key, the digits switch tabs, End jumps to the end of a page, twelve different entries in the list of recently seen transactions, and the mempool tile saying why it has no curve. A widget stays on the desktop with Win+D and shows data, Q closes window and widget. No new detection from Defender.
+- This Flatpak bundle, freshly installed in live sessions of Ubuntu 24.04 with GNOME and Fedora 44 with KDE: all five views with live data, liquidations with long/short from all three exchanges, the settings with the comma key, End moved the explorer to the end of the page in both, and the mempool tile drew its curve, because the bundle brings the service along.
 - Not tested yet: macOS, real tablets, and display scaling above 100% on Windows. If something looks wrong, please open an issue.
 
 ## Checksums (SHA-256)
 
-    03fc2d60a570a98fa765470d1a7a1066194e2f944515936550b6a16965728cb7  orangedeck-0.2.11-windows-x86_64.zip
-    867a3d395aa126e834c6e22ad26c8d2f7695aeb7e04a7013c16d6726398deb68  orangedeck-0.2.11-arm64-v8a.apk
-    a9b997e8bc3db24f18e5f0e3af8a44174fc5c46481ba141aed120fe8b52ee514  orangedeck-0.2.11.flatpak
+    cad9f256905dfc174711a4a7b201b53441bcb897ba35ef6bd74f100587fec16f  orangedeck-0.2.11-windows-x86_64.zip
+    3cfeeb1cd1db86386415c9fa661660326b5cbb09f1a012402641285ccf91f449  orangedeck-0.2.11-arm64-v8a.apk
+    a3d4c63a63388645a0a146629d506ccaaa6725df22e711f9727289ef6e74db82  orangedeck-0.2.11.flatpak
 
 ---
 
