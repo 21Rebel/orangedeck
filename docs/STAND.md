@@ -145,7 +145,19 @@ zerlegen.
    Fenstermanager ist das Fenster groesser als der Bildschirm -- dann sieht
    man einen Ausschnitt und haelt ihn fuer eine Seite, die nicht rollt.
    `tools/xtest.py groesse(f, b, h)` setzt die Fenstergroesse.
-4. **Waehrung um 12:55** (15.09.) stiess die Widgets nicht an. Nicht geklaert.
+4. ~~Waehrung um 12:55~~ (15.09.) **erklaert** (18.09.2026), aus den
+   Zeitstempeln, nicht aus einem zweiten Lauf: um 08:30 lag `6924dd7` auf dem
+   Telefon, um 13:07 kam `b63bdc4` ("vor dem Freigeben zeichnen, auch wenn der
+   Abruf haengt"). Um 12:55 lief also der Bau **davor**, und an genau diesem
+   Tag antwortete mempool.space dem VPN-Ausgang des Galaxy nicht: der Abruf
+   hing, Android beendete den Prozess nach elf Sekunden, gezeichnet wurde nie.
+   Um 13:58 lief der Bau danach. Zwei Fehlschluesse auf dem Weg dorthin, beide
+   gemessen und verworfen: die Einstellungsdatei wird **nicht** verzoegert
+   geschrieben (`currency=eur` stand nach 1,0 s darin), und `currency` haengt
+   seit `dbcf204` am Wecker in `main.cpp`.
+   **Noch offen, mit dem Telefon in zwei Minuten zu pruefen:** Waehrung
+   umstellen, waehrend das Netz weg ist -- das Widget muss jetzt mit dem alten
+   Kurs, aber dem neuen Zeichen neu zeichnen.
 5. **`tools/ansichten-android.py`** mit KEYCODE_COMMA am Galaxy.
 6. **Ungeprueft:** 600 MB im Markt unter Windows, README-Startzeile in Win+R,
    Skalierung ueber 100 %, SmartScreen. **macOS** ganz.
