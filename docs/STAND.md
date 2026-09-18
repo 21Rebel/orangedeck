@@ -174,8 +174,21 @@ zerlegen.
    seinen Desktop, braucht sein OK), dann Stufe 3 und 4.
    **Falle:** kitty startet groesser als der Xvfb-Bildschirm; mit
    `-o remember_window_size=no -o initial_window_width/height` passt es.
-8. **Technische Fehlermeldungen** aus dem Datenweg; **DMS-Anteil** nur
-   deutsch; **Android 11** im Emulator.
+8. ~~Technische Fehlermeldungen, DMS-Anteil, Android 11~~ **alle drei am
+   18.09.2026 erledigt.** Die Fehlermeldungen: der Dienst macht aus jeder
+   Ausnahme einen kurzen Grund und schreibt die technische Fassung ins
+   Protokoll; neun Gruende kamen dafuer in dreizehn Sprachen dazu (dabei
+   gefunden: `err.unreachable` und `err.unreadable` standen doppelt in der
+   Tabelle, die erste Fassung war tot). Der DMS-Anteil spricht dieselben
+   dreizehn Sprachen, deutsch bleibt allein die Beschreibung in `plugin.json`,
+   die DMS nur einmal liest. Android 11 laeuft: eigener Bau fuer x86_64 (Qt
+   hat den Satz, OpenSSL auch, TLS an Bord), im Emulator `orangedeck-api30`
+   alle fuenf Ansichten mit Live-Daten.
+   **Und eine Falle, die fast ein Befund geworden waere:** mit dem Renderer
+   `swiftshader_indirect` schneidet der Emulator Kachelfeld und Kurvenfuellung
+   schraeg an. Mit `-gpu swangle_indirect` ist alles sauber -- es ist der
+   Renderer, nicht die Anwendung. Wer im Emulator etwas Grafisches beurteilt,
+   prueft beide.
 9. **Idee fuer spaeter**: Wallet direkt auf dem Telefon.
 
 ### Fuer den naechsten Lauf

@@ -1,5 +1,7 @@
 build/
 build-android/
+# Derselbe Bau fuer den Emulator (x86_64), siehe docs/STAND.md, Android 11.
+build-android-x86_64/
 build-flatpak/
 build-flatpak-repo/
 .flatpak-builder/
