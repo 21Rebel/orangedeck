@@ -25,12 +25,40 @@
 **0.2.11 ist veroeffentlicht** ("Latest", Tag `v0.2.11` auf `e438305`, seit
 18:18 UTC), mit APK, Windows-ZIP und Flatpak aus dem CI-Lauf auf dem
 Pin-Commit. Gemessen wurde die ausgelieferte Fassung auf allen vier Systemen:
-Galaxy, Windows 11, Ubuntu 24.04 und Fedora 44. Arbeitsbaum sauber, alles
-gepusht, keine VM an, der Dienst laeuft lokal mit dem aktuellen Code.
+Galaxy, Windows 11, Ubuntu 24.04 und Fedora 44.
+
+Danach ging der Tag in die offene Liste: **fuenf ihrer Punkte sind erledigt
+oder erklaert** (Rollen in den Einstellungen, die Waehrung vom 15.09., die
+technischen Fehlermeldungen, der DMS-Anteil, Android 11), einer ist gemessen
+und **verworfen** (der Tooltip-Riegel), einer zum ersten Mal angesehen
+(`bitfeed`). Dazwischen standen die Desktop-Widgets des Anwenders still --
+daraus wurde die Wache gegen den stummen WebSocket.
+
+Arbeitsbaum sauber, alles gepusht, keine VM an, kein Emulator, das Telefon
+steht wieder auf Euro und Systemsprache. Der Dienst laeuft mit der Wache.
+**Noch offen fuer morgen frueh:** `systemctl --user restart dms`, damit die
+uebersetzte Plugin-Seite in der laufenden Shell ankommt.
+
+### Was morgen als Erstes drankommt
+
+1. **`systemctl --user restart dms`** -- die uebersetzte Plugin-Seite liegt
+   fertig im Repo, die laufende Shell haelt noch die deutsche Fassung im
+   Speicher. Ein Handgriff, und er gehoert an den Anfang, damit er nicht
+   vergessen wird.
+2. **Nachsehen, ob der Draht noch traegt**: `journalctl --user -u orangedeck |
+   grep schweigt`. Steht dort eine Zeile, hat die Wache in der Nacht
+   zugeschlagen -- dann ist sie richtig, und es waere das erste Mal, dass man
+   es sieht, statt es zu merken.
+3. **Punkt 9 entscheiden**: sollen die Widgets bei einem Fehlschlag den
+   gemerkten Stand weiterzeigen (mit Alter) statt "-- gerade nicht
+   erreichbar"? Das ist eine Frage an den Anwender, keine Korrektur.
+4. Danach frei nach Lust: **Flathub** noch einmal, **`bitfeed`** in der
+   Sitzung des Anwenders (Panel und eine ehrliche CPU-Zahl), oder die
+   **Windows-Reste** (600 MB im Markt, Win+R, Skalierung, SmartScreen).
 
 ### Was heute dazugekommen ist
 
-Sieben Commits, davon zwei am Code.
+Fuenfzehn Commits, davon sechs am Code und am Werkzeug.
 
 | Was | Commit | Anstoss |
 |---|---|---|
@@ -41,6 +69,14 @@ Sieben Commits, davon zwei am Code.
 | Ein Satz statt der Leere unter "Eingehende Transaktionen" | `e438305` | Anwender |
 | Bauplan auf `e438305` | `38bb90e` | Ablauf |
 | Freigabetext: die Zahlen der vierten Runde | `49ba6fd` | Ablauf |
+| Tagesabschluss, 17.09. ins Journal | `3ce333a` | Ablauf |
+| Punkte 1, 3 und 7: gemessen, nachgewiesen, angesehen | `f4acbfa` | offene Liste |
+| Punkt 4 erklaert: der Bau von 12:55 konnte nicht zeichnen | `ebb8dbb` | offene Liste |
+| Keine technischen Fehlermeldungen mehr auf dem Bildschirm | `217ffde` | offene Liste |
+| Der DMS-Anteil spricht dieselben dreizehn Sprachen | `796ba7a` | offene Liste |
+| Android 11 laeuft, und der Emulator luegt beim Zeichnen | `c8a0c16` | offene Liste |
+| Eine Wache gegen den stummen Draht | `edd1a64` | **Anwender: Widgets standen still** |
+| Punkt 4 und 5 am Geraet erledigt | `57ef034` | offene Liste |
 
 **Die Dateien von 0.2.11** (veroeffentlicht):
 
@@ -72,6 +108,29 @@ Sieben Commits, davon zwei am Code.
   stand still. Eine Kurve daraus waere eine Reihe Nullen.
 - **mempool.space** antwortet dieser Maschine ueber IPv4 und IPv6, und im
   Windows-Gast ebenfalls (`mempool 200`).
+- **Der Tooltip-Riegel bringt nichts** (Punkt 1): `redrawOnMove` aus gegen
+  ein, Zeiger 20 s ueber der Halde, Tooltip nachweislich offen -- 708/717/707 %
+  gegen 693/662 %. Zurueckgenommen.
+- **Rollen in den Einstellungen** (Punkt 3): in einem 900x300-Fenster rollt
+  "Darstellung" mit Rad und Bild ab bis zum 6. Reiter.
+- **`bitfeed` zum ersten Mal gesehen** (Punkt 7), in kitty im Xvfb: Kopf,
+  Halde, geplanter Block, Zugaenge, `[c]` schaltet auf Gebuehrenfarben.
+  bitfeed selbst 8,6 % CPU; die 335 % von kitty sind Software-Zeichnen und
+  sagen ueber den echten Rechner nichts.
+- **Android 11 im Emulator** (Punkt 8): eigener x86_64-Bau mit TLS, alle fuenf
+  Ansichten mit Live-Daten.
+- **Die stillen Widgets** (Meldung des Anwenders, 16:05): letzter Zulauf
+  15:56:20, `seq` und Mempool-Zahl eingefroren, `source: ws`, kein Fehler.
+  Gegenprobe im selben Moment: eine **frische** Verbindung dieser Maschine
+  bekam in 60 s 189 verschiedene Transaktionen, 48 verschiedene
+  Mempool-Staende, 37 verschiedene vBytes/s -- ueber IPv4 wie ueber IPv6. Der
+  Dienst hing an `2001:df6:7280::92:208`, Recv-Q 0.
+- **Am Geraet, Punkt 4**: Netz aus, Waehrung Euro auf Dollar -- alle fuenf
+  Kacheln "-- gerade nicht erreichbar", im Protokoll `UnknownHostException`
+  und "Versuch 1 in 1 min". Netz an: "Widget nachholen" fuer alle acht Arten,
+  danach Dollar. Zurueckgestellt auf Euro.
+- **Am Geraet, Punkt 5**: `tools/ansichten-android.py` laeuft durch, 33
+  Bilder; KEYCODE_COMMA oeffnet das Zahnrad.
 
 ### Die Erkenntnisse des Tages
 
@@ -111,6 +170,41 @@ beiden ("hare/flatpak: No such file or directory"). Seitdem: erst zaehlen,
 wie viele Fenster offen sind, dann tippen -- und lange Ketten in kurze Zeilen
 zerlegen.
 
+**Ein Draht, der nichts traegt, sieht aus wie ein gesunder.** Der groesste
+Fund des Tages kam vom Anwender: "es fallen seit einigen Minuten keine txs
+mehr". Der Dienst meldete `source: ws` und keinen Fehler, und genau deshalb
+griff nichts -- `recv()` beantwortet Ping-Rahmen selbst und wartet weiter, die
+45-Sekunden-Frist des Sockels laeuft also nie ab. Wer eine Verbindung
+ueberwacht, muss auf die **Daten** schauen, nicht auf die Verbindung. Die
+Wache in `run_ws` tut genau das.
+
+**Vor dem Reparieren messen, wo es klemmt.** Bei denselben stillen Widgets
+lagen drei plausible Ursachen auf dem Tisch: Netz weg, Gegenstelle sperrt,
+Dienst haengt. Zehn Minuten Messung (curl ueber beide Familien, eine frische
+WebSocket-Verbindung daneben, `ss -tnp` auf Recv-Q) haben zwei davon
+ausgeschlossen und die dritte bewiesen. Ohne das waere ein Neustart als
+"Loesung" durchgegangen -- und der Fehler in einer Woche wieder da.
+
+**Der Emulator luegt beim Zeichnen.** Mit `swiftshader_indirect` schnitt er
+Kachelfeld und Kurvenfuellung schraeg an, mit `swangle_indirect` war alles
+sauber. Im Emulator beide Renderer fragen, bevor man Grafik beurteilt.
+
+**Ein Fenster, das groesser ist als der Bildschirm, sieht aus wie eine Seite,
+die nicht rollt.** Im Xvfb ohne Fenstermanager nimmt die Anwendung ihre
+Wunschgroesse; sichtbar ist nur der Ausschnitt. Beinahe waere daraus ein
+Befund "Einstellungen rollen nicht" geworden. Erst `contentHeight` gegen
+`height` gehalten hat es gezeigt.
+
+**Doppelte Schluessel sind stille Schluessel.** In `strings.js` standen
+`err.unreachable` und `err.unreadable` zweimal; JS nimmt den spaeteren, die
+erste Fassung war tot. Wer sie geaendert haette, haette nichts geaendert.
+
+**Was das Widget merkt, sind Texte, keine Zahlen.** `merke()` legt die
+fertigen Zeilen ab. Deshalb kann ein Widget ohne Netz nicht auf eine andere
+Waehrung umschreiben -- und deshalb steht dort "-- gerade nicht erreichbar"
+statt des Kurses von vor einer Minute. Das war meine falsche Vorhersage von
+heute Vormittag, am Geraet widerlegt.
+
 ### Und was ich selbst falsch gemacht habe
 
 - **Eine Korrektur gebaut, ohne die Ursache gemessen zu haben.** Die
@@ -124,6 +218,19 @@ zerlegen.
 - **Den ganzen Bildschirm des Anwenders abgelichtet**, statt nur das Fenster
   der Anwendung: `grim` nimmt den Arbeitsbereich, und der gehoert ihm.
   Seitdem laeuft die Sichtpruefung im Xvfb.
+- **Eine CPU-Messung gefahren, ohne nachzusehen, ob das Gemessene ueberhaupt
+  zu sehen war.** Die Zeigerbahn lag am Rand der Halde, der Tooltip ging nie
+  auf; zwei Laeufe waren wertlos. Seitdem gehoert ein Bild am Ende der
+  Messung dazu.
+- **Meinen eigenen Testserver verpfuscht**: in der WebSocket-Kennung fehlte
+  ein Zeichen, beide Proben brachen sofort ab. Ein Werkzeug, das nicht
+  geprueft ist, prueft nichts.
+- **In den Einstellungen des Telefons danebengetippt** und die Oberflaeche auf
+  Portugiesisch gestellt, statt die Waehrung zu wechseln. Auf fremden
+  Geraeten erst das Bild, dann der Finger.
+- **Eine Vorhersage in die offene Liste geschrieben, statt sie zu pruefen:**
+  "das Widget zeigt den alten Kurs mit neuem Zeichen". Am Geraet war es
+  anders. Eine Vermutung gehoert als Vermutung gekennzeichnet.
 
 ### Was sonst noch offen ist
 
@@ -222,6 +329,16 @@ zerlegen.
 
     curl -4 / -6 -m 10 https://mempool.space/api/blocks/tip/height
     ip route get <ziel>                       (welcher Weg, welches VPN)
+    Dienst nachsehen (Port 21021, nicht 8787):
+      curl -s http://127.0.0.1:21021/health
+      curl -s http://127.0.0.1:21021/state | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['seq'], d['source'], d['mempool']['count'])"
+      zweimal im Abstand messen -- steht `seq`, traegt der Draht nichts
+      an welchem Knoten er haengt:  ss -tnp | grep $(systemctl --user show orangedeck.service -p MainPID --value)
+      die Wache meldet sich:  journalctl --user -u orangedeck | grep schweigt
+    Eine frische Verbindung als Gegenprobe (zaehlt verschiedene TxIDs):
+      SourceFileLoader("od","daemon/orangedeck") -> WebSocket(mod.WS_URL, origin=...)
+      init + want senden, 60 s mitzaehlen; socket.getaddrinfo filtern
+      trennt IPv4 von IPv6
     tools/apk.sh [<tag|commit>]  ->  bash ~/Schreibtisch/orangedeck/tools/apk-signieren.sh <v>  (Anwender)
     Test-APKs neben dem Release:
       env ORANGEDECK_APK_DIR=$HOME/.local/share/orangedeck/auslieferung/geraetetest-<v> tools/apk.sh
@@ -232,6 +349,21 @@ zerlegen.
       zurueck:         adb shell dumpsys deviceidle unforce; adb shell dumpsys battery reset
     Widget-Protokoll:  adb logcat -d -v time | grep -E ' (I|W)/OrangeDeck'
     Galaxy: tabRotate ist an, die Ansicht wandert alle 30 s -- zuegig schauen
+    Zahnrad am Telefon:  adb shell input keyevent 55   (KEYCODE_COMMA)
+    Netz am Telefon aus und an:  adb shell svc wifi disable ; adb shell svc data disable
+      (hinterher beides enable -- und nachsehen, ob es wieder haengt)
+    Widget-Protokoll beim Ausfall:  adb logcat -d -v time | grep -E "I/OrangeDeck|W/OrangeDeck"
+    tools/ansichten-android.py: die Oberflaeche muss auf **Englisch** stehen,
+      hinterher zurueck auf Systemsprache. Laeuft rund sieben Minuten.
+    Emulator (Android 11):
+      Bau fuer x86_64 mit dem passenden Qt-Satz --
+        export ANDROID_NDK_ROOT=$(ls -d $HOME/Android/sdk/ndk/* | sort -V | tail -1)
+        ~/Qt/6.11.2/android_x86_64/bin/qt-cmake -S . -B build-android-x86_64 \
+            -DQT_ANDROID_ABIS=x86_64 -DQT_HOST_PATH=/usr -DQT_HOST_PATH_CMAKE_DIR=/usr/lib/cmake ...
+        cmake --build build-android-x86_64 --target apk -j8
+      mit dem Debug-Schluessel signieren (~/.android/debug.keystore, Passwort android)
+      emulator -avd orangedeck-api30 -no-window -no-audio -no-snapshot -gpu swangle_indirect
+      **beide Renderer fragen**: swiftshader_indirect schneidet Flaechen schraeg an
     Bildschirm des Telefons: adb exec-out screencap -p > bild.png (1080x2340)
     python3 tools/bauplan-pruefen.py        (der Pin ist Punkt 5, vor dem Tag)
     gh run list --limit 5    (CI nur auf main, nicht auf Tags)
@@ -273,6 +405,16 @@ zerlegen.
            sleep 70; python3 tools/xtest.py ... ; import -window root bild.png"
       eine Aufbereitung allein pruefen: DirectFeed { active: false } und die Funktion rufen
     qmllint: /usr/lib/qt6/bin/qmllint -I ui/qml [-I app/qml] <datei>
+    Fenstergroesse im Xvfb setzen (sonst ist das Fenster groesser als der
+      Bildschirm):  python3 -c 'import sys;sys.path.insert(0,"tools");import xtest;
+                    f=xtest.fenster_suchen();xtest.groesse(f,900,300)'
+    bitfeed ansehen, ohne den Desktop des Anwenders anzufassen:
+      xvfb-run -a --server-args="-screen 0 1200x700x24" bash -c "env -u WAYLAND_DISPLAY \
+        LIBGL_ALWAYS_SOFTWARE=1 kitty --config NONE -o remember_window_size=no \
+        -o initial_window_width=1198 -o initial_window_height=696 \
+        python3 cli/orangedeck-cli bitfeed & sleep 45; import -window root bild.png"
+    Das DMS-Plugin liest strings.js ueber den Symlink -- nach einer Aenderung
+      an shell/dms/: systemctl --user restart dms
     Dienst im Test laden:  SourceFileLoader("od", "daemon/orangedeck") -- die
       __main__-Wache haelt ihn an, Feed() laesst sich einzeln pruefen
     laeuft ein Prozess:  ps -C <name>   (nicht pgrep -f)
