@@ -339,7 +339,20 @@ Grid {
                 }
             }
 
+            // **Keine Ueberschrift ueber einer Flaeche, die leer bleibt.** Am
+            // 18.09.2026 am Galaxy gesehen: "Eingehende Transaktionen" stand
+            // ueber nichts, und zwar dauerhaft. Die Kurve zeichnet
+            // `stats.inflow`, und das schreibt allein der Dienst mit
+            // (`sample_stats`). Ohne Dienst ist die Reihe nicht zu haben: der
+            // Direktbezug muesste sie aus der laufenden Nummer rechnen, und
+            // die steht still, weil mempool.space ueber den Draht immer
+            // wieder dieselben sechs Transaktionen schickt -- gemessen ueber
+            // 200 s, `seq` blieb bei 10. Also zeigt die Kachel dort nur ihre
+            // drei Zahlen, statt eine Kurve anzukuendigen, die nicht kommt.
+            readonly property bool hatZulauf: (root.stats.inflow || []).length >= 2
+
             Text {
+                visible: parent.hatZulauf
                 text: Tr.t("mempool.incoming", root.lang)
                 color: root.dimColor
                 font.pixelSize: root.uiFont * 0.78
@@ -347,6 +360,8 @@ Grid {
 
             Canvas {
                 id: inflow
+
+                visible: parent.hatZulauf
 
                 width: parent.width
                 // Nimmt, was die Tafel uebrig laesst
