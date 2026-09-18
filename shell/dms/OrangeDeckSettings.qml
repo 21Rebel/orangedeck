@@ -2,6 +2,7 @@ import QtQuick
 import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
+import "strings.js" as Tr
 
 // Einstellungen des Plugins in DMS.
 //
@@ -13,56 +14,71 @@ import qs.Modules.Plugins
 // DMS legt jede Desktop-Widget-Instanz getrennt ab. Wer den Feed dreimal aufs
 // Desktop legt, kann jedem Fenster eine andere Ansicht geben.
 PluginSettings {
+    id: seite
+
     pluginId: "orangedeck"
+
+    // **Dieselbe Sprache wie die Ansichten.** Bis zum 18.09.2026 stand diese
+    // Seite als einzige nur auf Deutsch da, waehrend nebenan dreizehn
+    // Sprachen liefen. Der Wert liegt in derselben Ablage wie alle anderen
+    // Einstellungen des Plugins; leer heisst "die des Systems", genau wie in
+    // `FeedTabs.qml`.
+    readonly property string lang: (seite.pluginService
+        ? String(seite.pluginService.loadPluginData("orangedeck", "lang", "") || "")
+        : "") || Tr.systemLang()
+
+    function t(schluessel) {
+        return Tr.t(schluessel, seite.lang);
+    }
 
     SelectionSetting {
         settingKey: "widgetView"
-        label: "Ansicht des Desktop-Widgets"
-        description: "Jede Instanz kann eine andere zeigen — Feed, Uhr, Mining, Explorer oder die beobachteten Wallets."
+        label: seite.t("dms.widgetView")
+        description: seite.t("dms.widgetViewHelp")
         options: [
-            {label: "Feed", value: "feed"},
-            {label: "Uhr", value: "clock"},
-            {label: "Mining", value: "miner"},
-            {label: "Explorer", value: "explorer"},
-            {label: "Wallet", value: "wallet"}
+            {label: seite.t("tab.feed"), value: "feed"},
+            {label: seite.t("tab.clock"), value: "clock"},
+            {label: seite.t("tab.miner"), value: "miner"},
+            {label: seite.t("tab.explorer"), value: "explorer"},
+            {label: seite.t("tab.wallet"), value: "wallet"}
         ]
         defaultValue: "feed"
     }
 
     SelectionSetting {
         settingKey: "colorMode"
-        label: "Farbe nach"
-        description: "Alter: orange beim Eintreffen, blau nach 60 Sekunden (wie im Original). Gebühr: türkis bis violett nach sat/vByte. Art: eine Farbe je Transaktionsart."
+        label: seite.t("set.tileColor")
+        description: seite.t("set.tileColorHelp")
         options: [
-            {label: "Alter", value: "age"},
-            {label: "Gebührenrate", value: "fee"},
-            {label: "Art", value: "type"}
+            {label: seite.t("color.age"), value: "age"},
+            {label: seite.t("color.fee"), value: "fee"},
+            {label: seite.t("color.type"), value: "type"}
         ]
         defaultValue: "age"
     }
 
     SelectionSetting {
         settingKey: "sizeMode"
-        label: "Größe nach"
-        description: "Wert: jede Rasterstufe entspricht dem Zehnfachen an Ausgabewert. vBytes: Fläche nach Transaktionsgröße."
+        label: seite.t("set.tileMetric")
+        description: seite.t("set.tileMetricHelp")
         options: [
-            {label: "Ausgabewert", value: "value"},
-            {label: "vBytes", value: "vbytes"}
+            {label: seite.t("feed.sizeValue"), value: "value"},
+            {label: seite.t("feed.sizeVbytes"), value: "vbytes"}
         ]
         defaultValue: "value"
     }
 
     ToggleSetting {
         settingKey: "showInfo"
-        label: "Blockangaben"
-        description: "Höhe, Zeit, Gesamtwert, Größe und Ø-Gebühr des letzten Blocks"
+        label: seite.t("set.blockInfo")
+        description: seite.t("set.blockInfoHelp")
         defaultValue: true
     }
 
     ToggleSetting {
         settingKey: "showLegend"
-        label: "Legende"
-        description: "Größen- und Farbskala am rechten Rand"
+        label: seite.t("set.legend")
+        description: seite.t("set.legendHelp")
         defaultValue: true
     }
 
@@ -73,15 +89,15 @@ PluginSettings {
     // auch hier.
     ToggleSetting {
         settingKey: "frosted"
-        label: "Kästchen hinter der Schrift"
-        description: "Milchglas-Hintergrund hinter Kopfzeile, Blockangaben und Legende. Aus: Schrift steht direkt auf den Kacheln."
+        label: seite.t("set.blur")
+        description: seite.t("set.blurHelp")
         defaultValue: true
     }
 
     SliderSetting {
         settingKey: "desktopOpacity"
-        label: "Deckkraft Desktop-Widget"
-        description: "Hintergrund des Desktop-Widgets, 0 % blendet ihn ganz aus"
+        label: seite.t("dms.desktopOpacity")
+        description: seite.t("dms.desktopOpacityHelp")
         defaultValue: 70
         minimum: 0
         maximum: 100
@@ -90,8 +106,8 @@ PluginSettings {
 
     SliderSetting {
         settingKey: "tileDensity"
-        label: "Kachelgröße"
-        description: "Größer = weniger, dafür gröbere Kacheln"
+        label: seite.t("set.tileSize")
+        description: seite.t("set.tileSizeHelp")
         defaultValue: 100
         minimum: 60
         maximum: 250

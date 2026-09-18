@@ -12,9 +12,17 @@ import Quickshell.Io
 import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
+import "strings.js" as Tr
 
 PluginComponent {
     id: root
+
+    // Dieselbe Sprache wie die Ansichten darin; leer heisst die des Systems.
+    readonly property string lang: String(root.get("lang", "") || "") || Tr.systemLang()
+
+    function t(schluessel, a0, a1) {
+        return Tr.t(schluessel, root.lang, a0, a1);
+    }
 
     property string windowCommand: Quickshell.env("HOME") + "/.local/bin/orangedeck-window"
     readonly property string pid: "orangedeck"
@@ -171,7 +179,8 @@ PluginComponent {
     // ------------------------------------------------ Control-Center-Kachel
     ccWidgetIcon: "currency_bitcoin"
     ccWidgetPrimaryText: "Bitcoin"
-    ccWidgetSecondaryText: feedState.online ? root.grp(feedState.mempoolCount) + " im Mempool" : "Feed offline"
+    ccWidgetSecondaryText: feedState.online
+        ? root.t("feed.inMempool", root.grp(feedState.mempoolCount)) : root.t("dms.offline")
     ccWidgetIsActive: feedState.online
 
     ccDetailContent: Component {
@@ -259,14 +268,16 @@ PluginComponent {
             id: popout
 
             headerText: "OrangeDeck"
-            detailsText: feedState.online ? "Block " + root.grp(feedState.tipHeight) + " · " + root.grp(feedState.mempoolCount) + " Transaktionen im Mempool" : "Feed offline – orangedeck läuft nicht"
+            detailsText: feedState.online
+                ? root.t("dms.details", root.grp(feedState.tipHeight), root.grp(feedState.mempoolCount))
+                : root.t("dms.offlineHint")
             showCloseButton: true
 
             headerActions: Component {
                 DankActionButton {
                     iconName: "open_in_new"
                     buttonSize: 30
-                    tooltipText: "In eigenem Fenster öffnen"
+                    tooltipText: root.t("dms.ownWindow")
                     onClicked: {
                         root.openInWindow();
                         if (popout.closePopout)
