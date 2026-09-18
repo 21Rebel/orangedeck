@@ -347,13 +347,25 @@ Grid {
             // Direktbezug muesste sie aus der laufenden Nummer rechnen, und
             // die steht still, weil mempool.space ueber den Draht immer
             // wieder dieselben sechs Transaktionen schickt -- gemessen ueber
-            // 200 s, `seq` blieb bei 10. Also zeigt die Kachel dort nur ihre
-            // drei Zahlen, statt eine Kurve anzukuendigen, die nicht kommt.
+            // 200 s, `seq` blieb bei 10.
+            //
+            // Statt der Ueberschrift steht dort deshalb ein Satz, der sagt,
+            // warum nichts kommt -- wie bei den Liquidationen, wo der
+            // Leertext auch die Ursache nennt und nicht nur die Leere.
             readonly property bool hatZulauf: (root.stats.inflow || []).length >= 2
 
             Text {
                 visible: parent.hatZulauf
                 text: Tr.t("mempool.incoming", root.lang)
+                color: root.dimColor
+                font.pixelSize: root.uiFont * 0.78
+            }
+
+            Text {
+                visible: !parent.hatZulauf
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: Tr.t("mempool.noInflow", root.lang)
                 color: root.dimColor
                 font.pixelSize: root.uiFont * 0.78
             }
