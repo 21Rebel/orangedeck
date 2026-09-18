@@ -842,7 +842,13 @@ Item {
                 root.__slow();
             } else if (sock.status === WebSocket.Error) {
                 root.__source = "offline";
-                root.__error = sock.errorString || "Verbindung gestoert";
+                // **Qts Fehlertext gehoert ins Protokoll, nicht auf den
+                // Bildschirm.** Er ist englisch ("Connection refused"),
+                // unuebersetzt und sagt dem Ablesenden nichts, was er tun
+                // koennte. Die Oberflaeche uebersetzt nur, was sie kennt.
+                if (sock.errorString)
+                    console.log("WebSocket:", sock.errorString);
+                root.__error = "Verbindung gestoert";
                 root.__dirty = true;
             } else if (sock.status === WebSocket.Closed) {
                 root.__source = "offline";

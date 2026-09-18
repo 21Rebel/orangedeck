@@ -744,8 +744,10 @@ var S = {
     "unit.byte": ["{0} Byte", "{0} bytes", "{0} bytes", "{0} octets", "{0} byte", "{0} bytes", "{0} bytes", "{0} байт", "{0} バイト", "{0} 字节", "{0} bytes", "{0} bajtów", "{0} bajtů"],
     "tx.nIn": ["{0} Eingänge", "{0} inputs", "{0} entradas", "{0} entrées", "{0} ingressi", "{0} entradas", "{0} invoeren", "{0} входов", "入力 {0} 件", "{0} 个输入", "{0} entradas", "{0} wejść", "{0} vstupů"],
     "tx.nOut": ["{0} Ausgänge", "{0} outputs", "{0} salidas", "{0} sorties", "{0} uscite", "{0} saídas", "{0} uitvoeren", "{0} выходов", "出力 {0} 件", "{0} 个输出", "{0} saídas", "{0} wyjść", "{0} výstupů"],
-    "err.unreadable": ["Antwort nicht lesbar", "Response not readable", "Respuesta ilegible", "Réponse illisible", "Risposta illeggibile", "Resposta ilegível", "Antwoord onleesbaar", "Ответ нечитаем", "応答を解釈できません", "响应无法解析", "Resposta ilegível", "Odpowiedź nieczytelna", "Odpověď nelze přečíst"],
-    "err.unreachable": ["nicht erreichbar", "not reachable", "no accesible", "injoignable", "non raggiungibile", "inacessível", "niet bereikbaar", "недоступно", "接続できません", "无法连接", "inacessível", "niedostępny", "nedostupné"],
+    // Die beiden Gruende "err.unreachable" und "err.unreadable" standen bis
+    // zum 18.09.2026 zweimal in dieser Tabelle, hier und unten unter
+    // "Gruende". JS nimmt bei doppelten Schluesseln den spaeteren, die
+    // Fassung hier war also tot -- und wer sie aenderte, aenderte nichts.
     "wallet.cmdList": ["orangedeck --watch-list       zeigt, was eingetragen ist", "orangedeck --watch-list       shows what is configured", "orangedeck --watch-list       muestra lo configurado", "orangedeck --watch-list       montre la configuration", "orangedeck --watch-list       mostra la configurazione", "orangedeck --watch-list       mostra o que está configurado", "orangedeck --watch-list       toont wat is ingesteld", "orangedeck --watch-list       показывает настроенное", "orangedeck --watch-list       設定内容を表示", "orangedeck --watch-list       显示已配置内容", "orangedeck --watch-list       mostra o que está configurado", "orangedeck --watch-list       pokazuje, co jest ustawione", "orangedeck --watch-list       ukáže, co je nastaveno"],
     "wallet.cmdRemove": ["orangedeck --watch-remove 1  nimmt einen Eintrag heraus", "orangedeck --watch-remove 1  removes an entry", "orangedeck --watch-remove 1  elimina una entrada", "orangedeck --watch-remove 1  supprime une entrée", "orangedeck --watch-remove 1  rimuove una voce", "orangedeck --watch-remove 1  remove uma entrada", "orangedeck --watch-remove 1  verwijdert een item", "orangedeck --watch-remove 1  удаляет запись", "orangedeck --watch-remove 1  項目を削除", "orangedeck --watch-remove 1  移除一条记录", "orangedeck --watch-remove 1  remove uma entrada", "orangedeck --watch-remove 1  usuwa wpis", "orangedeck --watch-remove 1  odebere záznam"],
     "wallet.cmdRestart": ["systemctl --user restart orangedeck   übernimmt die Änderung", "systemctl --user restart orangedeck   applies the change", "systemctl --user restart orangedeck   aplica el cambio", "systemctl --user restart orangedeck   applique la modification", "systemctl --user restart orangedeck   applica la modifica", "systemctl --user restart orangedeck   aplica a alteração", "systemctl --user restart orangedeck   past de wijziging toe", "systemctl --user restart orangedeck   применяет изменение", "systemctl --user restart orangedeck   変更を反映", "systemctl --user restart orangedeck   应用更改", "systemctl --user restart orangedeck   aplica a alteração", "systemctl --user restart orangedeck   stosuje zmianę", "systemctl --user restart orangedeck   použije změnu"],
@@ -814,6 +816,15 @@ var S = {
     "err.notInDirect": ["im Direktbezug nicht verfügbar", "not available with the direct connection", "no disponible con la conexión directa", "indisponible en connexion directe", "non disponibile con la connessione diretta", "indisponível com a ligação direta", "niet beschikbaar bij directe verbinding", "недоступно при прямом подключении", "直接接続では利用できません", "直连模式下不可用", "indisponível com a conexão direta", "niedostępne przy połączeniu bezpośrednim", "při přímém připojení nedostupné"],
     "err.noWebSockets": ["Direktbezug nicht verfügbar (QtWebSockets fehlt)", "direct connection unavailable (QtWebSockets missing)", "conexión directa no disponible (falta QtWebSockets)", "connexion directe indisponible (QtWebSockets manquant)", "connessione diretta non disponibile (manca QtWebSockets)", "ligação direta indisponível (falta QtWebSockets)", "directe verbinding niet beschikbaar (QtWebSockets ontbreekt)", "прямое подключение недоступно (нет QtWebSockets)", "直接接続は利用できません（QtWebSockets がありません）", "直连不可用（缺少 QtWebSockets）", "conexão direta indisponível (falta QtWebSockets)", "połączenie bezpośrednie niedostępne (brak QtWebSockets)", "přímé připojení nedostupné (chybí QtWebSockets)"],
     "err.incomplete": ["Abfrage unvollständig", "query incomplete", "consulta incompleta", "requête incomplète", "richiesta incompleta", "consulta incompleta", "opvraging onvolledig", "запрос неполный", "取得が不完全です", "查询不完整", "consulta incompleta", "zapytanie niepełne", "dotaz neúplný"],
+    "err.notFound": ["nicht gefunden", "not found", "no encontrado", "introuvable", "non trovato", "não encontrado", "niet gevonden", "не найдено", "見つかりません", "未找到", "não encontrado", "nie znaleziono", "nenalezeno"],
+    "err.tooMany": ["zu viele Abfragen", "too many requests", "demasiadas consultas", "trop de requêtes", "troppe richieste", "demasiados pedidos", "te veel opvragingen", "слишком много запросов", "要求が多すぎます", "请求过多", "demasiadas consultas", "za dużo zapytań", "příliš mnoho dotazů"],
+    "err.badInput": ["unzulässige Eingabe", "invalid input", "entrada no válida", "saisie non valide", "immissione non valida", "entrada inválida", "ongeldige invoer", "недопустимый ввод", "入力が不正です", "输入无效", "entrada inválida", "nieprawidłowe dane", "neplatný vstup"],
+    "err.feedDown": ["Dienst läuft nicht", "service not running", "el servicio no está en marcha", "le service ne tourne pas", "il servizio non è in esecuzione", "o serviço não está a correr", "dienst draait niet", "служба не запущена", "サービスが動いていません", "服务未运行", "o serviço não está em execução", "usługa nie działa", "služba neběží"],
+    "err.noServerAnswer": ["keine Antwort vom Server", "no response from the server", "el servidor no responde", "pas de réponse du serveur", "nessuna risposta dal server", "sem resposta do servidor", "geen antwoord van de server", "сервер не отвечает", "サーバーから応答がありません", "服务器无响应", "sem resposta do servidor", "brak odpowiedzi serwera", "server neodpovídá"],
+    "err.noTxList": ["keine Transaktionsliste", "no transaction list", "sin lista de transacciones", "pas de liste de transactions", "nessun elenco di transazioni", "sem lista de transações", "geen transactielijst", "нет списка транзакций", "トランザクション一覧がありません", "没有交易列表", "sem lista de transações", "brak listy transakcji", "žádný seznam transakcí"],
+    "err.noDataYet": ["noch keine Daten", "no data yet", "aún sin datos", "pas encore de données", "ancora nessun dato", "ainda sem dados", "nog geen gegevens", "данных пока нет", "まだデータがありません", "暂无数据", "ainda sem dados", "brak danych", "zatím žádná data"],
+    "err.unknownQuery": ["unbekannte Abfrage", "unknown query", "consulta desconocida", "requête inconnue", "richiesta sconosciuta", "consulta desconhecida", "onbekende opvraging", "неизвестный запрос", "不明な取得です", "未知查询", "consulta desconhecida", "nieznane zapytanie", "neznámý dotaz"],
+    "err.linkBroken": ["Verbindung gestört", "connection broken", "conexión interrumpida", "connexion interrompue", "connessione interrotta", "ligação interrompida", "verbinding verbroken", "соединение разорвано", "接続が切れました", "连接中断", "ligação interrompida", "połączenie przerwane", "spojení přerušeno"],
     "err.unknownPath": ["unbekannter Pfad", "unknown path", "ruta desconocida", "chemin inconnu", "percorso sconosciuto", "caminho desconhecido", "onbekend pad", "неизвестный путь", "不明なパス", "未知路径", "caminho desconhecido", "nieznana ścieżka", "neznámá cesta"],
 
     // Die Tastenhilfe, die nach einem Tastendruck kurz eingeblendet wird. Bis
@@ -836,7 +847,19 @@ var GRUENDE = {
     "im Direktbezug nicht verfuegbar": "err.notInDirect",
     "Direktbezug nicht verfuegbar (QtWebSockets fehlt)": "err.noWebSockets",
     "Abfrage unvollstaendig": "err.incomplete",
-    "unbekannter Pfad": "err.unknownPath"
+    "unbekannter Pfad": "err.unknownPath",
+    // Seit dem 18.09.2026 schickt der Dienst nur noch diese kurzen Gruende,
+    // nicht mehr `str(e)`. Die technische Fassung steht in seinem Protokoll.
+    "nicht gefunden": "err.notFound",
+    "zu viele Abfragen": "err.tooMany",
+    "unzulaessige Eingabe": "err.badInput",
+    "Feed laeuft nicht": "err.feedDown",
+    "keine Antwort vom Server": "err.noServerAnswer",
+    "keine Transaktionsliste": "err.noTxList",
+    // Aus dem Direktbezug, wo es keinen Dienst gibt, der uebersetzen koennte.
+    "noch keine Daten": "err.noDataYet",
+    "unbekannte Abfrage": "err.unknownQuery",
+    "Verbindung gestoert": "err.linkBroken"
 };
 
 function grund(text, lang) {

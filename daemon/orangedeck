@@ -46,6 +46,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
@@ -2235,6 +2236,34 @@ LOOKUP_ROUTES = (
 )
 
 
+def fehlergrund(e):
+    """Aus einer Ausnahme einen kurzen Grund machen, den die Oberflaeche kennt.
+
+    **Warum ueberhaupt.** Bis zum 18.09.2026 ging `str(e)` unveraendert an die
+    Anwendung und stand dort auf dem Bildschirm: "HTTP Error 429: Too Many
+    Requests", "<urlopen error [Errno -3] Temporary failure in name
+    resolution>". Das ist Python-Deutsch, in keiner Sprache uebersetzt und
+    fuer den Ablesenden ohne Wert. Die Oberflaeche uebersetzt, was sie kennt
+    (`GRUENDE` in `strings.js`), und kennt nur kurze Gruende.
+
+    Die technische Fassung geht nicht verloren, sie geht ins Protokoll -- dort
+    gehoert sie hin, und dort steht sie mit Zeitstempel."""
+    sys.stderr.write("Abfrage gescheitert: %r\n" % (e,))
+    if isinstance(e, urllib.error.HTTPError):
+        if e.code == 404:
+            return "nicht gefunden"
+        if e.code == 429:
+            return "zu viele Abfragen"
+        return "nicht erreichbar"
+    # `socket.timeout` ist seit 3.10 `TimeoutError`; beides kommt vor, je
+    # nachdem, wer wirft.
+    if isinstance(e, (TimeoutError, socket.timeout)):
+        return "keine Antwort"
+    if "timed out" in str(e):
+        return "keine Antwort"
+    return "nicht erreichbar"
+
+
 def lookup(kind, arg):
     """Eine Abfrage nach draussen, gepuffert. Gibt (Text, Fehler) zurueck."""
     for name, pattern, path in LOOKUP_ROUTES:
@@ -2296,7 +2325,7 @@ def lookup(kind, arg):
             try:
                 data = summarize_block(arg)
             except Exception as e:
-                return None, (str(e), 502)
+                return None, (fehlergrund(e), 502)
             if not data:
                 return None, ("keine Transaktionsliste", 502)
             body = json.dumps(data, separators=(",", ":"))
@@ -2320,7 +2349,7 @@ def lookup(kind, arg):
             with urllib.request.urlopen(req, timeout=12) as r:
                 body = r.read().decode()
         except Exception as e:
-            return None, (str(e), 502)
+            return None, (fehlergrund(e), 502)
         # `/block-height/<n>` antwortet mit dem blanken Hash, nicht mit JSON.
         # Weitergereicht scheiterte die Oberflaeche daran ("Antwort nicht
         # lesbar") -- die Suche nach einer Blockhoehe war damit unbrauchbar.
@@ -2649,7 +2678,7 @@ class _Handler(BaseHTTPRequestHandler):
             pass
         except Exception as e:
             try:
-                self._send(json.dumps({"error": str(e)}), 500)
+                self._send(json.dumps({"error": fehlergrund(e)}), 500)
             except Exception:
                 pass
 
