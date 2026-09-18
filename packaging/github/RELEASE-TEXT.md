@@ -91,16 +91,16 @@ This pulls the KDE runtime 6.9 from Flathub. All six views are included on Linux
 
 ## Tested on
 
-- PLATZHALTER Galaxy (Punkt 2 der Pruefliste)
-- PLATZHALTER Windows-VM (Punkt 3)
-- PLATZHALTER Ubuntu und Fedora (Punkt 4)
+- Samsung Galaxy A55 with Android 16, this signed APK installed over the build before it: clock and explorer with live data, and the list of recently seen transactions held twelve different entries right after the start and twelve different ones again four minutes later. Liquidations with the text for an empty range, long/short from all three exchanges and the widgets after a night in standby were seen on an earlier build of this release, not on this file.
+- Windows 11 25H2 in a VM, this ZIP, with the settings left over from 0.2.10 (direct data source, wallet switched off): feed, clock, mining, explorer and market with data, no wallet tab and no service settings, the comma key and Esc, End jumps to the end of a page, a widget that stays on the desktop with Win+D, and Q closes window and widget. The list of recently seen transactions held six and later twelve different entries. No new detection from Defender.
+- This Flatpak bundle, freshly installed in live sessions of Ubuntu 24.04 with GNOME and Fedora 44 with KDE: all five views with live data, liquidations with long/short from all three exchanges, and the settings with the comma key. Under Ubuntu, End and Home moved the explorer page.
 - Not tested yet: macOS, real tablets, and display scaling above 100% on Windows. If something looks wrong, please open an issue.
 
 ## Checksums (SHA-256)
 
-    PLATZHALTER  orangedeck-0.2.11-windows-x86_64.zip
-    PLATZHALTER  orangedeck-0.2.11-arm64-v8a.apk
-    PLATZHALTER  orangedeck-0.2.11.flatpak
+    36435c6ff108180651cabe75bd367b471b64a07099929398058bde588f3b1872  orangedeck-0.2.11-windows-x86_64.zip
+    7156ac36fb4a2e406bb09cca7107f7be7e6937b4efb6cb52fc1fc590008b0496  orangedeck-0.2.11-arm64-v8a.apk
+    75004738913d56123b53f828a76c6143eb548138105c71067bb6cdaf23158a6b  orangedeck-0.2.11.flatpak
 
 ---
 
