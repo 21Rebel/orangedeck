@@ -155,10 +155,27 @@ zerlegen.
    gemessen und verworfen: die Einstellungsdatei wird **nicht** verzoegert
    geschrieben (`currency=eur` stand nach 1,0 s darin), und `currency` haengt
    seit `dbcf204` am Wecker in `main.cpp`.
-   **Noch offen, mit dem Telefon in zwei Minuten zu pruefen:** Waehrung
-   umstellen, waehrend das Netz weg ist -- das Widget muss jetzt mit dem alten
-   Kurs, aber dem neuen Zeichen neu zeichnen.
-5. **`tools/ansichten-android.py`** mit KEYCODE_COMMA am Galaxy.
+   **Am 18.09.2026 am Geraet nachgeholt, und meine Erwartung war falsch:**
+   Netz aus (`svc wifi disable`, `svc data disable`), Waehrung von Euro auf
+   Dollar. Die Widgets zeichnen dann **nicht** den alten Kurs mit neuem
+   Zeichen, sondern alle funf "-- gerade nicht erreichbar". Im Protokoll
+   steht, warum: `UnknownHostException` und "Versuch 1 in 1 min, sobald Netz
+   da ist". Kaum war das Netz zurueck, kam "Widget nachholen" fuer alle acht
+   Arten, und sie standen auf Dollar. Der Anstoss kommt also an, das
+   Nachholen aus 0.2.11 traegt -- und am 15.09. um 12:55 konnte der Bau von
+   08:30 schlicht nicht zeichnen.
+5. ~~`tools/ansichten-android.py` mit KEYCODE_COMMA am Galaxy~~ **gelaufen**
+   (18.09.2026): 33 Bilder, alle Ansichten und die Unterreiter der
+   Einstellungen; der Weg ueber die Komma-Taste oeffnet das Zahnrad am Geraet.
+   Drei Zeilen standen im Protokoll, und nur eine war eine Luecke im Werkzeug:
+   die Reiterzeile der Einstellungen ist breiter als der Bildschirm, "Market"
+   stand rechts ausserhalb. Das Werkzeug schiebt sie jetzt weiter und findet
+   ihn (und tippt keine angeschnittenen Reiter mehr an). "Network" fehlt zu
+   Recht -- die Netzwerkseite ist an diesem Telefon in den Einstellungen
+   abgeschaltet --, "Wallet" gibt es unter Android nicht mehr.
+   **Fuer den naechsten Lauf:** die Oberflaeche muss dafuer auf Englisch
+   stehen (das Werkzeug sucht englische Woerter), hinterher zurueck auf
+   Systemsprache.
 6. **Ungeprueft:** 600 MB im Markt unter Windows, README-Startzeile in Win+R,
    Skalierung ueber 100 %, SmartScreen. **macOS** ganz.
 7. **`bitfeed`**: am 18.09.2026 zum ersten Mal **gesehen**, in kitty im Xvfb
@@ -189,7 +206,17 @@ zerlegen.
    schraeg an. Mit `-gpu swangle_indirect` ist alles sauber -- es ist der
    Renderer, nicht die Anwendung. Wer im Emulator etwas Grafisches beurteilt,
    prueft beide.
-9. **Idee fuer spaeter**: Wallet direkt auf dem Telefon.
+9. **Widgets werfen gute Zahlen weg, wenn ein Abruf scheitert.** Am
+   18.09.2026 beim Nachweis zu Punkt 4 gesehen: schlaegt der Abruf fehl,
+   setzt `DeckWidget` `{"--", offline}` und zeichnet das -- der zuletzt
+   geholte Stand liegt daneben in `widget_stand` und wird nicht benutzt. Auf
+   dem Startbildschirm standen dadurch fuenf Kacheln ohne eine einzige Zahl,
+   obwohl der Kurs von vor einer Minute bekannt war. Ein Vorschlag waere: den
+   gemerkten Stand weiter zeigen und das Alter dazuschreiben, und "-- gerade
+   nicht erreichbar" nur, wenn es nichts Gemerktes gibt. Das ist eine
+   Geschmacksfrage der Anzeige, keine Korrektur -- deshalb hier und nicht
+   gebaut.
+10. **Idee fuer spaeter**: Wallet direkt auf dem Telefon.
 
 ### Fuer den naechsten Lauf
 

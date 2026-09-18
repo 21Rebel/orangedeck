@@ -143,13 +143,35 @@ if tippe_auf("Explorer", max(0, ytab - 40), ytab + 40):
 adb("shell", "input", "keyevent", "55")
 time.sleep(5)
 gerollt("06_einst", HOEHE)
+def unterreiter_suchen(text):
+    """Den Unterreiter finden, notfalls die Reiterzeile weiterschieben.
+
+    **Die Zeile ist laenger als der Bildschirm.** Am 18.09.2026 meldete das
+    Werkzeug am Galaxy "Unterreiter fehlt: Market" -- den Reiter gibt es, er
+    stand nur rechts ausserhalb des Bildes ("Ma..." am Rand). Wer nur das
+    Sichtbare durchsucht, haelt jeden Reiter dahinter fuer nicht vorhanden.
+    Geschoben wird auf der Hoehe der Zeile selbst, sonst rollt die Seite."""
+    y = ytab + 90
+    for versuch in range(4):
+        kand = [w for w in woerter(bild("_suche"), ytab + 20, ytab + 160)
+                if w[0].lower().startswith(text.lower())]
+        # Am Rand angeschnittene Reiter nicht antippen -- der Treffer waere
+        # halb ausserhalb, und getippt wird daneben.
+        kand = [w for w in kand if 40 < w[1] < BREITE - 40]
+        if kand:
+            return kand[0]
+        adb("shell", "input", "swipe", str(int(BREITE * 0.8)), str(y),
+            str(int(BREITE * 0.25)), str(y), "400")
+        time.sleep(1.5)
+    return None
+
+
 for i, text in enumerate(("Layout", "Feed", "Clock", "Mining", "Explorer", "Market", "Wallet")):
-    p = bild("_suche")
-    kand = [w for w in woerter(p, ytab + 20, ytab + 160) if w[0].lower().startswith(text.lower())]
-    if not kand:
+    treffer = unterreiter_suchen(text)
+    if not treffer:
         protokoll.append(f"Unterreiter fehlt: {text}")
         continue
-    x, y = kand[0][1], kand[0][2]
+    x, y = treffer[1], treffer[2]
     adb("shell", "input", "tap", str(x), str(y))
     time.sleep(2)
     gerollt(f"06{chr(ord('b') + i)}_{text.lower()}", HOEHE)
