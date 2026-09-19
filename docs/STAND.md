@@ -243,8 +243,32 @@ heute Vormittag, am Geraet widerlegt.
    "Untergrund weg" (581/602 gegen 478/489); der Aufwand steckt also in der
    Weichzeichnung selbst, nicht im Nachziehen bei Bewegung. Wer sparen will,
    muss an die Weichzeichnung -- und das ist das abgenommene Aussehen.
-2. **Flathub**: bei 0.2.6 ging der Antrag raus und war in einer Minute zu. Ob
-   es jetzt anders liefe, ist offen.
+2. **Flathub: vorerst nicht** (19.09.2026, mit dem Anwender entschieden).
+   Die Richtlinie verbietet, dass ein Agent den Antrag stellt oder seinen
+   Text schreibt, verlangt die Offenlegung der KI-Anteile (318 von 620
+   Commits) und Belege fuer echten Gebrauch -- das Repo ist 16 Tage alt, ohne
+   Sterne und Issues. #10105 traegt "AI Slop"; der Bot bittet, dort zu
+   kommentieren statt neu einzureichen. Bei Verstoessen droht ein dauerhafter
+   Ausschluss. Fruehestens in einigen Monaten, und dann schreibt der Anwender
+   selbst. `packaging/flathub/PR-TEXT.md` ist von mir und damit unbrauchbar.
+   **Android statt dessen:** IzzyOnDroid lehnt KI-geschriebene Apps
+   ausdruecklich ab ("Vibe-coded apps will be rejected"). F-Droids Hauptrepo
+   hat keine KI-Regel, baut aber selbst -- Qt fuer Android muesste dort aus
+   dem Quelltext entstehen. Google Play: 25 $, Ausweis, 12 Tester ueber 14
+   Tage; Aurora Store kommt dann von selbst. **Gebaut ist ein eigenes
+   F-Droid-Repo** (`tools/fdroid-repo.sh`, `packaging/fdroid/`), getestet mit
+   dem F-Droid-Client am Galaxy ueber `adb reverse`. Es wird mit **0.2.12**
+   oeffentlich, der ersten Fassung mit gepackten Bibliotheken (23 statt 57 MB).
+   Fehlt: das Repo `21Rebel/orangedeck-fdroid` samt GitHub Pages (legt der
+   Anwender an), Handy-Bildschirmfotos in den Metadaten, der Download-Bereich
+   auf orangedeck.dev mit Hinweis auf Obtainium und das Repo.
+   **Der Schluessel des Repos** liegt in `~/.local/share/orangedeck/fdroid/`
+   (`keystore.p12`, Passwoerter in `config.yml`), Fingerabdruck
+   `06E62F14...91DC4C59`. Geht er verloren, muss jeder Nutzer das Repo neu
+   eintragen -- er gehoert in die Sicherung.
+   **Und Google verlangt ab 30.09.2026** in vier Laendern, ab 2027 weltweit,
+   einen registrierten Entwickler fuer jede App auf zertifizierten
+   Telefonen, auch ausserhalb von Play.
 3. ~~Rollen in den Einstellungen~~ **nachgewiesen** (18.09.2026): in einem
    900x300 grossen Fenster rollt die Seite "Darstellung" mit dem Rad und mit
    Bild ab bis zum 6. Reiter. Der Punkt stand nur offen, weil die Seite bis

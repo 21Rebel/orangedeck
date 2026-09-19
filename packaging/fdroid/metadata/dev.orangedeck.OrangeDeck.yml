@@ -1,0 +1,23 @@
+# F-Droid-Metadaten fuer das eigene Repo (tools/fdroid-repo.sh).
+# Kein Bau durch F-Droid: das Repo verteilt die APKs aus den GitHub-Releases,
+# signiert mit dem Schluessel des Anwenders. Texte wie in
+# packaging/flatpak/dev.orangedeck.OrangeDeck.metainfo.xml.
+Categories:
+  - Money
+  - Internet
+License: MIT
+AuthorName: 21Rebel
+WebSite: https://orangedeck.dev
+SourceCode: https://github.com/21Rebel/orangedeck
+IssueTracker: https://github.com/21Rebel/orangedeck/issues
+Changelog: https://github.com/21Rebel/orangedeck/releases
+
+# Der Markt-Reiter liest Trades von Binance und Bybit. Das sind geschlossene
+# Dienste, und F-Droid verlangt, das zu sagen. mempool.space selbst ist
+# quelloffen (AGPL) und faellt nicht darunter.
+AntiFeatures:
+  NonFreeNet:
+    en-US: The market tab reads public trade data from Binance and Bybit.
+    de: Der Markt-Reiter liest öffentliche Handelsdaten von Binance und Bybit.
+
+Name: OrangeDeck
