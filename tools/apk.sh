@@ -63,6 +63,16 @@ APK="$BAUM/build-android/android-build/build/outputs/apk/release/android-build-r
 # **Nachsehen, nicht glauben.** Ein APK ohne TLS sieht aus wie eines mit.
 n=$(unzip -l "$APK" | grep -cE "libssl|libcrypto" || true)
 [ "$n" -ge 2 ] || { echo "APK OHNE TLS ($n Bibliotheken) -- nicht ausliefern"; exit 1; }
+# **Und die Groesse.** Seit dem 19.09.2026 sind die Bibliotheken gepackt
+# (QT_ANDROID_LEGACY_PACKAGING in CMakeLists.txt), rund 20 statt 57 MB.
+# Cloudflare Pages nimmt hoechstens 25 MiB je Datei, und dort soll das
+# F-Droid-Repo liegen. Aeltere Staende (tools/apk.sh v0.2.0) sind noch
+# ungepackt; fuer sie nur ein Hinweis.
+groesse=$(stat -c %s "$APK")
+if [ "$groesse" -gt $((25 * 1024 * 1024)) ]; then
+    echo "APK ist $((groesse / 1048576)) MiB gross, erlaubt sind 25 -- sind die Bibliotheken gepackt?"
+    [ -n "$STAND" ] || exit 1
+fi
 fassung=$(unzip -p "$APK" AndroidManifest.xml | strings -el | grep -oE "^[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
 
 mkdir -p "$ZIEL"

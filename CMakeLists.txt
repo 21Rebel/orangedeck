@@ -164,6 +164,16 @@ if(ANDROID)
     set_property(TARGET orangedeck-app PROPERTY
         QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
 
+    # **Die Bibliotheken gepackt, nicht roh.** Ohne das legt Gradle ab
+    # minSdk 23 jede .so ungepackt ins APK, damit Android sie direkt aus der
+    # Datei laden kann. Bei uns sind das 50 von 57 MB. Gepackt sind es rund
+    # 20 MB -- nachgerechnet am 19.09.2026 am APK von 0.2.11. Das braucht ein
+    # eigenes F-Droid-Repo auf Cloudflare Pages (hoechstens 25 MiB je Datei),
+    # und jeder Download wird kleiner. Der Preis: Android entpackt die
+    # Bibliotheken bei der Installation, die App belegt danach etwas mehr
+    # Platz auf dem Telefon.
+    set_property(TARGET orangedeck-app PROPERTY QT_ANDROID_LEGACY_PACKAGING ON)
+
     # **Die Fassung steht im Manifest, und das ist hier nicht zu aendern.**
     # `QT_ANDROID_VERSION_NAME` und `..._CODE` wurden versucht: bei einem
     # eigenen `QT_ANDROID_PACKAGE_SOURCE_DIR` setzt androiddeployqt sie
