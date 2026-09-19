@@ -140,14 +140,8 @@ Item {
     // **Am Finger bleibt die Angabe stehen, bis man woanders hintippt.** Die
     // Kennung der Transaktion, deren Angabe gerade festgehalten wird; ein
     // zweiter Tipp auf dieselbe Kachel oeffnet sie im Explorer. Siehe den
-    // TapHandler unten.
+    // PointHandler unten.
     property string pinnedTxid: ""
-    // Was beim Loslassen festgehalten war, und wann. Der PointHandler raeumt
-    // beim Loslassen, der Tipp wertet danach aus -- in welcher Reihenfolge,
-    // regelt Qt, nicht wir. Nur ein Tipp in derselben Zehntelsekunde darf
-    // sich darauf berufen; nach einem Ziehen gilt es nicht mehr.
-    property string releasedTxid: ""
-    property real releasedAt: 0
     readonly property bool touchUi: Qt.platform.os === "android" || Qt.platform.os === "ios"
 
     // Eine Kachel wurde angetippt -- der Wirt entscheidet, was damit geschieht
@@ -533,6 +527,30 @@ Item {
                 return { "tx": bt, "rect": blockCanvas.hoverRectAt(sx, sy) };
         }
         return null;
+    }
+
+    // Ein Tipp am Finger: festhalten, oeffnen oder wegraeumen. Aufgerufen vom
+    // PointHandler, der den Tipp selbst erkennt (siehe dort).
+    function fingerTap(px, py) {
+        var h = hitAt(px, py);
+        var t = h && h.tx && h.tx.t ? String(h.tx.t) : "";
+        var vorher = pinnedTxid;
+        if (t !== "" && t === vorher) {
+            hoveredTx = null;
+            hoverRect = null;
+            pinnedTxid = "";
+            txActivated(t);
+        } else if (h) {
+            hoverX = px;
+            hoverY = py;
+            hoveredTx = h.tx;
+            hoverRect = h.rect;
+            pinnedTxid = t;
+        } else {
+            hoveredTx = null;
+            hoverRect = null;
+            pinnedTxid = "";
+        }
     }
 
     function clearHoverIfAway(sx, sy) {
@@ -1252,31 +1270,80 @@ Item {
             }
         }
 
+        // Nur fuer die Maus. Am Finger kommt `onExited` nach dem Loslassen
+        // doch, und zwar nach dem PointHandler unten: am 19.09.2026 im
+        // Emulator mitgeschnitten, er raeumte die gerade festgehaltene Angabe
+        // sofort wieder weg. Am Finger entscheidet allein der PointHandler.
         onExited: {
+            if (root.touchUi)
+                return;
             root.hoveredTx = null;
             root.hoverRect = null;
         }
 
         // **Auf dem Finger gibt es kein "verlassen".** Der Tooltip haengt an
         // `onPositionChanged` und wird von `onExited` weggeraeumt -- und das
-        // kommt auf Android beim Loslassen nicht: der Zeiger geht nicht
-        // hinaus, er hoert auf zu existieren. Der Tooltip blieb also stehen,
+        // kam am 08.09.2026 auf Android beim Loslassen nicht: der Zeiger geht
+        // nicht hinaus, er hoert auf zu existieren. (Am 19.09.2026 kam es im
+        // Emulator doch, nur spaeter; darauf verlassen wir uns in keiner
+        // Richtung, siehe `onExited`.) Der Tooltip blieb also stehen,
         // am 08.09.2026 quer ueber dem Umschalter. `acceptedButtons` ist hier
         // `NoButton`, ein `onReleased` gibt es also auch nicht.
         //
         // Dasselbe Muster wie der Explorer-Fokus am 04.09. und der Umschalter
         // heute: **was nur mit Zeiger einen Ausgang hat, hat auf dem Finger
         // keinen.** Der Handler liefert ihn nachtraeglich.
+        //
+        // **Und er erkennt den Tipp selbst.** Der TapHandler weiter unten
+        // bekommt am Finger nichts ab: am 19.09.2026 im Emulator mit
+        // Protokollzeilen gemessen, Druecken und Loslassen kamen hier an,
+        // dort weder `tapped` noch `singleTapped`. Ein Tipp tat am Telefon
+        // deshalb seit 0.2.10 nichts, und das Doppeltippen zum Zuruecksetzen
+        // ging nie. Hier also: kurz und ohne nennenswerte Bewegung ist ein
+        // Tipp, zwei davon kurz nacheinander an derselben Stelle ein
+        // Doppeltipp. Alles in einem Handler, in fester Reihenfolge.
         PointHandler {
-            enabled: Qt.platform.os === "android" || Qt.platform.os === "ios"
+            id: finger
+
+            enabled: root.touchUi
+            property point startPos
+            property point lastPos
+            property real startAt: 0
+            property real lastTapAt: 0
+            property point lastTapPos
+
+            onPointChanged: if (active) lastPos = point.position
             onActiveChanged: {
-                if (!active) {
-                    root.releasedTxid = root.pinnedTxid;
-                    root.releasedAt = Date.now();
+                if (active) {
+                    startPos = point.position;
+                    lastPos = point.position;
+                    startAt = Date.now();
+                    return;
+                }
+                var weit = Qt.styleHints.startDragDistance;
+                var dx = lastPos.x - startPos.x, dy = lastPos.y - startPos.y;
+                var tipp = Date.now() - startAt < 500 && dx * dx + dy * dy <= weit * weit;
+                if (!tipp) {
+                    // Gezogen oder lange gehalten: die Angabe loslassen.
                     root.hoveredTx = null;
                     root.hoverRect = null;
                     root.pinnedTxid = "";
+                    return;
                 }
+                var jetzt = Date.now();
+                var ddx = lastPos.x - lastTapPos.x, ddy = lastPos.y - lastTapPos.y;
+                if (jetzt - lastTapAt < Qt.styleHints.mouseDoubleClickInterval
+                        && ddx * ddx + ddy * ddy <= 4 * weit * weit) {
+                    lastTapAt = 0;
+                    root.hoveredTx = null;
+                    root.hoverRect = null;
+                    root.pinnedTxid = "";
+                    root.resetView();
+                    return;
+                }
+                lastTapAt = jetzt;
+                lastTapPos = lastPos;
+                root.fingerTap(lastPos.x, lastPos.y);
             }
         }
     }
@@ -1337,54 +1404,20 @@ Item {
         }
     }
 
-    // Mit der Maus oeffnet ein Klick die Transaktion unter dem Zeiger.
-    // Doppelt tippen stellt die Sicht wieder her.
-    //
-    // **Am Finger: erst ansehen, dann oeffnen.** Bis zum 19.09.2026 tat ein
-    // Tipp am Telefon gar nichts. Der PointHandler oben raeumt die Angabe
-    // beim Loslassen weg (08.09.2026, gegen einen Tooltip, der ewig stand),
-    // und das geschah, bevor der Tipp ausgewertet war: `hoveredTx` war dann
-    // schon leer. Jetzt prueft der Tipp selbst, was unter dem Finger liegt,
-    // und zwar erst nach dem Wegraeumen (`Qt.callLater`). Ein Tipp auf eine
-    // Kachel haelt ihre Angabe fest, ein zweiter auf dieselbe oeffnet sie im
-    // Explorer, ein Tipp daneben raeumt sie weg. Ziehen und Zoomen loesen
-    // keinen Tipp aus und lassen die Angabe los.
+    // Mit der Maus oeffnet ein Klick die Transaktion unter dem Zeiger,
+    // doppelt klicken stellt die Sicht wieder her. Am Finger macht beides
+    // der PointHandler in der MouseArea oben; hier wird der Finger
+    // ausgelassen, falls ein Geraet ihn doch einmal durchreicht.
     TapHandler {
-        onSingleTapped: function (eventPoint) {
-            if (!root.touchUi) {
-                if (root.hoveredTx && root.hoveredTx.t)
-                    root.txActivated(String(root.hoveredTx.t));
+        onSingleTapped: {
+            if (root.touchUi)
                 return;
-            }
-            var px = eventPoint.position.x, py = eventPoint.position.y;
-            var vorher = root.pinnedTxid !== "" ? root.pinnedTxid
-                       : (Date.now() - root.releasedAt < 100 ? root.releasedTxid : "");
-            Qt.callLater(function () {
-                var h = root.hitAt(px, py);
-                var t = h && h.tx && h.tx.t ? String(h.tx.t) : "";
-                if (t !== "" && t === vorher) {
-                    root.hoveredTx = null;
-                    root.hoverRect = null;
-                    root.pinnedTxid = "";
-                    root.txActivated(t);
-                } else if (h) {
-                    root.hoverX = px;
-                    root.hoverY = py;
-                    root.hoveredTx = h.tx;
-                    root.hoverRect = h.rect;
-                    root.pinnedTxid = t;
-                } else {
-                    root.hoveredTx = null;
-                    root.hoverRect = null;
-                    root.pinnedTxid = "";
-                }
-            });
+            if (root.hoveredTx && root.hoveredTx.t)
+                root.txActivated(String(root.hoveredTx.t));
         }
         onDoubleTapped: {
-            root.hoveredTx = null;
-            root.hoverRect = null;
-            root.pinnedTxid = "";
-            root.resetView();
+            if (!root.touchUi)
+                root.resetView();
         }
     }
 
