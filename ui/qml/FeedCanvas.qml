@@ -1294,8 +1294,8 @@ Item {
         // heute: **was nur mit Zeiger einen Ausgang hat, hat auf dem Finger
         // keinen.** Der Handler liefert ihn nachtraeglich.
         //
-        // **Und er erkennt den Tipp selbst.** Der TapHandler weiter unten
-        // bekommt am Finger nichts ab: am 19.09.2026 im Emulator mit
+        // **Und er erkennt den Tipp selbst.** Der TapHandler, der bis zum 19.09. unten stand,
+        // bekam am Finger nichts ab: am 19.09.2026 im Emulator mit
         // Protokollzeilen gemessen, Druecken und Loslassen kamen hier an,
         // dort weder `tapped` noch `singleTapped`. Ein Tipp tat am Telefon
         // deshalb seit 0.2.10 nichts, und das Doppeltippen zum Zuruecksetzen
@@ -1345,6 +1345,68 @@ Item {
                 lastTapPos = lastPos;
                 root.fingerTap(lastPos.x, lastPos.y);
             }
+        }
+
+        // **Dasselbe fuer die Maus.** Auch mit der Maus kam im TapHandler
+        // nichts an: am 19.09.2026 in beiden Pruef-VMs und im Xvfb an drei
+        // Staenden bis zurueck zum 18.09. nachgestellt, der Tooltip beim
+        // Ueberfahren ging, der Klick oeffnete nie den Explorer. Hier: Druecken
+        // und Loslassen ohne nennenswerte Bewegung ist ein Klick und oeffnet
+        // die Kachel unter dem Zeiger; zwei Klicks kurz nacheinander an
+        // derselben Stelle stellen die Sicht wieder her. Ziehen (Verschieben
+        // bei Vergroesserung) loest nichts aus.
+        PointHandler {
+            id: maus
+
+            enabled: !root.touchUi
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            acceptedButtons: Qt.LeftButton
+            property point startPos
+            property point lastPos
+            property real lastClickAt: 0
+            property point lastClickPos
+
+            onPointChanged: if (active) lastPos = point.position
+            onActiveChanged: {
+                if (active) {
+                    startPos = point.position;
+                    lastPos = point.position;
+                    return;
+                }
+                var weit = Qt.styleHints.startDragDistance;
+                var dx = lastPos.x - startPos.x, dy = lastPos.y - startPos.y;
+                if (dx * dx + dy * dy > weit * weit)
+                    return;
+                var jetzt = Date.now();
+                var ddx = lastPos.x - lastClickPos.x, ddy = lastPos.y - lastClickPos.y;
+                if (jetzt - lastClickAt < Qt.styleHints.mouseDoubleClickInterval
+                        && ddx * ddx + ddy * ddy <= 4 * weit * weit) {
+                    lastClickAt = 0;
+                    klickOeffnen.stop();
+                    root.resetView();
+                    return;
+                }
+                lastClickAt = jetzt;
+                lastClickPos = lastPos;
+                var h = root.hitAt(lastPos.x, lastPos.y);
+                klickOeffnen.txid = h && h.tx && h.tx.t ? String(h.tx.t) : "";
+                if (klickOeffnen.txid !== "")
+                    klickOeffnen.restart();
+            }
+        }
+
+        // **Der einfache Klick wartet, ob ein zweiter kommt.** Vergroessert
+        // ist fast die ganze Flaeche Kachel; oeffnete schon der erste Klick
+        // eines Doppelklicks den Explorer, kaeme man aus der Vergroesserung
+        // nicht mehr heraus (am 19.09.2026 im Xvfb genau so passiert). Also
+        // erst nach der Doppelklick-Zeit oeffnen, und nur, wenn kein zweiter
+        // Klick dazwischenkam.
+        Timer {
+            id: klickOeffnen
+
+            property string txid: ""
+            interval: Qt.styleHints.mouseDoubleClickInterval
+            onTriggered: if (txid !== "") root.txActivated(txid)
         }
     }
 
@@ -1404,22 +1466,10 @@ Item {
         }
     }
 
-    // Mit der Maus oeffnet ein Klick die Transaktion unter dem Zeiger,
-    // doppelt klicken stellt die Sicht wieder her. Am Finger macht beides
-    // der PointHandler in der MouseArea oben; hier wird der Finger
-    // ausgelassen, falls ein Geraet ihn doch einmal durchreicht.
-    TapHandler {
-        onSingleTapped: {
-            if (root.touchUi)
-                return;
-            if (root.hoveredTx && root.hoveredTx.t)
-                root.txActivated(String(root.hoveredTx.t));
-        }
-        onDoubleTapped: {
-            if (!root.touchUi)
-                root.resetView();
-        }
-    }
+    // Klick, Tipp und Doppeltipp werten die beiden PointHandler in der
+    // MouseArea oben aus. Hier stand bis zum 19.09.2026 ein TapHandler; er
+    // bekam weder Maus noch Finger ab und ist deshalb entfernt -- wuerde er
+    // irgendwo doch feuern, wuerde ein Klick doppelt ausgewertet.
 
     // Beim Blockfund fliegen bis zu dreitausend Kacheln gleichzeitig. Das
     // sprengt die Rechteck-Ebene, deshalb eine eigene Leinwand, die nur
