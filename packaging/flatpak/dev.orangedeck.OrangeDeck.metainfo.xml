@@ -198,8 +198,41 @@
        Funkloch von selbst nachholen, Liquidationen, die nicht mehr leer
        dastehen, und den Explorer, der sich mit der Tastatur bedienen laesst.
        Zurueckgenommen wird nichts. Das Datum ist vorlaeufig (17.09.2026) und
-       wird beim Tag auf den Tag der Veroeffentlichung gesetzt. -->
+       wird beim Tag auf den Tag der Veroeffentlichung gesetzt.
+
+       **0.2.12 bringt eine Aenderung, die man sieht, und eine, die man
+       misst.** Widgets ohne Netz zeigen den letzten Stand mit Uhrzeit statt
+       eines Strichs; das APK ist 23 statt 57 MB gross. Dazu Fehlermeldungen
+       ohne Technik und die Wache gegen den stummen WebSocket im Dienst. Dass
+       das Repo umgezogen ist, gehoert nicht hierher: es aendert nichts an der
+       Anwendung. Das Datum ist vorlaeufig (19.09.2026). -->
   <releases>
+    <release version="0.2.12" date="2026-09-19">
+      <description>
+        <p>
+          Android widgets keep their numbers when a fetch fails. Instead of
+          "not reachable right now" they show the last values they had, with
+          the time they were fetched, until the network is back.
+        </p>
+        <p xml:lang="de">
+          Android-Widgets behalten ihre Zahlen, wenn ein Abruf scheitert.
+          Statt "gerade nicht erreichbar" zeigen sie den letzten Stand mit der
+          Uhrzeit, zu der er geholt wurde, bis das Netz wieder da ist.
+        </p>
+        <p>
+          The Android package is 23 MB instead of 57 MB. Error messages on
+          screen are short reasons in every language instead of technical
+          text. On Linux, the service reconnects by itself when the live feed
+          goes silent without closing.
+        </p>
+        <p xml:lang="de">
+          Das Android-Paket ist 23 statt 57 MB gross. Fehlermeldungen auf dem
+          Bildschirm sind kurze Gruende in jeder Sprache statt technischer
+          Texte. Unter Linux verbindet sich der Dienst von selbst neu, wenn
+          der Live-Datenstrom verstummt, ohne sich zu schliessen.
+        </p>
+      </description>
+    </release>
     <release version="0.2.11" date="2026-09-17">
       <description>
         <p>

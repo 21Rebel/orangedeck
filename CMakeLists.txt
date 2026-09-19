@@ -14,7 +14,7 @@
 #
 # Gebaut wird also aus der Wurzel:  cmake -S . -B build
 cmake_minimum_required(VERSION 3.21)
-project(orangedeck-app VERSION 0.2.11 LANGUAGES CXX)
+project(orangedeck-app VERSION 0.2.12 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -167,9 +167,9 @@ if(ANDROID)
     # **Die Bibliotheken gepackt, nicht roh.** Ohne das legt Gradle ab
     # minSdk 23 jede .so ungepackt ins APK, damit Android sie direkt aus der
     # Datei laden kann. Bei uns sind das 50 von 57 MB. Gepackt sind es rund
-    # 20 MB -- nachgerechnet am 19.09.2026 am APK von 0.2.11. Das braucht ein
-    # eigenes F-Droid-Repo auf Cloudflare Pages (hoechstens 25 MiB je Datei),
-    # und jeder Download wird kleiner. Der Preis: Android entpackt die
+    # 20 MB -- nachgerechnet am 19.09.2026 am APK von 0.2.11. Jeder Download
+    # wird kleiner, auch aus dem eigenen F-Droid-Repo (tools/fdroid-repo.sh),
+    # und tools/apk.sh meldet, wenn es wieder waechst. Der Preis: Android entpackt die
     # Bibliotheken bei der Installation, die App belegt danach etwas mehr
     # Platz auf dem Telefon.
     set_property(TARGET orangedeck-app PROPERTY QT_ANDROID_LEGACY_PACKAGING ON)
