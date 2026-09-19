@@ -76,7 +76,12 @@ touch "$SEITE/.nojekyll"
 echo fdroid.orangedeck.dev > "$SEITE/CNAME"
 cp "$REPO/packaging/fdroid/SEITE.md" "$SEITE/README.md"
 git -C "$SEITE" add -A
-git -C "$SEITE" commit -qm "OrangeDeck $V"
+# **Mit der Identitaet des Hauptrepos**, nicht der globalen. Der frische Klon
+# haette sonst die globale Einstellung genommen, und am 19.09.2026 stand
+# darin ein Klarname, der in keinem oeffentlichen Commit stehen soll.
+git -C "$SEITE" -c user.name="$(git -C "$REPO" config user.name)" \
+    -c user.email="$(git -C "$REPO" config user.email)" \
+    commit -qm "OrangeDeck $V"
 git -C "$SEITE" branch -M neu main
 
 echo
