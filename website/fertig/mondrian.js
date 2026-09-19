@@ -105,6 +105,102 @@ MondrianLayout.prototype.remove = function (square) {
         this.lowestFree = square.y;
 };
 
+// **Schwerkraft: Kacheln ruecken in die Luecken nach.** Nach dem Vorbild von
+// mempool.space (`BlockLayout.applyGravity` in
+// frontend/src/app/components/block-overview-graph/block-scene.ts): jede
+// Kachel, unter der die ganze Zeile davor frei ist, wird herausgenommen und
+// an der ersten passenden Stelle neu gesetzt. Ihre eigene Stelle ist dabei
+// wieder frei, sie landet also nie schlechter als vorher.
+//
+// Gebraucht wird das beim Nachfuehren eines geplanten Blocks: Abgaenge geben
+// ihre Flaeche zurueck, Zugaenge fuellen die Luecken von vorn -- aber nur,
+// wenn sie hineinpassen. Was nicht passt, blieb bis zum 10.09.2026 als Loch
+// stehen, auf dem Telefon wie am Schreibtisch. In einer Simulation mit
+// 150 Runden Umschichtung (`node tools/packung-sim.js`) sank die Zahl der
+// eingeschlossenen freien Zellen damit von 525 auf 139, bei rund 25
+// bewegten Kacheln je Runde. Eine strengere Fassung (jede Kachel neu setzen)
+// kam auf 106, bewegte aber sechsmal so viele -- das Bild waere unruhig
+// geworden fuer wenig mehr. Mehrere Durchgaenge je Runde brachten nichts:
+// in der Reihenfolge von vorn nach hinten erfasst einer schon die Ketten.
+//
+// `entries` sind Objekte mit `sq` = {x, y, r}; `sq` wird ersetzt, wenn die
+// Kachel faellt. Rueckgabe: wie viele gefallen sind.
+MondrianLayout.prototype.gravity = function (entries) {
+    var order = entries.slice().sort(function (a, b) {
+        return a.sq.y - b.sq.y || a.sq.x - b.sq.x;
+    });
+    var moved = 0;
+    for (var i = 0; i < order.length; i++) {
+        var q = order[i].sq;
+        var vorher = this.idx(q.y - 1);
+        if (vorher < 0 || vorher >= this.rows.length)
+            continue;
+        var row = this.rows[vorher], frei = true;
+        for (var x = q.x; x < q.x + q.r; x++) {
+            if (row[x]) {
+                frei = false;
+                break;
+            }
+        }
+        if (!frei)
+            continue;
+        this.remove(q);
+        var neu = this.place(q.r);
+        order[i].sq = neu;
+        if (neu.x !== q.x || neu.y !== q.y)
+            moved++;
+    }
+    return moved;
+};
+
+// Freie Zellen, unter denen in derselben Spalte noch eine Kachel liegt --
+// die Loecher, die man sieht. Der ausgefranste Rand ganz hinten gehoert zu
+// jeder Packung und zaehlt nicht mit.
+MondrianLayout.prototype.enclosedHoles = function () {
+    var h = this.height(), n = 0;
+    for (var x = 0; x < this.width; x++) {
+        var letzte = -1, y;
+        for (y = 0; y < h; y++) {
+            if (this.rows[y][x])
+                letzte = y;
+        }
+        for (y = 0; y < letzte; y++) {
+            if (!this.rows[y][x])
+                n++;
+        }
+    }
+    return n;
+};
+
+// **Stabil neu packen: dieselbe Reihenfolge, keine Loecher.** Die Schwerkraft
+// allein reicht nicht. Am 10.09.2026 sieben Minuten lang am echten Strom
+// gemessen, zwei Instanzen am selben Daemon, eingeschlossene Zellen je
+// Minute in einem Block von 110 x 110:
+//
+//     ohne Schwerkraft    0  10  308  799  933  818  629
+//     mit Schwerkraft     0   7  113  247  387  312  219
+//
+// Sie drittelt die Loecher, verhindert sie aber nicht: ein Loch, ueber dem
+// eine breitere Kachel liegt, bleibt offen. mempool.space lebt damit bis zum
+// naechsten Blockfund; hier wurde es als Fehler gemeldet.
+//
+// Also werden die Kacheln, sobald die Loecher ueberhand nehmen, in ihrer
+// jetzigen Reihenfolge (von vorn nach hinten, Zeile fuer Zeile) in eine
+// frische Packung gesetzt. Wer vor dem ersten Loch liegt, bleibt, wo er ist;
+// dahinter ruecken die Kacheln auf. In der Simulation (`node
+// tools/packung-sim.js`) wechselten dabei 7 bis 11 % der Kacheln den Platz --
+// nicht die 99,7 % eines Neupackens nach Gebuehr, das den Block in Flimmern
+// aufloeste. Liefert die neue Packung; `sq` der Eintraege wird ersetzt.
+function repackStable(width, entries) {
+    var lay = new MondrianLayout(width);
+    var order = entries.slice().sort(function (a, b) {
+        return a.sq.y - b.sq.y || a.sq.x - b.sq.x;
+    });
+    for (var i = 0; i < order.length; i++)
+        order[i].sq = lay.place(order[i].sq.r);
+    return lay;
+}
+
 // Oberste belegte Zeile
 // Hoehe der Halde in sichtbaren Zeilen
 MondrianLayout.prototype.height = function () {

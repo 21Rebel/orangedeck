@@ -6,11 +6,12 @@ Categories:
   - Money
   - Internet
 License: MIT
-AuthorName: 21Rebel
+AuthorName: Satoshoe
+AuthorEmail: info@orangedeck.dev
 WebSite: https://orangedeck.dev
-SourceCode: https://github.com/21Rebel/orangedeck
-IssueTracker: https://github.com/21Rebel/orangedeck/issues
-Changelog: https://github.com/21Rebel/orangedeck/releases
+SourceCode: https://github.com/orangedeck-dev/orangedeck
+IssueTracker: https://github.com/orangedeck-dev/orangedeck/issues
+Changelog: https://github.com/orangedeck-dev/orangedeck/releases
 
 # Der Markt-Reiter liest Trades von Binance und Bybit. Das sind geschlossene
 # Dienste, und F-Droid verlangt, das zu sagen. mempool.space selbst ist

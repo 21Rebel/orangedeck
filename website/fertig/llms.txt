@@ -58,5 +58,5 @@ That is what the clock view is for — large figures, no controls. The Android b
 ## Origin
 
 The tile packing and colour model are ports from bitfeed (MIT, mononaut).
-OrangeDeck itself is MIT licensed, copyright 2026 21Rebel.
-Source: https://github.com/21Rebel/orangedeck
+OrangeDeck itself is MIT licensed, copyright 2026 Satoshoe.
+Source: https://github.com/orangedeck-dev/orangedeck

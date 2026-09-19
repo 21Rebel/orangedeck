@@ -85,5 +85,5 @@ modules:
         /app/share/metainfo/dev.orangedeck.OrangeDeck.metainfo.xml
     sources:
       - type: git
-        url: https://github.com/21Rebel/orangedeck.git
+        url: https://github.com/orangedeck-dev/orangedeck.git
         commit: e438305bbc5f1fb09a7810931e03b7ffbc86076a

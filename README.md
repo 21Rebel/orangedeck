@@ -133,7 +133,7 @@ Startzeilen stehen in `packaging/widgets/README.md`.
 
 ## Lizenz
 
-MIT, Copyright 2026 21Rebel — Text in `LICENSE`.
+MIT, Copyright 2026 Satoshoe — Text in `LICENSE`.
 
 Unter `upstream/bitfeed/` liegt bitfeed selbst, ebenfalls MIT, Copyright
 mononaut (`LICENSE-bitfeed`). Zwei Dateien in `ui/qml/` sind Portierungen

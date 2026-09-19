@@ -166,7 +166,7 @@ def seite(d, alle):
   <footer>
     <p class="fuss-tat"><a class="tat" href="#holen">%(fuss_cta)s</a></p>
     <p>%(fuss_lizenz)s %(fuss_herkunft)s</p>
-    <p><a href="%(repo)s">github.com/21Rebel/orangedeck</a></p>
+    <p><a href="%(repo)s">github.com/orangedeck-dev/orangedeck</a></p>
     <p class="klein">%(sprache_waehlen)s</p>
     <nav class="sprachen">%(wahl_lang)s</nav>
   </footer>
@@ -297,7 +297,7 @@ def llmstxt(alle):
         z += ["### " + f, "", a, ""]
     z += ["## Origin", "",
           "The tile packing and colour model are ports from bitfeed (MIT, mononaut).",
-          "OrangeDeck itself is MIT licensed, copyright 2026 21Rebel.",
+          "OrangeDeck itself is MIT licensed, copyright 2026 Satoshoe.",
           "Source: " + d["repo"], ""]
     return "\n".join(z)
 
@@ -362,8 +362,8 @@ def ldjson(d):
         "screenshot": ["https://orangedeck.dev/bilder/%s.png" % n
                        for n in ("feed", "uhr", "markt")],
         "codeRepository": d["repo"],
-        "author": {"@type": "Organization", "name": "21Rebel",
-                   "url": "https://orangedeck.dev/"},
+        "author": {"@type": "Person", "name": "Satoshoe",
+                   "url": "https://github.com/satoshoe-dev"},
         "featureList": [n for n, _ in d["ansichten"]],
     }
     fragen = {

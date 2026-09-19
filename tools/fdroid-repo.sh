@@ -16,7 +16,7 @@
 #                                             in ein Git-Repo. Mit sichern.
 #       metadata -> packaging/fdroid/metadata Texte und Symbol, versioniert
 #       repo/                                 das, was veroeffentlicht wird
-#   ~/.local/share/orangedeck/fdroid-pages/   Klon von 21Rebel/orangedeck-fdroid
+#   ~/.local/share/orangedeck/fdroid-pages/   Klon von orangedeck-dev/fdroid
 #
 # **Warum ein eigenes Repo mit nur einem Commit.** Jedes APK wiegt rund 23 MB.
 # Im Hauptrepo laege jedes davon fuer immer in der Geschichte. Hier wird bei
@@ -64,12 +64,16 @@ ls -t "$ARBEIT"/repo/orangedeck-*.apk | tail -n +$((BEHALTEN + 1)) | xargs -r rm
 
 # Die Seite: nur repo/, dazu .nojekyll, damit GitHub Pages die Dateien nicht
 # durch Jekyll schickt (das liesse Verzeichnisse mit Unterstrich weg).
-[ -d "$SEITE/.git" ] || git clone -q https://github.com/21Rebel/orangedeck-fdroid.git "$SEITE"
+[ -d "$SEITE/.git" ] || git clone -q https://github.com/orangedeck-dev/fdroid.git "$SEITE"
 git -C "$SEITE" checkout -q --orphan neu
 git -C "$SEITE" rm -rqf --cached . 2>/dev/null || true
 find "$SEITE" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
 cp -r "$ARBEIT/repo" "$SEITE/repo"
 touch "$SEITE/.nojekyll"
+# Die eigene Adresse statt orangedeck-dev.github.io: die tragen Nutzer in
+# F-Droid ein, und sie soll einen Umzug des Kontos oder weg von GitHub
+# ueberstehen. Braucht bei Cloudflare einen CNAME fdroid -> orangedeck-dev.github.io.
+echo fdroid.orangedeck.dev > "$SEITE/CNAME"
 cp "$REPO/packaging/fdroid/SEITE.md" "$SEITE/README.md"
 git -C "$SEITE" add -A
 git -C "$SEITE" commit -qm "OrangeDeck $V"

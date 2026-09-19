@@ -2,7 +2,7 @@
   "code": "de",
   "name": "Deutsch",
   "richtung": "ltr",
-  "repo": "https://github.com/21Rebel/orangedeck",
+  "repo": "https://github.com/orangedeck-dev/orangedeck",
   "titel": "OrangeDeck — Bitcoin-Mempool, Blockuhr und Miner-Anzeige",
   "beschreibung": "Der Bitcoin-Mempool als lebendige Kachelgrafik, dazu Blockuhr, Bitaxe-Kennzahlen und Blockforscher. Für Linux, Windows, macOS und Android. MIT, ohne Konto.",
   "nav": [
@@ -32,7 +32,7 @@
   "hero_cta1": "Beziehen",
   "hero_cta1_ziel": "#holen",
   "hero_cta2": "Quelltext lesen",
-  "hero_cta2_ziel": "https://github.com/21Rebel/orangedeck",
+  "hero_cta2_ziel": "https://github.com/orangedeck-dev/orangedeck",
   "badges": [
     "MIT-lizenziert",
     "Kein Konto, keine Zählung",
@@ -127,12 +127,12 @@
     [
       "Android-APK",
       "Aus dem Quelltext gebaut, mit TLS.",
-      "https://github.com/21Rebel/orangedeck/releases"
+      "https://github.com/orangedeck-dev/orangedeck/releases"
     ],
     [
       "Quelltext",
       "Selbst bauen. MIT.",
-      "https://github.com/21Rebel/orangedeck"
+      "https://github.com/orangedeck-dev/orangedeck"
     ]
   ],
   "faq_titel": "Fragen",

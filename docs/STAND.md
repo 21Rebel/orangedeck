@@ -259,7 +259,7 @@ heute Vormittag, am Geraet widerlegt.
    F-Droid-Repo** (`tools/fdroid-repo.sh`, `packaging/fdroid/`), getestet mit
    dem F-Droid-Client am Galaxy ueber `adb reverse`. Es wird mit **0.2.12**
    oeffentlich, der ersten Fassung mit gepackten Bibliotheken (23 statt 57 MB).
-   Fehlt: das Repo `21Rebel/orangedeck-fdroid` samt GitHub Pages (legt der
+   Fehlt: das Repo `orangedeck-dev/fdroid` samt GitHub Pages (legt der
    Anwender an), Handy-Bildschirmfotos in den Metadaten, der Download-Bereich
    auf orangedeck.dev mit Hinweis auf Obtainium und das Repo.
    **Der Schluessel des Repos** liegt in `~/.local/share/orangedeck/fdroid/`

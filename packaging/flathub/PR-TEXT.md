@@ -19,7 +19,7 @@ OrangeDeck is a live view of the Bitcoin mempool: waiting transactions fall
 onto a heap as a tile mosaic, confirmed ones fly into the block. It also has a
 block height clock, mining figures, a block explorer and watch-only addresses.
 
-- Upstream: https://github.com/21Rebel/orangedeck
+- Upstream: https://github.com/orangedeck-dev/orangedeck
 - Tag: `v0.2.0` (the manifest pins the commit, not a branch)
 - License: MIT
 

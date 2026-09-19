@@ -2,7 +2,7 @@
   "code": "en",
   "name": "English",
   "richtung": "ltr",
-  "repo": "https://github.com/21Rebel/orangedeck",
+  "repo": "https://github.com/orangedeck-dev/orangedeck",
   "titel": "OrangeDeck — Bitcoin mempool, block height display, miner stats",
   "beschreibung": "The Bitcoin mempool as a living tile mosaic, plus a block height clock, Bitaxe figures and a block explorer. Linux, Windows, macOS, Android. MIT.",
   "nav": [
@@ -32,7 +32,7 @@
   "hero_cta1": "Get it",
   "hero_cta1_ziel": "#holen",
   "hero_cta2": "Read the source",
-  "hero_cta2_ziel": "https://github.com/21Rebel/orangedeck",
+  "hero_cta2_ziel": "https://github.com/orangedeck-dev/orangedeck",
   "badges": [
     "MIT licensed",
     "No account, no telemetry",
@@ -127,12 +127,12 @@
     [
       "Android APK",
       "Built from source, TLS included.",
-      "https://github.com/21Rebel/orangedeck/releases"
+      "https://github.com/orangedeck-dev/orangedeck/releases"
     ],
     [
       "Source",
       "Build it yourself. MIT.",
-      "https://github.com/21Rebel/orangedeck"
+      "https://github.com/orangedeck-dev/orangedeck"
     ]
   ],
   "faq_titel": "Questions",
