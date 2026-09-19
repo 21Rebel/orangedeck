@@ -137,6 +137,18 @@ Item {
     property real hoverX: 0
     property real hoverY: 0
     property real blockPulse: 0
+    // **Am Finger bleibt die Angabe stehen, bis man woanders hintippt.** Die
+    // Kennung der Transaktion, deren Angabe gerade festgehalten wird; ein
+    // zweiter Tipp auf dieselbe Kachel oeffnet sie im Explorer. Siehe den
+    // TapHandler unten.
+    property string pinnedTxid: ""
+    // Was beim Loslassen festgehalten war, und wann. Der PointHandler raeumt
+    // beim Loslassen, der Tipp wertet danach aus -- in welcher Reihenfolge,
+    // regelt Qt, nicht wir. Nur ein Tipp in derselben Zehntelsekunde darf
+    // sich darauf berufen; nach einem Ziehen gilt es nicht mehr.
+    property string releasedTxid: ""
+    property real releasedAt: 0
+    readonly property bool touchUi: Qt.platform.os === "android" || Qt.platform.os === "ios"
 
     // Eine Kachel wurde angetippt -- der Wirt entscheidet, was damit geschieht
     // (im Fenster: ab in den Explorer).
@@ -496,6 +508,33 @@ Item {
     // der Flaeche: dort verlaesst man nie etwas, und der Tooltip blieb ewig
     // stehen. Massstab ist deshalb der Abstand zur zuletzt getroffenen Kachel,
     // mit einer Rasterzelle Nachsicht.
+    // Was unter einem Punkt der Flaeche liegt: {tx, rect} oder null, in der
+    // Halde oder im Blockfeld darueber. Maus und Finger fragen dieselbe
+    // Stelle; vorher stand das nur im Zeiger-Handler.
+    function hitAt(px, py) {
+        var sx = toSceneX(px);
+        var sy = toSceneY(py);
+        var e = txAt(sx, sy);
+        if (e && e.tx) {
+            var sd = Math.max(1, e.sq.r * gridSize - unitPad * 2);
+            return {
+                "tx": e.tx,
+                "rect": {
+                    "x": targetX(e.sq),
+                    "y": targetY(e.sq),
+                    "w": sd,
+                    "h": sd
+                }
+            };
+        }
+        if (sy < pileTopY) {
+            var bt = blockCanvas.blockTxAt(sx, sy);
+            if (bt)
+                return { "tx": bt, "rect": blockCanvas.hoverRectAt(sx, sy) };
+        }
+        return null;
+    }
+
     function clearHoverIfAway(sx, sy) {
         var r = hoverRect;
         if (!r)
@@ -1202,31 +1241,14 @@ Item {
 
         onPositionChanged: mouse => {
             // Der Tooltip sitzt am Fenster, die Trefferpruefung in der Szene.
-            var sx = root.toSceneX(mouse.x);
-            var sy = root.toSceneY(mouse.y);
-            var e = root.txAt(sx, sy);
             root.hoverX = mouse.x;
             root.hoverY = mouse.y;
-            if (e && e.tx) {
-                root.hoveredTx = e.tx;
-                var sd = Math.max(1, e.sq.r * root.gridSize - root.unitPad * 2);
-                root.hoverRect = {
-                    "x": root.targetX(e.sq),
-                    "y": root.targetY(e.sq),
-                    "w": sd,
-                    "h": sd
-                };
-            } else if (sy < root.pileTopY) {
-                // oberhalb der Halde: vielleicht das Blockfeld
-                var bt = blockCanvas.blockTxAt(sx, sy);
-                if (bt) {
-                    root.hoveredTx = bt;
-                    root.hoverRect = blockCanvas.hoverRectAt(sx, sy);
-                } else {
-                    root.clearHoverIfAway(sx, sy);
-                }
+            var h = root.hitAt(mouse.x, mouse.y);
+            if (h) {
+                root.hoveredTx = h.tx;
+                root.hoverRect = h.rect;
             } else {
-                root.clearHoverIfAway(sx, sy);
+                root.clearHoverIfAway(root.toSceneX(mouse.x), root.toSceneY(mouse.y));
             }
         }
 
@@ -1249,8 +1271,11 @@ Item {
             enabled: Qt.platform.os === "android" || Qt.platform.os === "ios"
             onActiveChanged: {
                 if (!active) {
+                    root.releasedTxid = root.pinnedTxid;
+                    root.releasedAt = Date.now();
                     root.hoveredTx = null;
                     root.hoverRect = null;
+                    root.pinnedTxid = "";
                 }
             }
         }
@@ -1312,14 +1337,55 @@ Item {
         }
     }
 
-    // Einfach tippen oeffnet die Transaktion unter dem Zeiger, doppelt
-    // tippen stellt die Sicht wieder her.
+    // Mit der Maus oeffnet ein Klick die Transaktion unter dem Zeiger.
+    // Doppelt tippen stellt die Sicht wieder her.
+    //
+    // **Am Finger: erst ansehen, dann oeffnen.** Bis zum 19.09.2026 tat ein
+    // Tipp am Telefon gar nichts. Der PointHandler oben raeumt die Angabe
+    // beim Loslassen weg (08.09.2026, gegen einen Tooltip, der ewig stand),
+    // und das geschah, bevor der Tipp ausgewertet war: `hoveredTx` war dann
+    // schon leer. Jetzt prueft der Tipp selbst, was unter dem Finger liegt,
+    // und zwar erst nach dem Wegraeumen (`Qt.callLater`). Ein Tipp auf eine
+    // Kachel haelt ihre Angabe fest, ein zweiter auf dieselbe oeffnet sie im
+    // Explorer, ein Tipp daneben raeumt sie weg. Ziehen und Zoomen loesen
+    // keinen Tipp aus und lassen die Angabe los.
     TapHandler {
-        onSingleTapped: {
-            if (root.hoveredTx && root.hoveredTx.t)
-                root.txActivated(String(root.hoveredTx.t));
+        onSingleTapped: function (eventPoint) {
+            if (!root.touchUi) {
+                if (root.hoveredTx && root.hoveredTx.t)
+                    root.txActivated(String(root.hoveredTx.t));
+                return;
+            }
+            var px = eventPoint.position.x, py = eventPoint.position.y;
+            var vorher = root.pinnedTxid !== "" ? root.pinnedTxid
+                       : (Date.now() - root.releasedAt < 100 ? root.releasedTxid : "");
+            Qt.callLater(function () {
+                var h = root.hitAt(px, py);
+                var t = h && h.tx && h.tx.t ? String(h.tx.t) : "";
+                if (t !== "" && t === vorher) {
+                    root.hoveredTx = null;
+                    root.hoverRect = null;
+                    root.pinnedTxid = "";
+                    root.txActivated(t);
+                } else if (h) {
+                    root.hoverX = px;
+                    root.hoverY = py;
+                    root.hoveredTx = h.tx;
+                    root.hoverRect = h.rect;
+                    root.pinnedTxid = t;
+                } else {
+                    root.hoveredTx = null;
+                    root.hoverRect = null;
+                    root.pinnedTxid = "";
+                }
+            });
         }
-        onDoubleTapped: root.resetView()
+        onDoubleTapped: {
+            root.hoveredTx = null;
+            root.hoverRect = null;
+            root.pinnedTxid = "";
+            root.resetView();
+        }
     }
 
     // Beim Blockfund fliegen bis zu dreitausend Kacheln gleichzeitig. Das
