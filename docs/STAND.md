@@ -313,16 +313,24 @@ heute Vormittag, am Geraet widerlegt.
    schraeg an. Mit `-gpu swangle_indirect` ist alles sauber -- es ist der
    Renderer, nicht die Anwendung. Wer im Emulator etwas Grafisches beurteilt,
    prueft beide.
-9. **Widgets werfen gute Zahlen weg, wenn ein Abruf scheitert.** Am
-   18.09.2026 beim Nachweis zu Punkt 4 gesehen: schlaegt der Abruf fehl,
-   setzt `DeckWidget` `{"--", offline}` und zeichnet das -- der zuletzt
-   geholte Stand liegt daneben in `widget_stand` und wird nicht benutzt. Auf
-   dem Startbildschirm standen dadurch fuenf Kacheln ohne eine einzige Zahl,
-   obwohl der Kurs von vor einer Minute bekannt war. Ein Vorschlag waere: den
-   gemerkten Stand weiter zeigen und das Alter dazuschreiben, und "-- gerade
-   nicht erreichbar" nur, wenn es nichts Gemerktes gibt. Das ist eine
-   Geschmacksfrage der Anzeige, keine Korrektur -- deshalb hier und nicht
-   gebaut.
+9. ~~Widgets werfen gute Zahlen weg, wenn ein Abruf scheitert~~ **gebaut und
+   am Galaxy geprueft** (19.09.2026, vom Anwender so gewuenscht). Scheitert
+   der Abruf, zeichnet `DeckWidget` den gemerkten Stand aus `widget_stand`,
+   und die Ueberschrift wird zu "Stand 08:16" in Orange (von einem anderen Tag
+   mit Datum). "-- gerade nicht erreichbar" nur noch, wenn nichts gemerkt ist.
+   **Uhrzeit statt "vor 3 Min"**: die Kachel wird ohne Netz lange nicht neu
+   gezeichnet, ein Alter waere bald falsch. **Statt des Namens, nicht
+   daneben**: in 2x2 waere die Uhrzeit abgeschnitten worden. Staende aus
+   0.2.11 haben keine Zeit und werden erst nach dem ersten Erfolg so gezeigt.
+   Am Geraet: mit Netz auf Dollar, Netz aus, zurueck auf Euro -- alle Kacheln
+   mit Zahlen und "Stand"; Netz an, nach rund zwei Minuten alle nachgeholt.
+   **Ein Fund dabei:** die erste Fassung liess die Ueberschrift danach orange.
+   Der Samsung-Starter wendet neue RemoteViews auf die gezeichnete Kachel an,
+   eine nicht gesetzte Farbe bleibt stehen. Jetzt wird sie jedes Mal gesetzt.
+   **Und eine Beobachtung:** ohne Netz, aber mit NordVPN, scheitert jedes
+   Widget erst an der Frist (rund 6 s), und Android arbeitet die zehn
+   nacheinander ab -- bis alle "Stand" zeigen, vergeht eine Minute. Wer das
+   am Geraet ansieht, wartet so lange, bevor er fotografiert.
 10. **Idee fuer spaeter**: Wallet direkt auf dem Telefon.
 
 ### Fuer den naechsten Lauf

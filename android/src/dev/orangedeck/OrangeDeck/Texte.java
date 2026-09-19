@@ -214,6 +214,10 @@ final class Texte {
           "non raggiungibile al momento", "inacessível de momento", "nu niet bereikbaar",
           "сейчас недоступно", "現在接続できません", "暂时无法连接",
           "inacessível no momento", "chwilowo niedostępny", "momentálně nedostupné");
+        // Ueber einem gemerkten Stand, wenn der Abruf scheiterte (DeckWidget)
+        t("stand", "Stand %1$s", "as of %1$s", "actualizado %1$s", "mis à jour %1$s",
+          "aggiornato %1$s", "atualizado %1$s", "bijgewerkt %1$s", "на %1$s",
+          "%1$s 時点", "截至 %1$s", "atualizado %1$s", "stan z %1$s", "stav k %1$s");
     }
 
     /**

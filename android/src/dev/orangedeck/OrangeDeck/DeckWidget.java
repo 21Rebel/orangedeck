@@ -171,18 +171,30 @@ public abstract class DeckWidget extends AppWidgetProvider {
                 synchronized (ergebnis) {
                     z = ergebnis[0];
                 }
-                // Kein leeres Widget: ein Strich sagt "gerade nichts da",
-                // eine leere Flaeche sieht aus wie ein Fehler im Launcher.
+                // **Gescheitert: der gemerkte Stand, mit seiner Uhrzeit.** Bis
+                // zum 18.09.2026 stand hier immer "-- gerade nicht erreichbar",
+                // und am Galaxy zeigten fuenf Kacheln keine einzige Zahl,
+                // obwohl der Kurs von vor einer Minute bekannt war. Der Strich
+                // bleibt fuer den Fall, dass es nichts Gemerktes gibt: eine
+                // leere Flaeche saehe aus wie ein Fehler im Launcher.
                 // Und ein zweiter Versuch, sobald Netz da ist -- sonst bleibt
-                // "offline" bis zum naechsten Takt stehen (WidgetNachholen).
+                // der alte Stand bis zum naechsten Takt stehen (WidgetNachholen).
+                String stand = null;
                 if (z == null) {
-                    z = new String[] { "--", Texte.t(c, "offline"), null };
+                    String[] alt = gemerkt(c);
+                    long zeit = gemerktZeit(c);
+                    if (alt != null && zeit > 0) {
+                        z = alt;
+                        stand = Texte.t(c, "stand", uhrzeit(c, zeit));
+                    } else {
+                        z = new String[] { "--", Texte.t(c, "offline"), null };
+                    }
                     WidgetNachholen.einplanen(c, DeckWidget.this.getClass());
                 } else {
                     WidgetNachholen.erledigt(c, DeckWidget.this.getClass());
                 }
                 try {
-                    zeichne(c, manager, ids, z);
+                    zeichne(c, manager, ids, z, stand);
                 } finally {
                     freigeben.run();
                 }
@@ -217,7 +229,39 @@ public abstract class DeckWidget extends AppWidgetProvider {
         for (String s : z)
             a.put(s == null ? JSONObject.NULL : s);
         c.getSharedPreferences("widget_stand", Context.MODE_PRIVATE).edit()
-         .putString(gemerktSchluessel(), a.toString()).apply();
+         .putString(gemerktSchluessel(), a.toString())
+         .putLong(gemerktSchluessel() + ".zeit", System.currentTimeMillis()).apply();
+    }
+
+    /**
+     * Wann der gemerkte Stand geholt wurde, oder 0. Staende von vor dem
+     * 19.09.2026 haben keine Zeit; die zeigen wir nicht als "Stand", bis der
+     * erste Abruf danach gelungen ist.
+     */
+    private long gemerktZeit(Context c) {
+        return c.getSharedPreferences("widget_stand", Context.MODE_PRIVATE)
+                .getLong(gemerktSchluessel() + ".zeit", 0);
+    }
+
+    /**
+     * **Eine Uhrzeit, kein Alter.** "vor 3 Min" wuerde auf der Kachel stehen
+     * bleiben, bis sie das naechste Mal gezeichnet wird -- ohne Netz bis zu
+     * 30 Minuten und laenger --, und waere dann falsch. "14:32" bleibt wahr.
+     * Von einem anderen Tag kommt das Datum dazu. Das Format ist das des
+     * Telefons (12 oder 24 Stunden).
+     */
+    private static String uhrzeit(Context c, long zeit) {
+        java.util.Date d = new java.util.Date(zeit);
+        String uhr = android.text.format.DateFormat.getTimeFormat(c).format(d);
+        java.util.Calendar dann = java.util.Calendar.getInstance();
+        dann.setTime(d);
+        java.util.Calendar jetzt = java.util.Calendar.getInstance();
+        if (dann.get(java.util.Calendar.YEAR) == jetzt.get(java.util.Calendar.YEAR)
+                && dann.get(java.util.Calendar.DAY_OF_YEAR) == jetzt.get(java.util.Calendar.DAY_OF_YEAR))
+            return uhr;
+        String muster = android.text.format.DateFormat.getBestDateTimePattern(
+                Locale.getDefault(), "dMMM");
+        return new java.text.SimpleDateFormat(muster, Locale.getDefault()).format(d) + " " + uhr;
     }
 
     /**
@@ -232,9 +276,29 @@ public abstract class DeckWidget extends AppWidgetProvider {
     }
 
     private void zeichne(Context c, AppWidgetManager manager, int[] ids, String[] z) {
+        zeichne(c, manager, ids, z, null);
+    }
+
+    /**
+     * @param stand {@code null}, wenn {@code z} frisch geholt ist; sonst der
+     *              Text fuer die Ueberschrift ("Stand 14:32"). Er ersetzt sie
+     *              ganz, in Orange: neben dem Namen der Kachel waere in der
+     *              Breite von 2x2 die Uhrzeit abgeschnitten worden, und
+     *              welche Kachel es ist, sagt ihr Inhalt.
+     */
+    private void zeichne(Context c, AppWidgetManager manager, int[] ids, String[] z,
+                         String stand) {
         for (int id : ids) {
             RemoteViews v = new RemoteViews(c.getPackageName(), layoutId());
             fuelle(c, v, z, manager.getAppWidgetOptions(id));
+            // **Die Farbe jedes Mal setzen, auch die graue.** Am 19.09.2026
+            // blieb die Ueberschrift am Galaxy nach dem Nachholen orange:
+            // der Starter wendet neue RemoteViews auf die schon gezeichnete
+            // Kachel an, und was keine Aktion setzt, bleibt, wie es war --
+            // das Grau aus dem Layout kommt dann nicht zurueck.
+            if (stand != null)
+                v.setTextViewText(R.id.widget_titel, stand);
+            v.setTextColor(R.id.widget_titel, stand != null ? 0xfff7931a : 0xff9a94a6);
 
             Intent i = new Intent(aktion());
             i.setClassName(c.getPackageName(), "org.qtproject.qt.android.bindings.QtActivity");
